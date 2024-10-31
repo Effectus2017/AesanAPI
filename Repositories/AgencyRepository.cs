@@ -40,17 +40,22 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 Id = item.Id,
                 Name = item.Name,
                 StatusId = item.StatusId,
+                // Datos de la Agencia
                 SdrNumber = item.SdrNumber,
                 UieNumber = item.UieNumber,
                 EinNumber = item.EinNumber,
+                // Dirección y Teléfono
                 Address = item.Address,
-                PostalCode = item.PostalCode,
+                ZipCode = item.ZipCode,
+                PostalAddress = item.PostalAddress,
+                Phone = item.Phone,
+                // Coordenadas
                 Latitude = item.Latitude,
                 Longitude = item.Longitude,
-                Phone = item.Phone,
-                Email = item.Email,
+                // Datos del Contacto
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
+                // Relaciones
                 Program = new DTOProgram
                 {
                     Id = item.ProgramId,
@@ -160,17 +165,23 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 Id = result.Id,
                 Name = result.Name,
                 StatusId = result.StatusId,
+                // Datos de la Agencia
                 SdrNumber = result.SdrNumber,
                 UieNumber = result.UieNumber,
                 EinNumber = result.EinNumber,
+                // Dirección y Teléfono
                 Address = result.Address,
-                PostalCode = result.PostalCode,
+                ZipCode = result.ZipCode,
+                PostalAddress = result.PostalAddress,
+                Phone = result.Phone,
+                // Coordenadas
                 Latitude = result.Latitude,
                 Longitude = result.Longitude,
-                Phone = result.Phone,
+                // Datos del Contacto
                 Email = result.Email,
                 CreatedAt = result.CreatedAt,
                 UpdatedAt = result.UpdatedAt,
+                // Relaciones
                 Program = new DTOProgram
                 {
                     Id = result.ProgramId,

@@ -92,25 +92,30 @@ GO
 ALTER PROCEDURE [100_InsertAgency]
     @Name NVARCHAR(MAX),
     @StatusId INT,
-    @CityId INT,
-    @RegionId INT,
     @ProgramId INT,
+    -- Datos de la Agencia
     @SdrNumber NVARCHAR(255),
     @UieNumber NVARCHAR(255),
     @EinNumber NVARCHAR(255),
-    @Address NVARCHAR(255),
-    @PostalCode NVARCHAR(20),
+    -- Datos de la Ciudad y Región
+    @CityId INT,
+    @RegionId INT,
     @Latitude FLOAT,
     @Longitude FLOAT,
+    -- Dirección y Teléfono
+    @Address NVARCHAR(255),
+    @ZipCode INT,
+    @PostalAddress NVARCHAR(255),
     @Phone NVARCHAR(50),
+    -- Datos del Contacto
     @Email NVARCHAR(255),
     @Id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, PostalCode, Latitude, Longitude, Phone, Email)
-    VALUES (@Name, @StatusId, @CityId, @RegionId, @ProgramId, @SdrNumber, @UieNumber, @EinNumber, @Address, @PostalCode, @Latitude, @Longitude, @Phone, @Email);
+    INSERT INTO Agency (Name, StatusId, ProgramId, SdrNumber, UieNumber, EinNumber, CityId, RegionId, Latitude, Longitude, Address, ZipCode, PostalAddress, Phone, Email)
+    VALUES (@Name, @StatusId, @ProgramId, @SdrNumber, @UieNumber, @EinNumber, @CityId, @RegionId, @Latitude, @Longitude, @Address, @ZipCode, @PostalAddress, @Phone, @Email);
 
     SET @Id = SCOPE_IDENTITY(); -- Obtener el ID de la agencia insertada
 END
@@ -131,14 +136,18 @@ BEGIN
         a.Id, 
         a.Name, 
         a.StatusId, 
+        -- Datos de la Agencia
         a.SdrNumber, 
         a.UieNumber, 
-        a.EinNumber, 
+        a.EinNumber,
+        -- Dirección y Teléfono
         a.Address, 
-        a.PostalCode, 
+        a.ZipCode, 
+        a.PostalAddress, 
+        a.Phone,
+        -- Coordenadas
         a.Latitude, 
         a.Longitude, 
-        a.Phone,
         -- Joins para las relaciones
         c.Id AS CityId,
         c.Name AS CityName,
@@ -153,8 +162,10 @@ BEGIN
         u.MiddleName,
         u.FatherLastName,
         u.MotherLastName,
+        -- Datos del usuario administrador
         u.AdministrationTitle,
         u.Email,
+        -- Auditoría
         a.CreatedAt,
         a.UpdatedAt
     FROM Agency a
@@ -197,14 +208,18 @@ BEGIN
         a.Id, 
         a.Name, 
         a.StatusId, 
+        -- Datos de la Agencia
         a.SdrNumber, 
         a.UieNumber, 
-        a.EinNumber, 
+        a.EinNumber,
+        -- Dirección y Teléfono
         a.Address, 
-        a.PostalCode, 
+        a.ZipCode, 
+        a.PostalAddress, 
+        a.Phone,
+        -- Coordenadas
         a.Latitude, 
         a.Longitude, 
-        a.Phone,
         -- Joins para las relaciones
         c.Id AS CityId,
         c.Name AS CityName,
@@ -219,8 +234,10 @@ BEGIN
         u.MiddleName,
         u.FatherLastName,
         u.MotherLastName,
+        -- Datos del usuario administrador
         u.AdministrationTitle,
         u.Email,
+        -- Auditoría
         a.CreatedAt,
         a.UpdatedAt
     FROM Agency a

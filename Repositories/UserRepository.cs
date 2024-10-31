@@ -260,40 +260,52 @@ public class UserRepository(UserManager<User> userManager,
 
             var result = await _userManager.CreateAsync(user, temporaryPassword);
 
+            _logger.LogInformation("Contraseña temporal: {temporaryPassword}", temporaryPassword);
+
             if (!result.Succeeded)
             {
                 await DeleteUserByEmailAsync(model.User.Email);
                 return new BadRequestObjectResult(result.Errors);
             }
-
-            // Asignar el rol (asumiendo que el rol es "User")
-            var resultRole = await _userManager.AddToRoleAsync(user, "User");
-
-            if (!resultRole.Succeeded)
+            else
             {
-                await DeleteUserByEmailAsync(model.User.Email);
-                return new BadRequestObjectResult(resultRole.Errors);
+                // Asignar el rol (asumiendo que el rol es "User")
+                var resultRole = await _userManager.AddToRoleAsync(user, "User");
+
+                if (!resultRole.Succeeded)
+                {
+                    await DeleteUserByEmailAsync(model.User.Email);
+                    return new BadRequestObjectResult(resultRole.Errors);
+                }
             }
 
             // Parámetros para la inserción de la agencia
             var parameters = new DynamicParameters();
             parameters.Add("@Name", model.Agency.Name, dbType: DbType.String, direction: ParameterDirection.Input);
             parameters.Add("@StatusId", model.Agency.StatusId, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@CityId", model.Agency.CityId, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@RegionId", model.Agency.RegionId, dbType: DbType.Int32, direction: ParameterDirection.Input);
             parameters.Add("@ProgramId", model.Agency.ProgramId, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            //
+
+            // Datos de la Agencia
             parameters.Add("@SdrNumber", model.Agency.SdrNumber, dbType: DbType.Int32, direction: ParameterDirection.Input);
             parameters.Add("@UieNumber", model.Agency.UieNumber, dbType: DbType.Int32, direction: ParameterDirection.Input);
             parameters.Add("@EinNumber", model.Agency.EinNumber, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            //
-            parameters.Add("@Address", model.Agency.Address, dbType: DbType.String, direction: ParameterDirection.Input);
-            parameters.Add("@PostalCode", model.Agency.PostalCode, dbType: DbType.Int32, direction: ParameterDirection.Input);
+
+            // Datos de la Ciudad y Región
+            parameters.Add("@CityId", model.Agency.CityId, dbType: DbType.Int32, direction: ParameterDirection.Input);
+            parameters.Add("@RegionId", model.Agency.RegionId, dbType: DbType.Int32, direction: ParameterDirection.Input);
             parameters.Add("@Latitude", model.Agency.Latitude, dbType: DbType.Double, direction: ParameterDirection.Input);
             parameters.Add("@Longitude", model.Agency.Longitude, dbType: DbType.Double, direction: ParameterDirection.Input);
+
+            // Dirección y Teléfono
+            parameters.Add("@Address", model.Agency.Address, dbType: DbType.String, direction: ParameterDirection.Input);
+            parameters.Add("@ZipCode", model.Agency.ZipCode, dbType: DbType.Int32, direction: ParameterDirection.Input);
+            parameters.Add("@PostalAddress", model.Agency.PostalAddress, dbType: DbType.String, direction: ParameterDirection.Input);
             parameters.Add("@Phone", model.Agency.Phone, dbType: DbType.String, direction: ParameterDirection.Input);
+
+            // Datos del Contacto
             parameters.Add("@Email", model.User.Email, dbType: DbType.String, direction: ParameterDirection.Input);
 
+            // Id de la Agencia
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             // Insertar en la tabla Agency

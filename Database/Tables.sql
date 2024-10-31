@@ -25,7 +25,7 @@ INSERT INTO AgencyStatus (Name) VALUES ('Visita Pre-operacional');
 INSERT INTO AgencyStatus (Name) VALUES ('No cumple con los requisitos');
 INSERT INTO AgencyStatus (Name) VALUES ('Cumple con los requisitos');
 
--- Agencias Auspiciadoras
+-- Agencias Auspiciadoras (Sponsoring Agencies)
 CREATE TABLE Agency (
     Id INT PRIMARY KEY IDENTITY(1,1),
     StatusId INT NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE Agency (
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
 );
 
--- Programas de AESAN
+-- Programas de AESAN, agregar un id de registro unico entre programa y agencia
 CREATE TABLE Program (
     Id INT PRIMARY KEY IDENTITY(1,1),
     Name NVARCHAR(255) NOT NULL,
