@@ -1,0 +1,210 @@
+using System.Data;
+using Api.Data;
+using Api.Models;
+using Dapper;
+
+namespace Api.Repositories;
+
+public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> logger) : IAgencyRepository
+{
+    private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<AgencyRepository> _logger = logger;
+
+    /// <summary>
+    /// Obtiene todas las agencias de la base de datos
+    /// </summary>
+    /// <param name="take">El número de agencias a obtener</param>
+    /// <param name="skip">El número de agencias a saltar</param>
+    /// <param name="name">El nombre de la agencia</param>
+    /// <param name="alls">Si se deben obtener todas las agencias</param>
+    /// <returns>Las agencias</returns>
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, bool alls)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo todas las agencias de la base de datos");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var param = new { take, skip, name, regionId, cityId, programId, statusId, alls };
+
+            var result = await dbConnection.QueryMultipleAsync("100_GetAgencies", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            var agencies = result.Read<dynamic>().Select(item => new DTOAgency
+            {
+                Id = item.Id,
+                Name = item.Name,
+                StatusId = item.StatusId,
+                SdrNumber = item.SdrNumber,
+                UieNumber = item.UieNumber,
+                EinNumber = item.EinNumber,
+                Address = item.Address,
+                PostalCode = item.PostalCode,
+                Latitude = item.Latitude,
+                Longitude = item.Longitude,
+                Phone = item.Phone,
+                Email = item.Email,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt,
+                Program = new DTOProgram
+                {
+                    Id = item.ProgramId,
+                    Name = item.ProgramName
+                },
+                City = new DTOCity
+                {
+                    Id = item.CityId,
+                    Name = item.CityName
+                },
+                Region = new DTORegion
+                {
+                    Id = item.RegionId,
+                    Name = item.RegionName
+                },
+                Status = new DTOAgencyStatus
+                {
+                    Id = item.StatusId,
+                    Name = item.StatusName
+                },
+                User = new DTOUser
+                {
+                    FirstName = item.FirstName,
+                    MiddleName = item.MiddleName,
+                    FatherLastName = item.FatherLastName,
+                    MotherLastName = item.MotherLastName,
+                    AdministrationTitle = item.AdministrationTitle
+                }
+            }).ToList();
+
+            var count = result.Read<int>().Single();
+
+            return new { data = agencies, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las agencias");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los estados de la agencia
+    /// </summary>
+    /// <param name="take">El número de estados a obtener</param>
+    /// <param name="skip">El número de estados a saltar</param>
+    /// <param name="name">El nombre del estado</param>
+    /// <returns>Los estados de la agencia</returns>
+    public async Task<dynamic> GetAllAgencyStatus(int take, int skip, string name, bool alls)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo todos los estados de la agencia");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var param = new { take, skip, name, alls };
+
+            var result = await dbConnection.QueryMultipleAsync("100_GetAllAgencyStatus", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            var agencyStatus = result.Read<dynamic>().Select(item => new DTOAgencyStatus
+            {
+                Id = item.Id,
+                Name = item.Name
+            }).ToList();
+
+            var count = result.Read<int>().Single();
+
+            return new { data = agencyStatus, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los estados de la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene una agencia por su ID
+    /// </summary>
+    /// <param name="id">El ID de la agencia</param>
+    /// <returns>La agencia</returns>
+    public async Task<dynamic> GetAgencyById(int id)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo agencia por ID: {Id}", id);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var param = new { Id = id };
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetAgencyById", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            return new DTOAgency
+            {
+                Id = result.Id,
+                Name = result.Name,
+                StatusId = result.StatusId,
+                SdrNumber = result.SdrNumber,
+                UieNumber = result.UieNumber,
+                EinNumber = result.EinNumber,
+                Address = result.Address,
+                PostalCode = result.PostalCode,
+                Latitude = result.Latitude,
+                Longitude = result.Longitude,
+                Phone = result.Phone,
+                Email = result.Email,
+                CreatedAt = result.CreatedAt,
+                UpdatedAt = result.UpdatedAt,
+                Program = new DTOProgram
+                {
+                    Id = result.ProgramId,
+                    Name = result.ProgramName
+                },
+                City = new DTOCity
+                {
+                    Id = result.CityId,
+                    Name = result.CityName
+                },
+                Region = new DTORegion
+                {
+                    Id = result.RegionId,
+                    Name = result.RegionName
+                },
+                Status = new DTOAgencyStatus
+                {
+                    Id = result.StatusId,
+                    Name = result.StatusName
+                },
+                User = new DTOUser
+                {
+                    FirstName = result.FirstName,
+                    MiddleName = result.MiddleName,
+                    FatherLastName = result.FatherLastName,
+                    MotherLastName = result.MotherLastName,
+                    AdministrationTitle = result.AdministrationTitle
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+}

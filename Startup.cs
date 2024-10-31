@@ -1,10 +1,15 @@
+using System.Globalization;
 using Api.Data;
 using Api.Interfaces;
+using Api.Mapper;
 using Api.Models;
+using Api.Repositories;
+using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SendGrid;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,29 +52,59 @@ builder.Services.AddIdentity<User, Role>(config =>
     .AddDefaultTokenProviders();
 
 // Agregar repositorios a la inyección de dependencias
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGeoRepository, GeoRepository>();
+builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
+builder.Services.AddScoped<IAgencyRepository, AgencyRepository>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); // Agregar UnitOfWork
 
+// Agregar controladores a la inyección de dependencias
 builder.Services.AddControllers();
 
 // Configuración de Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Mi API", Version = "v1" });
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "AESAN API", Version = "v1" });
 });
+
+// Configuración de Dapper
+builder.Services.AddScoped<DapperContext>();
+// Registro de SendGrid
+builder.Services.AddSingleton<ISendGridClient>(new SendGridClient(builder.Configuration["SendGrid:ApiKey"]));
+
+// Configuración de AutoMapper
+builder.Services.AddAutoMapper(cfg => { cfg.AddProfile(new MappingProfile()); });
+
+// Configuración de CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowDevOrigin", builder => builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+    options.AddPolicy("AllowProdOrigin", builder => builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+});
+
+
+// Configurar la cultura invariante
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var app = builder.Build();
 
 // Configuración de middleware
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    app
+    .UseDeveloperExceptionPage()
+    .UseCors("AllowDevOrigin")
+    .UseSwaggerUI();
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    app
+    .UseHttpsRedirection()
+    .UseCors("AllowProdOrigin")
+    .UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();

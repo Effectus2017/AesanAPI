@@ -1,18 +1,23 @@
-using Api.Data;
+using Api.Interfaces;
 
-namespace Api.Repositories;
+namespace Api.Data;
 
-public class UnitOfWork(ApplicationDbContext context) : IUnitOfWork
+public class UnitOfWork(ApplicationDbContext context, IUserRepository userRepository, IGeoRepository geoRepository, IProgramRepository programRepository, IAgencyRepository agencyRepository) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
-
-    public async Task SaveAsync()
+    public IUserRepository UserRepository { get; private set; } = userRepository; // Asignar repositorio
+    public IGeoRepository GeoRepository { get; private set; } = geoRepository; // Asignar repositorio
+    public IProgramRepository ProgramRepository { get; private set; } = programRepository; // Asignar repositorio
+    public IAgencyRepository AgencyRepository { get; private set; } = agencyRepository; // Asignar repositorio
+    public void Save()
     {
-        await _context.SaveChangesAsync();
-    }
-
-    public void Dispose()
-    {
-        _context.Dispose();
+        try
+        {
+            _context.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 }
