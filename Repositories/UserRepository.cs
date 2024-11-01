@@ -305,6 +305,11 @@ public class UserRepository(UserManager<User> userManager,
             // Datos del Contacto
             parameters.Add("@Email", model.User.Email, dbType: DbType.String, direction: ParameterDirection.Input);
 
+            // Datos de elegibilidad
+            parameters.Add("@NonProfit", model.Agency.NonProfit, dbType: DbType.Boolean, direction: ParameterDirection.Input);
+            parameters.Add("@FederalFundsDenied", model.Agency.FederalFundsDenied, dbType: DbType.Boolean, direction: ParameterDirection.Input);
+            parameters.Add("@StateFundsDenied", model.Agency.StateFundsDenied, dbType: DbType.Boolean, direction: ParameterDirection.Input);
+
             // Id de la Agencia
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 

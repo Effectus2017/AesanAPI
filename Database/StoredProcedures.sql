@@ -89,7 +89,7 @@ BEGIN
 END;
 
 GO
-ALTER PROCEDURE [100_InsertAgency]
+CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @Name NVARCHAR(MAX),
     @StatusId INT,
     @ProgramId INT,
@@ -109,13 +109,16 @@ ALTER PROCEDURE [100_InsertAgency]
     @Phone NVARCHAR(50),
     -- Datos del Contacto
     @Email NVARCHAR(255),
+    @NonProfit BIT,
+    @FederalFundsDenied BIT,
+    @StateFundsDenied BIT,
     @Id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Agency (Name, StatusId, ProgramId, SdrNumber, UieNumber, EinNumber, CityId, RegionId, Latitude, Longitude, Address, ZipCode, PostalAddress, Phone, Email)
-    VALUES (@Name, @StatusId, @ProgramId, @SdrNumber, @UieNumber, @EinNumber, @CityId, @RegionId, @Latitude, @Longitude, @Address, @ZipCode, @PostalAddress, @Phone, @Email);
+    INSERT INTO Agency (Name, StatusId, ProgramId, SdrNumber, UieNumber, EinNumber, CityId, RegionId, Latitude, Longitude, Address, ZipCode, PostalAddress, Phone, Email, NonProfit, FederalFundsDenied, StateFundsDenied)
+    VALUES (@Name, @StatusId, @ProgramId, @SdrNumber, @UieNumber, @EinNumber, @CityId, @RegionId, @Latitude, @Longitude, @Address, @ZipCode, @PostalAddress, @Phone, @Email, @NonProfit, @FederalFundsDenied, @StateFundsDenied);
 
     SET @Id = SCOPE_IDENTITY(); -- Obtener el ID de la agencia insertada
 END

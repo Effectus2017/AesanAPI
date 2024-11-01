@@ -26,4 +26,9 @@ public class AgencyRequest
     public int ZipCode { get; set; } = 0;
     public string PostalAddress { get; set; } = "";
     public string Phone { get; set; } = "";
+
+    // Nuevos campos de elegibilidad
+    public bool NonProfit { get; set; } = false;
+    public bool FederalFundsDenied { get; set; } = false;
+    public bool StateFundsDenied { get; set; } = false;
 }
