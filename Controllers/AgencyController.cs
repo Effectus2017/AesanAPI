@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Api.Controllers;
 
 [Route("agency")]
+#if !DEBUG
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyController> _logger = logger;
@@ -17,6 +22,9 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>Las agencias</returns>
     [HttpGet("get-all-agencies-from-db")]
     [SwaggerOperation(Summary = "Obtiene todas las agencias de la base de datos", Description = "Devuelve una lista de todas las agencias.")]
+#if !DEBUG
+    [Authorize]
+#endif
     public async Task<IActionResult> GetAllAgencies([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -52,6 +60,9 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>La agencia</returns>
     [HttpGet("get-agency-by-id")]
     [SwaggerOperation(Summary = "Obtiene una agencia por su ID", Description = "Devuelve una agencia basada en el ID proporcionado.")]
+#if !DEBUG
+    [Authorize]
+#endif
     public async Task<IActionResult> GetAgencyById([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -90,6 +101,9 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>Los estados de la agencia</returns>
     [HttpGet("get-all-agency-status-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los estados de la agencia", Description = "Devuelve todos los estados de la agencia.")]
+#if !DEBUG
+    [Authorize]
+#endif
     public async Task<IActionResult> GetAllAgencyStatus([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -117,4 +131,30 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
     }
 
+    /// <summary>
+    /// Actualiza el estado de una agencia
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-agency-status")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<IActionResult> UpdateAgencyStatus([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId ?? 0, queryParameters.StatusId ?? 0));
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el estado de la agencia");
+            return StatusCode(500, "Error al actualizar el estado de la agencia");
+        }
+    }
 }

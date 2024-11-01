@@ -61,33 +61,6 @@ BEGIN
     FROM Region
     WHERE Id = @regionId;
 END;
-
-GO
-CREATE PROCEDURE [100_GetPrograms]
-    @take INT,
-    @skip INT,
-    @name VARCHAR(255),
-    @alls BIT
-AS
-BEGIN
-    SELECT Id, Name, Description
-    FROM Program
-    WHERE (@alls = 1) 
-    OR (
-        (@name IS NULL OR Name LIKE '%' + @name + '%')
-    )
-    ORDER BY Id
-    OFFSET @skip ROWS
-    FETCH NEXT @take ROWS ONLY;
-
-    SELECT COUNT(*) AS TotalCount
-    FROM Program
-    WHERE (@alls = 1) 
-    OR (
-        (@name IS NULL OR Name LIKE '%' + @name + '%')
-    );
-END;
-
 GO
 CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @Name NVARCHAR(MAX),
@@ -276,5 +249,51 @@ BEGIN
     OR (
         (@name IS NULL OR Name LIKE '%' + @name + '%')
     );
+END;
+GO
+ALTER PROCEDURE [100_GetPrograms]
+    @take INT,
+    @skip INT,
+    @name VARCHAR(255),
+    @alls BIT
+AS
+BEGIN
+    SELECT Id, Name, Description
+    FROM Program
+    WHERE (@alls = 1) 
+    OR (
+        (@name IS NULL OR Name LIKE '%' + @name + '%')
+        AND Name <> 'AESAN'
+    )
+    ORDER BY Id
+    OFFSET @skip ROWS
+    FETCH NEXT @take ROWS ONLY;
+
+    SELECT COUNT(*) AS TotalCount
+    FROM Program
+    WHERE (@alls = 1) 
+    OR (
+        (@name IS NULL OR Name LIKE '%' + @name + '%')
+        AND Name <> 'AESAN'
+    );
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [100_InsertTemporaryPassword]
+    @UserId NVARCHAR(450),
+    @TemporaryPassword NVARCHAR(256)
+AS
+BEGIN
+    INSERT INTO TemporaryPasswords (UserId, TemporaryPassword, CreatedAt)
+    VALUES (@UserId, @TemporaryPassword, GETDATE());
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [100_DeleteTemporaryPassword]
+    @UserId NVARCHAR(450)
+AS
+BEGIN
+    DELETE FROM TemporaryPasswords
+    WHERE UserId = @UserId;
 END;
 GO

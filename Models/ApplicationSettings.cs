@@ -20,10 +20,15 @@ public class ApplicationSettings
     public string LocalWebURL { get; set; } = "";
     public string StagingWebURL { get; set; } = "";
     public string ProduccionWebURL { get; set; } = "";
+    // Gmail settings
+    public GmailSettings Gmail { get; set; } = new GmailSettings();
+}
 
+public class GmailSettings
+{
+    public string EmailFrom { get; set; } = "";
     public string SmtpServer { get; set; } = "";
     public int SmtpServerPort { get; set; } = 0;
     public string SmtpUser { get; set; } = "";
     public string SmtpPass { get; set; } = "";
 }
-

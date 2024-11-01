@@ -24,6 +24,9 @@ INSERT INTO AgencyStatus (Name) VALUES ('Orientación');
 INSERT INTO AgencyStatus (Name) VALUES ('Visita Pre-operacional');
 INSERT INTO AgencyStatus (Name) VALUES ('No cumple con los requisitos');
 INSERT INTO AgencyStatus (Name) VALUES ('Cumple con los requisitos');
+INSERT INTO AgencyStatus (Name) VALUES ('Rechazado');
+INSERT INTO AgencyStatus (Name) VALUES ('Aprobado');
+
 
 -- Agencias Auspiciadoras (Sponsoring Agencies)
 CREATE TABLE Agency (
@@ -37,7 +40,8 @@ CREATE TABLE Agency (
     UieNumber INT NOT NULL,
     EinNumber INT NOT NULL,
     Address NVARCHAR(255) NOT NULL,
-    PostalCode INT NOT NULL,
+    ZipCode INT NOT NULL,
+    PostalAddress NVARCHAR(255) NOT NULL,
     Latitude FLOAT NOT NULL,
     Longitude FLOAT NOT NULL,
     Phone NVARCHAR(20) NOT NULL,
@@ -48,6 +52,25 @@ CREATE TABLE Agency (
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
     FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id),
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
+);
+
+-- Insertar la agencia AESAN por defecto
+INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, ZipCode, PostalAddress, Latitude, Longitude, Phone, Email) VALUES (
+    'AESAN',
+    5, -- Status "Cumple con los requisitos"
+    1, -- Ciudad por defecto
+    1, -- Región por defecto  
+    7, -- Programa AESAN
+    123456,
+    123456,
+    123456,
+    'Calle Principal #123',
+    00123, 
+    'Calle Principal #123',
+    18.220833, 
+    -66.590149, 
+    '787-123-4567', 
+    'admin@aesan.pr.gov'
 );
 
 -- Programas de AESAN, agregar un id de registro unico entre programa y agencia
@@ -63,6 +86,7 @@ INSERT INTO Program (Name, Description) VALUES ('PACNA', 'Programa de Alimentos 
 INSERT INTO Program (Name, Description) VALUES ('PFHF', 'Programa de Frutas y Hortalizas Frescas');
 INSERT INTO Program (Name, Description) VALUES ('PAF', 'Programa de Distribución de Alimentos Federales');
 INSERT INTO Program (Name, Description) VALUES ('PDFE', 'Programa de la Finca a la Escuela');
+INSERT INTO Program (Name, Description) VALUES ('AESAN', 'Agencia de Servicios de Alimentos Nutritivos');
 
 
 -- Asignación de programas a agencias
@@ -147,6 +171,15 @@ CREATE TABLE AspNetUserLogins (
     PRIMARY KEY (LoginProvider, ProviderKey),
     FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id)
 );
+
+-- Crear tabla para almacenar contraseñas temporales sin restricciones de clave foránea
+CREATE TABLE TemporaryPasswords (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId NVARCHAR(450) NOT NULL,
+    TemporaryPassword NVARCHAR(256) NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+);
+
 
 INSERT INTO City (name) VALUES
 ('Arecibo'),

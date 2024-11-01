@@ -218,4 +218,29 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
             throw new Exception(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Actualiza el estado de una agencia
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia</param>
+    /// <param name="statusId">Id del nuevo estado</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId)
+    {
+        try
+        {
+            _logger.LogInformation($"Actualizando estado de la agencia {agencyId} a {statusId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new { agencyId, statusId };
+            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            return rowsAffected > 0;
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el estado de la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
 }
