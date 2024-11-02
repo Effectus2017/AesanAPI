@@ -61,6 +61,7 @@ BEGIN
     FROM Region
     WHERE Id = @regionId;
 END;
+-- 
 GO
 CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @Name NVARCHAR(MAX),
@@ -85,19 +86,23 @@ CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @NonProfit BIT,
     @FederalFundsDenied BIT,
     @StateFundsDenied BIT,
+    -- Justificación para rechazo
+    @RejectionJustification NVARCHAR(MAX),
+    -- Imágen - Logo
+    @ImageURL NVARCHAR(MAX),
     @Id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Agency (Name, StatusId, ProgramId, SdrNumber, UieNumber, EinNumber, CityId, RegionId, Latitude, Longitude, Address, ZipCode, PostalAddress, Phone, Email, NonProfit, FederalFundsDenied, StateFundsDenied)
-    VALUES (@Name, @StatusId, @ProgramId, @SdrNumber, @UieNumber, @EinNumber, @CityId, @RegionId, @Latitude, @Longitude, @Address, @ZipCode, @PostalAddress, @Phone, @Email, @NonProfit, @FederalFundsDenied, @StateFundsDenied);
+    INSERT INTO Agency (Name, StatusId, ProgramId, SdrNumber, UieNumber, EinNumber, CityId, RegionId, Latitude, Longitude, Address, ZipCode, PostalAddress, Phone, Email, NonProfit, FederalFundsDenied, StateFundsDenied, RejectionJustification, ImageURL)
+    VALUES (@Name, @StatusId, @ProgramId, @SdrNumber, @UieNumber, @EinNumber, @CityId, @RegionId, @Latitude, @Longitude, @Address, @ZipCode, @PostalAddress, @Phone, @Email, @NonProfit, @FederalFundsDenied, @StateFundsDenied, @RejectionJustification, @ImageURL);
 
     SET @Id = SCOPE_IDENTITY(); -- Obtener el ID de la agencia insertada
 END
 GO
 
-CREATE PROCEDURE [100_GetAgencies]
+CREATE OR ALTER PROCEDURE [100_GetAgencies]
     @take INT,
     @skip INT,
     @name VARCHAR(255),
@@ -143,7 +148,11 @@ BEGIN
         u.Email,
         -- Auditoría
         a.CreatedAt,
-        a.UpdatedAt
+        a.UpdatedAt,
+        -- Imágen - Logo
+        a.ImageURL,
+        -- Justificación para rechazo
+        a.RejectionJustification
     FROM Agency a
         LEFT JOIN City c ON a.CityId = c.Id
         LEFT JOIN Region r ON a.RegionId = r.Id
@@ -176,7 +185,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [100_GetAgencyById] 
+CREATE OR ALTER PROCEDURE [100_GetAgencyById] 
     @Id INT
 AS
 BEGIN
@@ -215,7 +224,11 @@ BEGIN
         u.Email,
         -- Auditoría
         a.CreatedAt,
-        a.UpdatedAt
+        a.UpdatedAt,
+        -- Imágen - Logo
+        a.ImageURL,
+        -- Justificación para rechazo
+        a.RejectionJustification
     FROM Agency a
         LEFT JOIN City c ON a.CityId = c.Id
         LEFT JOIN Region r ON a.RegionId = r.Id
@@ -297,3 +310,109 @@ BEGIN
     WHERE UserId = @UserId;
 END;
 GO
+
+CREATE OR ALTER PROCEDURE [100_UpdateAgency]
+    @AgencyId INT,
+    @Name NVARCHAR(MAX),
+    @StatusId INT,
+    @ProgramId INT,
+    -- Datos de la Agencia
+    @SdrNumber NVARCHAR(255),
+    @UieNumber NVARCHAR(255),
+    @EinNumber NVARCHAR(255),
+    -- Datos de la Ciudad y Región
+    @CityId INT,
+    @RegionId INT,
+    @Latitude FLOAT = NULL,
+    @Longitude FLOAT = NULL,
+    -- Dirección y Teléfono
+    @Address NVARCHAR(255),
+    @ZipCode INT,
+    @PostalAddress NVARCHAR(255),
+    @Phone NVARCHAR(50),
+    -- Datos del Contacto
+    @Email NVARCHAR(255),
+    -- Imágen - Logo
+    @ImageURL NVARCHAR(MAX) = NULL,
+    -- Justificación para rechazo
+    @RejectionJustification NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @rowsAffected INT;
+
+    UPDATE Agency
+    SET 
+        Name = @Name,
+        StatusId = @StatusId,
+        ProgramId = @ProgramId,
+        SdrNumber = @SdrNumber,
+        UieNumber = @UieNumber,
+        EinNumber = @EinNumber,
+        CityId = @CityId,
+        RegionId = @RegionId,
+        Latitude = CASE WHEN @Latitude IS NOT NULL THEN @Latitude ELSE Latitude END,
+        Longitude = CASE WHEN @Longitude IS NOT NULL THEN @Longitude ELSE Longitude END,
+        Address = @Address,
+        ZipCode = @ZipCode,
+        PostalAddress = @PostalAddress,
+        Phone = @Phone,
+        Email = @Email,
+        ImageURL = CASE WHEN @ImageURL IS NOT NULL THEN @ImageURL ELSE ImageURL END,
+        -- Justificación para rechazo
+        RejectionJustification = CASE WHEN @RejectionJustification IS NOT NULL THEN @RejectionJustification ELSE RejectionJustification END
+    WHERE Id = @AgencyId;
+
+     -- Obtiene el número de filas afectadas
+    SET @rowsAffected = @@ROWCOUNT;
+    -- Retorna 1 si se actualizó al menos una fila, 0 si no
+    RETURN CASE WHEN @rowsAffected > 0 THEN 1 ELSE 0 END;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [100_UpdateAgencyLogo]
+    @AgencyId INT,
+    @ImageUrl NVARCHAR(MAX) -- Nueva URL de la imagen
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @rowsAffected INT;
+
+    -- Actualizar la URL de la imagen
+    UPDATE Agency
+    SET 
+        ImageURL = @ImageUrl,
+        UpdatedAt = GETDATE()
+    WHERE Id = @AgencyId;
+
+    -- Obtiene el número de filas afectadas
+    SET @rowsAffected = @@ROWCOUNT;
+
+    -- Retorna 1 si se actualizó al menos una fila, 0 si no
+    RETURN CASE WHEN @rowsAffected > 0 THEN 1 ELSE 0 END;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[100_UpdateAgencyStatus]
+    @agencyId INT,
+    @statusId INT,
+    @rejectionJustification NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @rowsAffected INT;
+
+    -- Actualiza el estado de la agencia
+    UPDATE Agency
+    SET 
+        StatusId = @statusId,
+        RejectionJustification = @rejectionJustification,
+        UpdatedAt = GETDATE()
+    WHERE Id = @agencyId;
+
+    -- Obtiene el número de filas afectadas
+    SET @rowsAffected = @@ROWCOUNT;
+
+    -- Retorna 1 si se actualizó al menos una fila, 0 si no
+    RETURN CASE WHEN @rowsAffected > 0 THEN 1 ELSE 0 END;
+END;

@@ -55,6 +55,8 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 // Datos del Contacto
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
+                // Imágen - Logo
+                ImageURL = item.ImageURL,
                 // Relaciones
                 Program = new DTOProgram
                 {
@@ -181,6 +183,8 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 Email = result.Email,
                 CreatedAt = result.CreatedAt,
                 UpdatedAt = result.UpdatedAt,
+                // Imágen - Logo
+                ImageURL = result.ImageURL,
                 // Relaciones
                 Program = new DTOProgram
                 {
@@ -219,21 +223,93 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
         }
     }
 
+
+    /// <summary>
+    /// Actualiza los datos de una agencia
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia a actualizar</param>
+    /// <param name="agencyRequest">Objeto con los nuevos datos de la agencia</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateAgency(int agencyId, AgencyRequest agencyRequest)
+    {
+        try
+        {
+            _logger.LogInformation($"Actualizando agencia {agencyId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@ProgramId", agencyRequest.ProgramId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@EinNumber", agencyRequest.EinNumber, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@CityId", agencyRequest.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@RegionId", agencyRequest.RegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@Latitude", agencyRequest.Latitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@Longitude", agencyRequest.Longitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@Address", agencyRequest.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@PostalAddress", agencyRequest.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Phone", agencyRequest.Phone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ImageUrl", agencyRequest.ImageUrl, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
+
+            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Cambia el logo de una agencia
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia</param>
+    /// <param name="imageUrl">Nueva URL de la imagen</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateAgencyLogo(int agencyId, string imageUrl)
+    {
+        try
+        {
+            _logger.LogInformation($"Actualizando logo de la agencia {agencyId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@ImageUrl", imageUrl, DbType.String, ParameterDirection.Input);
+
+            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgencyLogo", parameters, commandType: CommandType.StoredProcedure);
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el logo de la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+
     /// <summary>
     /// Actualiza el estado de una agencia
     /// </summary>
     /// <param name="agencyId">Id de la agencia</param>
     /// <param name="statusId">Id del nuevo estado</param>
+    /// <param name="rejectionJustification">Justificación para rechazo</param>
     /// <returns>True si se actualizó correctamente</returns>
-    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId)
+    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string rejectionJustification)
     {
         try
         {
             _logger.LogInformation($"Actualizando estado de la agencia {agencyId} a {statusId}");
 
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { agencyId, statusId };
-            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            var parameters = new { agencyId, statusId, rejectionJustification };
+            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             return rowsAffected > 0;
 
         }

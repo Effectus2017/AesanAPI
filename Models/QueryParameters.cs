@@ -12,4 +12,6 @@ public class QueryParameters
     public int? ProgramId { get; set; } // ID del programa
     public int? StatusId { get; set; } // ID del estado
     public int? AgencyId { get; set; } // ID de la agencia
+    public string? ImageUrl { get; set; } // URL de la imagen
+    public string? RejectionJustification { get; set; } // Justification for rejection
 }

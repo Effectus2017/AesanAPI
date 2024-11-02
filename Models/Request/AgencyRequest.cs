@@ -27,6 +27,10 @@ public class AgencyRequest
     public string PostalAddress { get; set; } = "";
     public string Phone { get; set; } = "";
 
+    // Imágen - Logo
+    public string? ImageUrl { get; set; }
+    public string? Email { get; set; }
+    public string? AdministrationTitle { get; set; }
     // Nuevos campos de elegibilidad
     public bool NonProfit { get; set; } = false;
     public bool FederalFundsDenied { get; set; } = false;

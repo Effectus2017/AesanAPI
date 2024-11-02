@@ -51,7 +51,6 @@ public class UserRepository(UserManager<User> userManager,
         }
     }
 
-
     /// <summary>
     /// Obtiene todos los usuarios de la base de datos
     /// </summary>
@@ -167,14 +166,19 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedResult();
             }
 
-            var roles = await _userManager.GetRolesAsync(_user);
-
             var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
 
             if (!passwordValid)
             {
                 return new UnauthorizedResult();
             }
+
+#if !DEBUG
+            if (!_user.IsActive)
+            {
+                return new BadRequestObjectResult(new { Message = "El usuario está deshabilitado." });
+            }
+#endif
 
 #if !DEBUG
             if (!_user.EmailConfirmed)
@@ -187,6 +191,9 @@ public class UserRepository(UserManager<User> userManager,
 
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
             var days = 2;
+
+            // Obtener los roles del usuario
+            var roles = await _userManager.GetRolesAsync(_user);
 
             _logger.LogInformation("Obteniendo la agencia del usuario");
             // Obtener la agencia del usuario
@@ -273,6 +280,7 @@ public class UserRepository(UserManager<User> userManager,
                 MotherLastName = model.User.MotherLastName,
                 AdministrationTitle = model.User.AdministrationTitle,
                 PhoneNumber = model.User.PhoneNumber,
+                IsActive = true,
                 EmailConfirmed = false // Podría ser false si se requiere confirmación por correo
             };
 
@@ -429,6 +437,9 @@ public class UserRepository(UserManager<User> userManager,
         }
     }
 
+    /// ------------------------------------------------------------------------------------------------
+    /// Métodos para cambiar la contraseña y actualizar el avatar
+    /// ------------------------------------------------------------------------------------------------
 
     /// <summary>
     /// Cambia la contraseña de un usuario
@@ -507,6 +518,7 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             user.ImageURL = imageUrl;
+            user.UpdatedAt = DateTimeOffset.Now;
 
             var result = await _userManager.UpdateAsync(user);
 
@@ -521,6 +533,40 @@ public class UserRepository(UserManager<User> userManager,
         {
             _logger.LogError(ex, "Error al actualizar el avatar del usuario");
             return new BadRequestObjectResult(new { Message = "Error al actualizar el avatar", Error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Deshabilita un usuario por su ID
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    /// <returns>El resultado de la operación</returns>
+    public async Task<dynamic> DisableUser(string userId)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
+            }
+
+            user.IsActive = false; // Deshabilitar el usuario
+            user.UpdatedAt = DateTimeOffset.Now;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                return new BadRequestObjectResult(result.Errors);
+            }
+
+            return new OkObjectResult(new { Message = "Usuario deshabilitado exitosamente" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al deshabilitar el usuario");
+            return new BadRequestObjectResult(new { Message = "Error al deshabilitar el usuario", Error = ex.Message });
         }
     }
 
@@ -546,6 +592,10 @@ public class UserRepository(UserManager<User> userManager,
             throw new Exception(ex.Message);
         }
     }
+
+    /// ------------------------------------------------------------------------------------------------
+    /// Métodos para insertar y eliminar contraseñas temporales
+    /// ------------------------------------------------------------------------------------------------
 
     /// <summary>
     /// Inserta una contraseña temporal en la base de datos

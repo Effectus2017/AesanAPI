@@ -28,6 +28,9 @@ public class DTOAgency
     public DateTime? CreatedAt { get; set; } = DateTime.Now;
     public DateTime? UpdatedAt { get; set; } = DateTime.Now;
 
+    // Imágen - Logo
+    public string ImageURL { get; set; } = "";
+
     // Relaciones
     public DTOCity City { get; set; } = new DTOCity();
     public DTORegion Region { get; set; } = new DTORegion();

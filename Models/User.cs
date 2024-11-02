@@ -10,8 +10,9 @@ public class User : IdentityUser
     public string? FatherLastName { get; set; } = "";
     public string? MotherLastName { get; set; } = "";
     public string? AdministrationTitle { get; set; } = "";
-    public string ImageURL { get; set; } = "";
-    public bool Enabled { get; set; } = true;
+    public string? ImageURL { get; set; } = "";
+    public bool IsActive { get; set; } = true;
+    public DateTimeOffset? UpdatedAt { get; set; } = null;
     public virtual ICollection<UserRole> UserRoles { get; set; } = [];
 }
 

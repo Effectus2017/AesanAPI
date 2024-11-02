@@ -46,6 +46,8 @@ CREATE TABLE Agency (
     Longitude FLOAT NOT NULL,
     Phone NVARCHAR(20) NOT NULL,
     Email NVARCHAR(255) NOT NULL,
+    ImageURL NVARCHAR(MAX) NULL,
+    RejectionJustification NVARCHAR(MAX) NULL,  
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (CityId) REFERENCES City(Id),
@@ -54,8 +56,13 @@ CREATE TABLE Agency (
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
 );
 
+
+
+
+
+
 -- Insertar la agencia AESAN por defecto
-INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, ZipCode, PostalAddress, Latitude, Longitude, Phone, Email) VALUES (
+INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, ZipCode, PostalAddress, Latitude, Longitude, Phone, Email, ImageURL) VALUES (
     'AESAN',
     5, -- Status "Cumple con los requisitos"
     1, -- Ciudad por defecto
@@ -70,7 +77,8 @@ INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieN
     18.220833, 
     -66.590149, 
     '787-123-4567', 
-    'admin@aesan.pr.gov'
+    'admin@aesan.pr.gov',
+    NULL
 );
 
 -- Programas de AESAN, agregar un id de registro unico entre programa y agencia
@@ -122,6 +130,7 @@ CREATE TABLE AspNetUsers (
     MotherLastName NVARCHAR(100) NOT NULL,
     AdministrationTitle NVARCHAR(100) NOT NULL,
     ImageURL NVARCHAR(MAX) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)

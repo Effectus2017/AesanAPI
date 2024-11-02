@@ -131,6 +131,64 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
     }
 
+
+    /// <summary>
+    /// Actualiza una agencia
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta</param>
+    /// <param name="agencyRequest">El modelo de la agencia a actualizar</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-agency")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<IActionResult> UpdateAgency([FromQuery] QueryParameters queryParameters, [FromBody] AgencyRequest agencyRequest)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId ?? 0, agencyRequest);
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la agencia");
+            return StatusCode(500, "Error al actualizar la agencia");
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el logo de una agencia
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-agency-logo")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<IActionResult> UpdateAgencyLogo([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _unitOfWork.AgencyRepository.UpdateAgencyLogo(queryParameters.AgencyId ?? 0, queryParameters.ImageUrl ?? "");
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el logo de la agencia");
+            return StatusCode(500, "Error al actualizar el logo de la agencia");
+        }
+    }
+
     /// <summary>
     /// Actualiza el estado de una agencia
     /// </summary>
@@ -146,7 +204,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId ?? 0, queryParameters.StatusId ?? 0));
+                return Ok(await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId ?? 0, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? ""));
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
