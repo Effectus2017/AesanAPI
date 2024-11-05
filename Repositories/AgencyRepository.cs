@@ -11,6 +11,126 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
     private readonly ILogger<AgencyRepository> _logger = logger;
 
     /// <summary>
+    /// Obtiene una agencia por su ID
+    /// </summary>
+    /// <param name="id">El ID de la agencia</param>
+    /// <returns>La agencia</returns>
+    public async Task<dynamic> GetAgencyById(int id)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo agencia por ID: {Id}", id);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var param = new { Id = id };
+
+            var result = await dbConnection.QueryMultipleAsync("100_GetAgencyById", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            // Obtener los datos de la agencia
+            var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+
+            if (_agencyResult == null)
+            {
+                return null;
+            }
+
+            var agency = new DTOAgency
+            {
+                Id = _agencyResult.Id,
+                Name = _agencyResult.Name,
+                StatusId = _agencyResult.StatusId,
+                // Datos de la Agencia
+                SdrNumber = _agencyResult.SdrNumber,
+                UieNumber = _agencyResult.UieNumber,
+                EinNumber = _agencyResult.EinNumber,
+                // Dirección y Teléfono
+                Address = _agencyResult.Address,
+                ZipCode = _agencyResult.ZipCode ?? 0,
+                // Dirección Postal
+                PostalAddress = _agencyResult.PostalAddress,
+                PostalZipCode = _agencyResult.PostalZipCode ?? 0,
+                // Teléfono
+                Phone = _agencyResult.Phone,
+                // Coordenadas
+                Latitude = _agencyResult.Latitude,
+                Longitude = _agencyResult.Longitude,
+                // Datos del Contacto
+                Email = _agencyResult.Email,
+                CreatedAt = _agencyResult.CreatedAt,
+                UpdatedAt = _agencyResult.UpdatedAt,
+                // Imágen - Logo
+                ImageURL = _agencyResult.ImageURL,
+                // Relaciones
+                City = new DTOCity
+                {
+                    Id = _agencyResult.CityId,
+                    Name = _agencyResult.CityName
+                },
+                Region = new DTORegion
+                {
+                    Id = _agencyResult.RegionId,
+                    Name = _agencyResult.RegionName
+                },
+                // Dirección Postal
+                PostalCity = _agencyResult.PostalCityId != null ? new DTOCity
+                {
+                    Id = _agencyResult.PostalCityId,
+                    Name = _agencyResult.PostalCityName
+                } : null,
+                PostalRegion = _agencyResult.PostalRegionId != null ? new DTORegion
+                {
+                    Id = _agencyResult.PostalRegionId,
+                    Name = _agencyResult.PostalRegionName
+                } : null,
+                // Estatus
+                Status = new DTOAgencyStatus
+                {
+                    Id = _agencyResult.StatusId,
+                    Name = _agencyResult.StatusName
+                },
+                // Usuario
+                User = new DTOUser
+                {
+                    FirstName = _agencyResult.FirstName,
+                    MiddleName = _agencyResult.MiddleName,
+                    FatherLastName = _agencyResult.FatherLastName,
+                    MotherLastName = _agencyResult.MotherLastName,
+                    AdministrationTitle = _agencyResult.AdministrationTitle
+                }
+            };
+
+            var _agenciesPrograms = await result.ReadAsync<dynamic>();
+
+            if (_agenciesPrograms.Any())
+            {
+                // Obtener los programas de la agencia
+                var programs = _agenciesPrograms.Select(item => new DTOProgram
+                {
+                    Id = item.Id,
+                    Name = item.Name,
+                    Description = item.Description
+                }).ToList();
+
+                // Asignar los programas a la agencia
+                agency.Programs = programs;
+            }
+
+            return agency;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
     /// <param name="take">El número de agencias a obtener</param>
@@ -35,6 +155,7 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 return null;
             }
 
+            // Obtener las agencias
             var agencies = result.Read<dynamic>().Select(item => new DTOAgency
             {
                 Id = item.Id,
@@ -47,22 +168,20 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 // Dirección y Teléfono
                 Address = item.Address,
                 ZipCode = item.ZipCode,
-                PostalAddress = item.PostalAddress,
-                Phone = item.Phone,
                 // Coordenadas
                 Latitude = item.Latitude,
                 Longitude = item.Longitude,
+                // Dirección Postal
+                PostalAddress = item.PostalAddress,
+                PostalZipCode = item.PostalZipCode ?? 0,
+                // Teléfono
+                Phone = item.Phone,
                 // Datos del Contacto
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
                 // Imágen - Logo
                 ImageURL = item.ImageURL,
                 // Relaciones
-                Program = new DTOProgram
-                {
-                    Id = item.ProgramId,
-                    Name = item.ProgramName
-                },
                 City = new DTOCity
                 {
                     Id = item.CityId,
@@ -72,6 +191,16 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 {
                     Id = item.RegionId,
                     Name = item.RegionName
+                },
+                PostalCity = new DTOCity
+                {
+                    Id = item.PostalCityId,
+                    Name = item.PostalCityName
+                },
+                PostalRegion = new DTORegion
+                {
+                    Id = item.PostalRegionId,
+                    Name = item.PostalRegionName
                 },
                 Status = new DTOAgencyStatus
                 {
@@ -88,8 +217,30 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 }
             }).ToList();
 
+            // Obtener los programas de las agencias
+            var _agenciesPrograms = await result.ReadAsync<dynamic>();
+
+            // Asignar los programas a las agencias
+            if (_agenciesPrograms.Any())
+            {
+
+                foreach (var agency in agencies)
+                {
+                    // Obtener los programas de la agencia
+                    agency.Programs = _agenciesPrograms.Where(ap => ap.AgencyId == agency.Id).Select(ap => new DTOProgram
+                    {
+                        Id = ap.Id,
+                        Name = ap.Name,
+                        Description = ap.Description
+                    }).ToList();
+                }
+
+            }
+
+            // Obtener el conteo de agencias
             var count = result.Read<int>().Single();
 
+            // Retornar las agencias y el conteo
             return new { data = agencies, count };
         }
         catch (Exception ex)
@@ -140,89 +291,80 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
         }
     }
 
+
     /// <summary>
-    /// Obtiene una agencia por su ID
+    /// Inserta una nueva agencia en la base de datos
     /// </summary>
-    /// <param name="id">El ID de la agencia</param>
-    /// <returns>La agencia</returns>
-    public async Task<dynamic> GetAgencyById(int id)
+    /// <param name="agencyRequest">Objeto con los datos de la agencia a insertar</param>
+    /// <returns>El ID de la agencia insertada</returns>
+    public async Task<int> InsertAgency(AgencyRequest agencyRequest)
     {
         try
         {
-            _logger.LogInformation("Obteniendo agencia por ID: {Id}", id);
-
             using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@EinNumber", agencyRequest.EinNumber, DbType.Int32, ParameterDirection.Input);
+            // Dirección Física
+            parameters.Add("@Address", agencyRequest.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@CityId", agencyRequest.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@RegionId", agencyRequest.RegionId, DbType.Int32, ParameterDirection.Input);
+            // Coordenadas
+            parameters.Add("@Latitude", agencyRequest.Latitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@Longitude", agencyRequest.Longitude, DbType.Double, ParameterDirection.Input);
+            // Dirección Postal
+            parameters.Add("@PostalAddress", agencyRequest.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@PostalCityId", agencyRequest.PostalCityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId, DbType.Int32, ParameterDirection.Input);
+            // Teléfono
+            parameters.Add("@Phone", agencyRequest.Phone, DbType.String, ParameterDirection.Input);
+            // Datos del Contacto
+            parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
+            // Datos de elegibilidad
+            parameters.Add("@NonProfit", agencyRequest.NonProfit, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            var param = new { Id = id };
+            var rowsAffected = await dbConnection.ExecuteAsync("100_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetAgencyById", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            return new DTOAgency
-            {
-                Id = result.Id,
-                Name = result.Name,
-                StatusId = result.StatusId,
-                // Datos de la Agencia
-                SdrNumber = result.SdrNumber,
-                UieNumber = result.UieNumber,
-                EinNumber = result.EinNumber,
-                // Dirección y Teléfono
-                Address = result.Address,
-                ZipCode = result.ZipCode,
-                PostalAddress = result.PostalAddress,
-                Phone = result.Phone,
-                // Coordenadas
-                Latitude = result.Latitude,
-                Longitude = result.Longitude,
-                // Datos del Contacto
-                Email = result.Email,
-                CreatedAt = result.CreatedAt,
-                UpdatedAt = result.UpdatedAt,
-                // Imágen - Logo
-                ImageURL = result.ImageURL,
-                // Relaciones
-                Program = new DTOProgram
-                {
-                    Id = result.ProgramId,
-                    Name = result.ProgramName
-                },
-                City = new DTOCity
-                {
-                    Id = result.CityId,
-                    Name = result.CityName
-                },
-                Region = new DTORegion
-                {
-                    Id = result.RegionId,
-                    Name = result.RegionName
-                },
-                Status = new DTOAgencyStatus
-                {
-                    Id = result.StatusId,
-                    Name = result.StatusName
-                },
-                User = new DTOUser
-                {
-                    FirstName = result.FirstName,
-                    MiddleName = result.MiddleName,
-                    FatherLastName = result.FatherLastName,
-                    MotherLastName = result.MotherLastName,
-                    AdministrationTitle = result.AdministrationTitle
-                }
-            };
+            // Obtener el ID de la agencia insertada
+            int agencyId = parameters.Get<int>("@Id");
+            return agencyId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la agencia");
+            _logger.LogError(ex, "Error al insertar la agencia");
             throw new Exception(ex.Message);
         }
     }
 
+    /// <summary>
+    /// Inserta un programa de agencia
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia</param>
+    /// <param name="programId">Id del programa</param>
+    /// <returns>True si se insertó correctamente</returns>
+    public async Task<bool> InsertAgencyProgram(int agencyId, int programId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new { AgencyId = agencyId, ProgramId = programId };
+            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_InsertAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar el programa de la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
 
     /// <summary>
     /// Actualiza los datos de una agencia
@@ -242,19 +384,28 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
             parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
             parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@ProgramId", agencyRequest.ProgramId, DbType.Int32, ParameterDirection.Input);
+            //parameters.Add("@ProgramId", agencyRequest.ProgramId, DbType.Int32, ParameterDirection.Input);
+            // Datos de la Agencia
             parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@EinNumber", agencyRequest.EinNumber, DbType.Int32, ParameterDirection.Input);
+            // Dirección Física
+            parameters.Add("@Address", agencyRequest.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@CityId", agencyRequest.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@RegionId", agencyRequest.RegionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@Latitude", agencyRequest.Latitude, DbType.Double, ParameterDirection.Input);
             parameters.Add("@Longitude", agencyRequest.Longitude, DbType.Double, ParameterDirection.Input);
-            parameters.Add("@Address", agencyRequest.Address, DbType.String, ParameterDirection.Input);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.Int32, ParameterDirection.Input);
+            // Dirección Postal
             parameters.Add("@PostalAddress", agencyRequest.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@PostalCityId", agencyRequest.PostalCityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId, DbType.Int32, ParameterDirection.Input);
+            // Teléfono
             parameters.Add("@Phone", agencyRequest.Phone, DbType.String, ParameterDirection.Input);
+            // Imágen - Logo
             parameters.Add("@ImageUrl", agencyRequest.ImageUrl, DbType.String, ParameterDirection.Input);
+            // Datos del Contacto
             parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
 
             var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);

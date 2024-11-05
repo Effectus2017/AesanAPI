@@ -225,7 +225,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="user">El usuario</param>
     /// <param name="roles">Los roles del usuario</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, DTOAgency agency)
     {
         try
         {
@@ -241,7 +241,7 @@ public class UserRepository(UserManager<User> userManager,
             claims.AddClaim(new Claim("lastName", user.FatherLastName ?? ""));
             claims.AddClaim(new Claim("email", user.Email ?? ""));
             claims.AddClaim(new Claim("agency", agency.Name ?? ""));
-            claims.AddClaim(new Claim("program", agency.Program.Name ?? ""));
+            claims.AddClaim(new Claim("programs", string.Join(",", agency.Programs.Select(p => p.Name))));
 
             return claims;
         }
@@ -307,52 +307,21 @@ public class UserRepository(UserManager<User> userManager,
                 await InsertTemporaryPassword(user.Id, temporaryPassword);
             }
 
-            // Parámetros para la inserción de la agencia
-            var parameters = new DynamicParameters();
-            parameters.Add("@Name", model.Agency.Name, dbType: DbType.String, direction: ParameterDirection.Input);
-            parameters.Add("@StatusId", model.Agency.StatusId, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@ProgramId", model.Agency.ProgramId, dbType: DbType.Int32, direction: ParameterDirection.Input);
+            // Insertar la agencia
+            int agencyId = await _agencyRepository.InsertAgency(model.Agency);
 
-            // Datos de la Agencia
-            parameters.Add("@SdrNumber", model.Agency.SdrNumber, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@UieNumber", model.Agency.UieNumber, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@EinNumber", model.Agency.EinNumber, dbType: DbType.Int32, direction: ParameterDirection.Input);
-
-            // Datos de la Ciudad y Región
-            parameters.Add("@CityId", model.Agency.CityId, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@RegionId", model.Agency.RegionId, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@Latitude", model.Agency.Latitude, dbType: DbType.Double, direction: ParameterDirection.Input);
-            parameters.Add("@Longitude", model.Agency.Longitude, dbType: DbType.Double, direction: ParameterDirection.Input);
-
-            // Dirección y Teléfono
-            parameters.Add("@Address", model.Agency.Address, dbType: DbType.String, direction: ParameterDirection.Input);
-            parameters.Add("@ZipCode", model.Agency.ZipCode, dbType: DbType.Int32, direction: ParameterDirection.Input);
-            parameters.Add("@PostalAddress", model.Agency.PostalAddress, dbType: DbType.String, direction: ParameterDirection.Input);
-            parameters.Add("@Phone", model.Agency.Phone, dbType: DbType.String, direction: ParameterDirection.Input);
-
-            // Datos del Contacto
-            parameters.Add("@Email", model.User.Email, dbType: DbType.String, direction: ParameterDirection.Input);
-
-            // Datos de elegibilidad
-            parameters.Add("@NonProfit", model.Agency.NonProfit, dbType: DbType.Boolean, direction: ParameterDirection.Input);
-            parameters.Add("@FederalFundsDenied", model.Agency.FederalFundsDenied, dbType: DbType.Boolean, direction: ParameterDirection.Input);
-            parameters.Add("@StateFundsDenied", model.Agency.StateFundsDenied, dbType: DbType.Boolean, direction: ParameterDirection.Input);
-
-            // Id de la Agencia
-            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-            // Insertar en la tabla Agency
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            await dbConnection.ExecuteAsync("100_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
-            // Obtener el ID de la agencia insertada
-            int agencyId = parameters.Get<int>("@Id");
-            // Si el ID de la agencia es 0, significa que hubo un error en la inserción
+            // Verificar si la agencia se insertó correctamente
             if (agencyId == 0)
             {
                 // Si falla la inserción, eliminar el usuario creado en Identity
                 await DeleteUserByEmail(model.User.Email);
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
+            }
+
+            // Insertar los programas de la agencia
+            foreach (var programId in model.Agency.Programs)
+            {
+                await _agencyRepository.InsertAgencyProgram(agencyId, programId);
             }
 
             // Actualizar el usuario con el ID de la agencia

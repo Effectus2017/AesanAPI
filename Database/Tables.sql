@@ -34,6 +34,8 @@ CREATE TABLE Agency (
     StatusId INT NOT NULL,
     CityId INT NOT NULL,
     RegionId INT NOT NULL,
+    PostalCityId INT NOT NULL,
+    PostalRegionId INT NOT NULL,
     ProgramId INT NOT NULL,
     Name NVARCHAR(255) NOT NULL,
     SdrNumber INT NOT NULL,
@@ -42,6 +44,7 @@ CREATE TABLE Agency (
     Address NVARCHAR(255) NOT NULL,
     ZipCode INT NOT NULL,
     PostalAddress NVARCHAR(255) NOT NULL,
+    PostalZipCode INT NOT NULL,
     Latitude FLOAT NOT NULL,
     Longitude FLOAT NOT NULL,
     Phone NVARCHAR(20) NOT NULL,
@@ -52,15 +55,9 @@ CREATE TABLE Agency (
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (CityId) REFERENCES City(Id),
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
-    FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id),
-    FOREIGN KEY (ProgramId) REFERENCES Program(Id)
+    FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id)
 );
-
-
-
-
-
-
+GO
 -- Insertar la agencia AESAN por defecto
 INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, ZipCode, PostalAddress, Latitude, Longitude, Phone, Email, ImageURL) VALUES (
     'AESAN',
@@ -105,6 +102,9 @@ CREATE TABLE AgencyProgram (
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
 );
 
+--INSERT INTO AgencyProgram (AgencyId, ProgramId) VALUES (1, 1);
+--INSERT INTO AgencyProgram (AgencyId, ProgramId) VALUES (1, 2);
+
 -- Crear tabla AspNetUsers
 CREATE TABLE AspNetUsers (
     Id NVARCHAR(450) NOT NULL PRIMARY KEY,
@@ -135,7 +135,7 @@ CREATE TABLE AspNetUsers (
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
-
+GO
 -- Crear tabla AspNetRoles
 CREATE TABLE AspNetRoles (
     Id NVARCHAR(450) NOT NULL PRIMARY KEY,

@@ -5,7 +5,6 @@ public class DTOAgency
     public int Id { get; set; } = 0;
     public int StatusId { get; set; } = 0;
     public string Name { get; set; } = "";
-
     // Datos de la Agencia
     public int SdrNumber { get; set; } = 0;
     public int UieNumber { get; set; } = 0;
@@ -13,8 +12,13 @@ public class DTOAgency
 
     // Datos de la Ciudad y Región
     public string Address { get; set; } = "";
-    public int ZipCode { get; set; } = 0;
+    public int? ZipCode { get; set; } = 0;
+
+    // Dirección Postal
     public string PostalAddress { get; set; } = "";
+    public int? PostalZipCode { get; set; } = 0;
+
+    // Teléfono
     public string Phone { get; set; } = "";
 
     // Coordenadas
@@ -34,7 +38,13 @@ public class DTOAgency
     // Relaciones
     public DTOCity City { get; set; } = new DTOCity();
     public DTORegion Region { get; set; } = new DTORegion();
+    // Dirección Postal
+    public DTOCity? PostalCity { get; set; } = new DTOCity();
+    public DTORegion? PostalRegion { get; set; } = new DTORegion();
+    // Estatus
     public DTOAgencyStatus Status { get; set; } = new DTOAgencyStatus();
-    public DTOProgram Program { get; set; } = new DTOProgram();
+    // Usuario
     public DTOUser User { get; set; } = new DTOUser();
+    // Programas
+    public List<DTOProgram> Programs { get; set; } = [];
 }
