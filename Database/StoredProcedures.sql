@@ -67,7 +67,6 @@ GO
 CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @Name NVARCHAR(MAX),
     @StatusId INT,
-    @ProgramId INT,
     -- Datos de la Agencia
     @SdrNumber NVARCHAR(255),
     @UieNumber NVARCHAR(255),
@@ -92,9 +91,9 @@ CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @FederalFundsDenied BIT,
     @StateFundsDenied BIT,
     -- Justificación para rechazo
-    @RejectionJustification NVARCHAR(MAX),
+    @RejectionJustification NVARCHAR(MAX) = NULL,
     -- Imágen - Logo
-    @ImageURL NVARCHAR(MAX),
+    @ImageURL NVARCHAR(MAX) = NULL,
     @Id INT OUTPUT
 AS
 BEGIN
@@ -103,8 +102,7 @@ BEGIN
     INSERT INTO Agency 
     (
         Name, 
-        StatusId, 
-        ProgramId, 
+        StatusId,
         SdrNumber, 
         UieNumber, 
         EinNumber, 
@@ -133,8 +131,7 @@ BEGIN
     VALUES 
     (
         @Name, 
-        @StatusId, 
-        @ProgramId, 
+        @StatusId,
         @SdrNumber, 
         @UieNumber, 
         @EinNumber, 
@@ -167,14 +164,14 @@ GO
 
 -- Procedimiento almacenado para insertar un programa de agencia
 CREATE OR ALTER PROCEDURE [100_InsertAgencyProgram]
-    @AgencyId INT,
-    @ProgramId INT
+    @agencyId INT,
+    @programId INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO AgencyPrograms (AgencyId, ProgramId)
-    VALUES (@AgencyId, @ProgramId);
+    INSERT INTO AgencyProgram (AgencyId, ProgramId)
+    VALUES (@agencyId, @programId);
 END
 GO
 
@@ -240,6 +237,7 @@ BEGIN
         AND (@cityId IS NULL OR a.CityId = @cityId)
         AND (@statusId IS NULL OR a.StatusId = @statusId)
     )
+    AND a.IsListable = 1
     ORDER BY a.Id
     OFFSET @skip ROWS
     FETCH NEXT @take ROWS ONLY;
@@ -248,7 +246,8 @@ BEGIN
     SELECT 
         p.Id,
         p.Name,
-        p.Description
+        p.Description,
+        ap.AgencyId
     FROM Program p
         INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
     WHERE ap.AgencyId IN (SELECT a.Id FROM Agency a WHERE (@alls = 1) 
@@ -268,7 +267,8 @@ BEGIN
         AND (@regionId IS NULL OR a.RegionId = @regionId)
         AND (@cityId IS NULL OR a.CityId = @cityId)
         AND (@statusId IS NULL OR a.StatusId = @statusId)
-    );
+    )
+    AND a.IsListable = 1;
 END;
 GO
 
@@ -311,9 +311,6 @@ BEGIN
         -- Estatus
         s.Id AS StatusId,
         s.Name AS StatusName,
-        -- Programa
-        p.Id AS ProgramId,
-        p.Name AS ProgramName,
         -- Datos del usuario administrador
         u.FirstName,
         u.MiddleName,
@@ -335,7 +332,6 @@ BEGIN
         LEFT JOIN City c ON a.CityId = c.Id
         LEFT JOIN Region r ON a.RegionId = r.Id
         LEFT JOIN AgencyStatus s ON a.StatusId = s.Id
-        LEFT JOIN Program p ON a.ProgramId = p.Id
         LEFT JOIN AspNetUsers u ON u.AgencyId = a.Id
     WHERE a.Id = @Id;
 
@@ -494,6 +490,43 @@ BEGIN
 
     -- Retorna 1 si se actualizó al menos una fila, 0 si no
     RETURN CASE WHEN @rowsAffected > 0 THEN 1 ELSE 0 END;
+END;
+GO
+
+-- Procedimiento almacenado para eliminar una agencia y sus programas asociados
+CREATE PROCEDURE [dbo].[100_DeleteAgency]
+    @agencyId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            
+        -- Primero eliminamos los programas asociados a la agencia
+        DELETE FROM AgencyProgram 
+        WHERE AgencyId = @AgencyId;
+            
+        -- Luego eliminamos la agencia
+        DELETE FROM Agency 
+        WHERE Id = @AgencyId;
+            
+        -- Retornamos el número de filas afectadas de la tabla Agencies
+        SELECT @@ROWCOUNT;
+            
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        -- Registrar el error y relanzarlo
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+        
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 GO
 

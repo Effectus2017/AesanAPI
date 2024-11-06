@@ -192,16 +192,16 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                     Id = item.RegionId,
                     Name = item.RegionName
                 },
-                PostalCity = new DTOCity
+                PostalCity = item.PostalCityId != null ? new DTOCity
                 {
                     Id = item.PostalCityId,
                     Name = item.PostalCityName
-                },
-                PostalRegion = new DTORegion
+                } : null,
+                PostalRegion = item.PostalRegionId != null ? new DTORegion
                 {
                     Id = item.PostalRegionId,
                     Name = item.PostalRegionName
-                },
+                } : null,
                 Status = new DTOAgencyStatus
                 {
                     Id = item.StatusId,
@@ -214,7 +214,7 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                     FatherLastName = item.FatherLastName,
                     MotherLastName = item.MotherLastName,
                     AdministrationTitle = item.AdministrationTitle
-                }
+                },
             }).ToList();
 
             // Obtener los programas de las agencias
@@ -223,17 +223,23 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
             // Asignar los programas a las agencias
             if (_agenciesPrograms.Any())
             {
-
                 foreach (var agency in agencies)
                 {
                     // Obtener los programas de la agencia
-                    agency.Programs = _agenciesPrograms.Where(ap => ap.AgencyId == agency.Id).Select(ap => new DTOProgram
+                    List<DTOProgram> programs = _agenciesPrograms.Where(ap => ap.AgencyId == agency.Id).Select(ap => new DTOProgram
                     {
                         Id = ap.Id,
                         Name = ap.Name,
-                        Description = ap.Description
+                        Description = ap.Description,
+                        AgencyId = ap.AgencyId
                     }).ToList();
+
+                    agency.Programs = programs;
+
+                    _logger.LogInformation("Agencia con programas: {AgencyWithPrograms}", agency.Id);
                 }
+
+                _logger.LogInformation("Agencias con programas: {AgenciesWithPrograms}", agencies.Count);
 
             }
 
@@ -355,7 +361,7 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { AgencyId = agencyId, ProgramId = programId };
+            var parameters = new { agencyId, programId };
             var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_InsertAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
             return rowsAffected > 0;
         }
@@ -467,6 +473,31 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado de la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Elimina una agencia y sus programas asociados
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia a eliminar</param>
+    /// <returns>True si se eliminó correctamente</returns>
+    public async Task<bool> DeleteAgency(int agencyId)
+    {
+        try
+        {
+            _logger.LogInformation($"Eliminando la agencia {agencyId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new { agencyId };
+
+            // Llamar al procedimiento almacenado para eliminar la agencia y sus programas
+            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_DeleteAgency", param, commandType: CommandType.StoredProcedure);
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar la agencia");
             throw new Exception(ex.Message);
         }
     }

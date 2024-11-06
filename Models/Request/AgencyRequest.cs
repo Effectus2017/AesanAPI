@@ -37,6 +37,9 @@ public class AgencyRequest
     public bool NonProfit { get; set; } = false;
     public bool FederalFundsDenied { get; set; } = false;
     public bool StateFundsDenied { get; set; } = false;
+    // Campos de estado
+    public bool IsActive { get; set; } = true;
+    public bool IsListable { get; set; } = true;
     // Programas
     public List<int> Programs { get; set; } = [];
 }

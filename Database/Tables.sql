@@ -50,7 +50,9 @@ CREATE TABLE Agency (
     Phone NVARCHAR(20) NOT NULL,
     Email NVARCHAR(255) NOT NULL,
     ImageURL NVARCHAR(MAX) NULL,
-    RejectionJustification NVARCHAR(MAX) NULL,  
+    RejectionJustification NVARCHAR(MAX) NULL,
+    IsActive BIT NULL DEFAULT 1,
+    IsListable BIT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (CityId) REFERENCES City(Id),
@@ -58,8 +60,14 @@ CREATE TABLE Agency (
     FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id)
 );
 GO
+
+-- Agregar la columna IsActive a la tabla Agency
+--ALTER TABLE Agency ADD IsActive BIT NULL DEFAULT 1;
+-- Agregar la columna IsListable a la tabla Agency
+--ALTER TABLE Agency ADD IsListable BIT NULL DEFAULT 1;
+
 -- Insertar la agencia AESAN por defecto
-INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, ZipCode, PostalAddress, Latitude, Longitude, Phone, Email, ImageURL) VALUES (
+INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieNumber, EinNumber, Address, ZipCode, PostalAddress, Latitude, Longitude, Phone, Email, ImageURL, IsActive, IsListable) VALUES (
     'AESAN',
     5, -- Status "Cumple con los requisitos"
     1, -- Ciudad por defecto
@@ -75,7 +83,9 @@ INSERT INTO Agency (Name, StatusId, CityId, RegionId, ProgramId, SdrNumber, UieN
     -66.590149, 
     '787-123-4567', 
     'admin@aesan.pr.gov',
-    NULL
+    NULL,
+    1,
+    1
 );
 
 -- Programas de AESAN, agregar un id de registro unico entre programa y agencia

@@ -229,3 +229,38 @@ Estos cambios mejoran la seguridad, la gestión de usuarios y la funcionalidad d
   - Se implementó un mejor manejo de errores en los métodos de actualización.
 
 Estos cambios mejoran la funcionalidad de gestión de agencias, permitiendo actualizaciones más completas y un mejor manejo de errores.
+
+## [2024-11-04]
+
+### Cambios Realizados:
+
+- **Procedimientos Almacenados:**
+
+  - Se modificó el procedimiento almacenado `100_InsertAgency` para permitir la inserción de agencias con nuevos campos:
+
+    - Se añadieron los parámetros `@Address`, `@ZipCode`, `@PostalAddress`, `@PostalZipCode`, `@PostalCityId`, y `@PostalRegionId`.
+    - Se actualizó la inserción en la tabla `Agency` para incluir los nuevos campos de dirección física y postal.
+
+  - Se creó el procedimiento almacenado `100_InsertAgencyProgram` para insertar programas asociados a una agencia.
+
+  - Se modificó el procedimiento almacenado `100_GetAgencies` para incluir la obtención de programas asociados a las agencias.
+
+  - Se creó el procedimiento almacenado `100_GetAgencyById` para obtener detalles de una agencia por su ID, incluyendo información de programas asociados.
+
+  - Se creó el procedimiento almacenado `100_GetAllAgencyStatus` para obtener todos los estados de agencia.
+
+  - Se actualizó el procedimiento almacenado `100_UpdateAgency` para incluir nuevos campos de dirección postal.
+
+- **Modelos:**
+
+  - Se actualizaron los modelos `DTOAgency` y `AgencyRequest` para incluir propiedades relacionadas con la dirección postal y programas asociados.
+
+- **Interfaces:**
+
+  - Se actualizaron las interfaces en `IAgencyRepository` para incluir métodos para insertar programas de agencia y obtener detalles de agencias.
+
+- **Repositorios:**
+
+  - Se implementaron los métodos en `AgencyRepository` para manejar la inserción de programas asociados a agencias y la obtención de detalles de agencias con sus programas.
+
+Estos cambios mejoran la funcionalidad del sistema al permitir la gestión de múltiples programas asociados a las agencias, así como una mejor organización de la información de dirección.

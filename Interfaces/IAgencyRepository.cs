@@ -11,7 +11,11 @@ public interface IAgencyRepository
     // Programas
     Task<bool> InsertAgencyProgram(int agencyId, int programId);
 
+    // Actualizar Agencia
     Task<bool> UpdateAgency(int agencyId, AgencyRequest agencyRequest);
     Task<bool> UpdateAgencyLogo(int agencyId, string imageUrl);
     Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string rejectionJustification);
+
+    // Eliminar Agencia
+    Task<bool> DeleteAgency(int agencyId);
 }

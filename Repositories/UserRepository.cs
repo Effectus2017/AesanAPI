@@ -266,8 +266,13 @@ public class UserRepository(UserManager<User> userManager,
 
         try
         {
+#if !DEBUG
             // Generar una contraseña temporal
             var temporaryPassword = Utilities.GenerateTemporaryPassword();
+#else
+            // Usar la contraseña temporal 9c272156 si estamos en debug
+            var temporaryPassword = "9c272156";
+#endif
 
             // Crear el usuario de Identity
             user = new User
@@ -290,7 +295,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!result.Succeeded)
             {
-                await DeleteUserByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
                 return new BadRequestObjectResult(result.Errors);
             }
             else
@@ -300,12 +305,15 @@ public class UserRepository(UserManager<User> userManager,
 
                 if (!resultRole.Succeeded)
                 {
-                    await DeleteUserByEmail(model.User.Email);
+                    await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
                     return new BadRequestObjectResult(resultRole.Errors);
                 }
 
+                _logger.LogInformation("Insertando la contraseña temporal en la base de datos: {temporaryPassword}", temporaryPassword);
                 await InsertTemporaryPassword(user.Id, temporaryPassword);
             }
+
+            _logger.LogInformation("Insertando la agencia en la base de datos");
 
             // Insertar la agencia
             int agencyId = await _agencyRepository.InsertAgency(model.Agency);
@@ -314,7 +322,7 @@ public class UserRepository(UserManager<User> userManager,
             if (agencyId == 0)
             {
                 // Si falla la inserción, eliminar el usuario creado en Identity
-                await DeleteUserByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
@@ -330,7 +338,7 @@ public class UserRepository(UserManager<User> userManager,
             // Si falla la actualización, eliminar el usuario creado en Identity
             if (!updateResult.Succeeded)
             {
-                await DeleteUserByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
                 return new BadRequestObjectResult(updateResult.Errors);
             }
 
@@ -345,7 +353,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (user != null)
             {
-                await DeleteUserByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
             }
 
             return new BadRequestObjectResult(new { Message = "Error al registrar usuario", Error = ex.Message });
@@ -389,7 +397,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!resultRole.Succeeded)
             {
-                await DeleteUserByEmail(model.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Email);
                 return new BadRequestObjectResult(resultRole.Errors);
             }
 
@@ -540,25 +548,40 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
-    /// Elimina un usuario por su correo electrónico
+    /// Elimina un usuario y sus datos asociados por su correo electrónico
     /// </summary>
     /// <param name="email">El correo electrónico del usuario</param>
     /// <returns>El resultado de la operación</returns>
-    public async Task<dynamic> DeleteUserByEmail(string email)
+    public async Task<dynamic> RemoveUserAndAgencyRelatedDataByEmail(string email)
     {
         try
         {
             var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+
+            if (user == null)
             {
-                await _userManager.DeleteAsync(user);
-                await _userManager.RemoveFromRoleAsync(user, "User");
+                return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
             }
-            return new OkObjectResult(new { Message = "Usuario eliminado exitosamente" });
+
+            // Eliminar el usuario de su rol de Administrador
+            await _userManager.RemoveFromRoleAsync(user, "Administrator");
+            // Eliminar la contraseña temporal del usuario
+            await DeleteTemporaryPassword(user.Id);
+            // Eliminar la agencia asociada al usuario
+            if (user.AgencyId != null)
+            {
+                var agency = user.AgencyId.Value;
+                await _agencyRepository.DeleteAgency(agency);
+            }
+            // Finalmente, eliminar el usuario
+            await _userManager.DeleteAsync(user);
+
+            return new OkObjectResult(new { Message = "Usuario y datos asociados eliminados exitosamente" });
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al eliminar el usuario y sus datos asociados por correo electrónico");
+            return new BadRequestObjectResult(new { Message = "Error al eliminar el usuario", Error = ex.Message });
         }
     }
 
