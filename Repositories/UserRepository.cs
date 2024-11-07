@@ -309,7 +309,7 @@ public class UserRepository(UserManager<User> userManager,
                     return new BadRequestObjectResult(resultRole.Errors);
                 }
 
-                _logger.LogInformation("Insertando la contraseña temporal en la base de datos: {temporaryPassword}", temporaryPassword);
+                _logger.LogInformation("Insertando la contrase��a temporal en la base de datos: {temporaryPassword}", temporaryPassword);
                 await InsertTemporaryPassword(user.Id, temporaryPassword);
             }
 
@@ -335,6 +335,7 @@ public class UserRepository(UserManager<User> userManager,
             // Actualizar el usuario con el ID de la agencia
             user.AgencyId = agencyId;
             var updateResult = await _userManager.UpdateAsync(user);
+
             // Si falla la actualización, eliminar el usuario creado en Identity
             if (!updateResult.Succeeded)
             {
@@ -342,8 +343,8 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(updateResult.Errors);
             }
 
-            // Enviar correo con la contraseña temporal
-            await _emailService.SendTemporaryPasswordEmail(model.User.Email, temporaryPassword);
+            // Enviar correo con la contraseña temporal y bienvenida
+            await _emailService.SendWelcomeAgencyEmail(model, temporaryPassword);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }

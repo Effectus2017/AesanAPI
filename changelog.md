@@ -237,18 +237,12 @@ Estos cambios mejoran la funcionalidad de gestión de agencias, permitiendo actu
 - **Procedimientos Almacenados:**
 
   - Se modificó el procedimiento almacenado `100_InsertAgency` para permitir la inserción de agencias con nuevos campos:
-
     - Se añadieron los parámetros `@Address`, `@ZipCode`, `@PostalAddress`, `@PostalZipCode`, `@PostalCityId`, y `@PostalRegionId`.
     - Se actualizó la inserción en la tabla `Agency` para incluir los nuevos campos de dirección física y postal.
-
   - Se creó el procedimiento almacenado `100_InsertAgencyProgram` para insertar programas asociados a una agencia.
-
   - Se modificó el procedimiento almacenado `100_GetAgencies` para incluir la obtención de programas asociados a las agencias.
-
   - Se creó el procedimiento almacenado `100_GetAgencyById` para obtener detalles de una agencia por su ID, incluyendo información de programas asociados.
-
   - Se creó el procedimiento almacenado `100_GetAllAgencyStatus` para obtener todos los estados de agencia.
-
   - Se actualizó el procedimiento almacenado `100_UpdateAgency` para incluir nuevos campos de dirección postal.
 
 - **Modelos:**
@@ -264,3 +258,57 @@ Estos cambios mejoran la funcionalidad de gestión de agencias, permitiendo actu
   - Se implementaron los métodos en `AgencyRepository` para manejar la inserción de programas asociados a agencias y la obtención de detalles de agencias con sus programas.
 
 Estos cambios mejoran la funcionalidad del sistema al permitir la gestión de múltiples programas asociados a las agencias, así como una mejor organización de la información de dirección.
+
+## [2024-05-11]
+
+### Base de Datos
+
+#### Modificaciones en Stored Procedures
+
+- Se eliminó el campo `ProgramId` del procedimiento `100_InsertAgency`
+- Se actualizaron los parámetros opcionales en `100_InsertAgency`:
+  - `@RejectionJustification` ahora es NULL por defecto
+  - `@ImageURL` ahora es NULL por defecto
+- Se corrigió el nombre de la tabla en `100_InsertAgencyProgram` de `AgencyPrograms` a `AgencyProgram`
+- Se añadió filtro `IsListable = 1` en `100_GetAgencies`
+- Se agregó el campo `AgencyId` en la consulta de programas
+- Se eliminó la join con la tabla `Program` en `100_GetAgencyById`
+- Se implementó nuevo SP `100_DeleteAgency` para eliminar agencias y sus programas asociados
+
+#### Modificaciones en Tablas
+
+- Se añadieron nuevos campos a la tabla `Agency`:
+  - `IsActive` (BIT, NULL, DEFAULT 1)
+  - `IsListable` (BIT, NULL, DEFAULT 1)
+- Se actualizó el script de inserción de AESAN para incluir los nuevos campos
+
+### Código
+
+#### Interfaces
+
+- Se añadió método `DeleteAgency` en `IAgencyRepository`
+
+#### Modelos
+
+- Se agregó propiedad `AgencyId` en `DTOProgram`
+- Se añadieron nuevos campos en `AgencyRequest`:
+  - `IsActive` (default: true)
+  - `IsListable` (default: true)
+
+#### Repositorios
+
+- Se actualizó `AgencyRepository`:
+  - Mejora en el manejo de campos nulos para `PostalCity` y `PostalRegion`
+  - Optimización en la asignación de programas a agencias
+  - Implementación del método `DeleteAgency`
+- Se actualizó `UserRepository`:
+  - Se añadió contraseña temporal fija "9c272156" en modo DEBUG
+  - Se renombró `DeleteUserByEmail` a `RemoveUserAndAgencyRelatedDataByEmail`
+  - Se mejoró el proceso de eliminación de usuarios incluyendo datos relacionados
+
+### Mejoras Generales
+
+- Optimización en el manejo de programas asociados a agencias
+- Mejor manejo de campos nulos en consultas
+- Implementación de logging más detallado
+- Mejoras en el manejo de errores y eliminación de datos relacionados

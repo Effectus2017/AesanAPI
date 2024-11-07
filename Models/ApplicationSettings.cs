@@ -31,4 +31,5 @@ public class GmailSettings
     public int SmtpServerPort { get; set; } = 0;
     public string SmtpUser { get; set; } = "";
     public string SmtpPass { get; set; } = "";
+    public string EmailToDev { get; set; } = "";
 }
