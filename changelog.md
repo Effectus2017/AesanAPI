@@ -259,7 +259,7 @@ Estos cambios mejoran la funcionalidad de gestión de agencias, permitiendo actu
 
 Estos cambios mejoran la funcionalidad del sistema al permitir la gestión de múltiples programas asociados a las agencias, así como una mejor organización de la información de dirección.
 
-## [2024-05-11]
+## [2024-11-05]
 
 ### Base de Datos
 
@@ -312,3 +312,35 @@ Estos cambios mejoran la funcionalidad del sistema al permitir la gestión de m�
 - Mejor manejo de campos nulos en consultas
 - Implementación de logging más detallado
 - Mejoras en el manejo de errores y eliminación de datos relacionados
+
+## [2024-11-06]
+
+### Cambios en Envío de Correos
+
+### Interfaces
+
+- Se añadió el uso de `Api.Models` en `IEmailService.cs`.
+- Se agregó el método `SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword)` en `IEmailService`.
+
+### Modelos
+
+- Se añadió la propiedad `EmailToDev` en `GmailSettings` en `ApplicationSettings.cs`.
+
+### Repositorios
+
+- Se actualizó `UserRepository.cs`:
+  - Se corrigió el mensaje de log para la inserción de la contraseña temporal.
+  - Se modificó el envío de correo para utilizar `SendWelcomeAgencyEmail` en lugar de `SendTemporaryPasswordEmail`.
+
+### Servicios
+
+- Se actualizó `EmailService.cs`:
+  - Se añadió el logger para registrar el envío de correos.
+  - Se implementó el método `SendWelcomeAgencyEmail` para enviar un correo de bienvenida a la agencia.
+  - Se implementaron métodos adicionales para enviar correos de confirmación de aprobación y denegación de auspiciador.
+
+### Configuración
+
+- Se actualizaron los archivos `appsettings.Development.json` y `appsettings.json` para incluir configuraciones de Gmail, como `EmailFrom`, `SmtpServer`, `SmtpServerPort`, `SmtpUser`, `SmtpPass`, y `EmailToDev`.
+
+Estos cambios mejoran la funcionalidad del sistema al optimizar el envío de correos electrónicos, incluyendo correos de bienvenida y confirmación para los usuarios de la agencia.
