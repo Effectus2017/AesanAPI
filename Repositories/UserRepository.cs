@@ -611,6 +611,27 @@ public class UserRepository(UserManager<User> userManager,
         }
     }
 
+
+    /// <summary>
+    /// Obtiene la contraseña temporal de un usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    /// <returns>La contraseña temporal o null si no existe</returns>
+    public async Task<string?> GetTemporaryPassword(string userId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new { UserId = userId };
+            return await dbConnection.QueryFirstOrDefaultAsync<string>("100_GetTemporaryPassword", param, commandType: CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la contraseña temporal");
+            throw new Exception("No se pudo obtener la contraseña temporal", ex);
+        }
+    }
+
     /// <summary>
     /// Elimina una contraseña temporal por el ID del usuario
     /// </summary>

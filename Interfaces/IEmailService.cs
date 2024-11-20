@@ -8,4 +8,6 @@ public interface IEmailService
     Task SendTemporaryPasswordEmail(string email, string temporaryPassword);
     Task SendEmailWithGmailAsync(string email, string subject, string message);
     Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword);
+    Task SendApprovalSponsorEmail(User userRequest, string temporaryPassword);
+    Task SendDenialSponsorEmail(User user, string rejectionReason);
 }

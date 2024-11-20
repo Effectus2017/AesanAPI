@@ -140,12 +140,12 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
     /// </summary>
     /// <param name="userRequest">Datos del usuario y la agencia</param>
     /// <param name="temporaryPassword">Contraseña temporal asignada</param>
-    public async Task SendApprovalSponsorEmail(UserAgencyRequest userRequest, string temporaryPassword)
+    public async Task SendApprovalSponsorEmail(User user, string temporaryPassword)
     {
         _logger.LogInformation("Enviando correo de confirmación de aprobación de auspiciador");
 
         var subject = "¡Gracias por tu interés en formar parte del programa de AESAN!";
-        var fullName = $"{userRequest.User.FirstName} {userRequest.User.FatherLastName}";
+        var fullName = $"{user.FirstName} {user.FatherLastName}";
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
@@ -168,47 +168,52 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
                 
                 <p>Saludos cordiales,<br>
                 {fullName}<br>
-                {userRequest.User.AdministrationTitle}<br>
+                {user.AdministrationTitle}<br>
                 AESAN<br>
-                {userRequest.User.Email}<br>
-                {userRequest.User.PhoneNumber}</p>
+                {user.Email}<br>
+                {user.PhoneNumber}</p>
             </div>";
 
-        await SendEmailWithGmailAsync(userRequest.User.Email, subject, htmlBody);
+#if !DEBUG
+        await SendEmailWithGmailAsync(user.Email, subject, htmlBody);
+#endif
+
     }
 
     /// <summary>
     /// Envía un correo de confirmación de denegación de auspiciador
     /// </summary>
     /// <param name="userRequest">Datos del usuario y la agencia</param>
-    /// <param name="temporaryPassword">Contraseña temporal asignada</param>
-    public async Task SendDenialSponsorEmail(UserAgencyRequest userRequest, string temporaryPassword)
+    public async Task SendDenialSponsorEmail(User user, string rejectionReason)
     {
         _logger.LogInformation("Enviando correo de confirmación de denegación de auspiciador");
 
-        var subject = "¡Gracias por tu interés en formar parte del programa de AESAN!";
-        var fullName = $"{userRequest.User.FirstName} {userRequest.User.FatherLastName}";
+        var subject = "Actualización sobre tu aplicación al programa de AESAN";
+        var fullName = $"{user.FirstName} {user.FatherLastName}";
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <p>Estimado/a {fullName},</p>
                 
-                <p>Desafortunadamente su aplicación a participar al programa de AESAN fue rechazada por la siguiente razón: [Justificación de rechazo]</p>
+                <p>Lamentamos informarte que tu aplicación para participar en el programa de AESAN ha sido rechazada por la siguiente razón: {rejectionReason}</p>
                 
-                <p>Si tienes alguna pregunta o necesitas asistencia adicional, no dudes en contactarnos. 
-                Estamos aquí para ayudarte en cada paso del camino.</p>
+                <p>Si tienes alguna pregunta o necesitas aclaraciones adicionales, no dudes en contactarnos. 
+                Estamos aquí para ayudarte y proporcionar más información si lo necesitas.</p>
                 
-                <p>Una vez más, gracias por su interés y confianza en AESAN. Juntos podemos lograr grandes cosas.</p>
+                <p>Agradecemos sinceramente tu interés en AESAN y te deseamos éxito en tus futuros proyectos.</p>
                 
-                <p>Saludos cordiales,<br>
+                <p>Atentamente,<br>
                 {fullName}<br>
-                {userRequest.User.AdministrationTitle}<br>
-                AESAN<br>
-                {userRequest.User.Email}<br>
-                {userRequest.User.PhoneNumber}</p>
+                {user.AdministrationTitle}<br>
+                Equipo de AESAN<br>
+                {user.Email}<br>
+                {user.PhoneNumber}</p>
             </div>";
 
-        await SendEmailWithGmailAsync(userRequest.User.Email, subject, htmlBody);
+#if !DEBUG
+        await SendEmailWithGmailAsync(user.Email, subject, htmlBody);
+#endif
+
     }
 
 }

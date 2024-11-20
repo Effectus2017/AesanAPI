@@ -29,5 +29,6 @@ public interface IUserRepository
     Task<dynamic> UpdateUserAvatar(string userId, string imageUrl);
     Task<dynamic> DisableUser(string userId);
     Task InsertTemporaryPassword(string userId, string temporaryPassword);
+    Task<string?> GetTemporaryPassword(string userId);
     Task DeleteTemporaryPassword(string userId);
 }

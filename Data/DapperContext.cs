@@ -10,10 +10,9 @@ public class DapperContext
     private readonly string _connectionString;
     public DapperContext(IConfiguration configuration)
     {
-        _configuration = configuration;
-        _connectionString = _configuration.GetConnectionString("DefaultConnection");
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _connectionString = _configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration.");
     }
     public IDbConnection CreateConnection()
         => new SqlConnection(_connectionString);
 }
-

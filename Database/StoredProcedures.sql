@@ -378,7 +378,6 @@ CREATE OR ALTER PROCEDURE [100_UpdateAgency]
     @AgencyId INT,
     @Name NVARCHAR(MAX),
     @StatusId INT,
-    @ProgramId INT,
     -- Datos de la Agencia
     @SdrNumber NVARCHAR(255),
     @UieNumber NVARCHAR(255),
@@ -412,7 +411,6 @@ BEGIN
     SET 
         Name = @Name,
         StatusId = @StatusId,
-        ProgramId = @ProgramId,
         SdrNumber = @SdrNumber,
         UieNumber = @UieNumber,
         EinNumber = @EinNumber,
@@ -439,8 +437,8 @@ BEGIN
 
      -- Obtiene el número de filas afectadas
     SET @rowsAffected = @@ROWCOUNT;
-    -- Retorna 1 si se actualizó al menos una fila, 0 si no
-    RETURN CASE WHEN @rowsAffected > 0 THEN 1 ELSE 0 END;
+     -- Retorna el número de filas afectadas directamente
+    RETURN @rowsAffected;
 END;
 GO
 
@@ -488,8 +486,8 @@ BEGIN
     -- Obtiene el número de filas afectadas
     SET @rowsAffected = @@ROWCOUNT;
 
-    -- Retorna 1 si se actualizó al menos una fila, 0 si no
-    RETURN CASE WHEN @rowsAffected > 0 THEN 1 ELSE 0 END;
+    -- Retorna el número de filas afectadas directamente
+    RETURN @rowsAffected;
 END;
 GO
 
@@ -567,6 +565,18 @@ AS
 BEGIN
     INSERT INTO TemporaryPasswords (UserId, TemporaryPassword, CreatedAt)
     VALUES (@UserId, @TemporaryPassword, GETDATE());
+END;
+GO
+
+-- Procedimiento almacenado para obtener una contraseña temporal
+CREATE OR ALTER PROCEDURE [100_GetTemporaryPassword]
+    @UserId NVARCHAR(450)
+AS
+BEGIN
+    SELECT TOP 1 TemporaryPassword
+    FROM TemporaryPasswords
+    WHERE UserId = @UserId
+    ORDER BY CreatedAt DESC;
 END;
 GO
 

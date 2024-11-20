@@ -1,14 +1,17 @@
 using System.Data;
 using Api.Data;
+using Api.Interfaces;
 using Api.Models;
 using Dapper;
 
 namespace Api.Repositories;
 
-public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> logger) : IAgencyRepository
+public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, DapperContext context, ILogger<AgencyRepository> logger) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyRepository> _logger = logger;
+    private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+    private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
 
     /// <summary>
     /// Obtiene una agencia por su ID
@@ -97,6 +100,7 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
                 // Usuario
                 User = new DTOUser
                 {
+                    Id = _agencyResult.UserId,
                     FirstName = _agencyResult.FirstName,
                     MiddleName = _agencyResult.MiddleName,
                     FatherLastName = _agencyResult.FatherLastName,
@@ -413,8 +417,11 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
             parameters.Add("@ImageUrl", agencyRequest.ImageUrl, DbType.String, ParameterDirection.Input);
             // Datos del Contacto
             parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@ReturnValue");
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
@@ -458,22 +465,66 @@ public class AgencyRepository(DapperContext context, ILogger<AgencyRepository> l
     /// <param name="statusId">Id del nuevo estado</param>
     /// <param name="rejectionJustification">Justificación para rechazo</param>
     /// <returns>True si se actualizó correctamente</returns>
-    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string rejectionJustification)
+    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string? rejectionJustification)
     {
         try
         {
             _logger.LogInformation($"Actualizando estado de la agencia {agencyId} a {statusId}");
 
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { agencyId, statusId, rejectionJustification };
-            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
-            return rowsAffected > 0;
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@statusId", statusId);
+            parameters.Add("@rejectionJustification", rejectionJustification);
+            parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
+            await dbConnection.ExecuteAsync("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@ReturnValue");
+
+            if (rowsAffected > 0)
+            {
+                DTOAgency agency = await GetAgencyById(agencyId);
+                if (agency != null)
+                {
+                    var User = new User
+                    {
+                        Id = agency.User.Id,
+                        FirstName = agency.User.FirstName,
+                        FatherLastName = agency.User.FatherLastName,
+                        Email = agency.Email
+                    };
+
+                    if (statusId == 6) // Rechazo
+                    {
+                        await _emailService.SendDenialSponsorEmail(User, rejectionJustification ?? "No se proporcionó una justificación");
+                        _logger.LogInformation($"Correo de rechazo enviado a la agencia {agencyId}");
+                    }
+                    else if (statusId == 7) // Aprobado
+                    {
+                        // Obtener el password temporal
+                        var password = await _passwordService.GetTemporaryPassword(User.Id); // Obtain the temporary password
+
+                        // Add a null check before sending the email
+                        if (!string.IsNullOrEmpty(password))
+                        {
+                            await _emailService.SendApprovalSponsorEmail(User, password);
+                            _logger.LogInformation($"Correo de aprobación enviado a la agencia {agencyId}");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"No se pudo obtener la contraseña temporal para la usuario {User.Id}");
+                            // Optionally, you might want to handle this scenario differently
+                        };
+                    }
+                }
+            }
+
+            return rowsAffected > 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado de la agencia");
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
