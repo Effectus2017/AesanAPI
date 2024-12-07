@@ -134,6 +134,131 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
+    // <summary>
+    /// Obtiene una agencia por su ID
+    /// </summary>
+    /// <param name="id">El ID de la agencia</param>
+    /// <returns>La agencia</returns>
+    public async Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo agencia por ID: {AgencyId}", agencyId);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var param = new { agencyId, userId };
+
+            var result = await dbConnection.QueryMultipleAsync("101_GetAgencyByIdAndUserId", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            // Obtener los datos de la agencia
+            var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+
+            if (_agencyResult == null)
+            {
+                return null;
+            }
+
+            var agency = new DTOAgency
+            {
+                Id = _agencyResult.Id,
+                Name = _agencyResult.Name,
+                StatusId = _agencyResult.StatusId,
+                // Datos de la Agencia
+                SdrNumber = _agencyResult.SdrNumber,
+                UieNumber = _agencyResult.UieNumber,
+                EinNumber = _agencyResult.EinNumber,
+                // Dirección y Teléfono
+                Address = _agencyResult.Address,
+                ZipCode = _agencyResult.ZipCode ?? 0,
+                // Dirección Postal
+                PostalAddress = _agencyResult.PostalAddress,
+                PostalZipCode = _agencyResult.PostalZipCode ?? 0,
+                // Teléfono
+                Phone = _agencyResult.Phone,
+                // Coordenadas
+                Latitude = _agencyResult.Latitude,
+                Longitude = _agencyResult.Longitude,
+                // Datos del Contacto
+                Email = _agencyResult.Email,
+                CreatedAt = _agencyResult.CreatedAt,
+                UpdatedAt = _agencyResult.UpdatedAt,
+                // Imágen - Logo
+                ImageURL = _agencyResult.ImageURL,
+                RejectionJustification = _agencyResult.RejectionJustification,
+                // Relaciones
+                City = new DTOCity
+                {
+                    Id = _agencyResult.CityId,
+                    Name = _agencyResult.CityName
+                },
+                Region = new DTORegion
+                {
+                    Id = _agencyResult.RegionId,
+                    Name = _agencyResult.RegionName
+                },
+                // Dirección Postal
+                PostalCity = _agencyResult.PostalCityId != null ? new DTOCity
+                {
+                    Id = _agencyResult.PostalCityId,
+                    Name = _agencyResult.PostalCityName
+                } : null,
+                PostalRegion = _agencyResult.PostalRegionId != null ? new DTORegion
+                {
+                    Id = _agencyResult.PostalRegionId,
+                    Name = _agencyResult.PostalRegionName
+                } : null,
+                // Estatus
+                Status = new DTOAgencyStatus
+                {
+                    Id = _agencyResult.StatusId,
+                    Name = _agencyResult.StatusName
+                },
+                // Usuario
+                User = new DTOUser
+                {
+                    Id = _agencyResult.UserId,
+                    FirstName = _agencyResult.FirstName,
+                    MiddleName = _agencyResult.MiddleName,
+                    FatherLastName = _agencyResult.FatherLastName,
+                    MotherLastName = _agencyResult.MotherLastName,
+                    AdministrationTitle = _agencyResult.AdministrationTitle
+                },
+                Comment = _agencyResult.Comment ?? string.Empty,
+                AppointmentCoordinated = _agencyResult.AppointmentCoordinated,
+                AppointmentDate = _agencyResult.AppointmentDate
+            };
+
+            var _agenciesPrograms = await result.ReadAsync<dynamic>();
+
+            if (_agenciesPrograms.Any())
+            {
+                // Obtener los programas de la agencia
+                var programs = _agenciesPrograms.Select(item => new DTOProgram
+                {
+                    Id = item.Id,
+                    Name = item.Name,
+                    Description = item.Description
+                }).ToList();
+
+                // Asignar los programas a la agencia
+                agency.Programs = programs;
+            }
+
+            return agency;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la agencia");
+            throw new Exception(ex.Message);
+        }
+    }
+
     /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
@@ -142,7 +267,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="name">El nombre de la agencia</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, bool alls)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string userId, bool alls)
     {
         try
         {
@@ -150,9 +275,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             using IDbConnection dbConnection = _context.CreateConnection();
 
-            var param = new { take, skip, name, regionId, cityId, programId, statusId, alls };
+            var param = new { take, skip, name, regionId, cityId, programId, statusId, userId, alls };
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetAgencies", param, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("101_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -219,6 +344,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     MotherLastName = item.MotherLastName,
                     AdministrationTitle = item.AdministrationTitle
                 },
+                Comment = item.Comment ?? string.Empty,
+                AppointmentCoordinated = item.AppointmentCoordinated,
+                AppointmentDate = item.AppointmentDate
             }).ToList();
 
             // Obtener los programas de las agencias
@@ -301,6 +429,27 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
+
+    /// <summary>
+    /// Obtiene los programas de una agencia por el ID del usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    /// <returns>Los programas de la agencia</returns>
+    public async Task<List<DTOProgram>> GetAgencyProgramsByUserId(string userId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new { userId };
+            var result = await dbConnection.QueryAsync<DTOProgram>("100_GetAgencyProgramsByUserId", param, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los programas de la agencia por el ID del usuario");
+            throw new Exception(ex.Message);
+        }
+    }
 
     /// <summary>
     /// Inserta una nueva agencia en la base de datos
@@ -524,6 +673,45 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado de la agencia");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el programa de una agencia
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia</param>
+    /// <param name="programId">Id del programa</param>
+    /// <param name="statusId">Id del estado</param>
+    /// <param name="comments">Comentarios</param>
+    /// <param name="appointmentCoordinated">Indica si se coordinó la cita</param>
+    /// <param name="appointmentDate">Fecha de la cita</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateAgencyProgram(int agencyId, int programId, int statusId, string userId, string comment, bool appointmentCoordinated, DateTime? appointmentDate)
+    {
+        try
+        {
+            _logger.LogInformation($"Actualizando el programa de la agencia {agencyId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@AgencyId", agencyId);
+            parameters.Add("@ProgramId", programId);
+            parameters.Add("@StatusId", statusId);
+            parameters.Add("@UserId", userId);
+            parameters.Add("@Comment", comment);
+            parameters.Add("@AppointmentCoordinated", appointmentCoordinated);
+            parameters.Add("@AppointmentDate", appointmentDate);
+            parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("100_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@ReturnValue");
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el programa de la agencia");
             throw;
         }
     }

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace Api.Controllers;
 
 [Route("program")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+// [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<ProgramController> _logger = logger;
@@ -64,4 +64,95 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
             return StatusCode(500, "Error al obtener el programa");
         }
     }
+
+    [HttpPost("insert-program")]
+    [SwaggerOperation(Summary = "Inserta un nuevo programa", Description = "Crea un nuevo programa en la base de datos.")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<IActionResult> InsertProgram([FromBody] ProgramRequest programRequest)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var programId = await _unitOfWork.ProgramRepository.InsertProgram(programRequest);
+                return Ok(new { id = programId });
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar el programa");
+            return StatusCode(500, "Error al insertar el programa");
+        }
+    }
+
+    [HttpPost("insert-program-inscription")]
+    [SwaggerOperation(Summary = "Inserta una nueva inscripción de programa", Description = "Crea una nueva inscripción de programa en la base de datos.")]
+    // #if !DEBUG
+    //     [Authorize]
+    // #endif
+    public async Task<IActionResult> InsertProgramInscription([FromBody] ProgramInscriptionRequest request)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var inscriptionId = await _unitOfWork.ProgramRepository.InsertProgramInscription(request);
+                return Ok(new { id = inscriptionId });
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar la inscripción del programa");
+            return StatusCode(500, "Error al insertar la inscripción del programa");
+        }
+    }
+
+    [HttpGet("get-all-food-authorities")]
+    [SwaggerOperation(Summary = "Obtiene todas las autoridades de alimentos")]
+    public async Task<IActionResult> GetAllFoodAuthorities()
+    {
+        try
+        {
+            var authorities = await _unitOfWork.ProgramRepository.GetAllFoodAuthorities();
+            return Ok(authorities);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las autoridades de alimentos");
+            return StatusCode(500, "Error al obtener las autoridades de alimentos");
+        }
+    }
+
+    [HttpGet("get-all-program-inscriptions")]
+    [SwaggerOperation(Summary = "Obtiene todas las inscripciones a programas", Description = "Devuelve una lista paginada de inscripciones a programas.")]
+    public async Task<IActionResult> GetAllProgramInscriptions([FromQuery] QueryParameters queryParameters, [FromQuery] int? agencyId = null, [FromQuery] int? programId = null)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var inscriptions = await _unitOfWork.ProgramRepository.GetAllProgramInscriptions(
+                    queryParameters.Take,
+                    queryParameters.Skip,
+                    agencyId,
+                    programId
+                );
+                return Ok(inscriptions);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las inscripciones de programas");
+            return StatusCode(500, "Error al obtener las inscripciones de programas");
+        }
+    }
+
 }

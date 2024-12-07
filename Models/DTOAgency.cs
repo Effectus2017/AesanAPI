@@ -34,6 +34,13 @@ public class DTOAgency
 
     // Imágen - Logo
     public string ImageURL { get; set; } = "";
+    public string RejectionJustification { get; set; } = "";
+    // Comentarios
+    public string Comment { get; set; } = "";
+    // Cita coordinada
+    public bool? AppointmentCoordinated { get; set; }
+    // Fecha de la cita
+    public DateTime? AppointmentDate { get; set; } = DateTime.Now;
 
     // Relaciones
     public DTOCity City { get; set; } = new DTOCity();

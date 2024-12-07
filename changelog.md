@@ -344,3 +344,36 @@ Estos cambios mejoran la funcionalidad del sistema al permitir la gestión de m�
 - Se actualizaron los archivos `appsettings.Development.json` y `appsettings.json` para incluir configuraciones de Gmail, como `EmailFrom`, `SmtpServer`, `SmtpServerPort`, `SmtpUser`, `SmtpPass`, y `EmailToDev`.
 
 Estos cambios mejoran la funcionalidad del sistema al optimizar el envío de correos electrónicos, incluyendo correos de bienvenida y confirmación para los usuarios de la agencia.
+
+## [2024-19-11] Cambios en Edición, Rechazo y Aprobación
+
+### Modificaciones en DapperContext
+- Se mejoró la gestión de excepciones en el constructor:
+  - Se lanzó `ArgumentNullException` si `configuration` es nulo.
+  - Se lanzó `InvalidOperationException` si la cadena de conexión "DefaultConnection" no se encuentra en la configuración.
+
+### Modificaciones en Procedimientos Almacenados
+- Se eliminó el parámetro `@ProgramId` del procedimiento `100_UpdateAgency`.
+- Se actualizó el procedimiento `100_UpdateAgency` para retornar directamente el número de filas afectadas.
+- Se creó el procedimiento almacenado `100_GetTemporaryPassword` para obtener una contraseña temporal por `UserId`.
+
+### Interfaces
+- Se añadió el método `SendApprovalSponsorEmail(User user, string temporaryPassword)` en `IEmailService`.
+- Se añadió el método `SendDenialSponsorEmail(User user, string rejectionReason)` en `IEmailService`.
+- Se creó la interfaz `IPasswordService` con el método `GetTemporaryPassword(string userId)`.
+
+### Repositorios
+- Se actualizó `AgencyRepository` para incluir inyecciones de `IEmailService` y `IPasswordService`.
+- Se modificó el método `UpdateAgencyStatus` para enviar correos de aprobación o rechazo según el estado de la agencia.
+- Se implementó el método `GetTemporaryPassword` en `UserRepository` para obtener la contraseña temporal de un usuario.
+
+### Servicios
+- Se creó `PasswordService` para manejar la obtención de contraseñas temporales.
+- Se actualizó `EmailService` para enviar correos de aprobación y rechazo a los auspiciadores.
+
+### Mejoras Generales
+- Se mejoró el manejo de errores y la legibilidad del código en varios métodos.
+- Se implementaron registros de log para el envío de correos electrónicos y la obtención de contraseñas temporales.
+
+Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de correos electrónicos y la gestión de contraseñas temporales, así como la lógica de aprobación y rechazo de agencias.
+

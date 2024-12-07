@@ -31,4 +31,11 @@ public interface IUserRepository
     Task InsertTemporaryPassword(string userId, string temporaryPassword);
     Task<string?> GetTemporaryPassword(string userId);
     Task DeleteTemporaryPassword(string userId);
+
+    /// <summary>
+    /// Resetea la contraseña de un usuario usando la contraseña temporal
+    /// </summary>
+    /// <param name="model">Modelo con email, contraseña temporal y nueva contraseña</param>
+    /// <returns>El resultado de la operación</returns>
+    Task<IActionResult> ResetPassword(ResetPasswordRequest model);
 }

@@ -163,14 +163,19 @@ public class UserRepository(UserManager<User> userManager,
 
             if (_user == null)
             {
-                return new UnauthorizedResult();
+                return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
             var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
 
             if (!passwordValid)
             {
-                return new UnauthorizedResult();
+                return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
+            }
+
+            if (_user.IsTemporalPasswordActived)
+            {
+                return new ConflictObjectResult(new { Message = "La contraseña temporal es válida." });
             }
 
 #if !DEBUG
@@ -196,12 +201,14 @@ public class UserRepository(UserManager<User> userManager,
             var roles = await _userManager.GetRolesAsync(_user);
 
             _logger.LogInformation("Obteniendo la agencia del usuario");
+
             // Obtener la agencia del usuario
             var agency = _user.AgencyId != null && _user.AgencyId != 0 ? await _agencyRepository.GetAgencyById(_user.AgencyId.Value) : null;
+            var userPrograms = await _agencyRepository.GetAgencyProgramsByUserId(_user.Id);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = GetClaims(_user, roles, agency),
+                Subject = GetClaims(_user, roles, agency, userPrograms),
                 Expires = DateTime.UtcNow.AddDays(days),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
@@ -225,7 +232,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="user">El usuario</param>
     /// <param name="roles">Los roles del usuario</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, DTOAgency agency)
+    private ClaimsIdentity GetClaims(User user, IList<string> roles, DTOAgency agency, List<DTOProgram> userPrograms)
     {
         try
         {
@@ -236,12 +243,26 @@ public class UserRepository(UserManager<User> userManager,
                 claims.AddClaim(new Claim(ClaimTypes.Role, role));
             }
 
+            if (roles.Contains("Monitor"))
+            {
+                claims.AddClaim(new Claim("userId", user.Id));
+                claims.AddClaim(new Claim("name", user.FirstName ?? ""));
+                claims.AddClaim(new Claim("lastName", user.FatherLastName ?? ""));
+                claims.AddClaim(new Claim("email", user.Email ?? ""));
+                claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
+                claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
+
+                return claims;
+            }
+
             //claims.AddClaim(new Claim("avatar", user.ImageURL));
             claims.AddClaim(new Claim("name", user.FirstName ?? ""));
             claims.AddClaim(new Claim("lastName", user.FatherLastName ?? ""));
             claims.AddClaim(new Claim("email", user.Email ?? ""));
             claims.AddClaim(new Claim("agency", agency.Name ?? ""));
+            claims.AddClaim(new Claim("agencyId", agency.Id.ToString()));
             claims.AddClaim(new Claim("programs", string.Join(",", agency.Programs.Select(p => p.Name))));
+            claims.AddClaim(new Claim("programIds", string.Join(",", agency.Programs.Select(p => p.Id.ToString()))));
 
             return claims;
         }
@@ -286,6 +307,7 @@ public class UserRepository(UserManager<User> userManager,
                 AdministrationTitle = model.User.AdministrationTitle,
                 PhoneNumber = model.User.PhoneNumber,
                 IsActive = true,
+                IsTemporalPasswordActived = true,
                 EmailConfirmed = false // Podría ser false si se requiere confirmación por correo
             };
 
@@ -300,8 +322,8 @@ public class UserRepository(UserManager<User> userManager,
             }
             else
             {
-                // Asignar el rol (asumiendo que el rol es "Administrator")
-                var resultRole = await _userManager.AddToRoleAsync(user, "Administrator");
+                // Asignar el rol (asumiendo que el rol es "Agency-Administrator")
+                var resultRole = await _userManager.AddToRoleAsync(user, "Agency-Administrator");
 
                 if (!resultRole.Succeeded)
                 {
@@ -309,7 +331,7 @@ public class UserRepository(UserManager<User> userManager,
                     return new BadRequestObjectResult(resultRole.Errors);
                 }
 
-                _logger.LogInformation("Insertando la contrase��a temporal en la base de datos: {temporaryPassword}", temporaryPassword);
+                _logger.LogInformation("Insertando la contrasea temporal en la base de datos: {temporaryPassword}", temporaryPassword);
                 await InsertTemporaryPassword(user.Id, temporaryPassword);
             }
 
@@ -383,7 +405,8 @@ public class UserRepository(UserManager<User> userManager,
                 PhoneNumber = model.PhoneNumber,
                 TwoFactorEnabled = false,
                 LockoutEnabled = false,
-                AccessFailedCount = 0
+                AccessFailedCount = 0,
+                IsTemporalPasswordActived = true
             };
 
             var result = await _userManager.CreateAsync(user, temporaryPassword);
@@ -565,7 +588,7 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Eliminar el usuario de su rol de Administrador
-            await _userManager.RemoveFromRoleAsync(user, "Administrator");
+            await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
             // Eliminar la contraseña temporal del usuario
             await DeleteTemporaryPassword(user.Id);
             // Eliminar la agencia asociada al usuario
@@ -649,6 +672,71 @@ public class UserRepository(UserManager<User> userManager,
         {
             _logger.LogError(ex, "Error al eliminar la contraseña temporal");
             throw new Exception("No se pudo eliminar la contraseña temporal", ex);
+        }
+    }
+
+    /// <summary>
+    /// Resetea la contraseña de un usuario usando la contraseña temporal
+    /// </summary>
+    /// <param name="model">Modelo con email, contraseña temporal y nueva contraseña</param>
+    /// <returns>El resultado de la operación</returns>
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest model)
+    {
+        try
+        {
+            // Buscar el usuario por email
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
+            }
+
+            // Verificar si el usuario tiene una contraseña temporal activa
+            if (!user.IsTemporalPasswordActived)
+            {
+                return new BadRequestObjectResult(new { Message = "No hay una contraseña temporal activa para este usuario" });
+            }
+
+            // Obtener la contraseña temporal almacenada
+            var storedTempPassword = await GetTemporaryPassword(user.Id);
+
+            if (storedTempPassword == null || storedTempPassword != model.TemporaryPassword)
+            {
+                return new BadRequestObjectResult(new { Message = "La contraseña temporal es inválida" });
+            }
+
+            // Remover la contraseña actual
+            var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+            if (!removePasswordResult.Succeeded)
+            {
+                return new BadRequestObjectResult(removePasswordResult.Errors);
+            }
+
+            // Establecer la nueva contraseña
+            var addPasswordResult = await _userManager.AddPasswordAsync(user, model.NewPassword);
+            if (!addPasswordResult.Succeeded)
+            {
+                return new BadRequestObjectResult(addPasswordResult.Errors);
+            }
+
+            // Actualizar el estado de la contraseña temporal
+            user.IsTemporalPasswordActived = false;
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return new BadRequestObjectResult(updateResult.Errors);
+            }
+
+            // Eliminar la contraseña temporal de la base de datos
+            await DeleteTemporaryPassword(user.Id);
+
+            return new OkObjectResult(new { Message = "Contraseña actualizada exitosamente" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al resetear la contraseña");
+            return new BadRequestObjectResult(new { Message = "Error al resetear la contraseña", Error = ex.Message });
         }
     }
 

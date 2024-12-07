@@ -6,5 +6,6 @@ public interface IUnitOfWork
     IGeoRepository GeoRepository { get; }
     IProgramRepository ProgramRepository { get; }
     IAgencyRepository AgencyRepository { get; }
+    ISchoolRepository SchoolRepository { get; }
     void Save();
 }
