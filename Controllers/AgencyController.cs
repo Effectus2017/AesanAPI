@@ -138,43 +138,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
     }
 
-
-    /// <summary>
-    /// Obtiene todos los estados de la agencia
-    /// </summary>
-    /// <returns>Los estados de la agencia</returns>
-    [HttpGet("get-all-agency-status-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los estados de la agencia", Description = "Devuelve todos los estados de la agencia.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<IActionResult> GetAllAgencyStatus([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los estados de la agencia");
-
-            var agencyStatus = await _unitOfWork.AgencyRepository.GetAllAgencyStatus(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.Alls
-            );
-
-            if (agencyStatus == null)
-            {
-                return NotFound("No se encontraron estados de la agencia");
-            }
-
-            return Ok(agencyStatus);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los estados de la agencia");
-            return StatusCode(500, "Error al obtener los estados de la agencia");
-        }
-    }
-
     /// <summary>
     /// Obtiene los programas de una agencia por el ID del usuario
     /// </summary>

@@ -389,53 +389,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     }
 
     /// <summary>
-    /// Obtiene todos los estados de la agencia
-    /// </summary>
-    /// <param name="take">El número de estados a obtener</param>
-    /// <param name="skip">El número de estados a saltar</param>
-    /// <param name="name">El nombre del estado</param>
-    /// <returns>Los estados de la agencia</returns>
-    public async Task<dynamic> GetAllAgencyStatus(int take, int skip, string name, bool alls)
-    {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los estados de la agencia");
-
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new { take, skip, name, alls };
-
-            var result = await dbConnection.QueryMultipleAsync("100_GetAllAgencyStatus", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            var agencyStatus = result.Read<dynamic>().Select(item => new DTOAgencyStatus
-            {
-                Id = item.Id,
-                Name = item.Name
-            }).ToList();
-
-            var count = result.Read<int>().Single();
-
-            return new { data = agencyStatus, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los estados de la agencia");
-            throw new Exception(ex.Message);
-        }
-    }
-
-
-    /// <summary>
     /// Obtiene los programas de una agencia por el ID del usuario
     /// </summary>
     /// <param name="userId">El ID del usuario</param>
     /// <returns>Los programas de la agencia</returns>
-    public async Task<List<DTOProgram>> GetAgencyProgramsByUserId(string userId)
+    public async Task<dynamic> GetAgencyProgramsByUserId(string userId)
     {
         try
         {

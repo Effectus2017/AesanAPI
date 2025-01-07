@@ -1,5 +1,7 @@
 using Api.Models;
 
+namespace Api.Interfaces;
+
 public interface IAgencyRepository
 {
     /// ------------------------------------------------------------------------------------------------
@@ -8,8 +10,7 @@ public interface IAgencyRepository
     Task<dynamic> GetAgencyById(int id);
     Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId);
     Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls);
-    Task<dynamic> GetAllAgencyStatus(int take, int skip, string name, bool alls);
-    Task<List<DTOProgram>> GetAgencyProgramsByUserId(string userId);
+    Task<dynamic> GetAgencyProgramsByUserId(string userId);
 
     /// ------------------------------------------------------------------------------------------------
     /// Insertar
@@ -20,6 +21,7 @@ public interface IAgencyRepository
     /// ------------------------------------------------------------------------------------------------
     /// Actualizar 
     /// ------------------------------------------------------------------------------------------------
+
     Task<bool> UpdateAgency(int agencyId, AgencyRequest agencyRequest);
     Task<bool> UpdateAgencyLogo(int agencyId, string imageUrl);
     Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string rejectionJustification);

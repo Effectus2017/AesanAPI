@@ -450,7 +450,7 @@ Follow the official Microsoft documentation and ASP.NET Core guides for best pra
 - Files in the Database/StoredProcedures folder are stored procedures.
 - Files in the Database/Tables.sql are tables.
 - File naming convention for stored procedures is 100\_<ProcedureName>.sql. (100 is version number) new procedures version number is 101 and so on.
-- Always create a consolidate file with all the stored procedures.
+- Always create a consolidate file with all the stored procedures with name 100_AllStoredProceduresForEntityName.sql.
 
 Example code:
 

@@ -20,8 +20,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     {
         try
         {
+            _logger.LogInformation("Obteniendo escuela por ID: {Id}", id);
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { Id = id };
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
 
             var result = await dbConnection.QueryMultipleAsync("100_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
 
@@ -66,7 +68,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { take, skip, name, alls };
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
 
             var result = await dbConnection.QueryMultipleAsync("100_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
@@ -99,26 +105,26 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// </summary>
     /// <param name="request">La solicitud de la escuela a insertar.</param>
     /// <returns>El ID de la escuela insertada.</returns>
-    public async Task<int> InsertSchool(SchoolRequest request)
+    public async Task<bool> InsertSchool(SchoolRequest request)
     {
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@Name", request.Name);
-            parameters.Add("@EducationLevelId", request.EducationLevelId);
-            parameters.Add("@OperatingPeriodId", request.OperatingPeriodId);
-            parameters.Add("@Address", request.Address);
-            parameters.Add("@CityId", request.CityId);
-            parameters.Add("@RegionId", request.RegionId);
-            parameters.Add("@ZipCode", request.ZipCode);
-            parameters.Add("@OrganizationTypeId", request.OrganizationTypeId);
-            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@name", request.Name);
+            parameters.Add("@educationLevelId", request.EducationLevelId);
+            parameters.Add("@operatingPeriodId", request.OperatingPeriodId);
+            parameters.Add("@address", request.Address);
+            parameters.Add("@cityId", request.CityId);
+            parameters.Add("@regionId", request.RegionId);
+            parameters.Add("@zipCode", request.ZipCode);
+            parameters.Add("@organizationTypeId", request.OrganizationTypeId);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
 
-            int schoolId = parameters.Get<int>("@Id");
+            int schoolId = parameters.Get<int>("@id");
 
             // Insertar facilidades
             if (request.FacilityIds != null && request.FacilityIds.Any())
@@ -144,7 +150,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 }
             }
 
-            return schoolId;
+            return schoolId > 0;
         }
         catch (Exception ex)
         {
@@ -165,15 +171,15 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@Id", request.Id);
-            parameters.Add("@Name", request.Name);
-            parameters.Add("@EducationLevelId", request.EducationLevelId);
-            parameters.Add("@OperatingPeriodId", request.OperatingPeriodId);
-            parameters.Add("@Address", request.Address);
-            parameters.Add("@CityId", request.CityId);
-            parameters.Add("@RegionId", request.RegionId);
-            parameters.Add("@ZipCode", request.ZipCode);
-            parameters.Add("@OrganizationTypeId", request.OrganizationTypeId);
+            parameters.Add("@id", request.Id);
+            parameters.Add("@name", request.Name);
+            parameters.Add("@educationLevelId", request.EducationLevelId);
+            parameters.Add("@operatingPeriodId", request.OperatingPeriodId);
+            parameters.Add("@address", request.Address);
+            parameters.Add("@cityId", request.CityId);
+            parameters.Add("@regionId", request.RegionId);
+            parameters.Add("@zipCode", request.ZipCode);
+            parameters.Add("@organizationTypeId", request.OrganizationTypeId);
 
             await dbConnection.ExecuteAsync("100_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
 
@@ -222,7 +228,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { Id = id };
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
 
             await dbConnection.ExecuteAsync("100_DeleteSchool", parameters, commandType: CommandType.StoredProcedure);
 

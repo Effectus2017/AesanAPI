@@ -23,7 +23,7 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
             _logger.LogInformation("Obteniendo tipo de comida por ID: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("Id", id, DbType.Int32);
+            parameters.Add("@id", id, DbType.Int32);
             var result = await db.QueryMultipleAsync("100_GetMealTypeById", parameters, commandType: CommandType.StoredProcedure);
             var data = await result.ReadSingleAsync<DTOMealType>();
             return data;

@@ -17,7 +17,7 @@ public interface ISchoolRepository
     /// <summary>
     /// Inserta una nueva escuela
     /// </summary>
-    Task<int> InsertSchool(SchoolRequest request);
+    Task<bool> InsertSchool(SchoolRequest request);
 
     /// <summary>
     /// Actualiza una escuela existente
