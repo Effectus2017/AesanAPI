@@ -5,24 +5,14 @@ namespace Api.Interfaces;
 public interface ISchoolRepository
 {
     /// <summary>
-    /// Obtiene todas las escuelas
-    /// </summary>
-    Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls);
-
-    /// <summary>
     /// Obtiene una escuela por su ID
     /// </summary>
     Task<dynamic> GetSchoolById(int id);
 
     /// <summary>
-    /// Obtiene las facilidades de una escuela
+    /// Obtiene todas las escuelas
     /// </summary>
-    Task<List<DTOFacility>> GetSchoolFacilities(int schoolId);
-
-    /// <summary>
-    /// Obtiene los tipos de comida de una escuela
-    /// </summary>
-    Task<List<DTOMealType>> GetSchoolMealTypes(int schoolId);
+    Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls);
 
     /// <summary>
     /// Inserta una nueva escuela
@@ -32,14 +22,11 @@ public interface ISchoolRepository
     /// <summary>
     /// Actualiza una escuela existente
     /// </summary>
-    Task<bool> UpdateSchool(int id, SchoolRequest request);
+    Task<bool> UpdateSchool(SchoolRequest request);
 
     /// <summary>
     /// Elimina una escuela
     /// </summary>
     Task<bool> DeleteSchool(int id);
 
-    Task<List<DTOMealType>> GetAllMealTypes();
-    Task<List<DTOOrganizationType>> GetAllOrganizationTypes();
-    Task<List<DTOFacility>> GetAllFacilities();
 }

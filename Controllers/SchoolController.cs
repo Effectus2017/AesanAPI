@@ -8,18 +8,12 @@ namespace Api.Controllers;
 
 [Route("school")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class SchoolController : Controller
+public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
 {
-    private readonly ILogger<SchoolController> _logger;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<SchoolController> _logger = logger;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
-    public SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork)
-    {
-        _logger = logger;
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-    }
-
-    [HttpGet("get-all-schools")]
+    [HttpGet("get-all-schools-from-db")]
     [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
 #if !DEBUG
     [Authorize]
@@ -95,23 +89,23 @@ public class SchoolController : Controller
         }
     }
 
-    [HttpPut("update-school/{id}")]
+    [HttpPut("update-school")]
     [SwaggerOperation(Summary = "Actualiza una escuela existente", Description = "Actualiza los datos de una escuela existente.")]
 #if !DEBUG
     [Authorize]
 #endif
-    public async Task<IActionResult> UpdateSchool(int id, [FromBody] SchoolRequest request)
+    public async Task<IActionResult> UpdateSchool([FromBody] SchoolRequest request)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.SchoolRepository.UpdateSchool(id, request);
+                var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
                 if (result)
                 {
                     return Ok(new { message = "Escuela actualizada correctamente" });
                 }
-                return NotFound($"Escuela con ID {id} no encontrada");
+                return NotFound($"Escuela con ID {request.Id} no encontrada");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -123,7 +117,7 @@ public class SchoolController : Controller
         }
     }
 
-    [HttpDelete("delete-school/{id}")]
+    [HttpDelete("delete-school")]
     [SwaggerOperation(Summary = "Elimina una escuela", Description = "Elimina una escuela de la base de datos.")]
 #if !DEBUG
     [Authorize]
@@ -146,19 +140,4 @@ public class SchoolController : Controller
         }
     }
 
-    [HttpGet("get-all-meal-types")]
-    [SwaggerOperation(Summary = "Obtiene todos los tipos de comida")]
-    public async Task<IActionResult> GetAllMealTypes()
-    {
-        try
-        {
-            var mealTypes = await _unitOfWork.SchoolRepository.GetAllMealTypes();
-            return Ok(mealTypes);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de comida");
-            return StatusCode(500, "Error al obtener los tipos de comida");
-        }
-    }
 }

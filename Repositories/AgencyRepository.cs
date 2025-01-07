@@ -267,7 +267,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="name">El nombre de la agencia</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string userId, bool alls)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
     {
         try
         {
@@ -488,6 +488,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@NonProfit", agencyRequest.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             var rowsAffected = await dbConnection.ExecuteAsync("100_InsertAgency", parameters, commandType: CommandType.StoredProcedure);

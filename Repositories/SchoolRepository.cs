@@ -11,39 +11,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SchoolRepository> _logger = logger;
 
-    public async Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { take, skip, name, alls };
-
-            var result = await dbConnection.QueryMultipleAsync("100_GetSchools", parameters, commandType: CommandType.StoredProcedure);
-
-            var schools = result.Read<dynamic>().Select(item => new DTOSchool
-            {
-                Id = item.Id,
-                Name = item.Name,
-                EducationLevel = new DTOEducationLevel { Id = item.EducationLevelId, Name = item.EducationLevelName },
-                OperatingPeriod = new DTOOperatingPeriod { Id = item.OperatingPeriodId, Name = item.OperatingPeriodName },
-                Address = item.Address,
-                City = new DTOCity { Id = item.CityId, Name = item.CityName },
-                Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
-                ZipCode = item.ZipCode,
-                OrganizationType = new DTOOrganizationType { Id = item.OrganizationTypeId, Name = item.OrganizationTypeName }
-            }).ToList();
-
-            var count = result.Read<int>().Single();
-
-            return new { data = schools, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las escuelas");
-            throw new Exception(ex.Message);
-        }
-    }
-
+    /// <summary>
+    /// Obtiene una escuela por su ID
+    /// </summary>
+    /// <param name="id">El ID de la escuela a obtener.</param>
+    /// <returns>La escuela encontrada.</returns>
     public async Task<dynamic> GetSchoolById(int id)
     {
         try
@@ -81,52 +53,52 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-    public async Task<List<DTOFacility>> GetSchoolFacilities(int schoolId)
+    /// <summary>
+    /// Obtiene todas las escuelas
+    /// </summary>
+    /// <param name="take">El número de escuelas a obtener.</param>
+    /// <param name="skip">El número de escuelas a saltar.</param>
+    /// <param name="name">El nombre de la escuela a buscar.</param>
+    /// <param name="alls">Si se deben obtener todas las escuelas.</param>
+    /// <returns>Las escuelas encontradas.</returns>
+    public async Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls)
     {
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { SchoolId = schoolId };
+            var parameters = new { take, skip, name, alls };
 
-            var facilities = await dbConnection.QueryAsync<DTOFacility>(
-                "SELECT f.Id, f.Name FROM Facility f " +
-                "INNER JOIN SchoolFacility sf ON f.Id = sf.FacilityId " +
-                "WHERE sf.SchoolId = @SchoolId",
-                parameters
-            );
+            var result = await dbConnection.QueryMultipleAsync("100_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
-            return facilities.ToList();
+            var schools = result.Read<dynamic>().Select(item => new DTOSchool
+            {
+                Id = item.Id,
+                Name = item.Name,
+                EducationLevel = new DTOEducationLevel { Id = item.EducationLevelId, Name = item.EducationLevelName },
+                OperatingPeriod = new DTOOperatingPeriod { Id = item.OperatingPeriodId, Name = item.OperatingPeriodName },
+                Address = item.Address,
+                City = new DTOCity { Id = item.CityId, Name = item.CityName },
+                Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
+                ZipCode = item.ZipCode,
+                OrganizationType = new DTOOrganizationType { Id = item.OrganizationTypeId, Name = item.OrganizationTypeName }
+            }).ToList();
+
+            var count = result.Read<int>().Single();
+
+            return new { data = schools, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las facilidades de la escuela");
+            _logger.LogError(ex, "Error al obtener las escuelas");
             throw new Exception(ex.Message);
         }
     }
 
-    public async Task<List<DTOMealType>> GetSchoolMealTypes(int schoolId)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { SchoolId = schoolId };
-
-            var mealTypes = await dbConnection.QueryAsync<DTOMealType>(
-                "SELECT mt.Id, mt.Name FROM MealType mt " +
-                "INNER JOIN SchoolMealRequest smr ON mt.Id = smr.MealTypeId " +
-                "WHERE smr.SchoolId = @SchoolId",
-                parameters
-            );
-
-            return mealTypes.ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de comida de la escuela");
-            throw new Exception(ex.Message);
-        }
-    }
-
+    /// <summary>
+    /// Inserta una nueva escuela
+    /// </summary>
+    /// <param name="request">La solicitud de la escuela a insertar.</param>
+    /// <returns>El ID de la escuela insertada.</returns>
     public async Task<int> InsertSchool(SchoolRequest request)
     {
         try
@@ -166,7 +138,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 foreach (var mealTypeId in request.MealTypeIds)
                 {
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO SchoolMealRequest (SchoolId, MealTypeId) VALUES (@SchoolId, @MealTypeId)",
+                        "INSERT INTO SchoolMeal (SchoolId, MealTypeId) VALUES (@SchoolId, @MealTypeId)",
                         new { SchoolId = schoolId, MealTypeId = mealTypeId }
                     );
                 }
@@ -181,14 +153,19 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-    public async Task<bool> UpdateSchool(int id, SchoolRequest request)
+    /// <summary>
+    /// Actualiza una escuela existente
+    /// </summary>
+    /// <param name="request">La solicitud de la escuela a actualizar.</param>
+    /// <returns>True si la escuela se actualizó correctamente, false en caso contrario.</returns>
+    public async Task<bool> UpdateSchool(SchoolRequest request)
     {
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@Id", id);
+            parameters.Add("@Id", request.Id);
             parameters.Add("@Name", request.Name);
             parameters.Add("@EducationLevelId", request.EducationLevelId);
             parameters.Add("@OperatingPeriodId", request.OperatingPeriodId);
@@ -201,27 +178,27 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             await dbConnection.ExecuteAsync("100_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
 
             // Actualizar facilidades
-            await dbConnection.ExecuteAsync("DELETE FROM SchoolFacility WHERE SchoolId = @SchoolId", new { SchoolId = id });
+            await dbConnection.ExecuteAsync("DELETE FROM SchoolFacility WHERE SchoolId = @SchoolId", new { SchoolId = request.Id });
             if (request.FacilityIds != null && request.FacilityIds.Any())
             {
                 foreach (var facilityId in request.FacilityIds)
                 {
                     await dbConnection.ExecuteAsync(
                         "INSERT INTO SchoolFacility (SchoolId, FacilityId) VALUES (@SchoolId, @FacilityId)",
-                        new { SchoolId = id, FacilityId = facilityId }
+                        new { SchoolId = request.Id, FacilityId = facilityId }
                     );
                 }
             }
 
             // Actualizar tipos de comida
-            await dbConnection.ExecuteAsync("DELETE FROM SchoolMealRequest WHERE SchoolId = @SchoolId", new { SchoolId = id });
+            await dbConnection.ExecuteAsync("DELETE FROM SchoolMeal WHERE SchoolId = @SchoolId", new { SchoolId = request.Id });
             if (request.MealTypeIds != null && request.MealTypeIds.Any())
             {
                 foreach (var mealTypeId in request.MealTypeIds)
                 {
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO SchoolMealRequest (SchoolId, MealTypeId) VALUES (@SchoolId, @MealTypeId)",
-                        new { SchoolId = id, MealTypeId = mealTypeId }
+                        "INSERT INTO SchoolMeal (SchoolId, MealTypeId) VALUES (@SchoolId, @MealTypeId)",
+                        new { SchoolId = request.Id, MealTypeId = mealTypeId }
                     );
                 }
             }
@@ -235,6 +212,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
+    /// <summary>
+    /// Elimina una escuela existente
+    /// </summary>
+    /// <param name="id">El ID de la escuela a eliminar.</param>
+    /// <returns>True si la escuela se eliminó correctamente, false en caso contrario.</returns>
     public async Task<bool> DeleteSchool(int id)
     {
         try
@@ -253,48 +235,4 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-    public async Task<List<DTOMealType>> GetAllMealTypes()
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var result = await dbConnection.QueryAsync<DTOMealType>("SELECT * FROM MealType ORDER BY Name");
-            return result.ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de comida");
-            throw new Exception(ex.Message);
-        }
-    }
-
-    public async Task<List<DTOOrganizationType>> GetAllOrganizationTypes()
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var result = await dbConnection.QueryAsync<DTOOrganizationType>("SELECT * FROM OrganizationType ORDER BY Name");
-            return result.ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de organización");
-            throw new Exception(ex.Message);
-        }
-    }
-
-    public async Task<List<DTOFacility>> GetAllFacilities()
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var result = await dbConnection.QueryAsync<DTOFacility>("SELECT * FROM Facility ORDER BY Name");
-            return result.ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las facilidades");
-            throw new Exception(ex.Message);
-        }
-    }
 }

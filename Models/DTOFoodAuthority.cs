@@ -1,3 +1,5 @@
+namespace Api.Models;
+
 public class DTOFoodAuthority
 {
     public int Id { get; set; }

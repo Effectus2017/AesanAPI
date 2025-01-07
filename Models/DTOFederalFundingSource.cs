@@ -1,8 +1,10 @@
+namespace Api.Models;
+
 public class DTOFederalFundingSource
 {
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public DateTime DateFrom { get; set; }
-    public DateTime DateTo { get; set; }
-    public decimal Amount { get; set; }
+    public required int Id { get; set; }
+    public required string Name { get; set; }
+    public required DateTime DateFrom { get; set; }
+    public required DateTime DateTo { get; set; }
+    public required decimal Amount { get; set; }
 }

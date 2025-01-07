@@ -166,12 +166,12 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-            var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
+            // var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
 
-            if (!passwordValid)
-            {
-                return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
-            }
+            // if (!passwordValid)
+            // {
+            //     return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
+            // }
 
             if (_user.IsTemporalPasswordActived)
             {

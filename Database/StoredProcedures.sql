@@ -92,6 +92,7 @@ CREATE OR ALTER PROCEDURE [100_InsertAgency]
     @NonProfit BIT,
     @FederalFundsDenied BIT,
     @StateFundsDenied BIT,
+    @OrganizedAthleticPrograms BIT,
     -- Justificación para rechazo
     @RejectionJustification NVARCHAR(MAX) = NULL,
     -- Imágen - Logo
@@ -128,7 +129,8 @@ BEGIN
         FederalFundsDenied,
         StateFundsDenied,
         RejectionJustification,
-        ImageURL
+        ImageURL,
+        OrganizedAthleticPrograms
         )
     VALUES
         (
@@ -157,7 +159,8 @@ BEGIN
             @FederalFundsDenied,
             @StateFundsDenied,
             @RejectionJustification,
-            @ImageURL
+            @ImageURL,
+            @OrganizedAthleticPrograms
     );
 
     SET @Id = SCOPE_IDENTITY();
@@ -279,6 +282,7 @@ BEGIN
 END;
 GO
 
+-- Procedimiento almacenado para obtener todas las agencias
 CREATE OR ALTER PROCEDURE [101_GetAgencies]
     @take INT,
     @skip INT,
@@ -341,11 +345,12 @@ BEGIN
         LEFT JOIN AspNetUsers u ON u.AgencyId = a.Id
     WHERE (@alls = 1)
         OR (
-        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+            (@name IS NULL OR a.Name LIKE '%' + @name + '%')
         AND (@regionId IS NULL OR a.RegionId = @regionId)
         AND (@cityId IS NULL OR a.CityId = @cityId)
         AND (@statusId IS NULL OR a.StatusId = @statusId)
-        AND (@userId IS NULL OR up.UserId = @userId))
+        AND (@userId IS NULL OR up.UserId = @userId)
+        )
         AND a.IsListable = 1
     ORDER BY a.Id
     OFFSET @skip ROWS
@@ -369,14 +374,15 @@ BEGIN
         INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
         INNER JOIN Agency a ON ap.AgencyId = a.Id
         INNER JOIN UserProgram up ON p.Id = up.ProgramId
-        LEFT JOIN AspNetUsers u ON ap.UserId = u.Id
-    WHERE 
-        up.UserId = @userId
-        AND (@alls = 1 OR ap.ProgramId = @programId)
-        AND (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+        --LEFT JOIN AspNetUsers u ON ap.UserId = u.Id
+    WHERE (@alls = 1)
+        OR (
+            (@programId IS NULL OR ap.ProgramId = @programId)
+            AND (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+        )
         AND a.IsListable = 1;
 
-    -- Obtener el conteo total
+    -- Obtener el conteo trotal
     SELECT COUNT(DISTINCT a.Id) AS TotalCount
     FROM Agency a
         LEFT JOIN AgencyProgram ap ON a.Id = ap.AgencyId

@@ -1,3 +1,6 @@
+
+namespace Api.Models;
+
 public class FederalFundingSourceRequest
 {
     public string Name { get; set; }

@@ -1,5 +1,8 @@
+namespace Api.Models;
+
 public class SchoolRequest
 {
+    public int Id { get; set; }
     public string Name { get; set; }
     public int EducationLevelId { get; set; }
     public int OperatingPeriodId { get; set; }
@@ -8,6 +11,6 @@ public class SchoolRequest
     public int RegionId { get; set; }
     public int ZipCode { get; set; }
     public int OrganizationTypeId { get; set; }
-    public List<int> FacilityIds { get; set; }
-    public List<int> MealTypeIds { get; set; }
+    public List<int>? FacilityIds { get; set; }
+    public List<int>? MealTypeIds { get; set; }
 }

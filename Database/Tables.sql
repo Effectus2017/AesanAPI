@@ -72,6 +72,10 @@ CREATE TABLE Agency
     Phone NVARCHAR(20) NOT NULL,
     Email NVARCHAR(255) NOT NULL,
     ImageURL NVARCHAR(MAX) NULL,
+    NonProfit BIT NULL DEFAULT 0,
+    FederalFundsDenied BIT NULL DEFAULT 0,
+    StateFundsDenied BIT NULL DEFAULT 0,
+    OrganizedAthleticPrograms BIT NULL DEFAULT 0,
     RejectionJustification NVARCHAR(MAX) NULL,
     AppointmentCoordinated BIT NULL DEFAULT 0,
     AppointmentDate DATETIME NULL,
@@ -84,6 +88,11 @@ CREATE TABLE Agency
     FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id)
 );
 GO
+
+-- ALTER TABLE Agency ADD NonProfit BIT NULL DEFAULT 0;
+-- ALTER TABLE Agency ADD FederalFundsDenied BIT NULL DEFAULT 0;
+-- ALTER TABLE Agency ADD StateFundsDenied BIT NULL DEFAULT 0;
+-- ALTER TABLE Agency ADD OrganizedAthleticPrograms BIT NULL DEFAULT 0;
 
 -- agregar las columnas AppointmentCoordinated y AppointmentDate a la tabla Agency
 ALTER TABLE AgencyProgram ADD AppointmentCoordinated BIT NULL DEFAULT 0;
@@ -479,7 +488,7 @@ CREATE TABLE SatelliteSchool
 );
 
 -- servicio que solicita la escuela
-CREATE TABLE SchoolMealRequest
+CREATE TABLE SchoolMeal
 (
     Id INT PRIMARY KEY IDENTITY(1,1),
     MealTypeId INT NOT NULL,

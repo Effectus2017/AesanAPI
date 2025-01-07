@@ -345,35 +345,134 @@ Estos cambios mejoran la funcionalidad del sistema al permitir la gestión de m�
 
 Estos cambios mejoran la funcionalidad del sistema al optimizar el envío de correos electrónicos, incluyendo correos de bienvenida y confirmación para los usuarios de la agencia.
 
-## [2024-19-11] Cambios en Edición, Rechazo y Aprobación
+## [2024-19-11]
+
+### Cambios en Edición, Rechazo y Aprobación
 
 ### Modificaciones en DapperContext
+
 - Se mejoró la gestión de excepciones en el constructor:
   - Se lanzó `ArgumentNullException` si `configuration` es nulo.
   - Se lanzó `InvalidOperationException` si la cadena de conexión "DefaultConnection" no se encuentra en la configuración.
 
 ### Modificaciones en Procedimientos Almacenados
+
 - Se eliminó el parámetro `@ProgramId` del procedimiento `100_UpdateAgency`.
 - Se actualizó el procedimiento `100_UpdateAgency` para retornar directamente el número de filas afectadas.
 - Se creó el procedimiento almacenado `100_GetTemporaryPassword` para obtener una contraseña temporal por `UserId`.
 
 ### Interfaces
+
 - Se añadió el método `SendApprovalSponsorEmail(User user, string temporaryPassword)` en `IEmailService`.
 - Se añadió el método `SendDenialSponsorEmail(User user, string rejectionReason)` en `IEmailService`.
 - Se creó la interfaz `IPasswordService` con el método `GetTemporaryPassword(string userId)`.
 
 ### Repositorios
+
 - Se actualizó `AgencyRepository` para incluir inyecciones de `IEmailService` y `IPasswordService`.
 - Se modificó el método `UpdateAgencyStatus` para enviar correos de aprobación o rechazo según el estado de la agencia.
 - Se implementó el método `GetTemporaryPassword` en `UserRepository` para obtener la contraseña temporal de un usuario.
 
 ### Servicios
+
 - Se creó `PasswordService` para manejar la obtención de contraseñas temporales.
 - Se actualizó `EmailService` para enviar correos de aprobación y rechazo a los auspiciadores.
 
 ### Mejoras Generales
+
 - Se mejoró el manejo de errores y la legibilidad del código en varios métodos.
 - Se implementaron registros de log para el envío de correos electrónicos y la obtención de contraseñas temporales.
 
 Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de correos electrónicos y la gestión de contraseñas temporales, así como la lógica de aprobación y rechazo de agencias.
 
+## [2024-19-11] hasta [2024-07-12]
+
+### Implementación de Etapas 2, 3 y 4
+
+### Controladores
+
+- **AgencyController**:
+
+  - Renombrado `GetAllAgencies` a `GetAgencyById` para obtener una agencia específica.
+  - Añadido `GetAgencyByIdAndUserId` para obtener agencia por ID y usuario.
+  - Restaurado `GetAllAgencies` con parámetros actualizados.
+  - Implementado `GetAgencyProgramsByUserId` para obtener programas por usuario.
+  - Añadido `UpdateAgencyProgram` para actualizar programas de agencias.
+
+- **AuthController**:
+
+  - Añadido logger para registro de operaciones.
+  - Implementado `ResetPassword` para restablecer contraseñas con documentación Swagger.
+
+- **ProgramController**:
+
+  - Modificada autorización para `InsertProgram` e `InsertProgramInscription`.
+  - Añadidos endpoints para gestión de programas y autoridades alimentarias.
+
+- **SchoolController (Nuevo)**:
+  - Implementados endpoints CRUD para escuelas.
+  - Añadida gestión de tipos de comidas.
+
+### Base de Datos
+
+#### Nuevas Tablas
+
+- Creadas tablas para:
+  - `FoodAuthority`, `OperatingPolicy`, `AlternativeCommunication`
+  - `OptionSelection`, `EducationLevel`, `OperatingPeriod`
+  - `MealType`, `OrganizationType`, `Facility`
+  - `School`, `SatelliteSchool`, `SchoolMealRequest`
+  - `ProgramInscription` y tablas relacionadas
+
+#### Modificaciones en Tablas Existentes
+
+- **Agency**: Añadidos campos `AppointmentCoordinated` y `AppointmentDate`
+- **AspNetUsers**: Añadido campo `IsTemporalPasswordActived`
+- **AgencyProgram**: Nueva estructura con campos adicionales
+
+#### Procedimientos Almacenados
+
+- Creados nuevos procedimientos:
+  - `101_GetAgencies`
+  - `101_GetAgencyByIdAndUserId`
+  - `100_UpdateAgencyProgram`
+  - `100_InsertProgram`
+  - `100_InsertProgramInscription`
+  - `100_GetAllProgramInscriptions`
+
+### Modelos y DTOs
+
+- Añadidos nuevos DTOs:
+  - `DTOAlternativeCommunication`, `DTODocumentsRequired`
+  - `DTOEducationLevel`, `DTOFacility`
+  - `DTOFederalFundingSource`, `DTOFoodAuthority`
+  - `DTOMealType`, `DTOOperatingPolicy`
+  - `DTOProgramInscription`, `DTOSchool`
+
+### Interfaces y Repositorios
+
+- Implementado `ISchoolRepository` y `SchoolRepository`
+- Actualizado `IAgencyRepository` con nuevos métodos
+- Modificado `IProgramRepository` con funcionalidades adicionales
+- Actualizado `IUserRepository` con gestión de contraseñas temporales
+
+### Servicios
+
+- Mejorado sistema de envío de correos
+- Implementada gestión de contraseñas temporales
+- Añadido servicio de escuelas en `Startup.cs`
+
+### Seguridad y Validación
+
+- Mejorado manejo de errores en DapperContext
+- Implementada validación de contraseñas temporales
+- Actualizada gestión de claims para roles específicos
+
+### Datos Iniciales
+
+- Añadidos scripts de inserción para:
+  - Estados de agencia
+  - Agencia por defecto (AESAN)
+  - Programas base
+  - Ciudades y regiones
+  - Roles y usuarios iniciales
