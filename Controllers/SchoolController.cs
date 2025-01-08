@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace Api.Controllers;
 
 [Route("school")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolController> _logger = logger;

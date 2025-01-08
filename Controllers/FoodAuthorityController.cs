@@ -8,7 +8,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("food-authority")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepository, ILogger<FoodAuthorityController> logger) : ControllerBase
 {
     private readonly IFoodAuthorityRepository _foodAuthorityRepository = foodAuthorityRepository;

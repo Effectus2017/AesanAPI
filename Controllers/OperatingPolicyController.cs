@@ -8,7 +8,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("operating-policy")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class OperatingPolicyController(IOperatingPolicyRepository operatingPolicyRepository, ILogger<OperatingPolicyController> logger) : ControllerBase
 {
     private readonly IOperatingPolicyRepository _operatingPolicyRepository = operatingPolicyRepository;

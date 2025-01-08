@@ -8,7 +8,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("federal-funding-certification")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class FederalFundingCertificationController(IFederalFundingCertificationRepository federalFundingCertificationRepository, ILogger<FederalFundingCertificationController> logger) : ControllerBase
 {
     private readonly IFederalFundingCertificationRepository _federalFundingCertificationRepository = federalFundingCertificationRepository;

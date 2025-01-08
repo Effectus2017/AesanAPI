@@ -8,7 +8,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("agency-status")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class AgencyStatusController(IAgencyStatusRepository agencyStatusRepository, ILogger<AgencyStatusController> logger) : ControllerBase
 {
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;

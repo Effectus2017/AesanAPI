@@ -14,13 +14,13 @@ You are a senior .NET backend developer and an expert in C#, ASP.NET Core, and E
 ## Naming Conventions
 
 - Use PascalCase for class names, method names, and public members.
-- Use camelCase for local variables and private fields.
-- Use UPPERCASE for constants.
+-Use camelCase for local variables and private fields.
+-Use UPPERCASE for constants.
 - Prefix interface names with "I" (e.g., 'IUserService').
 
 - Use the following naming convention for methods in interfaces, whit summary and description:
 
-  - GetAll<EntityName> with summary and description
+  -GetAll < EntityName > with summary and description
   - Get<EntityName>ById with summary and description
   - Insert<EntityName> with summary and description
   - Update<EntityName> with summary and description
@@ -80,8 +80,8 @@ public interface IEntityNameRepository
 
   - With constructor principal
   - [HttpGet("get-all-<EntityName>-from-db")] GetAll<EntityName> with property FromQuery QueryParameters queryParameters, with SwaggerOperation
-  - [HttpGet("get-<EntityName>-by-id")] Get<EntityName>ById with property FromQuery QueryParameters queryParameters, with SwaggerOperation
-  - [HttpPost("insert-<EntityName>")] Insert<EntityName> with property FromBody <EntityName> entity, with SwaggerOperation
+  - [HttpGet("get-<EntityName>-by-id")] Get<EntityName> ById with property FromQuery QueryParameters queryParameters, with SwaggerOperation
+  - [HttpPost("insert-<EntityName>")] Insert<EntityName> with property FromBody<EntityName> entity, with SwaggerOperation
   - [HttpPut("update-<EntityName>")] Update<EntityName> with property FromBody <EntityName> entity, with SwaggerOperation
   - [HttpDelete("delete-<EntityName>")] Delete<EntityName> with property FromQuery int id, with SwaggerOperation
 
@@ -89,7 +89,9 @@ Example code:
 
 ```
 [Route("entity-name")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class EntityNameController(IEntityNameRepository entityNameRepository, ILogger<EntityNameController> logger) : ControllerBase
 {
     private readonly IEntityNameRepository _entityNameRepository = entityNameRepository;
@@ -224,7 +226,7 @@ public class EntityNameController(IEntityNameRepository entityNameRepository, IL
 - Use the following naming convention for methods in repositories:
 
   - GetAll<EntityName> with summary and description
-  - Get<EntityName>ById with summary and description
+  - Get<EntityName> ById with summary and description
   - Insert<EntityName> with summary and description
   - Update<EntityName> with summary and description
   - Delete<EntityName> with summary and description
@@ -456,7 +458,7 @@ Example code:
 
 ```
 
-CREATE OR ALTER PROCEDURE [dbo].[100_GetAllEntityName]
+CREATE OR ALTER PROCEDURE[dbo].[100_GetAllEntityName]
     @take INT,
     @skip INT,
     @name NVARCHAR(255),
@@ -468,62 +470,62 @@ BEGIN
     SELECT Id,
            Name
     FROM EntityName
-     WHERE (@alls = 1)
+     WHERE(@alls = 1)
         OR
         (@name IS NULL OR Name LIKE '%' + @name + '%')
     ORDER BY Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*) FROM EntityName
-    WHERE (@alls = 1)
+    WHERE(@alls = 1)
         OR
         (@name IS NULL OR Name LIKE '%' + @name + '%')
 END;
 
-CREATE OR ALTER PROCEDURE [dbo].[100_InsertEntityName]
+CREATE OR ALTER PROCEDURE[dbo].[100_InsertEntityName]
     @name NVARCHAR(100),
     @id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO EntityName (Name)
-    VALUES (@name);
+INSERT INTO EntityName(Name)
+    VALUES(@name);
 
-    SET @id = SCOPE_IDENTITY();
-    RETURN @id;
+SET @id = SCOPE_IDENTITY();
+RETURN @id;
 
 END;
 
-CREATE OR ALTER PROCEDURE [dbo].[100_DeleteEntityName]
+CREATE OR ALTER PROCEDURE[dbo].[100_DeleteEntityName]
     @id INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @rowsAffected INT;
+DECLARE @rowsAffected INT;
 
     DELETE FROM EntityName
     WHERE Id = @id;
 
     SELECT @rowsAffected = @@ROWCOUNT;
 
-    RETURN @rowsAffected;
+RETURN @rowsAffected;
 END;
 
-CREATE OR ALTER PROCEDURE [dbo].[100_GetEntityNameById]
+CREATE OR ALTER PROCEDURE[dbo].[100_GetEntityNameById]
     @id INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT Id,
-           Name
+SELECT Id,
+       Name
     FROM EntityName
     WHERE Id = @id;
 END;
 
-CREATE OR ALTER PROCEDURE [dbo].[100_UpdateEntityName]
+CREATE OR ALTER PROCEDURE[dbo].[100_UpdateEntityName]
     @id INT,
     @name NVARCHAR(100)
 AS
@@ -536,9 +538,9 @@ BEGIN
         SET Name = @name
     WHERE Id = @id;
 
-    SELECT @rowsAffected = @@ROWCOUNT;
+SELECT @rowsAffected = @@ROWCOUNT;
 
-    RETURN @rowsAffected;
+RETURN @rowsAffected;
 END;
 
 ```

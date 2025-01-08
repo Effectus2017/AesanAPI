@@ -113,22 +113,6 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
         }
     }
 
-    [HttpGet("get-all-food-authorities")]
-    [SwaggerOperation(Summary = "Obtiene todas las autoridades de alimentos")]
-    public async Task<IActionResult> GetAllFoodAuthorities()
-    {
-        try
-        {
-            var authorities = await _unitOfWork.ProgramRepository.GetAllFoodAuthorities();
-            return Ok(authorities);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las autoridades de alimentos");
-            return StatusCode(500, "Error al obtener las autoridades de alimentos");
-        }
-    }
-
     [HttpGet("get-all-program-inscriptions")]
     [SwaggerOperation(Summary = "Obtiene todas las inscripciones a programas", Description = "Devuelve una lista paginada de inscripciones a programas.")]
     public async Task<IActionResult> GetAllProgramInscriptions([FromQuery] QueryParameters queryParameters, [FromQuery] int? agencyId = null, [FromQuery] int? programId = null)

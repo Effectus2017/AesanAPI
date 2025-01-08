@@ -1,9 +1,3 @@
-/*
-Archivo consolidado de Stored Procedures para la entidad FoodAuthority
-Version: 1.0.0
-Fecha: 2024-01-07
-*/
-
 -- Procedimiento para obtener todas las autoridades alimentarias
 CREATE OR ALTER PROCEDURE [dbo].[100_GetAllFoodAuthorities]
     @take INT,

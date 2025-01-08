@@ -1,12 +1,3 @@
--- =============================================
--- Author: Cursor AI
--- Create date: 2024-01-17
--- Description: Stored Procedures para la gestión de Escuelas
--- =============================================
-
--- =============================================
--- Get School By Id
--- =============================================
 CREATE OR ALTER PROCEDURE [dbo].[100_GetSchoolById]
     @id INT
 AS

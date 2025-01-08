@@ -8,7 +8,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("operating-period")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class OperatingPeriodController(IOperatingPeriodRepository operatingPeriodRepository, ILogger<OperatingPeriodController> logger) : ControllerBase
 {
     private readonly IOperatingPeriodRepository _operatingPeriodRepository = operatingPeriodRepository;

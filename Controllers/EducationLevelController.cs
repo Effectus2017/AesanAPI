@@ -8,7 +8,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("education-level")]
+#if !DEBUG
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
 public class EducationLevelController(IEducationLevelRepository educationLevelRepository, ILogger<EducationLevelController> logger) : ControllerBase
 {
     private readonly IEducationLevelRepository _educationLevelRepository = educationLevelRepository;
