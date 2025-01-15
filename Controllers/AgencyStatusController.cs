@@ -16,7 +16,7 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;
     private readonly ILogger<AgencyStatusController> _logger = logger;
 
-    [HttpGet("get-all-agency-statuses-from-db")]
+    [HttpGet("get-all-agency-status-from-db")]
 #if !DEBUG
     [Authorize]
 #endif

@@ -477,7 +477,7 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de cor
   - Ciudades y regiones
   - Roles y usuarios iniciales
 
-## [2025-07-01] Implementación de Reglas de Desarrollo y Nuevas Funcionalidades
+## [2024-07-12] hasta [2025-01-01] Implementación de Reglas de Desarrollo y Nuevas Funcionalidades
 
 ### Documentación y Estándares
 
@@ -559,3 +559,150 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de cor
 - Mejora en la documentación de API con Swagger
 - Estandarización de convenciones de código
 - Optimización de consultas a base de datos
+
+## [2025-07-01] Implementación de Nuevos Controladores y Procedimientos Almacenados
+
+### Documentación y Estándares
+
+- Se actualizó `.cursorrules` con nueva convención de nombres para archivos consolidados de procedimientos almacenados:
+  - Nuevo formato: `100_AllStoredProceduresForEntityName.sql`
+
+### Controladores
+
+- **AgencyController**:
+
+  - Eliminado método `GetAllAgencyStatus` para mover funcionalidad a nuevo controlador.
+
+- **Nuevos Controladores Implementados**:
+  - **AgencyStatusController**: Gestión de estados de agencias.
+  - **EducationLevelController**: Gestión de niveles educativos.
+  - **FacilityController**: Gestión de instalaciones.
+  - **FederalFundingCertificationController**: Gestión de certificaciones de fondos federales.
+  - **FoodAuthorityController**: Gestión de autoridades alimentarias.
+  - **OperatingPeriodController**: Gestión de períodos operativos.
+  - **OperatingPolicyController**: Gestión de políticas operativas.
+  - **OrganizationTypeController**: Gestión de tipos de organizaciones.
+
+### Base de Datos
+
+#### Nuevos Procedimientos Almacenados
+
+- **AgencyStatus**:
+
+  - `100_GetAllAgencyStatuses`
+  - `100_InsertAgencyStatus`
+  - `100_DeleteAgencyStatus`
+  - `100_GetAgencyStatusById`
+  - `100_UpdateAgencyStatus`
+
+- **EducationLevel**:
+
+  - `100_GetAllEducationLevels`
+  - `100_InsertEducationLevel`
+  - `100_DeleteEducationLevel`
+  - `100_GetEducationLevelById`
+  - `100_UpdateEducationLevel`
+
+- **Facility**:
+
+  - `100_GetAllFacilities`
+  - `100_GetFacilityById`
+  - `100_InsertFacility`
+  - `100_UpdateFacility`
+  - `100_DeleteFacility`
+
+- **FederalFundingCertification**:
+
+  - `100_GetAllFederalFundingCertifications`
+  - `100_InsertFederalFundingCertification`
+  - `100_DeleteFederalFundingCertification`
+  - `100_GetFederalFundingCertificationById`
+  - `100_UpdateFederalFundingCertification`
+
+- **FoodAuthority**:
+
+  - `100_GetAllFoodAuthorities`
+  - `100_GetFoodAuthorityById`
+  - `100_InsertFoodAuthority`
+  - `100_UpdateFoodAuthority`
+  - `100_DeleteFoodAuthority`
+
+- **OperatingPeriod**:
+  - `100_GetAllOperatingPeriods`
+  - `100_GetOperatingPeriodById`
+  - `100_InsertOperatingPeriod`
+  - `100_UpdateOperatingPeriod`
+  - `100_DeleteOperatingPeriod`
+
+### Características Comunes en Todos los Nuevos Controladores
+
+- Implementación de operaciones CRUD completas
+- Manejo de errores con try-catch y logging
+- Autorización JWT (condicional en modo DEBUG)
+- Documentación Swagger para cada endpoint
+- Uso de inyección de dependencias
+- Respuestas HTTP apropiadas (200, 201, 400, 404, 500)
+
+### Mejoras Generales
+
+- Reorganización de funcionalidades en controladores específicos
+- Estandarización de nombres y estructuras de procedimientos almacenados
+- Mejora en la organización del código y separación de responsabilidades
+- Implementación consistente de patrones de diseño
+
+## [2025-08-01] Implementación de Actualización de Programas y Mejoras en Agencias
+
+### Controladores
+
+- **AgencyController**:
+  - Implementado endpoint `UpdateAgencyProgram` con validación de modelo
+  - Añadida documentación Swagger para el nuevo endpoint
+  - Mejorada la gestión de autorizaciones
+
+### Modelos
+
+- **Nuevos Modelos**:
+  - Creado `UpdateAgencyProgramRequest` con propiedades:
+    - AgencyId
+    - ProgramId
+    - StatusId
+    - UserId
+    - Comment
+    - AppointmentCoordinated
+    - AppointmentDate
+
+### Interfaces
+
+- **IAgencyRepository**:
+  - Añadido método `UpdateAgencyProgram` con parámetros completos
+  - Mejorada la documentación XML
+  - Reorganizada la estructura de la interfaz por secciones (Actualizar, Eliminar)
+
+### Repositorios
+
+- **AgencyRepository**:
+  - Implementada lógica de actualización de programas de agencia
+  - Mejorado sistema de logging para seguimiento de operaciones
+  - Implementada validación de estados y envío de correos según el estado
+  - Añadida gestión de contraseñas temporales para estados específicos
+  - Mejorado manejo de errores con try-catch
+
+### Base de Datos
+
+- **Procedimientos Almacenados**:
+  - Creado `100_UpdateAgencyProgram` con parámetros:
+    - @AgencyId
+    - @ProgramId
+    - @StatusId
+    - @UserId
+    - @Comment
+    - @AppointmentCoordinated
+    - @AppointmentDate
+
+### Mejoras Generales
+
+- Implementación de logging detallado para seguimiento de operaciones
+- Mejora en el manejo de errores y excepciones
+- Optimización en la gestión de estados de agencias
+- Implementación de validaciones de modelo
+- Mejora en la documentación de API
