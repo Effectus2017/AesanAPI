@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("food-authority")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con las autoridades alimentarias.
+/// Proporciona endpoints para la gestión completa de autoridades alimentarias, incluyendo creación,
+/// lectura, actualización y eliminación de registros.
+/// </summary>
 public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepository, ILogger<FoodAuthorityController> logger) : ControllerBase
 {
     private readonly IFoodAuthorityRepository _foodAuthorityRepository = foodAuthorityRepository;
     private readonly ILogger<FoodAuthorityController> _logger = logger;
 
     [HttpGet("get-all-food-authorities-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todas las autoridades alimentarias", Description = "Devuelve una lista de autoridades alimentarias.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
 
     [HttpGet("get-food-authority-by-id")]
     [SwaggerOperation(Summary = "Obtiene una autoridad alimentaria por su ID", Description = "Devuelve una autoridad alimentaria basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
 
     [HttpPost("insert-food-authority")]
     [SwaggerOperation(Summary = "Crea una nueva autoridad alimentaria", Description = "Crea una nueva autoridad alimentaria.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOFoodAuthority foodAuthority)
     {
         try
@@ -89,9 +82,6 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
 
     [HttpPut("update-food-authority")]
     [SwaggerOperation(Summary = "Actualiza una autoridad alimentaria existente", Description = "Actualiza los datos de una autoridad alimentaria existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOFoodAuthority foodAuthority)
     {
         try
@@ -116,9 +106,6 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
 
     [HttpDelete("delete-food-authority")]
     [SwaggerOperation(Summary = "Elimina una autoridad alimentaria existente", Description = "Elimina una autoridad alimentaria existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

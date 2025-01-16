@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("meal-type")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con los tipos de comida.
+/// Proporciona endpoints para la gestión completa de tipos de comida, incluyendo creación,
+/// lectura, actualización y eliminación de registros.
+/// </summary>
 public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<MealTypeController> logger) : ControllerBase
 {
     private readonly IMealTypeRepository _mealTypeRepository = mealTypeRepository;
     private readonly ILogger<MealTypeController> _logger = logger;
 
     [HttpGet("get-all-meal-types-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todos los tipos de comida", Description = "Devuelve una lista de tipos de comida.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
 
     [HttpGet("get-meal-type-by-id")]
     [SwaggerOperation(Summary = "Obtiene un tipo de comida por su ID", Description = "Devuelve un tipo de comida basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
 
     [HttpPost("insert-meal-type")]
     [SwaggerOperation(Summary = "Crea un nuevo tipo de comida", Description = "Crea un nuevo tipo de comida.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOMealType mealType)
     {
         try
@@ -88,9 +81,6 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
 
     [HttpPut("update-meal-type")]
     [SwaggerOperation(Summary = "Actualiza un tipo de comida existente", Description = "Actualiza los datos de un tipo de comida existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOMealType mealType)
     {
         try
@@ -115,9 +105,6 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
 
     [HttpDelete("delete-meal-type")]
     [SwaggerOperation(Summary = "Elimina un tipo de comida existente", Description = "Elimina un tipo de comida existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

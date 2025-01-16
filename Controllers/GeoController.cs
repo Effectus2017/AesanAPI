@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authorization;
 namespace Api.Controllers;
 
 [Route("geo")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con la información geográfica.
+/// Proporciona endpoints para la gestión de ciudades y regiones,
+/// incluyendo búsquedas por ID y listados completos.
+/// </summary>
 public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<GeoController> _logger = logger;
@@ -38,9 +40,6 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
 
     [HttpGet("get-all-regions-from-db")]
     [SwaggerOperation(Summary = "Obtiene todas las regiones de la base de datos", Description = "Devuelve una lista de todas las regiones.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetAllRegions([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -84,9 +83,6 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
 
     [HttpGet("get-city-by-id")]
     [SwaggerOperation(Summary = "Obtiene una ciudad por su ID", Description = "Devuelve una ciudad basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetCityById([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -113,9 +109,6 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
 
     [HttpGet("get-region-by-id")]
     [SwaggerOperation(Summary = "Obtiene una región por su ID", Description = "Devuelve una región basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetRegionById([FromQuery] QueryParameters queryParameters)
     {
         try

@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace Api.Controllers;
 
 [Route("agency")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con las agencias.
+/// Proporciona endpoints para crear, leer, actualizar y gestionar agencias,
+/// incluyendo sus programas, estados y logos.
+/// </summary>
 public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyController> _logger = logger;
@@ -22,9 +24,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>La agencia</returns>
     [HttpGet("get-agency-by-id")]
     [SwaggerOperation(Summary = "Obtiene una agencia por su ID", Description = "Devuelve una agencia basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetAgencyById([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -64,9 +63,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>La agencia para visita preoperacional</returns>
     [HttpGet("get-agency-by-id-and-user-id")]
     [SwaggerOperation(Summary = "Obtiene una agencia por su ID y el ID del usuario", Description = "Devuelve una agencia basada en el ID proporcionado y el ID del usuario.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetAgencyByIdAndUserId([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -106,9 +102,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>Las agencias</returns>
     [HttpGet("get-all-agencies-from-db")]
     [SwaggerOperation(Summary = "Obtiene todas las agencias de la base de datos", Description = "Devuelve una lista de todas las agencias.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetAllAgencies([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -145,9 +138,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>Los programas de la agencia</returns>
     [HttpGet("get-agency-programs-by-user-id")]
     [SwaggerOperation(Summary = "Obtiene los programas de una agencia por el ID del usuario", Description = "Devuelve los programas asociados a la agencia del usuario.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetAgencyProgramsByUserId([FromQuery] string userId)
     {
         try
@@ -179,9 +169,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <param name="agencyRequest">El modelo de la agencia a actualizar</param>
     /// <returns>True si se actualizó correctamente</returns>
     [HttpPut("update-agency")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> UpdateAgency([FromQuery] QueryParameters queryParameters, [FromBody] AgencyRequest agencyRequest)
     {
         try
@@ -207,9 +194,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <param name="queryParameters">Los parámetros de consulta</param>
     /// <returns>True si se actualizó correctamente</returns>
     [HttpPut("update-agency-logo")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> UpdateAgencyLogo([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -235,9 +219,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <param name="queryParameters">Los parámetros de consulta</param>
     /// <returns>True si se actualizó correctamente</returns>
     [HttpPut("update-agency-status")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> UpdateAgencyStatus([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -264,9 +245,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>True si se actualizó correctamente</returns>
     [HttpPut("update-agency-program")]
     [SwaggerOperation(Summary = "Actualiza el programa de una agencia", Description = "Actualiza el programa de una agencia con los datos proporcionados.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> UpdateAgencyProgram([FromQuery] QueryParameters queryParameters, [FromBody] UpdateAgencyProgramRequest updateAgencyProgramRequest)
     {
         try

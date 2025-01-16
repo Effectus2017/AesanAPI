@@ -2,14 +2,16 @@ using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.Annotations; // Asegúrate de tener esta referencia
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
 [Route("user")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con los usuarios.
+/// Proporciona endpoints para la gestión de usuarios, roles y programas,
+/// incluyendo el registro de usuarios y agencias.
+/// </summary>
 public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logger) : Controller
 {
     private readonly ILogger<UserController> _logger = logger;
@@ -26,9 +28,6 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>El usuario</returns>
     [HttpGet("get-user-by-id")]
     [SwaggerOperation(Summary = "Obtiene un usuario por su ID", Description = "Devuelve un usuario basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public IActionResult GetUserById([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -54,9 +53,6 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>Lista de usuarios</returns>
     [HttpGet("get-all-users-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los usuarios de la base de datos", Description = "Devuelve una lista de todos los usuarios.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public IActionResult GetAllUsersFromDb([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -83,9 +79,6 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>Los roles</returns>
     [HttpGet("get-all-roles-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Devuelve una lista de todos los roles.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public IActionResult GetAllRolesFromDb()
     {
         try
@@ -139,9 +132,6 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>El resultado del registro</returns>
     [HttpPost("register-user-agency")]
     [SwaggerOperation(Summary = "Aplicación al programa de auspiciadores", Description = "Crea una agencia y un usuario en el sistema.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> RegisterUserAgency([FromBody] UserAgencyRequest model)
     {
         try

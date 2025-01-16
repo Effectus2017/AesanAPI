@@ -9,6 +9,10 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("auth")]
+/// <summary>
+/// Controlador que maneja la autenticación y gestión de contraseñas de usuarios.
+/// Proporciona endpoints para inicio de sesión y restablecimiento de contraseñas.
+/// </summary>
 public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logger) : ControllerBase
 {
 

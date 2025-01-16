@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("organization-type")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con los tipos de organización.
+/// Proporciona endpoints para la gestión completa de tipos de organización, incluyendo creación,
+/// lectura, actualización y eliminación de registros.
+/// </summary>
 public class OrganizationTypeController(IOrganizationTypeRepository organizationTypeRepository, ILogger<OrganizationTypeController> logger) : ControllerBase
 {
     private readonly IOrganizationTypeRepository _organizationTypeRepository = organizationTypeRepository;
     private readonly ILogger<OrganizationTypeController> _logger = logger;
 
     [HttpGet("get-all-organization-types-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todos los tipos de organización", Description = "Devuelve una lista de tipos de organización.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
 
     [HttpGet("get-organization-type-by-id")]
     [SwaggerOperation(Summary = "Obtiene un tipo de organización por su ID", Description = "Devuelve un tipo de organización basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
 
     [HttpPost("insert-organization-type")]
     [SwaggerOperation(Summary = "Crea un nuevo tipo de organización", Description = "Crea un nuevo tipo de organización.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOOrganizationType organizationType)
     {
         try
@@ -91,9 +84,6 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
 
     [HttpPut("update-organization-type")]
     [SwaggerOperation(Summary = "Actualiza un tipo de organización existente", Description = "Actualiza los datos de un tipo de organización existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOOrganizationType organizationType)
     {
         try
@@ -118,9 +108,6 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
 
     [HttpDelete("delete-organization-type")]
     [SwaggerOperation(Summary = "Elimina un tipo de organización existente", Description = "Elimina un tipo de organización existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

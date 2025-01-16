@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("federal-funding-certification")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con las certificaciones de fondos federales.
+/// Proporciona endpoints para la gestión completa de certificaciones, incluyendo creación,
+/// lectura, actualización y eliminación de registros de certificaciones federales.
+/// </summary>
 public class FederalFundingCertificationController(IFederalFundingCertificationRepository federalFundingCertificationRepository, ILogger<FederalFundingCertificationController> logger) : ControllerBase
 {
     private readonly IFederalFundingCertificationRepository _federalFundingCertificationRepository = federalFundingCertificationRepository;
     private readonly ILogger<FederalFundingCertificationController> _logger = logger;
 
     [HttpGet("get-all-federal-funding-certifications-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todas las certificaciones de fondos federales", Description = "Devuelve una lista de certificaciones de fondos federales.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
 
     [HttpGet("get-federal-funding-certification-by-id")]
     [SwaggerOperation(Summary = "Obtiene una certificación de fondos federales por su ID", Description = "Devuelve una certificación de fondos federales basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
 
     [HttpPost("insert-federal-funding-certification")]
     [SwaggerOperation(Summary = "Crea una nueva certificación de fondos federales", Description = "Crea una nueva certificación de fondos federales.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOFederalFundingCertification certification)
     {
         try
@@ -91,9 +84,6 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
 
     [HttpPut("update-federal-funding-certification")]
     [SwaggerOperation(Summary = "Actualiza una certificación de fondos federales existente", Description = "Actualiza los datos de una certificación de fondos federales existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOFederalFundingCertification certification)
     {
         try
@@ -118,9 +108,6 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
 
     [HttpDelete("delete-federal-funding-certification")]
     [SwaggerOperation(Summary = "Elimina una certificación de fondos federales existente", Description = "Elimina una certificación de fondos federales existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("operating-period")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con los períodos operativos.
+/// Proporciona endpoints para la gestión completa de períodos operativos, incluyendo creación,
+/// lectura, actualización y eliminación de registros.
+/// </summary>
 public class OperatingPeriodController(IOperatingPeriodRepository operatingPeriodRepository, ILogger<OperatingPeriodController> logger) : ControllerBase
 {
     private readonly IOperatingPeriodRepository _operatingPeriodRepository = operatingPeriodRepository;
     private readonly ILogger<OperatingPeriodController> _logger = logger;
 
     [HttpGet("get-all-operating-periods-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todos los períodos operativos", Description = "Devuelve una lista de períodos operativos.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
 
     [HttpGet("get-operating-period-by-id")]
     [SwaggerOperation(Summary = "Obtiene un período operativo por su ID", Description = "Devuelve un período operativo basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
 
     [HttpPost("insert-operating-period")]
     [SwaggerOperation(Summary = "Crea un nuevo período operativo", Description = "Crea un nuevo período operativo.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOOperatingPeriod operatingPeriod)
     {
         try
@@ -88,9 +81,6 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
 
     [HttpPut("update-operating-period")]
     [SwaggerOperation(Summary = "Actualiza un período operativo existente", Description = "Actualiza los datos de un período operativo existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOOperatingPeriod operatingPeriod)
     {
         try
@@ -115,9 +105,6 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
 
     [HttpDelete("delete-operating-period")]
     [SwaggerOperation(Summary = "Elimina un período operativo existente", Description = "Elimina un período operativo existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

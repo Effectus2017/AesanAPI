@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("agency-status")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con los estados de las agencias.
+/// Proporciona endpoints para la gestión completa de estados, incluyendo creación,
+/// lectura, actualización y eliminación de estados de agencias.
+/// </summary>
 public class AgencyStatusController(IAgencyStatusRepository agencyStatusRepository, ILogger<AgencyStatusController> logger) : ControllerBase
 {
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;
     private readonly ILogger<AgencyStatusController> _logger = logger;
 
     [HttpGet("get-all-agency-status-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todos los estados de agencia", Description = "Devuelve una lista de estados de agencia.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
 
     [HttpGet("get-agency-status-by-id")]
     [SwaggerOperation(Summary = "Obtiene un estado de agencia por su ID", Description = "Devuelve un estado de agencia basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
 
     [HttpPost("insert-agency-status")]
     [SwaggerOperation(Summary = "Crea un nuevo estado de agencia", Description = "Crea un nuevo estado de agencia.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOAgencyStatus status)
     {
         try
@@ -91,9 +84,6 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
 
     [HttpPut("update-agency-status")]
     [SwaggerOperation(Summary = "Actualiza un estado de agencia existente", Description = "Actualiza los datos de un estado de agencia existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOAgencyStatus status)
     {
         try
@@ -118,9 +108,6 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
 
     [HttpDelete("delete-agency-status")]
     [SwaggerOperation(Summary = "Elimina un estado de agencia existente", Description = "Elimina un estado de agencia existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

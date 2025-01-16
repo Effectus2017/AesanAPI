@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("operating-policy")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con las políticas operativas.
+/// Proporciona endpoints para la gestión completa de políticas operativas, incluyendo creación,
+/// lectura, actualización y eliminación de registros.
+/// </summary>
 public class OperatingPolicyController(IOperatingPolicyRepository operatingPolicyRepository, ILogger<OperatingPolicyController> logger) : ControllerBase
 {
     private readonly IOperatingPolicyRepository _operatingPolicyRepository = operatingPolicyRepository;
     private readonly ILogger<OperatingPolicyController> _logger = logger;
 
     [HttpGet("get-all-operating-policies-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todas las políticas operativas", Description = "Devuelve una lista de políticas operativas.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
 
     [HttpGet("get-operating-policy-by-id")]
     [SwaggerOperation(Summary = "Obtiene una política operativa por su ID", Description = "Devuelve una política operativa basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
 
     [HttpPost("insert-operating-policy")]
     [SwaggerOperation(Summary = "Crea una nueva política operativa", Description = "Crea una nueva política operativa.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOOperatingPolicy operatingPolicy)
     {
         try
@@ -88,9 +81,6 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
 
     [HttpPut("update-operating-policy")]
     [SwaggerOperation(Summary = "Actualiza una política operativa existente", Description = "Actualiza los datos de una política operativa existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOOperatingPolicy operatingPolicy)
     {
         try
@@ -115,9 +105,6 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
 
     [HttpDelete("delete-operating-policy")]
     [SwaggerOperation(Summary = "Elimina una política operativa existente", Description = "Elimina una política operativa existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

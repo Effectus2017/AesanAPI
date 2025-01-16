@@ -8,18 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("facility")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con las instalaciones.
+/// Proporciona endpoints para la gestión completa de instalaciones, incluyendo creación,
+/// lectura, actualización y eliminación de registros de instalaciones.
+/// </summary>
 public class FacilityController(IFacilityRepository facilityRepository, ILogger<FacilityController> logger) : ControllerBase
 {
     private readonly IFacilityRepository _facilityRepository = facilityRepository;
     private readonly ILogger<FacilityController> _logger = logger;
 
     [HttpGet("get-all-facilities-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todas las instalaciones", Description = "Devuelve una lista de instalaciones.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +41,6 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
 
     [HttpGet("get-facility-by-id")]
     [SwaggerOperation(Summary = "Obtiene una instalación por su ID", Description = "Devuelve una instalación basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +60,6 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
 
     [HttpPost("insert-facility")]
     [SwaggerOperation(Summary = "Crea una nueva instalación", Description = "Crea una nueva instalación.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOFacility facility)
     {
         try
@@ -88,9 +81,6 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
 
     [HttpPut("update-facility")]
     [SwaggerOperation(Summary = "Actualiza una instalación existente", Description = "Actualiza los datos de una instalación existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOFacility facility)
     {
         try
@@ -115,9 +105,6 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
 
     [HttpDelete("delete-facility")]
     [SwaggerOperation(Summary = "Elimina una instalación existente", Description = "Elimina una instalación existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

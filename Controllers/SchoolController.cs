@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace Api.Controllers;
 
 [Route("school")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con las escuelas.
+/// Proporciona endpoints para la gestión completa de escuelas, incluyendo creación,
+/// lectura, actualización y eliminación de registros escolares.
+/// </summary>
 public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolController> _logger = logger;
@@ -17,9 +19,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
 
     [HttpGet("get-all-schools-from-db")]
     [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetAllSchools([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -46,9 +45,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
 
     [HttpGet("get-school-by-id")]
     [SwaggerOperation(Summary = "Obtiene una escuela por su ID", Description = "Devuelve una escuela basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> GetSchoolById([FromQuery] int id)
     {
         try
@@ -69,9 +65,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
 
     [HttpPost("insert-school")]
     [SwaggerOperation(Summary = "Inserta una nueva escuela", Description = "Crea una nueva escuela en la base de datos.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> InsertSchool([FromBody] SchoolRequest request)
     {
         try
@@ -93,9 +86,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
 
     [HttpPut("update-school")]
     [SwaggerOperation(Summary = "Actualiza una escuela existente", Description = "Actualiza los datos de una escuela existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> UpdateSchool([FromBody] SchoolRequest request)
     {
         try
@@ -121,9 +111,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
 
     [HttpDelete("delete-school")]
     [SwaggerOperation(Summary = "Elimina una escuela", Description = "Elimina una escuela de la base de datos.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> DeleteSchool(int id)
     {
         try
