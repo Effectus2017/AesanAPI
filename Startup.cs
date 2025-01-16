@@ -90,8 +90,8 @@ builder.Services.AddAutoMapper(cfg => { cfg.AddProfile(new MappingProfile()); })
 // Configuración de CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowDevOrigin", builder => builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
-    options.AddPolicy("AllowProdOrigin", builder => builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+    options.AddPolicy("AllowDevOrigin", builder => builder.WithOrigins("http://localhost:4200").WithOrigins("https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+    options.AddPolicy("AllowProdOrigin", builder => builder.WithOrigins("http://localhost:4200").WithOrigins("https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
 });
 
 
