@@ -8,6 +8,7 @@ using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 
@@ -129,6 +130,18 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
     c.RoutePrefix = string.Empty; // Hacer que Swagger esté disponible en la raíz
 });
+
+var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+if (Directory.Exists(uploadsPath))
+{
+    app.UseFileServer(enableDirectoryBrowsing: true)
+        .UseStaticFiles(new StaticFileOptions { FileProvider = new PhysicalFileProvider(uploadsPath), RequestPath = new PathString("/uploads") })
+        .UseDirectoryBrowser(new DirectoryBrowserOptions { FileProvider = new PhysicalFileProvider(uploadsPath), RequestPath = new PathString("/uploads") });
+}
+else
+{
+    Directory.CreateDirectory(uploadsPath);
+}
 
 app.MapControllers();
 
