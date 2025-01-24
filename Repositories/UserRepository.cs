@@ -75,6 +75,57 @@ public class UserRepository(UserManager<User> userManager,
         }
     }
 
+    // <summary>
+    /// Obtiene todos los usuarios de la base de datos usando un Stored Procedure
+    /// </summary>
+    /// <param name="take">El número de usuarios a obtener</param>
+    /// <param name="skip">El número de usuarios a saltar</param>
+    /// <param name="name">El nombre del usuario a buscar</param>
+    /// <returns>Una lista de usuarios con el conteo total</returns>
+    public async Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo usuarios con SP");
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+
+            var result = await db.QueryMultipleAsync("100_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
+            var usersFromDb = await result.ReadAsync<DTOUserDB>();
+            var count = await result.ReadSingleAsync<int>();
+
+            var users = usersFromDb.Select(u => new DTOUser
+            {
+                Id = u.Id,
+                Email = u.Email,
+                FirstName = u.FirstName,
+                MiddleName = u.MiddleName,
+                FatherLastName = u.FatherLastName,
+                MotherLastName = u.MotherLastName,
+                AdministrationTitle = u.AdministrationTitle,
+                PhoneNumber = u.PhoneNumber,
+                ImageURL = u.ImageURL,
+                //IsActive = u.IsActive,
+                //AgencyId = u.AgencyId,
+                Roles = new List<string> { u.RoleName }
+            }).ToList();
+
+            return new DTOUserResponse
+            {
+                Data = users,
+                Count = count
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener usuarios con SP");
+            throw;
+        }
+    }
+
     /// <summary>
     /// Obtiene todos los roles de la base de datos
     /// </summary>
@@ -739,6 +790,5 @@ public class UserRepository(UserManager<User> userManager,
             return new BadRequestObjectResult(new { Message = "Error al resetear la contraseña", Error = ex.Message });
         }
     }
-
 }
 

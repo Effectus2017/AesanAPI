@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -86,6 +87,30 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
             if (ModelState.IsValid)
             {
                 dynamic _result = _unitOfWork.UserRepository.GetAllRolesFromDb();
+                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los programas de la base de datos usando un Stored Procedure
+    /// </summary>
+    /// <returns>Los programas</returns>
+    [HttpGet("get-all-users-from-db-with-sp")]
+    [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos usando un Stored Procedure", Description = "Devuelve una lista de todos los programas.")]
+    public async Task<IActionResult> GetAllUsersFromDbWithSP([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 

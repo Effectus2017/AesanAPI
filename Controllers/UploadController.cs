@@ -1,6 +1,13 @@
-﻿using Api.Models;
+﻿using Api.Interfaces;
+using Api.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
 
 namespace Api.Controllers
 {
@@ -47,7 +54,7 @@ namespace Api.Controllers
                     string lastFragment = file.FileName.Split('.').Last();
                     string upperType = char.ToUpperInvariant(type[0]) + type.Substring(1);
 
-                    string extension = Path.GetExtension(fileName);
+                    string extension = System.IO.Path.GetExtension(fileName);
                     string result = fileName.Substring(0, fileName.Length - extension.Length);
                     fullFileName = $"{result}_{DateTime.Now:yyyyMMddHHmmss}{file.FileName.Substring(file.FileName.Length - (lastFragment.Length + 1), lastFragment.Length + 1)}";
 
@@ -67,7 +74,22 @@ namespace Api.Controllers
             }
         }
 
+        private static string GenerateFileName(string fileName)
+        {
+            string strFileName = string.Empty;
+            string lastFragment = fileName.Split('.').Last();
+            string extension = System.IO.Path.GetExtension(fileName);
+            string result = fileName.Substring(0, fileName.Length - extension.Length);
+            strFileName = $"{result}_{DateTime.Now:yyyyMMddHHmmss}{fileName.Substring(fileName.Length - (lastFragment.Length + 1), lastFragment.Length + 1)}";
+            return strFileName;
+        }
 
+        private static async Task<byte[]> GetByteArrayFromImageAsync(IFormFile file)
+        {
+            using var target = new MemoryStream();
+            await file.CopyToAsync(target);
+            return target.ToArray();
+        }
 
     }
 }
