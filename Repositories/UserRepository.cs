@@ -82,7 +82,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name)
+    public async Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null)
     {
         try
         {
@@ -92,6 +92,7 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
 
             var result = await db.QueryMultipleAsync("100_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
             var usersFromDb = await result.ReadAsync<DTOUserDB>();
@@ -108,8 +109,7 @@ public class UserRepository(UserManager<User> userManager,
                 AdministrationTitle = u.AdministrationTitle,
                 PhoneNumber = u.PhoneNumber,
                 ImageURL = u.ImageURL,
-                //IsActive = u.IsActive,
-                //AgencyId = u.AgencyId,
+                IsActive = u.IsActive,
                 Roles = new List<string> { u.RoleName }
             }).ToList();
 
