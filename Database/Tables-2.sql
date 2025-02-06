@@ -1,3 +1,50 @@
+-- Eliminar tablas existentes en orden inverso a las dependencias
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UserProgram]') AND type in (N'U'))
+DROP TABLE [dbo].[UserProgram];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TemporaryPasswords]') AND type in (N'U'))
+DROP TABLE [dbo].[TemporaryPasswords];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUserRoles]') AND type in (N'U'))
+DROP TABLE [dbo].[AspNetUserRoles];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUserLogins]') AND type in (N'U'))
+DROP TABLE [dbo].[AspNetUserLogins];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUserClaims]') AND type in (N'U'))
+DROP TABLE [dbo].[AspNetUserClaims];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetRoleClaims]') AND type in (N'U'))
+DROP TABLE [dbo].[AspNetRoleClaims];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUsers]') AND type in (N'U'))
+DROP TABLE [dbo].[AspNetUsers];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetRoles]') AND type in (N'U'))
+DROP TABLE [dbo].[AspNetRoles];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AgencyProgram]') AND type in (N'U'))
+DROP TABLE [dbo].[AgencyProgram];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Agency]') AND type in (N'U'))
+DROP TABLE [dbo].[Agency];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Program]') AND type in (N'U'))
+DROP TABLE [dbo].[Program];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AgencyStatus]') AND type in (N'U'))
+DROP TABLE [dbo].[AgencyStatus];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CityRegion]') AND type in (N'U'))
+DROP TABLE [dbo].[CityRegion];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[City]') AND type in (N'U'))
+DROP TABLE [dbo].[City];
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Region]') AND type in (N'U'))
+DROP TABLE [dbo].[Region];
+
+-- Crear las tablas en orden de dependencias
 -- Ciudades
 CREATE TABLE City
 (
@@ -78,6 +125,17 @@ CREATE TABLE Agency
     FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id)
 );
 
+-- Programas de AESAN
+CREATE TABLE Program
+(
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(255) NOT NULL,
+    Description NVARCHAR(MAX) NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL
+);
+
 -- Asignación de programas a agencias
 CREATE TABLE AgencyProgram
 (
@@ -93,17 +151,6 @@ CREATE TABLE AgencyProgram
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id),
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
-);
-
--- Programas de AESAN
-CREATE TABLE Program
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    Description NVARCHAR(MAX) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
 );
 
 -- Niveles de Educación

@@ -802,7 +802,7 @@ CREATE OR ALTER PROCEDURE [100_UpdateAgencyProgram]
     @ProgramId INT,
     @StatusId INT,
     @UserId NVARCHAR(36),
-    @Comment NVARCHAR(MAX) = NULL,
+    @Comments NVARCHAR(MAX) = NULL,
     @AppointmentCoordinated BIT = NULL,
     @AppointmentDate DATETIME = NULL
 AS

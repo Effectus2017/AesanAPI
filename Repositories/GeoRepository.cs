@@ -147,6 +147,11 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
         }
     }
 
+    /// <summary>
+    /// Obtiene las ciudades disponibles para una región específica
+    /// </summary>
+    /// <param name="regionId">El ID de la región</param>
+    /// <returns>Las ciudades asociadas a la región</returns>
     public async Task<dynamic> GetCitiesByRegionId(int regionId)
     {
         try

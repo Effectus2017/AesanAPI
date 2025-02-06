@@ -22,6 +22,8 @@ BEGIN
         (@name IS NULL OR Name LIKE '%' + @name + '%')
 END;
 
+GO;
+
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertAlternativeCommunication]
     @name NVARCHAR(100),
     @id INT OUTPUT
@@ -36,6 +38,8 @@ BEGIN
     RETURN @id;
 
 END;
+
+GO;
 
 CREATE OR ALTER PROCEDURE [dbo].[100_DeleteAlternativeCommunication]
     @id INT
