@@ -1,83 +1,3 @@
--- Eliminar tablas existentes en orden inverso a las dependencias
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UserProgram]') AND type in (N'U'))
-DROP TABLE [dbo].[UserProgram];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TemporaryPasswords]') AND type in (N'U'))
-DROP TABLE [dbo].[TemporaryPasswords];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUserRoles]') AND type in (N'U'))
-DROP TABLE [dbo].[AspNetUserRoles];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUserLogins]') AND type in (N'U'))
-DROP TABLE [dbo].[AspNetUserLogins];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUserClaims]') AND type in (N'U'))
-DROP TABLE [dbo].[AspNetUserClaims];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetRoleClaims]') AND type in (N'U'))
-DROP TABLE [dbo].[AspNetRoleClaims];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetUsers]') AND type in (N'U'))
-DROP TABLE [dbo].[AspNetUsers];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AspNetRoles]') AND type in (N'U'))
-DROP TABLE [dbo].[AspNetRoles];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AgencyProgram]') AND type in (N'U'))
-DROP TABLE [dbo].[AgencyProgram];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Agency]') AND type in (N'U'))
-DROP TABLE [dbo].[Agency];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Program]') AND type in (N'U'))
-DROP TABLE [dbo].[Program];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[AgencyStatus]') AND type in (N'U'))
-DROP TABLE [dbo].[AgencyStatus];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CityRegion]') AND type in (N'U'))
-DROP TABLE [dbo].[CityRegion];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[City]') AND type in (N'U'))
-DROP TABLE [dbo].[City];
-
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Region]') AND type in (N'U'))
-DROP TABLE [dbo].[Region];
-
--- Crear las tablas en orden de dependencias
--- Ciudades
-CREATE TABLE City
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name VARCHAR(50) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
-
--- Regiones
-CREATE TABLE Region
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name VARCHAR(50) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
-
--- Relación entre Ciudad y Región
-CREATE TABLE CityRegion
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    CityId INT NOT NULL,
-    RegionId INT NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    FOREIGN KEY (CityId) REFERENCES City(Id),
-    FOREIGN KEY (RegionId) REFERENCES Region(Id)
-);
-
 -- Estados de la agencia
 CREATE TABLE AgencyStatus
 (
@@ -86,43 +6,6 @@ CREATE TABLE AgencyStatus
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
-);
-
--- Agencias Auspiciadoras (Sponsoring Agencies)
-CREATE TABLE Agency
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    StatusId INT NOT NULL,
-    CityRegionId INT NOT NULL,
-    PostalCityRegionId INT NOT NULL,
-    ProgramId INT NOT NULL,
-    Name NVARCHAR(255) NOT NULL,
-    SdrNumber INT NOT NULL,
-    UieNumber INT NOT NULL,
-    EinNumber INT NOT NULL,
-    Address NVARCHAR(255) NOT NULL,
-    ZipCode INT NOT NULL,
-    PostalAddress NVARCHAR(255) NOT NULL,
-    PostalZipCode INT NOT NULL,
-    Latitude FLOAT NOT NULL,
-    Longitude FLOAT NOT NULL,
-    Phone NVARCHAR(20) NOT NULL,
-    Email NVARCHAR(255) NOT NULL,
-    ImageURL NVARCHAR(MAX) NULL,
-    NonProfit BIT NULL DEFAULT 0,
-    FederalFundsDenied BIT NULL DEFAULT 0,
-    StateFundsDenied BIT NULL DEFAULT 0,
-    OrganizedAthleticPrograms BIT NULL DEFAULT 0,
-    RejectionJustification NVARCHAR(MAX) NULL,
-    AppointmentCoordinated BIT NULL DEFAULT 0,
-    AppointmentDate DATETIME NULL,
-    IsActive BIT NULL DEFAULT 1,
-    IsListable BIT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    FOREIGN KEY (CityRegionId) REFERENCES CityRegion(Id),
-    FOREIGN KEY (PostalCityRegionId) REFERENCES CityRegion(Id),
-    FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id)
 );
 
 -- Programas de AESAN
@@ -191,7 +74,8 @@ CREATE TABLE School
     EducationLevelId INT NOT NULL,
     OperatingPeriodId INT NOT NULL,
     Address NVARCHAR(255) NOT NULL,
-    CityRegionId INT NOT NULL,
+    CityId INT NOT NULL,
+    RegionId INT NOT NULL,
     ZipCode INT NOT NULL,
     OrganizationTypeId INT NOT NULL,
     IsActive BIT NOT NULL DEFAULT 1,
@@ -199,7 +83,8 @@ CREATE TABLE School
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id),
     FOREIGN KEY (OperatingPeriodId) REFERENCES OperatingPeriod(Id),
-    FOREIGN KEY (CityRegionId) REFERENCES CityRegion(Id),
+    FOREIGN KEY (CityId) REFERENCES City(Id),
+    FOREIGN KEY (RegionId) REFERENCES Region(Id),
     FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id)
 );
 
@@ -528,4 +413,4 @@ CREATE TABLE UserProgram
 
 -- Crear índices para mejorar el rendimiento
 CREATE INDEX IX_UserProgram_UserId ON UserProgram(UserId);
-CREATE INDEX IX_UserProgram_ProgramId ON UserProgram(ProgramId); 
+CREATE INDEX IX_UserProgram_ProgramId ON UserProgram(ProgramId);
