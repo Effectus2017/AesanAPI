@@ -133,4 +133,31 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
             return StatusCode(500, "Error al obtener la región por ID");
         }
     }
+
+    [HttpGet("get-cities-by-region-id")]
+    [SwaggerOperation(Summary = "Obtiene todas las ciudades por ID de región", Description = "Devuelve una lista de todas las ciudades por ID de región.")]
+    public async Task<IActionResult> GetCitiesByRegionId([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo ciudades por ID de región: {Id}", queryParameters.RegionId);
+
+            if (queryParameters.RegionId == 0)
+            {
+                return BadRequest("El ID de la región es requerido");
+            }
+
+            var cities = await _unitOfWork.GeoRepository.GetCitiesByRegionId(queryParameters.RegionId ?? 0);
+            if (cities == null)
+            {
+                return NotFound();
+            }
+            return Ok(cities);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las ciudades por ID de región");
+            return StatusCode(500, "Error al obtener las ciudades por ID de región");
+        }
+    }
 }

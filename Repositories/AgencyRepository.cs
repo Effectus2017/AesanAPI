@@ -28,7 +28,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             var param = new { Id = id };
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetAgencyById", param, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("101_GetAgencyById", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -418,10 +418,22 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     {
         try
         {
+            // Obtener todos los códigos existentes
+            using IDbConnection db = _context.CreateConnection();
+            var existingCodes = (await db.QueryAsync<string>("SELECT AgencyCode FROM Agency")).ToList();
+
+            // Generar el nuevo código único
+            string agencyCode = Utilities.GenerateAgencyCode(
+                agencyRequest.Name,
+                agencyRequest.Programs,
+                existingCodes
+            );
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
             parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@AgencyCode", agencyCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@EinNumber", agencyRequest.EinNumber, DbType.Int32, ParameterDirection.Input);
@@ -449,11 +461,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            var rowsAffected = await dbConnection.ExecuteAsync("100_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
-
-            // Obtener el ID de la agencia insertada
-            int agencyId = parameters.Get<int>("@Id");
-            return agencyId;
+            await db.ExecuteAsync("101_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            var id = parameters.Get<int>("@Id");
+            return id;
         }
         catch (Exception ex)
         {
@@ -502,7 +512,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
             parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            //parameters.Add("@ProgramId", agencyRequest.ProgramId, DbType.Int32, ParameterDirection.Input);
             // Datos de la Agencia
             parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
@@ -622,7 +631,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         {
                             _logger.LogWarning($"No se pudo obtener la contraseña temporal para la usuario {User.Id}");
                             // Optionally, you might want to handle this scenario differently
-                        };
+                        }
+                        ;
                     }
                 }
             }

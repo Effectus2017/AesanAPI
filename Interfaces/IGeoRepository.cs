@@ -7,4 +7,5 @@ public interface IGeoRepository
     Task<dynamic> GetCityById(int cityId);
     Task<dynamic> GetRegionsByCityId(int cityId);
     Task<dynamic> GetRegionById(int regionId);
+    Task<dynamic> GetCitiesByRegionId(int regionId);
 }

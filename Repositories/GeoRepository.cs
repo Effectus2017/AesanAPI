@@ -23,45 +23,23 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     {
         try
         {
-            _logger.LogInformation("Obteniendo todas las ciudades de la base de datos local");
+            _logger.LogInformation("Obteniendo todas las ciudades");
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new
-            {
-                take,
-                skip,
-                name,
-                alls
-            };
-
-            var result = await dbConnection.QueryMultipleAsync("100_GetCities", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            var model = result.Read<dynamic>().Select(item => new DTOCityTable
-            {
-                Id = item.Id,
-                Name = item.Name,
-            }).ToList();
-
-            var count = result.Read<int>().Single();
-
-            var _complete = new
-            {
-                data = model,
-                count
-            };
-
-            return _complete;
+            var result = await db.QueryMultipleAsync("100_GetCities", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<dynamic>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los customers de la base de datos local");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al obtener las ciudades");
+            throw;
         }
     }
 
@@ -77,45 +55,23 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     {
         try
         {
-            _logger.LogInformation("Obteniendo todas las regiones de la base de datos local");
+            _logger.LogInformation("Obteniendo todas las regiones");
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new
-            {
-                take,
-                skip,
-                name,
-                alls
-            };
-
-            var result = await dbConnection.QueryMultipleAsync("100_GetRegions", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            var model = result.Read<dynamic>().Select(item => new DTORegionTable
-            {
-                Id = item.Id,
-                Name = item.Name,
-            }).ToList();
-
-            var count = result.Read<int>().Single();
-
-            var _complete = new
-            {
-                data = model,
-                count
-            };
-
-            return _complete;
+            var result = await db.QueryMultipleAsync("100_GetRegions", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<dynamic>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las regiones de la base de datos local");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al obtener las regiones");
+            throw;
         }
     }
 
@@ -128,34 +84,17 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     {
         try
         {
-            _logger.LogInformation("Obteniendo ciudad por ID");
+            _logger.LogInformation("Obteniendo ciudad por ID: {CityId}", cityId);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", cityId, DbType.Int32);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new
-            {
-                cityId
-            };
-
-            var result = await dbConnection.QueryAsync<dynamic>("100_GetCityById", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null || !result.Any())
-            {
-                return null;
-            }
-
-            var model = result.Select(item => new DTOCityTable
-            {
-                Id = item.Id,
-                Name = item.Name,
-            }).ToList();
-
-            return model;
+            return await db.QueryFirstOrDefaultAsync<dynamic>("100_GetCityById", parameters, commandType: CommandType.StoredProcedure);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la ciudad por ID");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al obtener la ciudad por ID: {CityId}", cityId);
+            throw;
         }
     }
 
@@ -168,42 +107,20 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     {
         try
         {
-            _logger.LogInformation("Obteniendo regiones por ID de ciudad");
+            _logger.LogInformation("Obteniendo regiones por ID de ciudad: {CityId}", cityId);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@cityId", cityId, DbType.Int32);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new
-            {
-                cityId
-            };
-
-            var result = await dbConnection.QueryMultipleAsync("100_GetRegionsByCityId", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            var model = result.Read<dynamic>().Select(item => new DTORegionTable
-            {
-                Id = item.Id,
-                Name = item.Name,
-            }).ToList();
-
-            var count = result.Read<int>().Single();
-
-            var _complete = new
-            {
-                data = model,
-                count
-            };
-
-            return _complete;
+            var result = await db.QueryMultipleAsync("100_GetRegionsByCityId", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<dynamic>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las regiones por ID de ciudad");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al obtener las regiones por ID de ciudad: {CityId}", cityId);
+            throw;
         }
     }
 
@@ -216,34 +133,43 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     {
         try
         {
-            _logger.LogInformation("Obteniendo región por ID");
+            _logger.LogInformation("Obteniendo región por ID: {RegionId}", regionId);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", regionId, DbType.Int32);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new
-            {
-                regionId
-            };
-
-            var result = await dbConnection.QueryAsync<dynamic>("100_GetRegionById", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null || !result.Any())
-            {
-                return null;
-            }
-
-            var model = result.Select(item => new DTORegionTable
-            {
-                Id = item.Id,
-                Name = item.Name,
-            }).FirstOrDefault();
-
-            return model;
+            return await db.QueryFirstOrDefaultAsync<dynamic>("100_GetRegionById", parameters, commandType: CommandType.StoredProcedure);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la región por ID");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al obtener la región por ID: {RegionId}", regionId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene las ciudades disponibles para una región específica
+    /// </summary>
+    /// <param name="regionId">El ID de la región</param>
+    /// <returns>Las ciudades asociadas a la región</returns>
+    public async Task<dynamic> GetCitiesByRegionId(int regionId)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo ciudades por ID de región: {RegionId}", regionId);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@regionId", regionId, DbType.Int32);
+
+            var result = await db.QueryMultipleAsync("100_GetCitiesByRegionId", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<dynamic>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las ciudades por ID de región: {RegionId}", regionId);
+            throw;
         }
     }
 }

@@ -14,8 +14,9 @@ public interface IUserRepository
     /// <param name="take">El número de usuarios a tomar</param>
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
+    /// <param name="agencyId">El ID de la agencia (opcional)</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name);
+    Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null);
     dynamic GetAllRolesFromDb();
     dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls);
 

@@ -1,7 +1,8 @@
 CREATE OR ALTER PROCEDURE [dbo].[100_GetAllUsersFromDb]
     @take INT,
     @skip INT,
-    @name NVARCHAR(255)
+    @name NVARCHAR(255),
+    @agencyId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -29,6 +30,7 @@ BEGIN
            OR u.FatherLastName LIKE '%' + @name + '%'
            OR u.Email LIKE '%' + @name + '%'
            OR u.UserName LIKE '%' + @name + '%')
+        AND (@agencyId IS NULL OR u.AgencyId = @agencyId)
     ORDER BY u.FirstName
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
@@ -41,5 +43,6 @@ BEGIN
            OR u.FirstName LIKE '%' + @name + '%'
            OR u.FatherLastName LIKE '%' + @name + '%'
            OR u.Email LIKE '%' + @name + '%'
-           OR u.UserName LIKE '%' + @name + '%');
+           OR u.UserName LIKE '%' + @name + '%')
+        AND (@agencyId IS NULL OR u.AgencyId = @agencyId);
 END; 

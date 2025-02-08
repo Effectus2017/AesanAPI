@@ -1,19 +1,3 @@
--- Ciudades
-CREATE TABLE City
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name VARCHAR(50) NOT NULL
-);
-
--- Regiones
-CREATE TABLE Region
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    CityId INT,
-    Name VARCHAR(50) NOT NULL,
-    FOREIGN KEY (CityId) REFERENCES City(Id)
-);
-
 -- Estados de la agencia
 CREATE TABLE AgencyStatus
 (
@@ -50,49 +34,6 @@ CREATE TABLE AgencyProgram
 --INSERT INTO AgencyProgram (AgencyId, ProgramId) VALUES (1, 2);
 
 -- Agencias Auspiciadoras (Sponsoring Agencies)
-CREATE TABLE Agency
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    StatusId INT NOT NULL,
-    CityId INT NOT NULL,
-    RegionId INT NOT NULL,
-    PostalCityId INT NOT NULL,
-    PostalRegionId INT NOT NULL,
-    ProgramId INT NOT NULL,
-    Name NVARCHAR(255) NOT NULL,
-    SdrNumber INT NOT NULL,
-    UieNumber INT NOT NULL,
-    EinNumber INT NOT NULL,
-    Address NVARCHAR(255) NOT NULL,
-    ZipCode INT NOT NULL,
-    PostalAddress NVARCHAR(255) NOT NULL,
-    PostalZipCode INT NOT NULL,
-    Latitude FLOAT NOT NULL,
-    Longitude FLOAT NOT NULL,
-    Phone NVARCHAR(20) NOT NULL,
-    Email NVARCHAR(255) NOT NULL,
-    ImageURL NVARCHAR(MAX) NULL,
-    NonProfit BIT NULL DEFAULT 0,
-    FederalFundsDenied BIT NULL DEFAULT 0,
-    StateFundsDenied BIT NULL DEFAULT 0,
-    OrganizedAthleticPrograms BIT NULL DEFAULT 0,
-    RejectionJustification NVARCHAR(MAX) NULL,
-    AppointmentCoordinated BIT NULL DEFAULT 0,
-    AppointmentDate DATETIME NULL,
-    IsActive BIT NULL DEFAULT 1,
-    IsListable BIT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    FOREIGN KEY (CityId) REFERENCES City(Id),
-    FOREIGN KEY (RegionId) REFERENCES Region(Id),
-    FOREIGN KEY (StatusId) REFERENCES AgencyStatus(Id)
-);
-GO
-
--- ALTER TABLE Agency ADD NonProfit BIT NULL DEFAULT 0;
--- ALTER TABLE Agency ADD FederalFundsDenied BIT NULL DEFAULT 0;
--- ALTER TABLE Agency ADD StateFundsDenied BIT NULL DEFAULT 0;
--- ALTER TABLE Agency ADD OrganizedAthleticPrograms BIT NULL DEFAULT 0;
 
 -- agregar las columnas AppointmentCoordinated y AppointmentDate a la tabla Agency
 ALTER TABLE AgencyProgram ADD AppointmentCoordinated BIT NULL DEFAULT 0;

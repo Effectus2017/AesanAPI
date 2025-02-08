@@ -54,4 +54,7 @@ public class DTOAgency
     public DTOUser User { get; set; } = new DTOUser();
     // Programas
     public List<DTOProgram> Programs { get; set; } = [];
+
+    // Código de la Agencia
+    public string AgencyCode { get; set; } = "";
 }

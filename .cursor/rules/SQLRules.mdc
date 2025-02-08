@@ -1,0 +1,110 @@
+---
+description: 
+globs: 
+---
+# Reglas SQL para el Proyecto
+
+## Reglas de Base de Datos
+
+- **Uso de Stored Procedures:**  
+  Utilizar stored procedures para las operaciones de base de datos.
+
+- **Ubicación de Archivos:**
+
+  - Los archivos en la carpeta `Database/StoredProcedures` corresponden a stored procedures.
+  - Los archivos en `Database/Tables.sql` corresponden a las definiciones de las tablas.
+
+- **Convención de Nombres:**  
+  La convención de nombres para los stored procedures es:  
+  `100_<ProcedureName>.sql`  
+  (donde "100" es el número de versión). Para nuevos procedimientos o nuevas versiones, el número de versión se incrementa (101, 102, etc.).
+
+- **Archivo Consolidado:**  
+  Siempre se debe crear un archivo consolidado con todos los stored procedures, con el nombre `100_AllStoredProceduresForEntityName.sql`.
+
+- **Versionado:**  
+  Cada vez que se crea una nueva versión de un stored procedure o de una tabla, se debe crear un nuevo archivo con el nuevo número de versión.
+
+## Ejemplo de Stored Procedures
+
+```sql
+CREATE OR ALTER PROCEDURE [dbo].[100_GetAllEntityName]
+    @take INT,
+    @skip INT,
+    @name NVARCHAR(255),
+    @alls BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT Id,
+           Name
+    FROM EntityName
+    WHERE (@alls = 1)
+       OR (@name IS NULL OR Name LIKE '%' + @name + '%')
+    ORDER BY Name
+    OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+
+    SELECT COUNT(*) FROM EntityName
+    WHERE (@alls = 1)
+       OR (@name IS NULL OR Name LIKE '%' + @name + '%')
+END;
+
+CREATE OR ALTER PROCEDURE [dbo].[100_InsertEntityName]
+    @name NVARCHAR(100),
+    @id INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO EntityName(Name)
+        VALUES(@name);
+
+    SET @id = SCOPE_IDENTITY();
+    RETURN @id;
+END;
+
+CREATE OR ALTER PROCEDURE [dbo].[100_DeleteEntityName]
+    @id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @rowsAffected INT;
+
+    DELETE FROM EntityName
+    WHERE Id = @id;
+
+    SELECT @rowsAffected = @@ROWCOUNT;
+    RETURN @rowsAffected;
+END;
+
+CREATE OR ALTER PROCEDURE [dbo].[100_GetEntityNameById]
+    @id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT Id,
+           Name
+    FROM EntityName
+    WHERE Id = @id;
+END;
+
+CREATE OR ALTER PROCEDURE [dbo].[100_UpdateEntityName]
+    @id INT,
+    @name NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @rowsAffected INT;
+
+    UPDATE EntityName
+       SET Name = @name
+    WHERE Id = @id;
+
+    SELECT @rowsAffected = @@ROWCOUNT;
+    RETURN @rowsAffected;
+END;
+```
