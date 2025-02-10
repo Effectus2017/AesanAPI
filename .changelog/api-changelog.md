@@ -2,7 +2,7 @@
 
 # Lista de Tareas Realizadas
 
-## [2024-09-01] y [2024-10-29]
+## [2024-09-01] hasta [2024-10-28]
 
 ### Cambios Realizados:
 
@@ -152,7 +152,7 @@ Estos cambios mejoran la gestión de agencias al incluir nuevos campos, permitie
 
 Estos cambios mejoran la gestión de agencias al incluir nuevos campos de elegibilidad, permitiendo un registro más completo de la información de las agencias.
 
-## [2024-10-01]
+## [2024-11-01]
 
 ### Descripción de los cambios:
 
@@ -385,7 +385,7 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el envío de cor
 
 Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de correos electrónicos y la gestión de contraseñas temporales, así como la lógica de aprobación y rechazo de agencias.
 
-## [2024-19-11] hasta [2024-07-12]
+## [2024-19-12] hasta [2024-12-07]
 
 ### Implementación de Etapas 2, 3 y 4
 
@@ -477,7 +477,9 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de cor
   - Ciudades y regiones
   - Roles y usuarios iniciales
 
-## [2024-07-12] hasta [2025-01-01] Implementación de Reglas de Desarrollo y Nuevas Funcionalidades
+## [2024-12-07] hasta [2025-01-01]
+
+### Implementación de Reglas de Desarrollo y Nuevas Funcionalidades
 
 ### Documentación y Estándares
 
@@ -560,7 +562,9 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de cor
 - Estandarización de convenciones de código
 - Optimización de consultas a base de datos
 
-## [2025-07-01] Implementación de Nuevos Controladores y Procedimientos Almacenados
+## [2025-01-07]
+
+### Implementación de Nuevos Controladores y Procedimientos Almacenados
 
 ### Documentación y Estándares
 
@@ -650,7 +654,9 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de cor
 - Mejora en la organización del código y separación de responsabilidades
 - Implementación consistente de patrones de diseño
 
-## [2025-08-01] Implementación de Actualización de Programas y Mejoras en Agencias
+## [2025-01-08]
+
+### Implementación de Actualización de Programas y Mejoras en Agencias
 
 ### Controladores
 
@@ -706,3 +712,83 @@ Estos cambios mejoran la funcionalidad del sistema al optimizar el manejo de cor
 - Optimización en la gestión de estados de agencias
 - Implementación de validaciones de modelo
 - Mejora en la documentación de API
+
+## [2025-01-09] hasta [2025-02-07]
+
+### Reestructuración de Base de Datos y Mejoras en el Sistema
+
+### Reglas y Documentación
+
+- Se añadió archivo `.SQLRules.mdc` con reglas para:
+  - Uso de procedimientos almacenados
+  - Ubicación de archivos
+  - Convenciones de nombres
+  - Versionamiento
+
+### Base de Datos
+
+#### Reestructuración de Tablas
+
+- **Nuevas Tablas**:
+
+  - Creación de nueva estructura para `Agency` con campos adicionales como `AgencyCode`
+  - Reorganización de tablas `City`, `Region` y `CityRegion`
+
+- **Eliminaciones**:
+  - Eliminado `Tables-2.sql` y renombrado `Tables.sql` a `Tables-Deprecado.sql`
+  - Removidas tablas obsoletas relacionadas con usuarios y gestión de agencias
+
+#### Procedimientos Almacenados
+
+- **Nuevos Archivos Consolidados**:
+
+  - `101_AllStoredProceduresForAgency.sql`
+  - `101_AllStoredProceduresForCityRegion.sql`
+
+- **Actualizaciones**:
+  - Versión 101 de procedimientos para gestión de agencias
+  - Nuevos procedimientos para manejo de ciudades y regiones
+  - Mejoras en la gestión de relaciones ciudad-región
+
+### Modelos y DTOs
+
+- **DTOAgency**:
+  - Añadida propiedad `AgencyCode`
+  - Actualización de propiedades relacionadas con ubicación
+
+### Repositorios
+
+- **AgencyRepository**:
+  - Actualización a versión 101 de procedimientos almacenados
+  - Implementación de generación de códigos únicos para agencias
+  - Mejoras en el manejo de parámetros
+
+### Utilidades
+
+- **Nuevo Sistema de Códigos**:
+  - Implementado `GenerateAgencyCode` para crear identificadores únicos
+  - Métodos auxiliares para generación de iniciales
+  - Sistema de secuencia numérica por año
+
+### Configuración
+
+- **Actualizaciones de Base de Datos**:
+  - Desarrollo: Cambio de `AESAN-2` a `NUTRE`
+  - Producción: Cambio de `aesandb` a `aesan2`
+
+### Datos Iniciales
+
+- **Carga de Datos**:
+  - Inserción de 7 regiones principales
+  - Carga de 78 ciudades
+  - Establecimiento de relaciones ciudad-región
+  - Datos iniciales para agencia AESAN
+
+### Mejoras Generales
+
+- Implementación de versionamiento para procedimientos almacenados
+- Mejor organización de archivos de base de datos
+- Optimización de consultas y relaciones
+- Implementación de sistema de códigos únicos para agencias
+
+Estos cambios representan una significativa reestructuración del sistema, mejorando la organización de la base de datos y añadiendo nuevas funcionalidades para la gestión de agencias.
