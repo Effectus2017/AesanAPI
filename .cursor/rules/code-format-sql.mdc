@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description: Guia para trabajar con SQL Server
+globs: **/*.sql
 ---
 # Reglas SQL para el Proyecto
 
@@ -11,19 +11,19 @@ globs:
 
 - **Ubicación de Archivos:**
 
-  - Los archivos en la carpeta `Database/StoredProcedures` corresponden a stored procedures.
-  - Los archivos en `Database/Tables.sql` corresponden a las definiciones de las tablas.
+  - Los archivos en `Database/TableName/Tables.sql` corresponden a las definiciones de las tablas.
+  - Los SPs van en `Database/TableName/SPName.sql` segun la tabla van ahi los SPs con sus versiones correspondientes.
 
 - **Convención de Nombres:**  
   La convención de nombres para los stored procedures es:  
   `100_<ProcedureName>.sql`  
   (donde "100" es el número de versión). Para nuevos procedimientos o nuevas versiones, el número de versión se incrementa (101, 102, etc.).
 
-- **Archivo Consolidado:**  
-  Siempre se debe crear un archivo consolidado con todos los stored procedures, con el nombre `100_AllStoredProceduresForEntityName.sql`.
+<!-- - **Archivo Consolidado:**  
+  Siempre se debe crear un archivo consolidado con todos los stored procedures, con el nombre `100_AllStoredProceduresForEntityName.sql`. -->
 
 - **Versionado:**  
-  Cada vez que se crea una nueva versión de un stored procedure o de una tabla, se debe crear un nuevo archivo con el nuevo número de versión.
+  Siempre que se tenga que hacer una modificacion a un archivo de StoreProcedure crear uno nuevo con una version nueva consecutiva.
 
 ## Ejemplo de Stored Procedures
 

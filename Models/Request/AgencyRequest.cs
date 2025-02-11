@@ -38,6 +38,7 @@ public class AgencyRequest
     public bool FederalFundsDenied { get; set; } = false;
     public bool StateFundsDenied { get; set; } = false;
     public bool OrganizedAthleticPrograms { get; set; } = false;
+    public bool AtRiskService { get; set; } = false;
     // Campos de estado
     public bool IsActive { get; set; } = true;
     public bool IsListable { get; set; } = true;

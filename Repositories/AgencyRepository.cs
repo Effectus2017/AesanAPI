@@ -429,7 +429,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 existingCodes
             );
 
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
             parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
@@ -459,9 +458,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@AtRiskService", agencyRequest.AtRiskService, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("101_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync("102_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@Id");
             return id;
         }

@@ -54,10 +54,10 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// </summary>
     /// <param name="take">El número de programas a obtener</param>
     /// <param name="skip">El número de programas a saltar</param>
-    /// <param name="name">El nombre del programa</param>
+    /// <param name="names">Los nombres de los programas</param>
     /// <param name="alls">Si se deben obtener todos los programas</param>
     /// <returns>Los programas</returns>
-    public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls)
     {
         try
         {
@@ -65,9 +65,9 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
             using IDbConnection dbConnection = _context.CreateConnection();
 
-            var param = new { take, skip, name, alls };
+            var param = new { take, skip, names, alls };
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetPrograms", param, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("101_GetPrograms", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
