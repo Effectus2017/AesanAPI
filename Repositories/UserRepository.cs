@@ -217,13 +217,6 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-            // var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
-
-            // if (!passwordValid)
-            // {
-            //     return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
-            // }
-
             if (_user.IsTemporalPasswordActived)
             {
                 return new ConflictObjectResult(new { Message = "La contraseña temporal es válida." });
@@ -242,6 +235,13 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "El correo electrónico no está confirmado." });
             }
 #endif
+
+            var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
+
+            if (!passwordValid)
+            {
+                return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
+            }
 
             var tokenHandler = new JwtSecurityTokenHandler();
 

@@ -431,7 +431,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             var parameters = new DynamicParameters();
             parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@AgencyStatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@AgencyCode", agencyCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
@@ -509,9 +509,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             using IDbConnection dbConnection = _context.CreateConnection();
 
             var parameters = new DynamicParameters();
-            parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@Id", agencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@StatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@AgencyStatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
             // Datos de la Agencia
             parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
@@ -534,9 +534,13 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@ImageUrl", agencyRequest.ImageUrl, DbType.String, ParameterDirection.Input);
             // Datos del Contacto
             parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
+            // Código de la agencia
+            parameters.Add("@AgencyCode", agencyRequest.AgencyCode, DbType.String, ParameterDirection.Input);
+
+            // Retorno
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("100_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("101_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@ReturnValue");
 
             return rowsAffected > 0;
@@ -591,7 +595,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
-            parameters.Add("@statusId", statusId);
+            parameters.Add("@AgencyStatusId", statusId);
             parameters.Add("@rejectionJustification", rejectionJustification);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -666,7 +670,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var parameters = new DynamicParameters();
             parameters.Add("@AgencyId", agencyId);
             parameters.Add("@ProgramId", programId);
-            parameters.Add("@StatusId", statusId);
+            parameters.Add("@AgencyStatusId", statusId);
             parameters.Add("@UserId", userId);
             parameters.Add("@Comment", comment);
             parameters.Add("@AppointmentCoordinated", appointmentCoordinated);

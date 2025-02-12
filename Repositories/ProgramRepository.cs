@@ -74,7 +74,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                 return null;
             }
 
-            var programs = result.Read<dynamic>().Select(item => new DTOProgram
+            var data = result.Read<dynamic>().Select(item => new DTOProgram
             {
                 Id = item.Id,
                 Name = item.Name,
@@ -83,7 +83,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
             var count = result.Read<int>().Single();
 
-            return new { data = programs, count };
+            return new { data, count };
         }
         catch (Exception ex)
         {

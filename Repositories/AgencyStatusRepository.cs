@@ -54,7 +54,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllAgencyStatuses", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryMultipleAsync("100_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             var data = await result.ReadAsync<DTOAgencyStatus>();
             var count = await result.ReadSingleAsync<int>();
             return new { data, count };
