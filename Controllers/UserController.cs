@@ -122,30 +122,6 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
     }
 
-    /// <summary>
-    /// Obtiene todos los programas de la base de datos
-    /// </summary>
-    /// <returns>Los programas</returns>
-    [HttpGet("get-all-programs-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas.")]
-    public IActionResult GetAllProgramsFromDb([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                dynamic _result = _unitOfWork.UserRepository.GetAllProgramsFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
-    }
-
     /// ------------------------------------------------------------------------------------------------
     /// Método para registrar un usuario
     /// ------------------------------------------------------------------------------------------------

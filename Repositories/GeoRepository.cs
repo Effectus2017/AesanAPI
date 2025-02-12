@@ -32,8 +32,15 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
             parameters.Add("@alls", alls, DbType.Boolean);
 
             var result = await db.QueryMultipleAsync("100_GetCities", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<dynamic>();
+
+            var data = result.Read<dynamic>().Select(item => new DTOCity
+            {
+                Id = item.Id,
+                Name = item.Name
+            }).ToList();
+
             var count = await result.ReadSingleAsync<int>();
+
             return new { data, count };
         }
         catch (Exception ex)
@@ -64,7 +71,13 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
             parameters.Add("@alls", alls, DbType.Boolean);
 
             var result = await db.QueryMultipleAsync("100_GetRegions", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<dynamic>();
+
+            var data = result.Read<dynamic>().Select(item => new DTORegion
+            {
+                Id = item.Id,
+                Name = item.Name
+            }).ToList();
+
             var count = await result.ReadSingleAsync<int>();
             return new { data, count };
         }
@@ -113,7 +126,11 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
             parameters.Add("@cityId", cityId, DbType.Int32);
 
             var result = await db.QueryMultipleAsync("100_GetRegionsByCityId", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<dynamic>();
+            var data = result.Read<dynamic>().Select(item => new DTORegion
+            {
+                Id = item.Id,
+                Name = item.Name
+            }).ToList();
             var count = await result.ReadSingleAsync<int>();
             return new { data, count };
         }

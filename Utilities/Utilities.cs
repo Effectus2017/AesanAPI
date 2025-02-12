@@ -92,7 +92,10 @@ public static class Utilities
     /// <param name="programIds">IDs de los programas</param>
     /// <param name="existingCodes">Códigos existentes para validar unicidad</param>
     /// <returns>Código identificador único</returns>
-    public static string GenerateAgencyCode(string agencyName, List<int> programIds, List<string> existingCodes)
+    public static string GenerateAgencyCode(
+        string agencyName,
+        List<int> programIds,
+        List<string> existingCodes)
     {
         // Generar iniciales de la agencia (3 letras)
         string initials = GenerateInitials(agencyName);
@@ -104,9 +107,7 @@ public static class Utilities
         string randomNum = new Random().Next(100, 999).ToString();
 
         // Ordenar y formatear los IDs de programa (P1, P2, etc.)
-        var programParts = programIds.OrderBy(p => p)
-                                   .Select(p => $"P{p}")
-                                   .ToList();
+        var programParts = programIds.OrderBy(p => p).Select(p => $"P{p}").ToList();
         string programsStr = string.Join("-", programParts);
 
         // Obtener el año actual

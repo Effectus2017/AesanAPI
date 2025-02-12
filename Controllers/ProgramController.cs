@@ -14,7 +14,7 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     [HttpGet("get-all-programs-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas.")]
+    [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas. Se pueden filtrar por múltiples nombres separados por coma.")]
 #if !DEBUG
     [Authorize]
 #endif
@@ -27,7 +27,7 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
                 var programs = await _unitOfWork.ProgramRepository.GetAllProgramsFromDb(
                     queryParameters.Take,
                     queryParameters.Skip,
-                    queryParameters.Name,
+                    queryParameters.Names,
                     queryParameters.Alls
                 );
                 return Ok(programs);

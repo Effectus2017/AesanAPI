@@ -1,0 +1,115 @@
+---
+description: Guia para trabajar con SQL Server
+globs: **/*.sql
+---
+# Reglas SQL para el Proyecto
+
+## Reglas de Base de Datos
+
+- **Uso de Stored Procedures:**  
+  Utilizar stored procedures para las operaciones de base de datos.
+
+- **Ubicación de Archivos:**
+
+  - Los archivos en `Database/TableName/Tables.sql` corresponden a las definiciones de las tablas.
+  - Los SPs van en `Database/TableName/SPName.sql` segun la tabla van ahi los SPs con sus versiones correspondientes.
+
+- **Convención de Nombres:**  
+  La convención de nombres para los stored procedures es: `V1.0.0_<ProcedureName>.sql` (donde "1.0.0" es el número de versión). Para nuevos procedimientos o modificaciones, el número de versión se incrementa (1.0.1, 1.0.2, etc.).
+
+<!-- - **Archivo Consolidado:**  
+  Siempre se debe crear un archivo consolidado con todos los stored procedures, con el nombre `{version}_AllStoredProceduresForEntityName.sql`. -->
+
+- **Versionado:**  
+ - Siempre que se tenga que hacer una modificacion a un archivo de StoreProcedure crear uno nuevo con una version nueva consecutiva `{version}_StoredProceduresName.sql`.
+ - Cuando se relizan cambios en tablas crear un nuevo archivo versionando la tabla `{version}_TableName.sql`, ademas crear un nuevo archivo con el nombre `{vieja_version}-cambio-a{nueva_version}.sql- ` donde se agreguen las modificaciones que se tienen que hacer en la tabla.
+ - Crear si no existe un archivo log de los cambios o modificaciones que se van realizando con fecha del dia, tanto para Tablas como SPs. `sql_change_log.md`
+
+- **Flyway:**
+- Cuando se hagan los cambios es neceario copiar los nuevos archivos para poder migrar en con Flywar.
+- Hacer una copia en el directorio `.flyway/migrations-local-db/` que son para ingresar en la base local de pruebas
+- Hcare lo mismo para el directorio `.flyway/migrations-azure-db/`
+
+## Ejemplo de Stored Procedures
+
+```sql
+CREATE OR ALTER PROCEDURE [100_GetAllEntityName]
+    @take INT,
+    @skip INT,
+    @name NVARCHAR(255),
+    @alls BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT Id,
+           Name
+    FROM EntityName
+    WHERE (@alls = 1)
+       OR (@name IS NULL OR Name LIKE '%' + @name + '%')
+    ORDER BY Name
+    OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+
+    SELECT COUNT(*) FROM EntityName
+    WHERE (@alls = 1)
+       OR (@name IS NULL OR Name LIKE '%' + @name + '%')
+END;
+
+CREATE OR ALTER PROCEDURE [100_InsertEntityName]
+    @name NVARCHAR(100),
+    @id INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO EntityName(Name)
+        VALUES(@name);
+
+    SET @id = SCOPE_IDENTITY();
+    RETURN @id;
+END;
+
+CREATE OR ALTER PROCEDURE [100_DeleteEntityName]
+    @id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @rowsAffected INT;
+
+    DELETE FROM EntityName
+    WHERE Id = @id;
+
+    SELECT @rowsAffected = @@ROWCOUNT;
+    RETURN @rowsAffected;
+END;
+
+CREATE OR ALTER PROCEDURE [100_GetEntityNameById]
+    @id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT Id,
+           Name
+    FROM EntityName
+    WHERE Id = @id;
+END;
+
+CREATE OR ALTER PROCEDURE [100_UpdateEntityName]
+    @id INT,
+    @name NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @rowsAffected INT;
+
+    UPDATE EntityName
+       SET Name = @name
+    WHERE Id = @id;
+
+    SELECT @rowsAffected = @@ROWCOUNT;
+    RETURN @rowsAffected;
+END;
+```
