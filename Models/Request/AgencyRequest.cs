@@ -44,5 +44,6 @@ public class AgencyRequest
     public bool IsListable { get; set; } = true;
     // Programas
     public List<int> Programs { get; set; } = [];
-
+    // Codigo de Agencia
+    public string? AgencyCode { get; set; }
 }

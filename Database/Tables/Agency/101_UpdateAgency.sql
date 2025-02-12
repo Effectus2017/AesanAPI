@@ -1,5 +1,9 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
 -- Procedimiento para actualizar una agencia
-CREATE OR ALTER PROCEDURE [101_UpdateAgency]
+ALTER PROCEDURE [101_UpdateAgency]
     @Id INT,
     @Name NVARCHAR(255),
     @AgencyStatusId INT,

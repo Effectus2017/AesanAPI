@@ -283,7 +283,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="user">El usuario</param>
     /// <param name="roles">Los roles del usuario</param>
     /// <returns>Los claims del usuario</returns>
-    private ClaimsIdentity GetClaims(User user, IList<string> roles, DTOAgency agency, List<DTOProgram> userPrograms)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, DTOAgency agency, List<DTOProgram> userPrograms)
     {
         try
         {
