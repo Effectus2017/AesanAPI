@@ -15,9 +15,9 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
 
     [HttpGet("get-all-programs-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas. Se pueden filtrar por múltiples nombres separados por coma.")]
-#if !DEBUG
-    [Authorize]
-#endif
+    // #if !DEBUG
+    //     [Authorize]
+    // #endif
     public async Task<IActionResult> GetAllPrograms([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -44,9 +44,9 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
 
     [HttpGet("get-program-by-id")]
     [SwaggerOperation(Summary = "Obtiene un programa por su ID", Description = "Devuelve un programa basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
+    // #if !DEBUG
+    //     [Authorize]
+    // #endif
     public async Task<IActionResult> GetProgramById([FromQuery] int id)
     {
         try
@@ -67,9 +67,9 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
 
     [HttpPost("insert-program")]
     [SwaggerOperation(Summary = "Inserta un nuevo programa", Description = "Crea un nuevo programa en la base de datos.")]
-#if !DEBUG
-    [Authorize]
-#endif
+    // #if !DEBUG
+    //     [Authorize]
+    // #endif
     public async Task<IActionResult> InsertProgram([FromBody] ProgramRequest programRequest)
     {
         try
