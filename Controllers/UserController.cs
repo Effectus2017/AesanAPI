@@ -158,5 +158,44 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
     }
 
+    /// <summary>
+    /// Agrega un usuario a la base de datos
+    /// </summary>
+    /// <param name="entity">El usuario a agregar</param>
+    /// <returns>El resultado de la operación</returns>
+    [HttpPost("add-user-to-db")]
+    [SwaggerOperation(Summary = "Agrega un usuario a la base de datos", Description = "Agrega un usuario a la base de datos.")]
+#if !DEBUG
+    [Authorize(Roles = "Administrator")]
+#endif
+    public async Task<IActionResult> AddUserToDb([FromBody] DTOUser entity)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Agregando usuario a la base de datos: {@DTOUser}", entity);
 
+                if (entity == null)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
+                }
+
+                if (entity.Roles == null || entity.Roles.Count == 0)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Roles' es requerido." });
+                }
+
+                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles.FirstOrDefault() ?? "Monitor");
+                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
 }

@@ -338,6 +338,7 @@ public class UserRepository(UserManager<User> userManager,
 
         try
         {
+
 #if !DEBUG
             // Generar una contraseña temporal
             var temporaryPassword = Utilities.GenerateTemporaryPassword();
@@ -440,20 +441,31 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="model">El modelo de registro de usuario</param>
     /// <param name="role">El rol del usuario</param>
     /// <returns>El resultado de la operación</returns>
-    public async Task<dynamic> RegisterUser(User model, string role)
+    public async Task<dynamic> RegisterUser(DTOUser model, string role)
     {
 
         try
         {
+
+#if !DEBUG
             // Generar una contraseña temporal
             var temporaryPassword = Utilities.GenerateTemporaryPassword();
+#else
+            // Usar la contraseña temporal 9c272156 si estamos en debug
+            var temporaryPassword = "9c272156";
+#endif
 
             User user = new()
             {
-                UserName = model.UserName,
+                UserName = model.Email,
                 Email = model.Email,
-                EmailConfirmed = false,
+                FirstName = model.FirstName,
+                MiddleName = model.MiddleName,
+                FatherLastName = model.FatherLastName,
+                MotherLastName = model.MotherLastName,
+                AdministrationTitle = model.AdministrationTitle,
                 PhoneNumber = model.PhoneNumber,
+                EmailConfirmed = false,
                 TwoFactorEnabled = false,
                 LockoutEnabled = false,
                 AccessFailedCount = 0,

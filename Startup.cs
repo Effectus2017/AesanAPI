@@ -77,22 +77,48 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "AESAN API", Version = "v1" });
+    c.SwaggerDoc(
+        "v1",
+        new Microsoft.OpenApi.Models.OpenApiInfo { Title = "AESAN API", Version = "v1" }
+    );
 });
 
 // Configuración de Dapper
 builder.Services.AddScoped<DapperContext>();
 // Registro de SendGrid
-builder.Services.AddSingleton<ISendGridClient>(new SendGridClient(builder.Configuration["SendGrid:ApiKey"]));
+builder.Services.AddSingleton<ISendGridClient>(
+    new SendGridClient(builder.Configuration["SendGrid:ApiKey"])
+);
 
 // Configuración de AutoMapper
-builder.Services.AddAutoMapper(cfg => { cfg.AddProfile(new MappingProfile()); });
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile(new MappingProfile());
+});
 
 // Configuración de CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowDevOrigin", builder => builder.WithOrigins("http://localhost:4200").WithOrigins("https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net").WithOrigins("https://aesanweb-dev.azurewebsites.net").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
-    options.AddPolicy("AllowProdOrigin", builder => builder.WithOrigins("http://localhost:4200").WithOrigins("https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net").WithOrigins("https://aesanweb-dev.azurewebsites.net").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+    options.AddPolicy("AllowDevOrigin",
+        builder =>
+            builder
+                .WithOrigins("http://localhost:4202")
+                .WithOrigins("https://nutre-dev.local:4202")
+                .WithOrigins("https://aesanweb-dev.azurewebsites.net")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()
+    );
+    options.AddPolicy("AllowProdOrigin",
+        builder =>
+            builder
+                .WithOrigins("http://localhost:4202")
+                .WithOrigins("https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net")
+                .WithOrigins("https://aesanweb-dev.azurewebsites.net")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()
+    );
 });
 
 
