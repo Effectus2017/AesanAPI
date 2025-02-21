@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepository> logger) : IMealTypeRepository
+public class MealTypeRepository(
+    DapperContext context,
+    ILogger<MealTypeRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IMealTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<MealTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<MealTypeRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene un tipo de comida por su ID.
@@ -18,21 +26,26 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     /// <returns>El tipo de comida encontrado.</returns>
     public async Task<dynamic> GetMealTypeById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo tipo de comida por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetMealTypeById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOMealType>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el tipo de comida por ID: {Id}", id);
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.MealType, id);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", id, DbType.Int32);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetMealTypeById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadSingleAsync<DTOMealType>();
+                return data;
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -45,25 +58,30 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     /// <returns>Una lista de tipos de comida.</returns>
     public async Task<dynamic> GetAllMealTypes(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los tipos de comida");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllMealTypes", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOMealType>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los tipos de comida");
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.MealTypes, take, skip, name, alls);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAllMealTypes",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<DTOMealType>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -75,19 +93,29 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     {
         try
         {
-            _logger.LogInformation("Insertando tipo de comida: {Name}", mealType.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", mealType.Name, DbType.String);
             parameters.Add("@id", mealType.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertMealType", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_InsertMealType",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var id = parameters.Get<int>("@id");
+
+            if (id > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de comida: {Name}", mealType.Name);
+            _logger.LogError(ex, "Error al insertar el tipo de comida");
             throw;
         }
     }
@@ -101,20 +129,30 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     {
         try
         {
-            _logger.LogInformation("Actualizando tipo de comida: {Name}", mealType.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", mealType.Id, DbType.Int32);
             parameters.Add("@name", mealType.Name, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateMealType", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_UpdateMealType",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(mealType.Id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de comida: {Name}", mealType.Name);
+            _logger.LogError(ex, "Error al actualizar el tipo de comida");
             throw;
         }
     }
@@ -128,20 +166,42 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     {
         try
         {
-            _logger.LogInformation("Eliminando tipo de comida: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteMealType", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_DeleteMealType",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de comida: {Id}", id);
+            _logger.LogError(ex, "Error al eliminar el tipo de comida");
             throw;
         }
+    }
+
+    private void InvalidateCache(int? mealTypeId = null)
+    {
+        if (mealTypeId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.MealType, mealTypeId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.MealTypes);
+        _logger.LogInformation("Cache invalidado para MealType Repository");
     }
 }

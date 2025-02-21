@@ -1,16 +1,25 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, ISchoolRepository schoolRepository) : IProgramRepository
+public class ProgramRepository(
+    DapperContext context,
+    ILogger<ProgramRepository> logger,
+    ISchoolRepository schoolRepository,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<ProgramRepository> _logger = logger;
     private readonly ISchoolRepository _schoolRepository = schoolRepository ?? throw new ArgumentNullException(nameof(schoolRepository));
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene un programa por su ID
@@ -19,35 +28,34 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// <returns>El programa</returns>
     public async Task<dynamic> GetProgramById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo programa por ID: {Id}", id);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Program, id);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new { Id = id };
-
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetProgramById", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                return null;
-            }
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var param = new { Id = id };
+                var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>(
+                    "100_GetProgramById",
+                    param,
+                    commandType: CommandType.StoredProcedure
+                );
 
-            return new DTOProgram
-            {
-                Id = result.Id,
-                Name = result.Name,
-                Description = result.Description
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el programa");
-            throw new Exception(ex.Message);
-        }
+                if (result == null)
+                    return null;
+
+                return new DTOProgram
+                {
+                    Id = result.Id,
+                    Name = result.Name,
+                    Description = result.Description
+                };
+            },
+            _logger,
+            _appSettings
+        );
     }
-
 
     /// <summary>
     /// Obtiene todos los programas de la base de datos
@@ -59,37 +67,42 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// <returns>Los programas</returns>
     public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los programas de la base de datos");
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Programs, take, skip, names, alls);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var param = new { take, skip, names, alls };
-
-            var result = await dbConnection.QueryMultipleAsync("101_GetPrograms", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                return null;
-            }
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var param = new { take, skip, names, alls };
+                var result = await dbConnection.QueryMultipleAsync(
+                    "101_GetPrograms",
+                    param,
+                    commandType: CommandType.StoredProcedure
+                );
 
-            var data = result.Read<dynamic>().Select(item => new DTOProgram
-            {
-                Id = item.Id,
-                Name = item.Name,
-                Description = item.Description
-            }).ToList();
+                if (result == null)
+                    return null;
 
-            var count = result.Read<int>().Single();
+                var data = result
+                    .Read<dynamic>()
+                    .Select(
+                        item =>
+                            new DTOProgram
+                            {
+                                Id = item.Id,
+                                Name = item.Name,
+                                Description = item.Description
+                            }
+                    )
+                    .ToList();
 
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los programas");
-            throw new Exception(ex.Message);
-        }
+                var count = result.Read<int>().Single();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -100,96 +113,116 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// <param name="agencyId">El ID de la agencia</param>
     /// <param name="programId">El ID del programa</param>
     /// <returns>Las inscripciones de programas</returns>
-    public async Task<dynamic> GetAllProgramInscriptions(int take, int skip, int? agencyId = null, int? programId = null)
+    public async Task<dynamic> GetAllProgramInscriptions(
+        int take,
+        int skip,
+        int? agencyId = null,
+        int? programId = null
+    )
     {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { take, skip, agencyId, programId };
+        string cacheKey = string.Format(
+            _appSettings.Cache.Keys.ProgramInscriptions,
+            take,
+            skip,
+            agencyId,
+            programId
+        );
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetAllProgramInscriptions", parameters, commandType: CommandType.StoredProcedure);
-
-            var inscriptions = result.Read<dynamic>().Select(item => new DTOProgramInscription
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                Id = item.Id,
-                Agency = new DTOAgency
-                {
-                    Id = item.AgencyId,
-                    Name = item.AgencyName,
-                    // User = new DTOUser
-                    // {
-                    //     Id = item.UserId,
-                    //     FirstName = item.FirstName,
-                    //     FatherLastName = item.FatherLastName,
-                    // }
-                },
-                Program = new DTOProgram
-                {
-                    Id = item.ProgramId,
-                    Name = item.ProgramName,
-                    Description = item.ProgramDescription
-                },
-                ApplicationNumber = item.ApplicationNumber,
-                IsPublic = item.IsPublic,
-                TotalNumberSchools = item.TotalNumberSchools,
-                HasBasicEducationCertification = item.HasBasicEducationCertification,
-                IsAeaMenuCreated = item.IsAeaMenuCreated,
-                ExemptionRequirement = item.ExemptionRequirement,
-                ExemptionStatus = item.ExemptionStatus,
-                ParticipatingAuthority = new DTOFoodAuthority
-                {
-                    Id = item.ParticipatingAuthorityId,
-                    Name = item.FoodAuthorityName
-                },
-                OperatingPolicy = new DTOOperatingPolicy
-                {
-                    Id = item.OperatingPolicyId,
-                    Description = item.OperatingPolicyDescription
-                },
-                HasCompletedCivilRightsQuestionnaire = item.HasCompletedCivilRightsQuestionnaire,
-                NeedsInformationInOtherLanguages = item.NeedsInformationInOtherLanguages,
-                InformationInOtherLanguages = item.InformationInOtherLanguages,
-                NeedsInterpreter = item.NeedsInterpreter,
-                InterpreterLanguages = item.InterpreterLanguages,
-                NeedsAlternativeCommunication = item.NeedsAlternativeCommunication,
-                AlternativeCommunication = item.AlternativeCommunicationId != null ? new DTOAlternativeCommunication
-                {
-                    Id = item.AlternativeCommunicationId,
-                    Name = item.AlternativeCommunicationName
-                } : null,
-                NeedsFederalRelayService = new DTOOptionSelection
-                {
-                    Id = item.NeedsFederalRelayServiceId,
-                    Name = item.NeedsFederalRelayServiceName
-                },
-                ShowEvidence = new DTOOptionSelection
-                {
-                    Id = item.ShowEvidenceId,
-                    Name = item.ShowEvidenceName
-                },
-                ShowEvidenceDescription = item.ShowEvidenceDescription,
-                SnackPercentage = item.SnackPercentage,
-                ReducedSnackPercentage = item.ReducedSnackPercentage,
-                FederalFundingCertification = item.FederalFundingCertificationId != null ? new DTOFederalFundingCertification
-                {
-                    Id = item.FederalFundingCertificationId,
-                    FundingAmount = item.FundingAmount,
-                    Description = item.FederalFundingDescription
-                } : null,
-                Date = item.Date,
-                CreatedAt = item.CreatedAt,
-                UpdatedAt = item.UpdatedAt
-            }).ToList();
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var parameters = new { take, skip, agencyId, programId };
 
-            var count = result.Read<int>().Single();
+                var result = await dbConnection.QueryMultipleAsync(
+                    "100_GetAllProgramInscriptions",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
 
-            return new { data = inscriptions, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las inscripciones de programas");
-            throw new Exception(ex.Message);
-        }
+                var inscriptions = result
+                    .Read<dynamic>()
+                    .Select(
+                        item =>
+                            new DTOProgramInscription
+                            {
+                                Id = item.Id,
+                                Agency = new DTOAgency
+                                {
+                                    Id = item.AgencyId,
+                                    Name = item.AgencyName,
+                                },
+                                Program = new DTOProgram
+                                {
+                                    Id = item.ProgramId,
+                                    Name = item.ProgramName,
+                                    Description = item.ProgramDescription
+                                },
+                                ApplicationNumber = item.ApplicationNumber,
+                                IsPublic = item.IsPublic,
+                                TotalNumberSchools = item.TotalNumberSchools,
+                                HasBasicEducationCertification = item.HasBasicEducationCertification,
+                                IsAeaMenuCreated = item.IsAeaMenuCreated,
+                                ExemptionRequirement = item.ExemptionRequirement,
+                                ExemptionStatus = item.ExemptionStatus,
+                                ParticipatingAuthority = new DTOFoodAuthority
+                                {
+                                    Id = item.ParticipatingAuthorityId,
+                                    Name = item.FoodAuthorityName
+                                },
+                                OperatingPolicy = new DTOOperatingPolicy
+                                {
+                                    Id = item.OperatingPolicyId,
+                                    Description = item.OperatingPolicyDescription
+                                },
+                                HasCompletedCivilRightsQuestionnaire = item.HasCompletedCivilRightsQuestionnaire,
+                                NeedsInformationInOtherLanguages = item.NeedsInformationInOtherLanguages,
+                                InformationInOtherLanguages = item.InformationInOtherLanguages,
+                                NeedsInterpreter = item.NeedsInterpreter,
+                                InterpreterLanguages = item.InterpreterLanguages,
+                                NeedsAlternativeCommunication = item.NeedsAlternativeCommunication,
+                                AlternativeCommunication = item.AlternativeCommunicationId != null
+                                    ? new DTOAlternativeCommunication
+                                    {
+                                        Id = item.AlternativeCommunicationId,
+                                        Name = item.AlternativeCommunicationName
+                                    }
+                                    : null,
+                                NeedsFederalRelayService = new DTOOptionSelection
+                                {
+                                    Id = item.NeedsFederalRelayServiceId,
+                                    Name = item.NeedsFederalRelayServiceName
+                                },
+                                ShowEvidence = new DTOOptionSelection
+                                {
+                                    Id = item.ShowEvidenceId,
+                                    Name = item.ShowEvidenceName
+                                },
+                                ShowEvidenceDescription = item.ShowEvidenceDescription,
+                                SnackPercentage = item.SnackPercentage,
+                                ReducedSnackPercentage = item.ReducedSnackPercentage,
+                                FederalFundingCertification = item.FederalFundingCertificationId != null
+                                    ? new DTOFederalFundingCertification
+                                    {
+                                        Id = item.FederalFundingCertificationId,
+                                        FundingAmount = item.FundingAmount,
+                                        Description = item.FederalFundingDescription
+                                    }
+                                    : null,
+                                Date = item.Date,
+                                CreatedAt = item.CreatedAt,
+                                UpdatedAt = item.UpdatedAt
+                            }
+                    )
+                    .ToList();
+
+                var count = result.Read<int>().Single();
+                return new { data = inscriptions, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -206,12 +239,25 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@Name", programRequest.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@Description", programRequest.Description, DbType.String, ParameterDirection.Input);
+            parameters.Add(
+                "@Description",
+                programRequest.Description,
+                DbType.String,
+                ParameterDirection.Input
+            );
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertProgram", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync(
+                "100_InsertProgram",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
 
             int programId = parameters.Get<int>("@Id");
+
+            // Invalidar caché relacionado
+            InvalidateCache(programId);
+
             return programId;
         }
         catch (Exception ex)
@@ -339,6 +385,9 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                 }
             }
 
+            // Invalidar caché relacionado
+            InvalidateCache(request.ProgramId);
+
             return inscriptionId;
         }
         catch (Exception ex)
@@ -350,17 +399,34 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
     public async Task<List<DTOOptionSelection>> GetAllOptionSelections()
     {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var result = await dbConnection.QueryAsync<DTOOptionSelection>("SELECT * FROM OptionSelection ORDER BY Name");
-            return result.ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las opciones de selección");
-            throw new Exception(ex.Message);
-        }
+        return await _cache.CacheQuery(
+            _appSettings.Cache.Keys.OptionSelections,
+            async () =>
+            {
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var result = await dbConnection.QueryAsync<DTOOptionSelection>(
+                    "SELECT * FROM OptionSelection ORDER BY Name"
+                );
+                return result.ToList();
+            },
+            _logger,
+            _appSettings
+        );
     }
 
+    // Método para invalidar el caché manualmente si es necesario
+    private void InvalidateCache(int? programId = null)
+    {
+        if (programId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Program, programId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.Programs);
+        _cache.Remove(_appSettings.Cache.Keys.ProgramInscriptions);
+        _cache.Remove(_appSettings.Cache.Keys.OptionSelections);
+
+        _logger.LogInformation("Cache invalidado para Program Repository");
+    }
 }

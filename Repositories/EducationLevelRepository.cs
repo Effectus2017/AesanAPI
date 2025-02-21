@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class EducationLevelRepository(DapperContext context, ILogger<EducationLevelRepository> logger) : IEducationLevelRepository
+public class EducationLevelRepository(
+    DapperContext context,
+    ILogger<EducationLevelRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IEducationLevelRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<EducationLevelRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<EducationLevelRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene un nivel educativo por su ID.
@@ -18,21 +26,26 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     /// <returns>El nivel educativo encontrado.</returns>
     public async Task<dynamic> GetEducationLevelById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo nivel educativo por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetEducationLevelById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOEducationLevel>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el nivel educativo por ID: {Id}", id);
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.EducationLevel, id);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", id, DbType.Int32);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetEducationLevelById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadSingleAsync<DTOEducationLevel>();
+                return data;
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -45,25 +58,30 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     /// <returns>Una lista de niveles educativos.</returns>
     public async Task<dynamic> GetAllEducationLevels(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los niveles educativos");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOEducationLevel>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los niveles educativos");
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.EducationLevels, take, skip, name, alls);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAllEducationLevels",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<DTOEducationLevel>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -75,19 +93,29 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     {
         try
         {
-            _logger.LogInformation("Insertando nivel educativo: {Name}", educationLevel.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", educationLevel.Name, DbType.String);
             parameters.Add("@id", educationLevel.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertEducationLevel", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_InsertEducationLevel",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var id = parameters.Get<int>("@id");
+
+            if (id > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el nivel educativo: {Name}", educationLevel.Name);
+            _logger.LogError(ex, "Error al insertar el nivel educativo");
             throw;
         }
     }
@@ -101,20 +129,30 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     {
         try
         {
-            _logger.LogInformation("Actualizando nivel educativo: {Name}", educationLevel.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", educationLevel.Id, DbType.Int32);
             parameters.Add("@name", educationLevel.Name, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateEducationLevel", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_UpdateEducationLevel",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(educationLevel.Id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el nivel educativo: {Name}", educationLevel.Name);
+            _logger.LogError(ex, "Error al actualizar el nivel educativo");
             throw;
         }
     }
@@ -128,20 +166,42 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     {
         try
         {
-            _logger.LogInformation("Eliminando nivel educativo: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteEducationLevel", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_DeleteEducationLevel",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el nivel educativo: {Id}", id);
+            _logger.LogError(ex, "Error al eliminar el nivel educativo");
             throw;
         }
+    }
+
+    private void InvalidateCache(int? educationLevelId = null)
+    {
+        if (educationLevelId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.EducationLevel, educationLevelId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.EducationLevels);
+        _logger.LogInformation("Cache invalidado para EducationLevel Repository");
     }
 }

@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorityRepository> logger) : IFoodAuthorityRepository
+public class FoodAuthorityRepository(
+    DapperContext context,
+    ILogger<FoodAuthorityRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IFoodAuthorityRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<FoodAuthorityRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<FoodAuthorityRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene una autoridad alimentaria por su ID.
@@ -18,21 +26,26 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     /// <returns>La autoridad alimentaria encontrada.</returns>
     public async Task<dynamic> GetFoodAuthorityById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo autoridad alimentaria por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetFoodAuthorityById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOFoodAuthority>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la autoridad alimentaria por ID: {Id}", id);
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.FoodAuthority, id);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", id, DbType.Int32);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetFoodAuthorityById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadSingleAsync<DTOFoodAuthority>();
+                return data;
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -45,25 +58,30 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     /// <returns>Una lista de autoridades alimentarias.</returns>
     public async Task<dynamic> GetAllFoodAuthorities(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todas las autoridades alimentarias");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllFoodAuthorities", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOFoodAuthority>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todas las autoridades alimentarias");
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.FoodAuthorities, take, skip, name, alls);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAllFoodAuthorities",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<DTOFoodAuthority>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -75,21 +93,29 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     {
         try
         {
-            _logger.LogInformation("Insertando autoridad alimentaria: {Name}", foodAuthority.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", foodAuthority.Name, DbType.String);
-            parameters.Add("@description", foodAuthority.Description, DbType.String);
-            parameters.Add("@createdAt", foodAuthority.CreatedAt, DbType.DateTime);
             parameters.Add("@id", foodAuthority.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertFoodAuthority", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_InsertFoodAuthority",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var id = parameters.Get<int>("@id");
+
+            if (id > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la autoridad alimentaria: {Name}", foodAuthority.Name);
+            _logger.LogError(ex, "Error al insertar la autoridad alimentaria");
             throw;
         }
     }
@@ -103,21 +129,30 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     {
         try
         {
-            _logger.LogInformation("Actualizando autoridad alimentaria: {Name}", foodAuthority.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", foodAuthority.Id, DbType.Int32);
             parameters.Add("@name", foodAuthority.Name, DbType.String);
-            parameters.Add("@description", foodAuthority.Description, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateFoodAuthority", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_UpdateFoodAuthority",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(foodAuthority.Id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la autoridad alimentaria: {Name}", foodAuthority.Name);
+            _logger.LogError(ex, "Error al actualizar la autoridad alimentaria");
             throw;
         }
     }
@@ -131,20 +166,42 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     {
         try
         {
-            _logger.LogInformation("Eliminando autoridad alimentaria: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteFoodAuthority", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_DeleteFoodAuthority",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la autoridad alimentaria: {Id}", id);
+            _logger.LogError(ex, "Error al eliminar la autoridad alimentaria");
             throw;
         }
+    }
+
+    private void InvalidateCache(int? foodAuthorityId = null)
+    {
+        if (foodAuthorityId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.FoodAuthority, foodAuthorityId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.FoodAuthorities);
+        _logger.LogInformation("Cache invalidado para FoodAuthority Repository");
     }
 }

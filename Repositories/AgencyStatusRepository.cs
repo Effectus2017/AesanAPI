@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusRepository> logger) : IAgencyStatusRepository
+public class AgencyStatusRepository(
+    DapperContext context,
+    ILogger<AgencyStatusRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IAgencyStatusRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyStatusRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<AgencyStatusRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene un estado de agencia por su ID.
@@ -18,21 +26,26 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// <returns>El estado encontrado.</returns>
     public async Task<dynamic> GetAgencyStatusById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo estado de agencia por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetAgencyStatusById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOAgencyStatus>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el estado de agencia por ID: {Id}", id);
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyStatus, id);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", id, DbType.Int32);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAgencyStatusById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadSingleAsync<DTOAgencyStatus>();
+                return data;
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -45,25 +58,30 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// <returns>Una lista de estados de agencia.</returns>
     public async Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los estados de agencia");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOAgencyStatus>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los estados de agencia");
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyStatuses, take, skip, name, alls);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAllAgencyStatus",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<DTOAgencyStatus>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -75,19 +93,29 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     {
         try
         {
-            _logger.LogInformation("Insertando estado de agencia: {Name}", status.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", status.Name, DbType.String);
             parameters.Add("@id", status.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_InsertAgencyStatus",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var id = parameters.Get<int>("@id");
+
+            if (id > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el estado de agencia: {Name}", status.Name);
+            _logger.LogError(ex, "Error al insertar el estado de agencia");
             throw;
         }
     }
@@ -101,20 +129,30 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     {
         try
         {
-            _logger.LogInformation("Actualizando estado de agencia: {Name}", status.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", status.Id, DbType.Int32);
             parameters.Add("@name", status.Name, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_UpdateAgencyStatus",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(status.Id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado de agencia: {Name}", status.Name);
+            _logger.LogError(ex, "Error al actualizar el estado de agencia");
             throw;
         }
     }
@@ -128,20 +166,42 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     {
         try
         {
-            _logger.LogInformation("Eliminando estado de agencia: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_DeleteAgencyStatus",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el estado de agencia: {Id}", id);
+            _logger.LogError(ex, "Error al eliminar el estado de agencia");
             throw;
         }
+    }
+
+    private void InvalidateCache(int? agencyStatusId = null)
+    {
+        if (agencyStatusId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyStatus, agencyStatusId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.AgencyStatuses);
+        _logger.LogInformation("Cache invalidado para AgencyStatus Repository");
     }
 }

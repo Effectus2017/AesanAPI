@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class FederalFundingCertificationRepository(DapperContext context, ILogger<FederalFundingCertificationRepository> logger) : IFederalFundingCertificationRepository
+public class FederalFundingCertificationRepository(
+    DapperContext context,
+    ILogger<FederalFundingCertificationRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IFederalFundingCertificationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<FederalFundingCertificationRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<FederalFundingCertificationRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene una certificación de fondos federales por su ID.
@@ -18,21 +26,26 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     /// <returns>La certificación encontrada.</returns>
     public async Task<dynamic> GetFederalFundingCertificationById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo certificación de fondos federales por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetFederalFundingCertificationById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOFederalFundingCertification>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la certificación de fondos federales por ID: {Id}", id);
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.FederalFundingCertification, id);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", id, DbType.Int32);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetFederalFundingCertificationById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadSingleAsync<DTOFederalFundingCertification>();
+                return data;
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -42,28 +55,33 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     /// <param name="skip">El número de certificaciones a saltar.</param>
     /// <param name="description">La descripción de la certificación a buscar.</param>
     /// <param name="alls">Si se deben obtener todas las certificaciones.</param>
-    /// <returns>Una lista de certificaciones de fondos federales.</returns>
+    /// <returns>Una lista de certificaciones.</returns>
     public async Task<dynamic> GetAllFederalFundingCertifications(int take, int skip, string description, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todas las certificaciones de fondos federales");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@description", description, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllFederalFundingCertifications", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOFederalFundingCertification>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todas las certificaciones de fondos federales");
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.FederalFundingCertifications, take, skip, description, alls);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@description", description, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAllFederalFundingCertifications",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<DTOFederalFundingCertification>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -75,20 +93,30 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     {
         try
         {
-            _logger.LogInformation("Insertando certificación de fondos federales: {Description}", certification.Description);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@fundingAmount", certification.FundingAmount, DbType.Decimal);
             parameters.Add("@description", certification.Description, DbType.String);
+            parameters.Add("@fundingAmount", certification.FundingAmount, DbType.Decimal);
             parameters.Add("@id", certification.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertFederalFundingCertification", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_InsertFederalFundingCertification",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var id = parameters.Get<int>("@id");
+
+            if (id > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la certificación de fondos federales: {Description}", certification.Description);
+            _logger.LogError(ex, "Error al insertar la certificación de fondos federales");
             throw;
         }
     }
@@ -102,22 +130,31 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     {
         try
         {
-            _logger.LogInformation("Actualizando certificación de fondos federales: {Description}", certification.Description);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", certification.Id, DbType.Int32);
-            parameters.Add("@fundingAmount", certification.FundingAmount, DbType.Decimal);
             parameters.Add("@description", certification.Description, DbType.String);
-            parameters.Add("@updatedAt", DateTime.UtcNow, DbType.DateTime);
+            parameters.Add("@fundingAmount", certification.FundingAmount, DbType.Decimal);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateFederalFundingCertification", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_UpdateFederalFundingCertification",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(certification.Id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la certificación de fondos federales: {Description}", certification.Description);
+            _logger.LogError(ex, "Error al actualizar la certificación de fondos federales");
             throw;
         }
     }
@@ -131,20 +168,42 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     {
         try
         {
-            _logger.LogInformation("Eliminando certificación de fondos federales: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteFederalFundingCertification", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_DeleteFederalFundingCertification",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la certificación de fondos federales: {Id}", id);
+            _logger.LogError(ex, "Error al eliminar la certificación de fondos federales");
             throw;
         }
+    }
+
+    private void InvalidateCache(int? certificationId = null)
+    {
+        if (certificationId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.FederalFundingCertification, certificationId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.FederalFundingCertifications);
+        _logger.LogInformation("Cache invalidado para FederalFundingCertification Repository");
     }
 }

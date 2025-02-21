@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class AlternativeCommunicationRepository(DapperContext context, ILogger<AlternativeCommunicationRepository> logger) : IAlternativeCommunicationRepository
+public class AlternativeCommunicationRepository(
+    DapperContext context,
+    ILogger<AlternativeCommunicationRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IAlternativeCommunicationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AlternativeCommunicationRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<AlternativeCommunicationRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene una comunicación alternativa por su ID.
@@ -18,21 +26,26 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     /// <returns>La comunicación alternativa encontrada.</returns>
     public async Task<dynamic> GetAlternativeCommunicationById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo comunicación alternativa por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("Id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetAlternativeCommunicationById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOAlternativeCommunication>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la comunicación alternativa por ID: {Id}", id);
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.AlternativeCommunication, id);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("Id", id, DbType.Int32);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAlternativeCommunicationById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadSingleAsync<DTOAlternativeCommunication>();
+                return data;
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -45,25 +58,30 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     /// <returns>Una lista de comunicaciones alternativas.</returns>
     public async Task<dynamic> GetAllAlternativeCommunications(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todas las comunicaciones alternativas");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllAlternativeCommunications", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOAlternativeCommunication>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todas las comunicaciones alternativas");
-            throw;
-        }
+        string cacheKey = string.Format(_appSettings.Cache.Keys.AlternativeCommunications, take, skip, name, alls);
+
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
+                var result = await db.QueryMultipleAsync(
+                    "100_GetAllAlternativeCommunications",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<DTOAlternativeCommunication>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -75,19 +93,29 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     {
         try
         {
-            _logger.LogInformation("Insertando comunicación alternativa: {Name}", alternativeCommunication.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", alternativeCommunication.Name, DbType.String);
             parameters.Add("@id", alternativeCommunication.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertAlternativeCommunication", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_InsertAlternativeCommunication",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var id = parameters.Get<int>("@id");
+
+            if (id > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la comunicación alternativa: {Name}", alternativeCommunication.Name);
+            _logger.LogError(ex, "Error al insertar la comunicación alternativa");
             throw;
         }
     }
@@ -101,20 +129,30 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     {
         try
         {
-            _logger.LogInformation("Actualizando comunicación alternativa: {Name}", alternativeCommunication.Name);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", alternativeCommunication.Id, DbType.Int32);
             parameters.Add("@name", alternativeCommunication.Name, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateAlternativeCommunication", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_UpdateAlternativeCommunication",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(alternativeCommunication.Id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la comunicación alternativa: {Name}", alternativeCommunication.Name);
+            _logger.LogError(ex, "Error al actualizar la comunicación alternativa");
             throw;
         }
     }
@@ -128,20 +166,42 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     {
         try
         {
-            _logger.LogInformation("Eliminando comunicación alternativa: {Id}", id);
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteAlternativeCommunication", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync(
+                "100_DeleteAlternativeCommunication",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
             var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la comunicación alternativa: {Id}", id);
+            _logger.LogError(ex, "Error al eliminar la comunicación alternativa");
             throw;
         }
+    }
+
+    private void InvalidateCache(int? alternativeCommunicationId = null)
+    {
+        if (alternativeCommunicationId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.AlternativeCommunication, alternativeCommunicationId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.AlternativeCommunications);
+        _logger.LogInformation("Cache invalidado para AlternativeCommunication Repository");
     }
 }

@@ -1,15 +1,23 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> logger) : ISchoolRepository
+public class SchoolRepository(
+    DapperContext context,
+    ILogger<SchoolRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : ISchoolRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SchoolRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene una escuela por su ID
@@ -18,41 +26,54 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// <returns>La escuela encontrada.</returns>
     public async Task<dynamic> GetSchoolById(int id)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo escuela por ID: {Id}", id);
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.School, id);
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
-
-            var schoolData = await result.ReadFirstOrDefaultAsync<dynamic>();
-            if (schoolData == null) return null;
-
-            var school = new
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                schoolData.Id,
-                schoolData.Name,
-                EducationLevel = new DTOEducationLevel { Id = schoolData.EducationLevelId, Name = schoolData.EducationLevelName },
-                OperatingPeriod = new DTOOperatingPeriod { Id = schoolData.OperatingPeriodId, Name = schoolData.OperatingPeriodName },
-                schoolData.Address,
-                City = new DTOCity { Id = schoolData.CityId, Name = schoolData.CityName },
-                Region = new DTORegion { Id = schoolData.RegionId, Name = schoolData.RegionName },
-                schoolData.ZipCode,
-                OrganizationType = new DTOOrganizationType { Id = schoolData.OrganizationTypeId, Name = schoolData.OrganizationTypeName }
-            };
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", id, DbType.Int32);
 
-            //school.Facilities = (await GetSchoolFacilities(id)).ToList();
-            //school.MealTypes = (await GetSchoolMealTypes(id)).ToList();
+                var result = await dbConnection.QueryMultipleAsync(
+                    "100_GetSchoolById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
 
-            return school;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la escuela");
-            throw new Exception(ex.Message);
-        }
+                var schoolData = await result.ReadFirstOrDefaultAsync<dynamic>();
+                if (schoolData == null)
+                    return null;
+
+                return new
+                {
+                    schoolData.Id,
+                    schoolData.Name,
+                    EducationLevel = new DTOEducationLevel
+                    {
+                        Id = schoolData.EducationLevelId,
+                        Name = schoolData.EducationLevelName
+                    },
+                    OperatingPeriod = new DTOOperatingPeriod
+                    {
+                        Id = schoolData.OperatingPeriodId,
+                        Name = schoolData.OperatingPeriodName
+                    },
+                    schoolData.Address,
+                    City = new DTOCity { Id = schoolData.CityId, Name = schoolData.CityName },
+                    Region = new DTORegion { Id = schoolData.RegionId, Name = schoolData.RegionName },
+                    schoolData.ZipCode,
+                    OrganizationType = new DTOOrganizationType
+                    {
+                        Id = schoolData.OrganizationTypeId,
+                        Name = schoolData.OrganizationTypeName
+                    }
+                };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -65,39 +86,59 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// <returns>Las escuelas encontradas.</returns>
     public async Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Schools, take, skip, name, alls);
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetSchools", parameters, commandType: CommandType.StoredProcedure);
-
-            var schools = result.Read<dynamic>().Select(item => new DTOSchool
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                Id = item.Id,
-                Name = item.Name,
-                EducationLevel = new DTOEducationLevel { Id = item.EducationLevelId, Name = item.EducationLevelName },
-                OperatingPeriod = new DTOOperatingPeriod { Id = item.OperatingPeriodId, Name = item.OperatingPeriodName },
-                Address = item.Address,
-                City = new DTOCity { Id = item.CityId, Name = item.CityName },
-                Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
-                ZipCode = item.ZipCode,
-                OrganizationType = new DTOOrganizationType { Id = item.OrganizationTypeId, Name = item.OrganizationTypeName }
-            }).ToList();
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
 
-            var count = result.Read<int>().Single();
+                var result = await dbConnection.QueryMultipleAsync(
+                    "100_GetSchools",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
 
-            return new { data = schools, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las escuelas");
-            throw new Exception(ex.Message);
-        }
+                var schools = result.Read<dynamic>().Select(
+                    item =>
+                        new DTOSchool
+                        {
+                            Id = item.Id,
+                            Name = item.Name,
+                            EducationLevel = new DTOEducationLevel
+                            {
+                                Id = item.EducationLevelId,
+                                Name = item.EducationLevelName
+                            },
+                            OperatingPeriod = new DTOOperatingPeriod
+                            {
+                                Id = item.OperatingPeriodId,
+                                Name = item.OperatingPeriodName
+                            },
+                            Address = item.Address,
+                            City = new DTOCity { Id = item.CityId, Name = item.CityName },
+                            Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
+                            ZipCode = item.ZipCode,
+                            OrganizationType = new DTOOrganizationType
+                            {
+                                Id = item.OrganizationTypeId,
+                                Name = item.OrganizationTypeName
+                            }
+                        }
+                ).ToList();
+
+                var count = result.Read<int>().Single();
+                return new { data = schools, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -122,7 +163,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@organizationTypeId", request.OrganizationTypeId);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync(
+                "100_InsertSchool",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
 
             int schoolId = parameters.Get<int>("@id");
 
@@ -150,12 +195,15 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 }
             }
 
+            // Invalidar caché
+            InvalidateCache(schoolId);
+
             return schoolId > 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar la escuela");
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -181,10 +229,17 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@zipCode", request.ZipCode);
             parameters.Add("@organizationTypeId", request.OrganizationTypeId);
 
-            await dbConnection.ExecuteAsync("100_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync(
+                "100_UpdateSchool",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
 
             // Actualizar facilidades
-            await dbConnection.ExecuteAsync("DELETE FROM SchoolFacility WHERE SchoolId = @SchoolId", new { SchoolId = request.Id });
+            await dbConnection.ExecuteAsync(
+                "DELETE FROM SchoolFacility WHERE SchoolId = @SchoolId",
+                new { SchoolId = request.Id }
+            );
             if (request.FacilityIds != null && request.FacilityIds.Any())
             {
                 foreach (var facilityId in request.FacilityIds)
@@ -197,7 +252,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             }
 
             // Actualizar tipos de comida
-            await dbConnection.ExecuteAsync("DELETE FROM SchoolMeal WHERE SchoolId = @SchoolId", new { SchoolId = request.Id });
+            await dbConnection.ExecuteAsync(
+                "DELETE FROM SchoolMeal WHERE SchoolId = @SchoolId",
+                new { SchoolId = request.Id }
+            );
             if (request.MealTypeIds != null && request.MealTypeIds.Any())
             {
                 foreach (var mealTypeId in request.MealTypeIds)
@@ -209,12 +267,15 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 }
             }
 
+            // Invalidar caché
+            InvalidateCache(request.Id);
+
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la escuela");
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -229,17 +290,38 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
+            parameters.Add("@id", id);
 
-            await dbConnection.ExecuteAsync("100_DeleteSchool", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = await dbConnection.ExecuteAsync(
+                "100_DeleteSchool",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
 
-            return true;
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(id);
+            }
+
+            return rowsAffected > 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar la escuela");
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
+    private void InvalidateCache(int? schoolId = null)
+    {
+        if (schoolId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.School, schoolId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.Schools);
+        _logger.LogInformation("Cache invalidado para School Repository");
+    }
 }
