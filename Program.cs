@@ -15,33 +15,44 @@ using SendGrid;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile(
+    $"appsettings.{builder.Environment.EnvironmentName}.json",
+    optional: true,
+    reloadOnChange: true
+);
 
-builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection(nameof(ApplicationSettings)));
+builder.Services.Configure<ApplicationSettings>(
+    builder.Configuration.GetSection(nameof(ApplicationSettings))
+);
 
 // Configuración de servicios
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Transient);
+builder.Services.AddDbContext<ApplicationDbContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+    ServiceLifetime.Transient
+);
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services
+    .AddAuthentication(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        //IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
-});
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            //IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
 
-builder.Services.AddIdentity<User, Role>(config =>
+builder.Services
+    .AddIdentity<User, Role>(config =>
     {
         config.Password.RequiredLength = 6;
         config.Password.RequireDigit = false;
@@ -85,6 +96,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configuración de Dapper
 builder.Services.AddScoped<DapperContext>();
+
 // Registro de SendGrid
 builder.Services.AddSingleton<ISendGridClient>(
     new SendGridClient(builder.Configuration["SendGrid:ApiKey"])
@@ -99,7 +111,8 @@ builder.Services.AddAutoMapper(cfg =>
 // Configuración de CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowDevOrigin",
+    options.AddPolicy(
+        "AllowDevOrigin",
         builder =>
             builder
                 .WithOrigins("http://localhost:4202")
@@ -109,7 +122,8 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod()
                 .AllowCredentials()
     );
-    options.AddPolicy("AllowProdOrigin",
+    options.AddPolicy(
+        "AllowProdOrigin",
         builder =>
             builder
                 .WithOrigins("http://localhost:4202")
@@ -121,7 +135,6 @@ builder.Services.AddCors(options =>
     );
 });
 
-
 // Configurar la cultura invariante
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
@@ -131,17 +144,11 @@ var app = builder.Build();
 // Configuración de middleware
 if (app.Environment.IsDevelopment())
 {
-    app
-    .UseDeveloperExceptionPage()
-    .UseCors("AllowDevOrigin")
-    .UseSwaggerUI();
+    app.UseDeveloperExceptionPage().UseCors("AllowDevOrigin").UseSwaggerUI();
 }
 else
 {
-    app
-    .UseHttpsRedirection()
-    .UseCors("AllowProdOrigin")
-    .UseSwaggerUI();
+    app.UseHttpsRedirection().UseCors("AllowProdOrigin").UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
@@ -161,8 +168,20 @@ var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
 if (Directory.Exists(uploadsPath))
 {
     app.UseFileServer(enableDirectoryBrowsing: true)
-        .UseStaticFiles(new StaticFileOptions { FileProvider = new PhysicalFileProvider(uploadsPath), RequestPath = new PathString("/uploads") })
-        .UseDirectoryBrowser(new DirectoryBrowserOptions { FileProvider = new PhysicalFileProvider(uploadsPath), RequestPath = new PathString("/uploads") });
+        .UseStaticFiles(
+            new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsPath),
+                RequestPath = new PathString("/uploads")
+            }
+        )
+        .UseDirectoryBrowser(
+            new DirectoryBrowserOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsPath),
+                RequestPath = new PathString("/uploads")
+            }
+        );
 }
 else
 {

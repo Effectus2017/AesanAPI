@@ -212,30 +212,34 @@ public class UserRepository(UserManager<User> userManager,
 
             User? _user = await _userManager.FindByNameAsync(model.UserName);
 
+            // Si el usuario no existe, se debe devolver un error
             if (_user == null)
             {
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
+#if !DEBUG
+
+            // Si la contraseña temporal está activa, se debe cambiar
             if (_user.IsTemporalPasswordActived)
             {
                 return new ConflictObjectResult(new { Message = "La contraseña temporal es válida." });
             }
 
-#if !DEBUG
+            // Si el usuario está deshabilitado, se debe devolver un error
             if (!_user.IsActive)
             {
                 return new BadRequestObjectResult(new { Message = "El usuario está deshabilitado." });
             }
-#endif
 
-#if !DEBUG
+            // Si el correo electrónico no está confirmado, se debe devolver un error
             if (!_user.EmailConfirmed)
             {
                 return new BadRequestObjectResult(new { Message = "El correo electrónico no está confirmado." });
             }
 #endif
 
+            // Verificar si la contraseña es correcta
             var passwordValid = await _userManager.CheckPasswordAsync(_user, model.Password);
 
             if (!passwordValid)
@@ -243,6 +247,7 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
             }
 
+            // Generar el token de acceso
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);

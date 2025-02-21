@@ -26,7 +26,7 @@ globs: **/*.sql
  - Crear si no existe un archivo log de los cambios o modificaciones que se van realizando con fecha del dia, tanto para Tablas como SPs. `sql_change_log.md`
 
 - **Flyway:**
-- Cuando se hagan los cambios es neceario copiar los nuevos archivos para poder migrar en con Flywar.
+- Cuando se hagan los cambios es neceario crear los nuevos archivos para poder migrar en con Flywar, usar la nomenglatura correcta.
 - Hacer una copia en el directorio `.flyway/migrations-local-db/` que son para ingresar en la base local de pruebas
 - Hcare lo mismo para el directorio `.flyway/migrations-azure-db/`
 

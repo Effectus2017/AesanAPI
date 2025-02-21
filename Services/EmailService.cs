@@ -60,7 +60,13 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
 
         var emailMessage = new MimeMessage();
         emailMessage.From.Add(new MailboxAddress("AESAN", _appSettings.Gmail.EmailFrom));
+
+#if DEBUG || LOCAL
         emailMessage.To.Add(new MailboxAddress("", _appSettings.Gmail.EmailToDev));
+#else
+        emailMessage.To.Add(new MailboxAddress("", email));
+#endif
+
         emailMessage.Subject = subject;
 
         var bodyBuilder = new BodyBuilder
