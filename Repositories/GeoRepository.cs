@@ -1,15 +1,19 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context) : IGeoRepository
+public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, ApplicationSettings appSettings) : IGeoRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<GeoRepository> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ApplicationSettings _appSettings = appSettings;
 
     /// <summary>
     /// Obtiene todas las ciudades de la base de datos local
@@ -21,33 +25,35 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     /// <returns>Las ciudades</returns>
     public async Task<dynamic> GetAllCitiesFromDb(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todas las ciudades");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Cities, take, skip, name, alls);
 
-            var result = await db.QueryMultipleAsync("100_GetCities", parameters, commandType: CommandType.StoredProcedure);
-
-            var data = result.Read<dynamic>().Select(item => new DTOCity
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                Id = item.Id,
-                Name = item.Name
-            }).ToList();
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
 
-            var count = await result.ReadSingleAsync<int>();
+                var result = await db.QueryMultipleAsync(
+                    "100_GetCities",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = result
+                    .Read<dynamic>()
+                    .Select(item => new DTOCity { Id = item.Id, Name = item.Name })
+                    .ToList();
 
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las ciudades");
-            throw;
-        }
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -60,32 +66,35 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     /// <returns>Las regiones</returns>
     public async Task<dynamic> GetAllRegionsFromDb(int take, int skip, string name, bool alls)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todas las regiones");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Regions, take, skip, name, alls);
 
-            var result = await db.QueryMultipleAsync("100_GetRegions", parameters, commandType: CommandType.StoredProcedure);
-
-            var data = result.Read<dynamic>().Select(item => new DTORegion
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                Id = item.Id,
-                Name = item.Name
-            }).ToList();
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32);
+                parameters.Add("@skip", skip, DbType.Int32);
+                parameters.Add("@name", name, DbType.String);
+                parameters.Add("@alls", alls, DbType.Boolean);
 
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las regiones");
-            throw;
-        }
+                var result = await db.QueryMultipleAsync(
+                    "100_GetRegions",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = result
+                    .Read<dynamic>()
+                    .Select(item => new DTORegion { Id = item.Id, Name = item.Name })
+                    .ToList();
+
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -95,20 +104,24 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     /// <returns>La ciudad</returns>
     public async Task<dynamic> GetCityById(int cityId)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo ciudad por ID: {CityId}", cityId);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", cityId, DbType.Int32);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.City, cityId);
 
-            return await db.QueryFirstOrDefaultAsync<dynamic>("100_GetCityById", parameters, commandType: CommandType.StoredProcedure);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la ciudad por ID: {CityId}", cityId);
-            throw;
-        }
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", cityId, DbType.Int32);
+                return await db.QueryFirstOrDefaultAsync<dynamic>(
+                    "100_GetCityById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -118,27 +131,31 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     /// <returns>Las regiones</returns>
     public async Task<dynamic> GetRegionsByCityId(int cityId)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo regiones por ID de ciudad: {CityId}", cityId);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@cityId", cityId, DbType.Int32);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.RegionsByCity, cityId);
 
-            var result = await db.QueryMultipleAsync("100_GetRegionsByCityId", parameters, commandType: CommandType.StoredProcedure);
-            var data = result.Read<dynamic>().Select(item => new DTORegion
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
             {
-                Id = item.Id,
-                Name = item.Name
-            }).ToList();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las regiones por ID de ciudad: {CityId}", cityId);
-            throw;
-        }
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@cityId", cityId, DbType.Int32);
+
+                var result = await db.QueryMultipleAsync(
+                    "100_GetRegionsByCityId",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = result
+                    .Read<dynamic>()
+                    .Select(item => new DTORegion { Id = item.Id, Name = item.Name })
+                    .ToList();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -148,20 +165,24 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     /// <returns>La región</returns>
     public async Task<dynamic> GetRegionById(int regionId)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo región por ID: {RegionId}", regionId);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", regionId, DbType.Int32);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Region, regionId);
 
-            return await db.QueryFirstOrDefaultAsync<dynamic>("100_GetRegionById", parameters, commandType: CommandType.StoredProcedure);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la región por ID: {RegionId}", regionId);
-            throw;
-        }
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", regionId, DbType.Int32);
+                return await db.QueryFirstOrDefaultAsync<dynamic>(
+                    "100_GetRegionById",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>
@@ -171,22 +192,49 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context)
     /// <returns>Las ciudades asociadas a la región</returns>
     public async Task<dynamic> GetCitiesByRegionId(int regionId)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo ciudades por ID de región: {RegionId}", regionId);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@regionId", regionId, DbType.Int32);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.CitiesByRegion, regionId);
 
-            var result = await db.QueryMultipleAsync("100_GetCitiesByRegionId", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<dynamic>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@regionId", regionId, DbType.Int32);
+
+                var result = await db.QueryMultipleAsync(
+                    "100_GetCitiesByRegionId",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+                var data = await result.ReadAsync<dynamic>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            },
+            _logger,
+            _appSettings
+        );
+    }
+
+    // Método para invalidar el caché manualmente si es necesario
+    public void InvalidateCache(int? cityId = null, int? regionId = null)
+    {
+        if (cityId.HasValue)
         {
-            _logger.LogError(ex, "Error al obtener las ciudades por ID de región: {RegionId}", regionId);
-            throw;
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.City, cityId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.RegionsByCity, cityId));
         }
+
+        if (regionId.HasValue)
+        {
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Region, regionId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.CitiesByRegion, regionId));
+        }
+
+        // Invalidar listas completas
+        _cache.Remove(_appSettings.Cache.Keys.Cities);
+        _cache.Remove(_appSettings.Cache.Keys.Regions);
+
+        _logger.LogInformation("Cache invalidado para Geo Repository");
     }
 }

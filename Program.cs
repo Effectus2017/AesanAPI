@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +63,8 @@ builder.Services
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddSingleton<ApplicationSettings>();
 
 // Agregar repositorios a la inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -138,6 +141,8 @@ builder.Services.AddCors(options =>
 // Configurar la cultura invariante
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

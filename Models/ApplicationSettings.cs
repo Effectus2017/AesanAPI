@@ -20,8 +20,28 @@ public class ApplicationSettings
     public string LocalWebURL { get; set; } = "";
     public string StagingWebURL { get; set; } = "";
     public string ProduccionWebURL { get; set; } = "";
+
+    // Cache settings
+    public CacheSettings Cache { get; set; } = new CacheSettings();
     // Gmail settings
     public GmailSettings Gmail { get; set; } = new GmailSettings();
+}
+
+public class CacheSettings
+{
+    public bool Enabled { get; set; } = true;
+    public int DefaultExpirationHours { get; set; } = 6;
+    public CacheKeys Keys { get; set; } = new();
+}
+
+public class CacheKeys
+{
+    public string Cities { get; set; } = "Cities_{0}_{1}_{2}_{3}";
+    public string Regions { get; set; } = "Regions_{0}_{1}_{2}_{3}";
+    public string City { get; set; } = "City_{0}";
+    public string Region { get; set; } = "Region_{0}";
+    public string RegionsByCity { get; set; } = "RegionsByCity_{0}";
+    public string CitiesByRegion { get; set; } = "CitiesByRegion_{0}";
 }
 
 public class GmailSettings
