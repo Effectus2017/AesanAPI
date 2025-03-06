@@ -1,0 +1,8 @@
+---
+description: Best practices for using Dapper as an ORM in .NET applications
+globs: **/*.cs
+---
+- Use parameterized queries to prevent SQL injection
+- Implement connection pooling for better performance
+- Use async methods for database operations
+- Consider using Dapper.Contrib for basic CRUD operations

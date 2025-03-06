@@ -11,6 +11,7 @@ namespace Api.Repositories;
 public class AgencyRepository(
     IEmailService emailService,
     IPasswordService passwordService,
+    IAgencyUserAssignmentRepository agencyUserAssignmentRepository,
     DapperContext context,
     ILogger<AgencyRepository> logger,
     IMemoryCache cache,
@@ -20,6 +21,7 @@ public class AgencyRepository(
     private readonly ILogger<AgencyRepository> _logger = logger;
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
     private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
+    private readonly IAgencyUserAssignmentRepository _agencyUserAssignmentRepository = agencyUserAssignmentRepository ?? throw new ArgumentNullException(nameof(agencyUserAssignmentRepository));
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings;
 
@@ -30,41 +32,34 @@ public class AgencyRepository(
     /// <returns>La agencia</returns>
     public async Task<dynamic> GetAgencyById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Agency, id);
+        using IDbConnection dbConnection = _context.CreateConnection();
 
-        return await _cache.CacheAgencyQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new { Id = id };
-                var result = await dbConnection.QueryMultipleAsync(
-                    "101_GetAgencyById",
-                    param,
-                    commandType: CommandType.StoredProcedure
-                );
+        var param = new DynamicParameters();
+        param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
-                if (result == null)
-                    return null;
-
-                var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
-
-                if (_agencyResult == null)
-                    return null;
-
-                var agency = MapAgencyFromResult(_agencyResult);
-                var _agenciesPrograms = await result.ReadAsync<dynamic>();
-
-                if (_agenciesPrograms.Any())
-                {
-                    agency.Programs = MapProgramsFromResult(_agenciesPrograms);
-                }
-
-                return agency;
-            },
-            _logger,
-            _appSettings
+        var result = await dbConnection.QueryMultipleAsync(
+            "102_GetAgencyById",
+            param,
+            commandType: CommandType.StoredProcedure
         );
+
+        if (result == null)
+            return null;
+
+        var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+
+        if (_agencyResult == null)
+            return null;
+
+        var agency = MapAgencyFromResult(_agencyResult);
+        var _agenciesPrograms = await result.ReadAsync<dynamic>();
+
+        if (_agenciesPrograms.Any())
+        {
+            agency.Programs = MapProgramsFromResult(_agenciesPrograms);
+        }
+
+        return agency;
     }
 
     /// <summary>
@@ -99,12 +94,12 @@ public class AgencyRepository(
                 var agency = MapAgencyFromResult(_agencyResult);
                 var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
-                if (_agenciesPrograms.Any())
+                if (_agenciesPrograms != null && _agenciesPrograms.Any())
                 {
                     agency.Programs = MapProgramsFromResult(_agenciesPrograms);
                 }
 
-                return agency;
+                return agency!;
             },
             _logger,
             _appSettings
@@ -126,6 +121,7 @@ public class AgencyRepository(
             take,
             skip,
             name ?? string.Empty,
+            userId ?? string.Empty,
             alls
         );
 
@@ -134,20 +130,33 @@ public class AgencyRepository(
             async () =>
             {
                 using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new { take, skip, name, regionId, cityId, programId, statusId, userId, alls };
+                var param = new DynamicParameters();
+                param.Add("@take", take);
+                param.Add("@skip", skip);
+                param.Add("@name", name);
+                param.Add("@regionId", regionId);
+                param.Add("@cityId", cityId);
+                param.Add("@programId", programId);
+                param.Add("@alls", alls);
+
+                // Datos del usuario monitor
+                param.Add("@userId", userId);
+
                 var result = await dbConnection.QueryMultipleAsync(
-                    "102_GetAgencies",
+                    "104_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure
                 );
 
                 if (result == null)
+                {
                     return null;
+                }
 
                 var agencies = result.Read<dynamic>().Select(MapAgencyFromResult).ToList();
                 var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
-                if (_agenciesPrograms.Any())
+                if (_agenciesPrograms != null && _agenciesPrograms.Any())
                 {
                     foreach (var agency in agencies)
                     {
@@ -317,6 +326,11 @@ public class AgencyRepository(
             parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
             // Código de la agencia
             parameters.Add("@AgencyCode", agencyRequest.AgencyCode, DbType.String, ParameterDirection.Input);
+
+            if (agencyRequest.MonitorId != null && agencyId != 0)
+            {
+                await _agencyUserAssignmentRepository.AssignAgencyToUser(agencyRequest.MonitorId, agencyId, agencyRequest.AssignedBy);
+            }
 
             // Retorno
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
@@ -561,6 +575,12 @@ public class AgencyRepository(
                 FatherLastName = item.FatherLastName,
                 MotherLastName = item.MotherLastName,
                 AdministrationTitle = item.AdministrationTitle
+            },
+            Monitor = new DTOUser
+            {
+                Id = item.MonitorId,
+                FirstName = item.MonitorFirstName,
+                FatherLastName = item.MonitorFatherLastName
             },
             Comment = item.Comment ?? string.Empty,
             AppointmentCoordinated = item.AppointmentCoordinated,

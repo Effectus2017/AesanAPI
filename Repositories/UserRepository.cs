@@ -82,7 +82,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null)
+    public async Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, List<string> roles = null)
     {
         try
         {
@@ -92,9 +92,15 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
-            parameters.Add("@agencyId", agencyId, DbType.Int32);
+            parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
 
-            var result = await db.QueryMultipleAsync("100_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
+            // Add roles parameter if provided
+            if (roles != null && roles.Count != 0)
+            {
+                parameters.Add("@roles", string.Join(",", roles), DbType.String);
+            }
+
+            var result = await db.QueryMultipleAsync("101_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
             var usersFromDb = await result.ReadAsync<DTOUserDB>();
             var count = await result.ReadSingleAsync<int>();
 
@@ -110,7 +116,7 @@ public class UserRepository(UserManager<User> userManager,
                 PhoneNumber = u.PhoneNumber,
                 ImageURL = u.ImageURL,
                 IsActive = u.IsActive,
-                Roles = new List<string> { u.RoleName }
+                Roles = [u.RoleName]
             }).ToList();
 
             return new DTOUserResponse
@@ -505,6 +511,111 @@ public class UserRepository(UserManager<User> userManager,
             return new BadRequestObjectResult(new { Message = "Error al registrar usuario", Error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Actualiza un usuario
+    /// </summary>
+    /// <param name="entity">El usuario</param>
+    /// <returns>True si se actualiza correctamente, false en caso contrario</returns>
+    public async Task<dynamic> Update(DTOUser entity)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(entity.Id);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Email = entity.Email;
+            user.EmailConfirmed = entity.EmailConfirmed;
+            user.FirstName = !string.IsNullOrEmpty(entity.FirstName) ? entity.FirstName : user.FirstName;
+            user.FatherLastName = !string.IsNullOrEmpty(entity.FatherLastName) ? entity.FatherLastName : user.FatherLastName;
+            user.MiddleName = !string.IsNullOrEmpty(entity.MiddleName) ? entity.MiddleName : user.MiddleName;
+            user.MotherLastName = !string.IsNullOrEmpty(entity.MotherLastName) ? entity.MotherLastName : user.MotherLastName;
+            user.AdministrationTitle = !string.IsNullOrEmpty(entity.AdministrationTitle) ? entity.AdministrationTitle : user.AdministrationTitle;
+            user.PhoneNumber = !string.IsNullOrEmpty(entity.PhoneNumber) ? entity.PhoneNumber : user.PhoneNumber;
+            user.ImageURL = !string.IsNullOrEmpty(entity.ImageURL) ? entity.ImageURL : user.ImageURL;
+
+            var resultUser = await _userManager.UpdateAsync(user);
+
+            if (resultUser.Succeeded)
+            {
+                if (entity.Roles.Count != 0)
+                {
+                    var _currentRoles = _userManager.GetRolesAsync(user).Result.First();
+                    var _newRole = entity.Roles[0];
+
+                    if (_currentRoles != _newRole)
+                    {
+                        var isInRole = await _userManager.IsInRoleAsync(user, _newRole);
+
+                        if (!isInRole)
+                        {
+                            var resultDelete = await _userManager.RemoveFromRoleAsync(user, _currentRoles);
+
+                            if (resultDelete.Succeeded)
+                            {
+                                var resultAdd = await _userManager.AddToRoleAsync(user, _newRole);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+
+    /// <summary>
+    /// Elimina un usuario
+    /// </summary>
+    /// <param name="id">El ID del usuario</param>
+    /// <returns>True si se elimina correctamente, false en caso contrario</returns>
+    public async Task<dynamic> Delete(string id)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(id);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var result = await _userManager.RemoveFromRolesAsync(user, roles);
+
+            if (result.Succeeded)
+            {
+                result = await _userManager.DeleteAsync(user);
+
+                if (result.Succeeded)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
 
     /// ------------------------------------------------------------------------------------------------
     /// Métodos para cambiar la contraseña y actualizar el avatar

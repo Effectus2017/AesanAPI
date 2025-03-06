@@ -46,4 +46,8 @@ public class AgencyRequest
     public List<int> Programs { get; set; } = [];
     // Codigo de Agencia
     public string? AgencyCode { get; set; }
+    // Monitor
+    public string MonitorId { get; set; }
+    // Usuario que asigna
+    public string AssignedBy { get; set; }
 }

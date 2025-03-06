@@ -37,7 +37,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     return BadRequest("El ID de la agencia es requerido");
                 }
 
-                var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId ?? 0);
+                var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
 
                 if (agency == null)
                 {
@@ -76,7 +76,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     return BadRequest("El ID de la agencia y el ID del usuario son requeridos");
                 }
 
-                var agency = await _unitOfWork.AgencyRepository.GetAgencyByIdAndUserId(queryParameters.AgencyId ?? 0, queryParameters.UserId);
+                var agency = await _unitOfWork.AgencyRepository.GetAgencyByIdAndUserId(queryParameters.AgencyId, queryParameters.UserId);
 
                 if (agency == null)
                 {
@@ -175,7 +175,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId ?? 0, agencyRequest);
+                var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId, agencyRequest);
                 return Ok(result);
             }
 
@@ -200,7 +200,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgencyLogo(queryParameters.AgencyId ?? 0, queryParameters.ImageUrl ?? "");
+                var result = await _unitOfWork.AgencyRepository.UpdateAgencyLogo(queryParameters.AgencyId, queryParameters.ImageUrl ?? "");
                 return Ok(result);
             }
 
@@ -225,7 +225,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId ?? 0, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? ""));
+                return Ok(await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? ""));
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));

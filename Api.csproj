@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <NoWarn>$(NoWarn);*;</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -80,6 +80,7 @@ builder.Services.AddScoped<IOperatingPeriodRepository, OperatingPeriodRepository
 builder.Services.AddScoped<IOperatingPolicyRepository, OperatingPolicyRepository>();
 builder.Services.AddScoped<IOrganizationTypeRepository, OrganizationTypeRepository>();
 builder.Services.AddScoped<IEducationLevelRepository, EducationLevelRepository>();
+builder.Services.AddScoped<IAgencyUserAssignmentRepository, AgencyUserAssignmentRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); // Agregar UnitOfWork

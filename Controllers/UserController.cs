@@ -110,7 +110,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         {
             if (ModelState.IsValid)
             {
-                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name);
+                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.Roles);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 
@@ -198,4 +198,68 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
         }
     }
+
+    /// <summary>
+    /// Actualiza modelo
+    /// </summary>
+    /// <param name="entity">Modelo a actualizar</param>
+    /// <response code="200">Modelo no actualizado</response>
+    /// <response code="202">Modelo actualizado correctamente</response>
+    /// <response code="400">Incapaz actualizar el modelo</response>
+    [HttpPut("update-user-from-db")]
+#if !DEBUG
+    [Authorize(Roles = "Administrator")]
+#endif
+    public async Task<IActionResult> Put([FromBody] DTOUser entity)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                bool _result = await _unitOfWork.UserRepository.Update(entity);
+
+                return _result
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Updated successfully" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "Not updated" });
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+
+    /// <summary>
+    /// Elimina usuario
+    /// </summary>
+    /// <param name="userId">El Id del usuario</param>
+    /// <returns></returns>
+    [HttpDelete("delete-user-from-db")]
+#if !DEBUG
+    [Authorize(Roles = "Administrator")]
+#endif
+    public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (queryParameters != null)
+            {
+                bool _result = await _unitOfWork.UserRepository.Delete(queryParameters.UserId);
+
+                return _result
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Delete successfully" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "Not deleted" });
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "UserId is required" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
 }

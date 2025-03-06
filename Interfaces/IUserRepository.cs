@@ -15,8 +15,9 @@ public interface IUserRepository
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
     /// <param name="agencyId">El ID de la agencia (opcional)</param>
+    /// <param name="roles">Lista de roles (opcional)</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null);
+    Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, List<string> roles = null);
     dynamic GetAllRolesFromDb();
     dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls);
 
@@ -27,7 +28,8 @@ public interface IUserRepository
     Task<dynamic> Login(LoginRequest model);
     Task<dynamic> RegisterUserAgency(UserAgencyRequest model);
     Task<dynamic> RegisterUser(DTOUser model, string role);
-
+    Task<dynamic> Update(DTOUser model);
+    Task<dynamic> Delete(string userId);
 
     /// ------------------------------------------------------------------------------------------------
     /// Métodos para cambiar la contraseña y actualizar el avatar
