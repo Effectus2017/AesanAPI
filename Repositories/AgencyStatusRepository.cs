@@ -71,7 +71,7 @@ public class AgencyStatusRepository(
                 parameters.Add("@name", name, DbType.String);
                 parameters.Add("@alls", alls, DbType.Boolean);
                 var result = await db.QueryMultipleAsync(
-                    "100_GetAllAgencyStatus",
+                    "105_GetAllAgencyStatus",
                     parameters,
                     commandType: CommandType.StoredProcedure
                 );
@@ -153,6 +153,44 @@ public class AgencyStatusRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado de agencia");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el orden de visualización de un estado de agencia.
+    /// </summary>
+    /// <param name="statusId">El ID del estado a actualizar.</param>
+    /// <param name="displayOrder">El nuevo orden de visualización.</param>
+    /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
+    public async Task<bool> UpdateAgencyStatusDisplayOrder(int statusId, int displayOrder)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@statusId", statusId, DbType.Int32);
+            parameters.Add("@displayOrder", displayOrder, DbType.Int32);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await db.ExecuteAsync(
+                "105_UpdateAgencyStatusDisplayOrder",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(statusId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el orden de visualización del estado de agencia");
             throw;
         }
     }

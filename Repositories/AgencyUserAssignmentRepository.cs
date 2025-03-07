@@ -12,12 +12,18 @@ public class AgencyUserAssignmentRepository(
     DapperContext context,
     ILogger<AgencyUserAssignmentRepository> logger,
     IMemoryCache cache,
-    ApplicationSettings appSettings) : IAgencyUserAssignmentRepository
+    ApplicationSettings appSettings,
+    IEmailService emailService,
+    Lazy<IUserRepository> userRepository,
+    Lazy<IAgencyRepository> agencyRepository) : IAgencyUserAssignmentRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyUserAssignmentRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+    private readonly Lazy<IUserRepository> _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+    private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
 
     /// <summary>
     /// Obtiene las agencias asignadas a un usuario
@@ -79,6 +85,30 @@ public class AgencyUserAssignmentRepository(
             );
 
             var id = parameters.Get<int>("@Id");
+
+            if (id > 0)
+            {
+                // Obtener información del usuario usando Lazy<IUserRepository>
+                var user = _userRepository.Value.GetUserById(userId);
+
+                // Obtener información de la agencia usando Lazy<IAgencyRepository>
+                var agency = await _agencyRepository.Value.GetAgencyById(agencyId);
+
+                if (user != null && agency != null)
+                {
+                    // Enviar correo electrónico de asignación
+                    await _emailService.SendAgencyAssignmentEmail(user, agency);
+                    _logger.LogInformation($"Correo de asignación enviado al usuario {userId} para la agencia {agencyId}");
+                }
+                else
+                {
+                    _logger.LogWarning($"No se pudo enviar correo de asignación. Usuario o agencia no encontrados. UserId: {userId}, AgencyId: {agencyId}");
+                }
+
+                // Invalidar caché
+                InvalidateCache(userId);
+            }
+
             return id > 0;
         }
         catch (Exception ex)

@@ -80,7 +80,14 @@ builder.Services.AddScoped<IOperatingPeriodRepository, OperatingPeriodRepository
 builder.Services.AddScoped<IOperatingPolicyRepository, OperatingPolicyRepository>();
 builder.Services.AddScoped<IOrganizationTypeRepository, OrganizationTypeRepository>();
 builder.Services.AddScoped<IEducationLevelRepository, EducationLevelRepository>();
+
+// Registrar servicios Lazy
+builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
+builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));
+
+// Registrar AgencyUserAssignmentRepository después de los servicios Lazy
 builder.Services.AddScoped<IAgencyUserAssignmentRepository, AgencyUserAssignmentRepository>();
+
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); // Agregar UnitOfWork

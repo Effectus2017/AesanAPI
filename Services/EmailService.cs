@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MimeKit.Text;
@@ -222,4 +224,50 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
 
     }
 
+    /// <summary>
+    /// Envía un correo electrónico notificando la asignación de una agencia a un usuario
+    /// </summary>
+    /// <param name="user">Usuario al que se le asignó la agencia</param>
+    /// <param name="agency">Agencia asignada</param>
+    public async Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency)
+    {
+        try
+        {
+            _logger.LogInformation($"Preparando correo de asignación de agencia para {user.Email}");
+
+            var subject = "Asignación de Agencia en NUTRE";
+            var body = $@"
+                <h2>Asignación de Agencia</h2>
+                <p>Estimado/a {user.FirstName} {user.FatherLastName},</p>
+                <p>Le informamos que se le ha asignado la siguiente agencia en el sistema NUTRE:</p>
+                <ul>
+                    <li><strong>Nombre de la Agencia:</strong> {agency.Name}</li>
+                    <li><strong>Código de la Agencia:</strong> {agency.AgencyCode}</li>
+                </ul>
+                <p>Ya puede acceder a la información de esta agencia a través de su cuenta en el sistema.</p>
+                <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+                <p>Atentamente,<br>El equipo de NUTRE</p>
+            ";
+
+            string recipientEmail = user.Email;
+            string recipientName = $"{user.FirstName} {user.FatherLastName}";
+
+#if DEBUG || LOCAL
+            // En modo DEBUG o LOCAL, usar la dirección de desarrollo si está configurada
+            if (!string.IsNullOrEmpty(_appSettings.Gmail.EmailToDev))
+            {
+                recipientEmail = _appSettings.Gmail.EmailToDev;
+                _logger.LogInformation($"Modo DEBUG/LOCAL: Enviando correo a {recipientEmail} en lugar de {user.Email}");
+            }
+#endif
+
+            await SendEmailWithGmailAsync(recipientEmail, subject, body);
+            _logger.LogInformation($"Correo de asignación de agencia enviado exitosamente a {recipientEmail}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error al enviar correo de asignación de agencia a {user.Email}");
+            throw; // Re-throw the exception to be handled by the caller
+        }
+    }
 }

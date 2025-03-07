@@ -210,53 +210,55 @@ public class AgencyRepository(
     {
         try
         {
-            using IDbConnection db = _context.CreateConnection();
-            var existingCodes = (await db.QueryAsync<string>("SELECT AgencyCode FROM Agency")).ToList();
-            string agencyCode = Utilities.GenerateAgencyCode(
-                agencyRequest.Name,
-                agencyRequest.Programs,
-                existingCodes
-            );
-
             var parameters = new DynamicParameters();
-            parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@AgencyStatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@AgencyCode", agencyCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@EinNumber", agencyRequest.EinNumber, DbType.Int32, ParameterDirection.Input);
-            // Dirección Física
-            parameters.Add("@Address", agencyRequest.Address, DbType.String, ParameterDirection.Input);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@CityId", agencyRequest.CityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@RegionId", agencyRequest.RegionId, DbType.Int32, ParameterDirection.Input);
-            // Coordenadas
-            parameters.Add("@Latitude", agencyRequest.Latitude, DbType.Double, ParameterDirection.Input);
-            parameters.Add("@Longitude", agencyRequest.Longitude, DbType.Double, ParameterDirection.Input);
-            // Dirección Postal
-            parameters.Add("@PostalAddress", agencyRequest.PostalAddress, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@PostalCityId", agencyRequest.PostalCityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId, DbType.Int32, ParameterDirection.Input);
-            // Teléfono
-            parameters.Add("@Phone", agencyRequest.Phone, DbType.String, ParameterDirection.Input);
-            // Datos del Contacto
-            parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
-            // Datos de elegibilidad
-            parameters.Add("@NonProfit", agencyRequest.NonProfit, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@AtRiskService", agencyRequest.AtRiskService, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@Name", agencyRequest.Name);
+            parameters.Add("@AgencyStatusId", agencyRequest.StatusId);
+            parameters.Add("@SdrNumber", agencyRequest.SdrNumber);
+            parameters.Add("@UieNumber", agencyRequest.UieNumber);
+            parameters.Add("@EinNumber", agencyRequest.EinNumber);
+            parameters.Add("@Address", agencyRequest.Address);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode);
+            parameters.Add("@Phone", agencyRequest.Phone);
+            parameters.Add("@Email", agencyRequest.Email);
+            parameters.Add("@CityId", agencyRequest.CityId);
+            parameters.Add("@RegionId", agencyRequest.RegionId);
+            parameters.Add("@PostalAddress", agencyRequest.PostalAddress);
+            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode);
+            parameters.Add("@PostalCityId", agencyRequest.PostalCityId);
+            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
+            parameters.Add("@Latitude", agencyRequest.Latitude);
+            parameters.Add("@Longitude", agencyRequest.Longitude);
+            parameters.Add("@NonProfit", agencyRequest.NonProfit);
+            parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
+            parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
+            parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
+            parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
+            parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
+            parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
+            parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
+            parameters.Add("@ImageURL", agencyRequest.ImageUrl);
+            parameters.Add("@IsListable", agencyRequest.IsListable);
+            parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("102_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
-            var id = parameters.Get<int>("@Id");
+            using var connection = _context.CreateConnection();
+            await connection.ExecuteAsync("103_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+
+            var agencyId = parameters.Get<int>("@Id");
+
+            // Insertar programas
+            if (agencyRequest.Programs != null && agencyRequest.Programs.Count > 0)
+            {
+                foreach (var programId in agencyRequest.Programs)
+                {
+                    await InsertAgencyProgram(agencyId, programId);
+                }
+            }
 
             // Invalidar caché
-            InvalidateCache(id);
+            InvalidateCache(agencyId);
 
-            return id;
+            return agencyId;
         }
         catch (Exception ex)
         {
@@ -297,59 +299,48 @@ public class AgencyRepository(
     {
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@Id", agencyId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@Name", agencyRequest.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@AgencyStatusId", agencyRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            // Datos de la Agencia
-            parameters.Add("@SdrNumber", agencyRequest.SdrNumber, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@UieNumber", agencyRequest.UieNumber, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@EinNumber", agencyRequest.EinNumber, DbType.Int32, ParameterDirection.Input);
-            // Dirección Física
-            parameters.Add("@Address", agencyRequest.Address, DbType.String, ParameterDirection.Input);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@CityId", agencyRequest.CityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@RegionId", agencyRequest.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@Latitude", agencyRequest.Latitude, DbType.Double, ParameterDirection.Input);
-            parameters.Add("@Longitude", agencyRequest.Longitude, DbType.Double, ParameterDirection.Input);
-            // Dirección Postal
-            parameters.Add("@PostalAddress", agencyRequest.PostalAddress, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@PostalCityId", agencyRequest.PostalCityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId, DbType.Int32, ParameterDirection.Input);
-            // Teléfono
-            parameters.Add("@Phone", agencyRequest.Phone, DbType.String, ParameterDirection.Input);
-            // Imágen - Logo
-            parameters.Add("@ImageUrl", agencyRequest.ImageUrl, DbType.String, ParameterDirection.Input);
-            // Datos del Contacto
-            parameters.Add("@Email", agencyRequest.Email, DbType.String, ParameterDirection.Input);
-            // Código de la agencia
-            parameters.Add("@AgencyCode", agencyRequest.AgencyCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Id", agencyId);
+            parameters.Add("@Name", agencyRequest.Name);
+            parameters.Add("@AgencyStatusId", agencyRequest.StatusId);
+            parameters.Add("@SdrNumber", agencyRequest.SdrNumber);
+            parameters.Add("@UieNumber", agencyRequest.UieNumber);
+            parameters.Add("@EinNumber", agencyRequest.EinNumber);
+            parameters.Add("@Address", agencyRequest.Address);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode);
+            parameters.Add("@CityId", agencyRequest.CityId);
+            parameters.Add("@RegionId", agencyRequest.RegionId);
+            parameters.Add("@Latitude", agencyRequest.Latitude);
+            parameters.Add("@Longitude", agencyRequest.Longitude);
+            parameters.Add("@PostalAddress", agencyRequest.PostalAddress);
+            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode);
+            parameters.Add("@PostalCityId", agencyRequest.PostalCityId);
+            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
+            parameters.Add("@Phone", agencyRequest.Phone);
+            parameters.Add("@ImageURL", agencyRequest.ImageUrl);
+            parameters.Add("@Email", agencyRequest.Email);
+            parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
+            parameters.Add("@NonProfit", agencyRequest.NonProfit);
+            parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
+            parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
+            parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
+            parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
+            parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
+            parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
+            parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
 
-            if (agencyRequest.MonitorId != null && agencyId != 0)
-            {
-                await _agencyUserAssignmentRepository.AssignAgencyToUser(agencyRequest.MonitorId, agencyId, agencyRequest.AssignedBy);
-            }
+            using var connection = _context.CreateConnection();
+            var rowsAffected = await connection.ExecuteAsync("103_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
 
-            // Retorno
-            parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await dbConnection.ExecuteAsync("101_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@ReturnValue");
-
-            if (rowsAffected > 0)
-            {
-                // Invalidar caché
-                InvalidateCache(agencyId);
-            }
+            // Invalidar caché
+            InvalidateCache(agencyId);
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la agencia");
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -544,47 +535,45 @@ public class AgencyRepository(
         {
             Id = item.Id,
             Name = item.Name,
-            StatusId = item.StatusId,
+            AgencyStatusId = item.AgencyStatusId,
+            AgencyStatusName = item.AgencyStatusName,
             SdrNumber = item.SdrNumber,
             UieNumber = item.UieNumber,
             EinNumber = item.EinNumber,
             Address = item.Address,
             ZipCode = item.ZipCode,
+            CityId = item.CityId,
+            CityName = item.CityName,
+            RegionId = item.RegionId,
+            RegionName = item.RegionName,
             PostalAddress = item.PostalAddress,
-            PostalZipCode = item.PostalZipCode ?? 0,
-            Phone = item.Phone,
+            PostalZipCode = item.PostalZipCode,
+            PostalCityId = item.PostalCityId,
+            PostalCityName = item.PostalCityName,
+            PostalRegionId = item.PostalRegionId,
+            PostalRegionName = item.PostalRegionName,
             Latitude = item.Latitude,
             Longitude = item.Longitude,
+            Phone = item.Phone,
             Email = item.Email,
+            ImageUrl = item.ImageURL,
+            NonProfit = item.NonProfit,
+            FederalFundsDenied = item.FederalFundsDenied,
+            StateFundsDenied = item.StateFundsDenied,
+            OrganizedAthleticPrograms = item.OrganizedAthleticPrograms,
+            AtRiskService = item.AtRiskService,
+            ServiceTime = item.ServiceTime,
+            TaxExemptionStatus = item.TaxExemptionStatus,
+            TaxExemptionType = item.TaxExemptionType,
+            RejectionJustification = item.RejectionJustification,
+            Comment = item.Comment,
+            AppointmentCoordinated = item.AppointmentCoordinated,
+            AppointmentDate = item.AppointmentDate,
+            IsActive = item.IsActive,
+            IsListable = item.IsListable,
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
-            ImageURL = item.ImageURL,
-            City = new DTOCity { Id = item.CityId, Name = item.CityName },
-            Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
-            PostalCity = item.PostalCityId != null
-                ? new DTOCity { Id = item.PostalCityId, Name = item.PostalCityName }
-                : null,
-            PostalRegion = item.PostalRegionId != null
-                ? new DTORegion { Id = item.PostalRegionId, Name = item.PostalRegionName }
-                : null,
-            Status = new DTOAgencyStatus { Id = item.StatusId, Name = item.StatusName },
-            User = new DTOUser
-            {
-                FirstName = item.FirstName,
-                MiddleName = item.MiddleName,
-                FatherLastName = item.FatherLastName,
-                MotherLastName = item.MotherLastName,
-                AdministrationTitle = item.AdministrationTitle
-            },
-            Monitor = new DTOUser
-            {
-                Id = item.MonitorId,
-                FirstName = item.MonitorFirstName,
-                FatherLastName = item.MonitorFatherLastName
-            },
-            Comment = item.Comment ?? string.Empty,
-            AppointmentCoordinated = item.AppointmentCoordinated,
-            AppointmentDate = item.AppointmentDate
+            AgencyCode = item.AgencyCode
         };
     }
 

@@ -10,4 +10,5 @@ public interface IEmailService
     Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword);
     Task SendApprovalSponsorEmail(User userRequest, string temporaryPassword);
     Task SendDenialSponsorEmail(User user, string rejectionReason);
+    Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency);
 }

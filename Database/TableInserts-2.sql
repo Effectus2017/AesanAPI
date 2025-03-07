@@ -2,13 +2,12 @@
 INSERT INTO AgencyStatus
     (Name, IsActive, CreatedAt)
 VALUES
-    ('Pendiente de validar', 1, GETDATE()),
-    ('Orientación', 1, GETDATE()),
-    ('Visita Pre-operacional', 1, GETDATE()),
-    ('No cumple con los requisitos', 1, GETDATE()),
-    ('Cumple con los requisitos', 1, GETDATE()),
-    ('Rechazado', 1, GETDATE()),
-    ('Aprobado', 1, GETDATE());
+    ('Pendiente a validar', 1, GETDATE()),           -- 1 (default cuando cae en el listado)
+    ('Coordinar Visita Pre-Operacional', 1, GETDATE()), -- 2
+    ('Orientación de Programa', 1, GETDATE()),       -- 3
+    ('Orientación de Contabilidad', 1, GETDATE()),   -- 4
+    ('Cumple con los requisitos', 1, GETDATE()),     -- 5
+    ('No cumple con los requisitos', 1, GETDATE());  -- 6
 
 -- Insertar programas
 INSERT INTO Program

@@ -50,4 +50,9 @@ public class AgencyRequest
     public string MonitorId { get; set; }
     // Usuario que asigna
     public string AssignedBy { get; set; }
+    // Service Time
+    public DateTime ServiceTime { get; set; } = DateTime.MinValue;
+    // Tax Exemption
+    public int TaxExemptionStatus { get; set; } = 0;
+    public int TaxExemptionType { get; set; } = 0;
 }
