@@ -38,7 +38,7 @@ public class AgencyRepository(
         param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
         var result = await dbConnection.QueryMultipleAsync(
-            "102_GetAgencyById",
+            "103_GetAgencyById",
             param,
             commandType: CommandType.StoredProcedure
         );
@@ -143,7 +143,7 @@ public class AgencyRepository(
                 param.Add("@userId", userId);
 
                 var result = await dbConnection.QueryMultipleAsync(
-                    "104_GetAgencies",
+                    "105_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure
                 );
@@ -391,7 +391,7 @@ public class AgencyRepository(
             parameters.Add("@rejectionJustification", rejectionJustification);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("104_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@ReturnValue");
 
             if (rowsAffected > 0)
@@ -535,45 +535,31 @@ public class AgencyRepository(
         {
             Id = item.Id,
             Name = item.Name,
-            AgencyStatusId = item.AgencyStatusId,
-            AgencyStatusName = item.AgencyStatusName,
+            StatusId = item.AgencyStatusId,
             SdrNumber = item.SdrNumber,
             UieNumber = item.UieNumber,
             EinNumber = item.EinNumber,
             Address = item.Address,
             ZipCode = item.ZipCode,
-            CityId = item.CityId,
-            CityName = item.CityName,
-            RegionId = item.RegionId,
-            RegionName = item.RegionName,
             PostalAddress = item.PostalAddress,
             PostalZipCode = item.PostalZipCode,
-            PostalCityId = item.PostalCityId,
-            PostalCityName = item.PostalCityName,
-            PostalRegionId = item.PostalRegionId,
-            PostalRegionName = item.PostalRegionName,
             Latitude = item.Latitude,
             Longitude = item.Longitude,
             Phone = item.Phone,
             Email = item.Email,
-            ImageUrl = item.ImageURL,
-            NonProfit = item.NonProfit,
-            FederalFundsDenied = item.FederalFundsDenied,
-            StateFundsDenied = item.StateFundsDenied,
-            OrganizedAthleticPrograms = item.OrganizedAthleticPrograms,
-            AtRiskService = item.AtRiskService,
-            ServiceTime = item.ServiceTime,
-            TaxExemptionStatus = item.TaxExemptionStatus,
-            TaxExemptionType = item.TaxExemptionType,
+            ImageURL = item.ImageURL,
             RejectionJustification = item.RejectionJustification,
             Comment = item.Comment,
             AppointmentCoordinated = item.AppointmentCoordinated,
             AppointmentDate = item.AppointmentDate,
-            IsActive = item.IsActive,
-            IsListable = item.IsListable,
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
-            AgencyCode = item.AgencyCode
+            AgencyCode = item.AgencyCode,
+            City = new DTOCity { Id = item.CityId, Name = item.CityName },
+            Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
+            PostalCity = new DTOCity { Id = item.PostalCityId, Name = item.PostalCityName },
+            PostalRegion = new DTORegion { Id = item.PostalRegionId, Name = item.PostalRegionName },
+            Status = new DTOAgencyStatus { Id = item.AgencyStatusId, Name = item.AgencyStatusName }
         };
     }
 
