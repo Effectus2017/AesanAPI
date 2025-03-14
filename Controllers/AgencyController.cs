@@ -106,28 +106,24 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesFromDb(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Name,
-                    queryParameters.RegionId,
-                    queryParameters.CityId,
-                    queryParameters.ProgramId,
-                    queryParameters.StatusId,
-                    queryParameters.UserId,
-                    queryParameters.Alls
-                );
-                return Ok(agencies);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Obteniendo todas las agencias con parámetros: {@Parameters}", queryParameters);
+            var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesFromDb(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Name,
+                queryParameters.RegionId,
+                queryParameters.CityId,
+                queryParameters.ProgramId,
+                queryParameters.StatusId,
+                queryParameters.UserId,
+                queryParameters.Alls
+            );
+            return Ok(agencies);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las agencias");
-            return StatusCode(500, "Error al obtener las agencias");
+            _logger.LogError(ex, "Error al obtener agencias: {Message}", ex.Message);
+            throw; // El middleware capturará esta excepción
         }
     }
 

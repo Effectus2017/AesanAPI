@@ -12,6 +12,9 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 using Microsoft.Extensions.Caching.Memory;
+using Serilog;
+using Serilog.Events;
+using Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -152,55 +155,92 @@ CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 builder.Services.AddMemoryCache();
 
-var app = builder.Build();
+// Configurar Serilog al inicio de la aplicación
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        Path.Combine("logs", "api-.log"),
+        rollingInterval: RollingInterval.Day,
+        fileSizeLimitBytes: 10 * 1024 * 1024,
+        retainedFileCountLimit: 30,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
 
-// Configuración de middleware
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseDeveloperExceptionPage().UseCors("AllowDevOrigin").UseSwaggerUI();
+    Log.Information("Iniciando aplicación API");
+
+    // Configurar el builder para usar Serilog
+    builder.Host.UseSerilog();
+
+    var app = builder.Build();
+
+    // Configuración de middleware
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+        // Configuración detallada para desarrollo
+    }
+    else
+    {
+        // En producción, no mostrar detalles de errores
+        app.UseExceptionHandler("/error");
+        app.UseHsts();
+
+        // Configuración para producción
+    }
+
+    app.UseHttpsRedirection();
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // Habilitar Swagger
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
+        c.RoutePrefix = string.Empty; // Hacer que Swagger esté disponible en la raíz
+    });
+
+    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+    if (Directory.Exists(uploadsPath))
+    {
+        app.UseFileServer(enableDirectoryBrowsing: true)
+            .UseStaticFiles(
+                new StaticFileOptions
+                {
+                    FileProvider = new PhysicalFileProvider(uploadsPath),
+                    RequestPath = new PathString("/uploads")
+                }
+            )
+            .UseDirectoryBrowser(
+                new DirectoryBrowserOptions
+                {
+                    FileProvider = new PhysicalFileProvider(uploadsPath),
+                    RequestPath = new PathString("/uploads")
+                }
+            );
+    }
+    else
+    {
+        Directory.CreateDirectory(uploadsPath);
+    }
+
+    app.UseMiddleware<ErrorHandlingMiddleware>();
+
+    app.MapControllers();
+
+    app.Run();
 }
-else
+catch (Exception ex)
 {
-    app.UseHttpsRedirection().UseCors("AllowProdOrigin").UseSwaggerUI();
+    Log.Fatal(ex, "La aplicación API falló al iniciar");
 }
-
-app.UseHttpsRedirection();
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Habilitar Swagger
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+finally
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
-    c.RoutePrefix = string.Empty; // Hacer que Swagger esté disponible en la raíz
-});
-
-var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-if (Directory.Exists(uploadsPath))
-{
-    app.UseFileServer(enableDirectoryBrowsing: true)
-        .UseStaticFiles(
-            new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(uploadsPath),
-                RequestPath = new PathString("/uploads")
-            }
-        )
-        .UseDirectoryBrowser(
-            new DirectoryBrowserOptions
-            {
-                FileProvider = new PhysicalFileProvider(uploadsPath),
-                RequestPath = new PathString("/uploads")
-            }
-        );
+    Log.CloseAndFlush();
 }
-else
-{
-    Directory.CreateDirectory(uploadsPath);
-}
-
-app.MapControllers();
-
-app.Run();
