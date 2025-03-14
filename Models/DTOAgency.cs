@@ -12,11 +12,11 @@ public class DTOAgency
 
     // Datos de la Ciudad y Región
     public string Address { get; set; } = "";
-    public int? ZipCode { get; set; } = 0;
+    public string ZipCode { get; set; } = "";
 
     // Dirección Postal
     public string PostalAddress { get; set; } = "";
-    public int? PostalZipCode { get; set; } = 0;
+    public string PostalZipCode { get; set; } = "";
 
     // Teléfono
     public string Phone { get; set; } = "";
@@ -51,7 +51,9 @@ public class DTOAgency
     // Estatus
     public DTOAgencyStatus Status { get; set; } = new DTOAgencyStatus();
     // Usuario
-    public DTOUser User { get; set; } = new DTOUser();
+    public DTOUser? User { get; set; } = new DTOUser();
+    // Usuario Monitor
+    public DTOUser? Monitor { get; set; } = new DTOUser();
     // Programas
     public List<DTOProgram> Programs { get; set; } = [];
 

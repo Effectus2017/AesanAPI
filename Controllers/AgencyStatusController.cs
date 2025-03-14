@@ -106,6 +106,30 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
         }
     }
 
+    [HttpPut("update-agency-status-display-order")]
+    [SwaggerOperation(Summary = "Actualiza el orden de visualización de un estado de agencia", Description = "Actualiza el orden de visualización de un estado de agencia existente.")]
+    public async Task<IActionResult> UpdateDisplayOrder([FromQuery] int statusId, [FromQuery] int displayOrder)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _agencyStatusRepository.UpdateAgencyStatusDisplayOrder(statusId, displayOrder);
+                if (!result)
+                    return NotFound($"Estado de agencia con ID {statusId} no encontrado");
+
+                return NoContent();
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el orden de visualización del estado de agencia con ID {Id}", statusId);
+            return StatusCode(500, "Error interno del servidor al actualizar el orden de visualización del estado de agencia");
+        }
+    }
+
     [HttpDelete("delete-agency-status")]
     [SwaggerOperation(Summary = "Elimina un estado de agencia existente", Description = "Elimina un estado de agencia existente.")]
     public async Task<IActionResult> Delete([FromQuery] int id)

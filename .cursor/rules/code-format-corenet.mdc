@@ -1,0 +1,453 @@
+---
+description: Reglas para Core Net
+globs: 
+---
+# .NET Development Rules
+
+You are a senior .NET backend developer and an expert in C#, ASP.NET Core, and Entity Framework Core.
+
+## Code Style and Structure
+
+- Write concise, idiomatic C# code with accurate examples.
+- Follow .NET and ASP.NET Core conventions and best practices.
+- Use object-oriented and functional programming patterns as appropriate.
+- Prefer LINQ and lambda expressions for collection operations.
+- Use descriptive variable and method names (e.g., 'IsUserSignedIn', 'CalculateTotal').
+- Structure files according to .NET conventions (Controllers, Models, Services, etc.).
+- Always use principal contructor
+- Always use DynamicParameters() when is needed
+
+## Naming Conventions
+
+- Use PascalCase for class names, method names, and public members.
+- Use camelCase for local variables and private fields.
+- Use UPPERCASE for constants.
+- Prefix interface names with "I" (e.g., 'IUserService').
+
+- Use the following naming convention for methods in interfaces, whit summary and description:
+
+  -GetAll < EntityName > with summary and description
+  - Get<EntityName>ById with summary and description
+  - Insert<EntityName> with summary and description
+  - Update<EntityName> with summary and description
+  - Delete<EntityName> with summary and description
+
+Example code:
+
+```
+using Api.Models;
+
+namespace Api.Interfaces;
+
+public interface IEntityNameRepository
+{
+    /// <summary>
+    /// Obtiene un entity-name por su ID.
+    /// </summary>
+    /// <param name="id">El ID del entity-name a obtener.</param>
+    /// <returns>El entity-name encontrado o null si no se encuentra.</returns>
+    Task<dynamic> GetEntityNameById(int id);
+
+    /// <summary>
+    /// Obtiene todos los tipos de comida.
+    /// </summary>
+    /// <param name="take">El número de entity-name a tomar.</param>
+    /// <param name="skip">El número de entity-name a saltar.</param>
+    /// <param name="name">El nombre del entity-name a buscar.</param>
+    /// <param name="alls">Si se deben obtener todos los entity-name.</param>
+    /// <returns>Una lista de entity-name.</returns>
+    Task<dynamic> GetAllEntityName(int take, int skip, string name, bool alls);
+
+    /// <summary>
+    /// Inserta un nuevo tipo de comida.
+    /// </summary>
+    /// <param name="entityName">El entity-name a insertar.</param>
+    /// <returns>El ID del entity-name insertado.</returns>
+    Task<bool> InsertEntityName(DTOEntityName entityName);
+
+    /// <summary>
+    /// Actualiza un entity-name existente.
+    /// </summary>
+    /// <param name="entityName">El entity-name a actualizar.</param>
+    /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
+    Task<bool> UpdateEntityName(DTOEntityName entityName);
+
+    /// <summary>
+    /// Elimina un entity-name existente.
+    /// </summary>
+    /// <param name="id">El ID del entity-name a eliminar.</param>
+    /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
+    Task<bool> DeleteEntityName(int id);
+}
+
+```
+
+- Use the following naming convention for methods in controllers:
+
+  - With constructor principal
+  - [HttpGet("get-all-<EntityName>-from-db")] GetAll<EntityName> with property FromQuery QueryParameters queryParameters, with SwaggerOperation
+  - [HttpGet("get-<EntityName>-by-id")] Get<EntityName> ById with property FromQuery QueryParameters queryParameters, with SwaggerOperation
+  - [HttpPost("insert-<EntityName>")] Insert<EntityName> with property FromBody<EntityName> entity, with SwaggerOperation
+  - [HttpPut("update-<EntityName>")] Update<EntityName> with property FromBody <EntityName> entity, with SwaggerOperation
+  - [HttpDelete("delete-<EntityName>")] Delete<EntityName> with property FromQuery int id, with SwaggerOperation
+
+Example code:
+
+```
+[Route("entity-name")]
+#if !DEBUG
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+#endif
+public class EntityNameController(IEntityNameRepository entityNameRepository, ILogger<EntityNameController> logger) : ControllerBase
+{
+    private readonly IEntityNameRepository _entityNameRepository = entityNameRepository;
+    private readonly ILogger<EntityNameController> _logger = logger;
+
+    [HttpGet("get-all-entity-name-from-db")]
+#if !DEBUG
+    [Authorize]
+#endif
+    [SwaggerOperation(Summary = "Obtiene todos los entity-name", Description = "Devuelve una lista de entity-name.")]
+    public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var entityNames = await _entityNameRepository.GetAllEntityNames(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                return Ok(entityNames);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener todos los tipos de comida");
+            return StatusCode(500, "Error interno del servidor al obtener los tipos de comida");
+        }
+    }
+
+    [HttpGet("get-entity-name-by-id")]
+    [SwaggerOperation(Summary = "Obtiene un entity-name por su ID", Description = "Devuelve un entity-name basado en el ID proporcionado.")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<ActionResult> GetById([FromQuery] int id)
+    {
+        try
+        {
+            var mealType = await _mealTypeRepository.GetByIdAsync(id);
+            if (entityName == null)
+                return NotFound($"Entity-name con ID {id} no encontrado");
+
+            return Ok(entityName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el entity-name con ID {Id}", id);
+            return StatusCode(500, "Error interno del servidor al obtener el entity-name");
+        }
+    }
+
+    [HttpPost("insert-entity-name")]
+    [SwaggerOperation(Summary = "Crea un nuevo entity-name", Description = "Crea un nuevo entity-name.")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<ActionResult> Insert([FromBody] DTOEntityName entityName)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var id = await _entityNameRepository.CreateAsync(entityName);
+                return CreatedAtAction(nameof(GetById), new { id }, id);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al crear el entity-name");
+            return StatusCode(500, "Error interno del servidor al crear el entity-name");
+        }
+    }
+
+    [HttpPut("update-entity-name")]
+    [SwaggerOperation(Summary = "Actualiza un entity-name existente", Description = "Actualiza los datos de un entity-name existente.")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<IActionResult> Update([FromBody] DTOEntityName entityName)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _entityNameRepository.UpdateAsync(entityName);
+                if (!result)
+                    return NotFound($"Entity-name con ID {entityName.Id} no encontrado");
+
+                return NoContent();
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el entity-name con ID {Id}", entityName.Id);
+            return StatusCode(500, "Error interno del servidor al actualizar el entity-name");
+        }
+    }
+
+    [HttpDelete("delete-entity-name")]
+    [SwaggerOperation(Summary = "Elimina un entity-name existente", Description = "Elimina un entity-name existente.")]
+#if !DEBUG
+    [Authorize]
+#endif
+    public async Task<IActionResult> Delete([FromQuery] int id)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _entityNameRepository.DeleteAsync(id);
+                if (!result)
+                    return NotFound($"Entity-name con ID {id} no encontrado");
+
+                return NoContent();
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar el entity-name con ID {Id}", id);
+            return StatusCode(500, "Error interno del servidor al eliminar el entity-name");
+        }
+    }
+}
+```
+
+- Use the following naming convention for methods in repositories:
+
+  - GetAll<EntityName> with summary and description
+  - Get<EntityName> ById with summary and description
+  - Insert<EntityName> with summary and description
+  - Update<EntityName> with summary and description
+  - Delete<EntityName> with summary and description
+
+Example code:
+
+```
+
+using System.Data;
+using Api.Data;
+using Api.Interfaces;
+using Api.Models;
+using Dapper;
+
+namespace Api.Repositories;
+
+public class EntityNameRepository(DapperContext context, ILogger<EntityNameRepository> logger) : IEntityNameRepository
+{
+    private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<EntityNameRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    /// <summary>
+    /// Obtiene un entity-name por su ID.
+    /// </summary>
+    /// <param name="id">El ID del entity-name a obtener.</param>
+    /// <returns>El entity-name encontrado.</returns>
+    public async Task<dynamic> GetEntityNameById(int id)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo entity-name por ID: {Id}", id);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetEntityNameById", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadSingleAsync<DTOEntityName>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el entity-name por ID: {Id}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los entity-name.
+    /// </summary>
+    /// <param name="take">El número de entity-name a tomar.</param>
+    /// <param name="skip">El número de entity-name a saltar.</param>
+    /// <param name="name">El nombre del entity-name a buscar.</param>
+    /// <param name="alls">Si se deben obtener todos los entity-name.</param>
+    /// <returns>Una lista de entity-name.</returns>
+    public async Task<dynamic> GetAllEntityName(int take, int skip, string name, bool alls)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo todos los entity-name");
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
+            var result = await db.QueryMultipleAsync("100_GetAllEntityName", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<DTOEntityName>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener todos los entity-name");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta un nuevo entity-name.
+    /// </summary>
+    /// <param name="entityName">El entity-name a insertar.</param>
+    /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
+    public async Task<bool> InsertEntityName(DTOEntityName entityName)
+    {
+        try
+        {
+            _logger.LogInformation("Insertando entity-name: {Name}", entityName.Name);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@name", entityName.Name, DbType.String);
+            parameters.Add("@id", entityName.Id, DbType.Int32, direction: ParameterDirection.Output);
+
+            await db.ExecuteAsync("100_InsertEntityName", parameters, commandType: CommandType.StoredProcedure);
+            var id = parameters.Get<int>("@id");
+            return id > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar el entity-name: {Name}", entityName.Name);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza un entity-name existente.
+    /// </summary>
+    /// <param name="entityName">El entity-name a actualizar.</param>
+    /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
+    public async Task<bool> UpdateEntityName(DTOEntityName entityName)
+    {
+        try
+        {
+            _logger.LogInformation("Actualizando entity-name: {Name}", entityName.Name);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", entityName.Id, DbType.Int32);
+            parameters.Add("@name", entityName.Name, DbType.String);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await db.ExecuteAsync("100_UpdateEntityName", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el entity-name: {Name}", entityName.Name);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Elimina un entity-name por su ID.
+    /// </summary>
+    /// <param name="id">El ID del entity-name a eliminar.</param>
+    /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
+    public async Task<bool> DeleteEntityName(int id)
+    {
+        try
+        {
+            _logger.LogInformation("Eliminando entity-name: {Id}", id);
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await db.ExecuteAsync("100_DeleteEntityName", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar el entity-name: {Id}", id);
+            throw;
+        }
+    }
+}
+
+```
+
+## C# and .NET Usage
+
+- Use C# 10+ features when appropriate (e.g., record types, pattern matching, null-coalescing assignment).
+- Leverage built-in ASP.NET Core features and middleware.
+- Use Entity Framework Core effectively for database operations.
+
+## Syntax and Formatting
+
+- Follow the C# Coding Conventions (https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+- Use C#'s expressive syntax (e.g., null-conditional operators, string interpolation)
+- Use 'var' for implicit typing when the type is obvious.
+
+## Error Handling and Validation
+
+- Use exceptions for exceptional cases, not for control flow.
+- Implement proper error logging using built-in .NET logging or a third-party logger.
+- Use Data Annotations or Fluent Validation for model validation.
+- Implement global exception handling middleware.
+- Return appropriate HTTP status codes and consistent error responses.
+
+## API Design
+
+- Follow RESTful API design principles.
+- Use attribute routing in controllers.
+- Implement versioning for your API.
+- Use action filters for cross-cutting concerns.
+
+## Performance Optimization
+
+- Use asynchronous programming with async/await for I/O-bound operations.
+- Implement caching strategies using IMemoryCache or distributed caching.
+- Use efficient LINQ queries and avoid N+1 query problems.
+- Implement pagination for large data sets.
+
+## Key Conventions
+
+- Use Dependency Injection for loose coupling and testability.
+- Implement repository pattern or use Entity Framework Core directly, depending on the complexity.
+- Use AutoMapper for object-to-object mapping if needed.
+- Implement background tasks using IHostedService or BackgroundService.
+
+## Testing
+
+- Write unit tests using xUnit, NUnit, or MSTest.
+- Use Moq or NSubstitute for mocking dependencies.
+- Implement integration tests for API endpoints.
+
+## Security
+
+- Use Authentication and Authorization middleware.
+- Implement JWT authentication for stateless API authentication.
+- Use HTTPS and enforce SSL.
+- Implement proper CORS policies.
+
+## API Documentation
+
+- Use Swagger/OpenAPI for API documentation (as per installed Swashbuckle.AspNetCore package).
+- Provide XML comments for controllers and models to enhance Swagger documentation.
+
+Follow the official Microsoft documentation and ASP.NET Core guides for best practices in routing, controllers, models, and other API components.

@@ -1,547 +1,118 @@
-# .NET Development Rules
+# Instructions
 
-You are a senior .NET backend developer and an expert in C#, ASP.NET Core, and Entity Framework Core.
+User Spanish
 
-## Code Style and Structure
+During your interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again.
 
-- Write concise, idiomatic C# code with accurate examples.
-- Follow .NET and ASP.NET Core conventions and best practices.
-- Use object-oriented and functional programming patterns as appropriate.
-- Prefer LINQ and lambda expressions for collection operations.
-- Use descriptive variable and method names (e.g., 'IsUserSignedIn', 'CalculateTotal').
-- Structure files according to .NET conventions (Controllers, Models, Services, etc.).
+You should also use the `.cursorrules` file as a Scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the Scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
+[X] Task 1
+[ ] Task 2
 
-## Naming Conventions
+Also update the progress of the task in the Scratchpad when you finish a subtask.
+Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the Scratchpad to reflect and plan.
+The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the Scratchpad when you plan the next step.
 
-- Use PascalCase for class names, method names, and public members.
--Use camelCase for local variables and private fields.
--Use UPPERCASE for constants.
-- Prefix interface names with "I" (e.g., 'IUserService').
+# Tools
 
-- Use the following naming convention for methods in interfaces, whit summary and description:
+Note all the tools are in python. So in the case you need to do batch processing, you can always consult the python files and write your own script.
 
-  -GetAll < EntityName > with summary and description
-  - Get<EntityName>ById with summary and description
-  - Insert<EntityName> with summary and description
-  - Update<EntityName> with summary and description
-  - Delete<EntityName> with summary and description
+## Screenshot Verification
 
-Example code:
+The screenshot verification workflow allows you to capture screenshots of web pages and verify their appearance using LLMs.The following tools are available:
 
-```
-using Api.Models;
+1.Screenshot Capture:
 
-namespace Api.Interfaces;
-
-public interface IEntityNameRepository
-{
-    /// <summary>
-    /// Obtiene un entity-name por su ID.
-    /// </summary>
-    /// <param name="id">El ID del entity-name a obtener.</param>
-    /// <returns>El entity-name encontrado o null si no se encuentra.</returns>
-    Task<dynamic> GetEntityNameById(int id);
-
-    /// <summary>
-    /// Obtiene todos los tipos de comida.
-    /// </summary>
-    /// <param name="take">El número de entity-name a tomar.</param>
-    /// <param name="skip">El número de entity-name a saltar.</param>
-    /// <param name="name">El nombre del entity-name a buscar.</param>
-    /// <param name="alls">Si se deben obtener todos los entity-name.</param>
-    /// <returns>Una lista de entity-name.</returns>
-    Task<dynamic> GetAllEntityName(int take, int skip, string name, bool alls);
-
-    /// <summary>
-    /// Inserta un nuevo tipo de comida.
-    /// </summary>
-    /// <param name="entityName">El entity-name a insertar.</param>
-    /// <returns>El ID del entity-name insertado.</returns>
-    Task<bool> InsertEntityName(DTOEntityName entityName);
-
-    /// <summary>
-    /// Actualiza un entity-name existente.
-    /// </summary>
-    /// <param name="entityName">El entity-name a actualizar.</param>
-    /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
-    Task<bool> UpdateEntityName(DTOEntityName entityName);
-
-    /// <summary>
-    /// Elimina un entity-name existente.
-    /// </summary>
-    /// <param name="id">El ID del entity-name a eliminar.</param>
-    /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
-    Task<bool> DeleteEntityName(int id);
-}
-
+```bash
+venv/bin/python tools/screenshot_utils.py URL [--output OUTPUT][--width WIDTH][--height HEIGHT]
 ```
 
-- Use the following naming convention for methods in controllers:
+2.LLM Verification with Images:
 
-  - With constructor principal
-  - [HttpGet("get-all-<EntityName>-from-db")] GetAll<EntityName> with property FromQuery QueryParameters queryParameters, with SwaggerOperation
-  - [HttpGet("get-<EntityName>-by-id")] Get<EntityName> ById with property FromQuery QueryParameters queryParameters, with SwaggerOperation
-  - [HttpPost("insert-<EntityName>")] Insert<EntityName> with property FromBody<EntityName> entity, with SwaggerOperation
-  - [HttpPut("update-<EntityName>")] Update<EntityName> with property FromBody <EntityName> entity, with SwaggerOperation
-  - [HttpDelete("delete-<EntityName>")] Delete<EntityName> with property FromQuery int id, with SwaggerOperation
-
-Example code:
-
-```
-[Route("entity-name")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
-public class EntityNameController(IEntityNameRepository entityNameRepository, ILogger<EntityNameController> logger) : ControllerBase
-{
-    private readonly IEntityNameRepository _entityNameRepository = entityNameRepository;
-    private readonly ILogger<EntityNameController> _logger = logger;
-
-    [HttpGet("get-all-entity-name-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
-    [SwaggerOperation(Summary = "Obtiene todos los entity-name", Description = "Devuelve una lista de entity-name.")]
-    public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                var entityNames = await _entityNameRepository.GetAllEntityNames(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                return Ok(entityNames);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los tipos de comida");
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de comida");
-        }
-    }
-
-    [HttpGet("get-entity-name-by-id")]
-    [SwaggerOperation(Summary = "Obtiene un entity-name por su ID", Description = "Devuelve un entity-name basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<ActionResult> GetById([FromQuery] int id)
-    {
-        try
-        {
-            var mealType = await _mealTypeRepository.GetByIdAsync(id);
-            if (entityName == null)
-                return NotFound($"Entity-name con ID {id} no encontrado");
-
-            return Ok(entityName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el entity-name con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al obtener el entity-name");
-        }
-    }
-
-    [HttpPost("insert-entity-name")]
-    [SwaggerOperation(Summary = "Crea un nuevo entity-name", Description = "Crea un nuevo entity-name.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<ActionResult> Insert([FromBody] DTOEntityName entityName)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                var id = await _entityNameRepository.CreateAsync(entityName);
-                return CreatedAtAction(nameof(GetById), new { id }, id);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al crear el entity-name");
-            return StatusCode(500, "Error interno del servidor al crear el entity-name");
-        }
-    }
-
-    [HttpPut("update-entity-name")]
-    [SwaggerOperation(Summary = "Actualiza un entity-name existente", Description = "Actualiza los datos de un entity-name existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<IActionResult> Update([FromBody] DTOEntityName entityName)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                var result = await _entityNameRepository.UpdateAsync(entityName);
-                if (!result)
-                    return NotFound($"Entity-name con ID {entityName.Id} no encontrado");
-
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el entity-name con ID {Id}", entityName.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el entity-name");
-        }
-    }
-
-    [HttpDelete("delete-entity-name")]
-    [SwaggerOperation(Summary = "Elimina un entity-name existente", Description = "Elimina un entity-name existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<IActionResult> Delete([FromQuery] int id)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                var result = await _entityNameRepository.DeleteAsync(id);
-                if (!result)
-                    return NotFound($"Entity-name con ID {id} no encontrado");
-
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el entity-name con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al eliminar el entity-name");
-        }
-    }
-}
+```bash
+venv/bin/python tools/llm_api.py --prompt "Your verification question" --provider {openai|anthropic} --image path / to / screenshot.png
 ```
 
-- Use the following naming convention for methods in repositories:
+Example workflow:
 
-  - GetAll<EntityName> with summary and description
-  - Get<EntityName> ById with summary and description
-  - Insert<EntityName> with summary and description
-  - Update<EntityName> with summary and description
-  - Delete<EntityName> with summary and description
+```python
+from screenshot_utils import take_screenshot_sync
+from llm_api import query_llm
 
-Example code:
+# Take a screenshot
 
+screenshot_path = take_screenshot_sync('https://example.com', 'screenshot.png')
+
+# Verify with LLM
+
+response = query_llm(
+    "What is the background color and title of this webpage?",
+    provider = "openai",  # or "anthropic"
+    image_path = screenshot_path
+)
+print(response)
 ```
 
-using System.Data;
-using Api.Data;
-using Api.Interfaces;
-using Api.Models;
-using Dapper;
+## LLM
 
-namespace Api.Repositories;
-
-public class EntityNameRepository(DapperContext context, ILogger<EntityNameRepository> logger) : IEntityNameRepository
-{
-    private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<EntityNameRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-    /// <summary>
-    /// Obtiene un entity-name por su ID.
-    /// </summary>
-    /// <param name="id">El ID del entity-name a obtener.</param>
-    /// <returns>El entity-name encontrado.</returns>
-    public async Task<dynamic> GetEntityNameById(int id)
-    {
-        try
-        {
-            _logger.LogInformation("Obteniendo entity-name por ID: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("Id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetEntityNameById", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadSingleAsync<DTOEntityName>();
-            return data;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el entity-name por ID: {Id}", id);
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Obtiene todos los entity-name.
-    /// </summary>
-    /// <param name="take">El número de entity-name a tomar.</param>
-    /// <param name="skip">El número de entity-name a saltar.</param>
-    /// <param name="name">El nombre del entity-name a buscar.</param>
-    /// <param name="alls">Si se deben obtener todos los entity-name.</param>
-    /// <returns>Una lista de entity-name.</returns>
-    public async Task<dynamic> GetAllEntityName(int take, int skip, string name, bool alls)
-    {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los entity-name");
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@name", name, DbType.String);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllEntityName", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOEntityName>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los entity-name");
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Inserta un nuevo entity-name.
-    /// </summary>
-    /// <param name="entityName">El entity-name a insertar.</param>
-    /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    public async Task<bool> InsertEntityName(DTOEntityName entityName)
-    {
-        try
-        {
-            _logger.LogInformation("Insertando entity-name: {Name}", entityName.Name);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@name", entityName.Name, DbType.String);
-            parameters.Add("@id", entityName.Id, DbType.Int32, direction: ParameterDirection.Output);
-
-            await db.ExecuteAsync("100_InsertEntityName", parameters, commandType: CommandType.StoredProcedure);
-            var id = parameters.Get<int>("@id");
-            return id > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al insertar el entity-name: {Name}", entityName.Name);
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Actualiza un entity-name existente.
-    /// </summary>
-    /// <param name="entityName">El entity-name a actualizar.</param>
-    /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
-    public async Task<bool> UpdateEntityName(DTOEntityName entityName)
-    {
-        try
-        {
-            _logger.LogInformation("Actualizando entity-name: {Name}", entityName.Name);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", entityName.Id, DbType.Int32);
-            parameters.Add("@name", entityName.Name, DbType.String);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_UpdateEntityName", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
-            return rowsAffected > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el entity-name: {Name}", entityName.Name);
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Elimina un entity-name por su ID.
-    /// </summary>
-    /// <param name="id">El ID del entity-name a eliminar.</param>
-    /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
-    public async Task<bool> DeleteEntityName(int id)
-    {
-        try
-        {
-            _logger.LogInformation("Eliminando entity-name: {Id}", id);
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_DeleteEntityName", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
-            return rowsAffected > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el entity-name: {Id}", id);
-            throw;
-        }
-    }
-}
+You always have an LLM at your side to help you with the task. For simple tasks, you could invoke the LLM by running the following command:
 
 ```
-
-## C# and .NET Usage
-
-- Use C# 10+ features when appropriate (e.g., record types, pattern matching, null-coalescing assignment).
-- Leverage built-in ASP.NET Core features and middleware.
-- Use Entity Framework Core effectively for database operations.
-
-## Syntax and Formatting
-
-- Follow the C# Coding Conventions (https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
-- Use C#'s expressive syntax (e.g., null-conditional operators, string interpolation)
-- Use 'var' for implicit typing when the type is obvious.
-
-## Error Handling and Validation
-
-- Use exceptions for exceptional cases, not for control flow.
-- Implement proper error logging using built-in .NET logging or a third-party logger.
-- Use Data Annotations or Fluent Validation for model validation.
-- Implement global exception handling middleware.
-- Return appropriate HTTP status codes and consistent error responses.
-
-## API Design
-
-- Follow RESTful API design principles.
-- Use attribute routing in controllers.
-- Implement versioning for your API.
-- Use action filters for cross-cutting concerns.
-
-## Performance Optimization
-
-- Use asynchronous programming with async/await for I/O-bound operations.
-- Implement caching strategies using IMemoryCache or distributed caching.
-- Use efficient LINQ queries and avoid N+1 query problems.
-- Implement pagination for large data sets.
-
-## Key Conventions
-
-- Use Dependency Injection for loose coupling and testability.
-- Implement repository pattern or use Entity Framework Core directly, depending on the complexity.
-- Use AutoMapper for object-to-object mapping if needed.
-- Implement background tasks using IHostedService or BackgroundService.
-
-## Testing
-
-- Write unit tests using xUnit, NUnit, or MSTest.
-- Use Moq or NSubstitute for mocking dependencies.
-- Implement integration tests for API endpoints.
-
-## Security
-
-- Use Authentication and Authorization middleware.
-- Implement JWT authentication for stateless API authentication.
-- Use HTTPS and enforce SSL.
-- Implement proper CORS policies.
-
-## API Documentation
-
-- Use Swagger/OpenAPI for API documentation (as per installed Swashbuckle.AspNetCore package).
-- Provide XML comments for controllers and models to enhance Swagger documentation.
-
-Follow the official Microsoft documentation and ASP.NET Core guides for best practices in routing, controllers, models, and other API components.
-
-## Database Rules
-
-- Use stored procedures for database operations.
-- Files in the Database/StoredProcedures folder are stored procedures.
-- Files in the Database/Tables.sql are tables.
-- File naming convention for stored procedures is 100\_<ProcedureName>.sql. (100 is version number) new procedures version number is 101 and so on.
-- Always create a consolidate file with all the stored procedures with name 100_AllStoredProceduresForEntityName.sql.
-- Every time you create a new version of a stored procedure or table you must create a new file with the new version number.
-
-Example code:
-
+venv / bin / python./ tools / llm_api.py--prompt "What is the capital of France?" --provider "anthropic"
 ```
 
-CREATE OR ALTER PROCEDURE[dbo].[100_GetAllEntityName]
-    @take INT,
-    @skip INT,
-    @name NVARCHAR(255),
-    @alls BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
+The LLM API supports multiple providers:
+-OpenAI(default, model: gpt - 4o)
 
-    SELECT Id,
-           Name
-    FROM EntityName
-     WHERE(@alls = 1)
-        OR
-        (@name IS NULL OR Name LIKE '%' + @name + '%')
-    ORDER BY Name
-    OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+- Azure OpenAI(model: configured via AZURE_OPENAI_MODEL_DEPLOYMENT in .env file, defaults to gpt - 4o - ms)
+- DeepSeek(model: deepseek - chat)
+- Anthropic(model: claude - 3 - sonnet - 20240229)
+- Gemini(model: gemini - pro)
+- Local LLM(model: Qwen / Qwen2.5 - 32B - Instruct - AWQ)
 
-    SELECT COUNT(*) FROM EntityName
-    WHERE(@alls = 1)
-        OR
-        (@name IS NULL OR Name LIKE '%' + @name + '%')
-END;
+But usually it's a better idea to check the content of the file and use the APIs in the `tools/llm_api.py` file to invoke the LLM if needed.
 
-CREATE OR ALTER PROCEDURE[dbo].[100_InsertEntityName]
-    @name NVARCHAR(100),
-    @id INT OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
+## Web browser
 
-INSERT INTO EntityName(Name)
-    VALUES(@name);
-
-SET @id = SCOPE_IDENTITY();
-RETURN @id;
-
-END;
-
-CREATE OR ALTER PROCEDURE[dbo].[100_DeleteEntityName]
-    @id INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-DECLARE @rowsAffected INT;
-
-    DELETE FROM EntityName
-    WHERE Id = @id;
-
-    SELECT @rowsAffected = @@ROWCOUNT;
-
-RETURN @rowsAffected;
-END;
-
-CREATE OR ALTER PROCEDURE[dbo].[100_GetEntityNameById]
-    @id INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-SELECT Id,
-       Name
-    FROM EntityName
-    WHERE Id = @id;
-END;
-
-CREATE OR ALTER PROCEDURE[dbo].[100_UpdateEntityName]
-    @id INT,
-    @name NVARCHAR(100)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @rowsAffected INT;
-
-    UPDATE EntityName
-        SET Name = @name
-    WHERE Id = @id;
-
-SELECT @rowsAffected = @@ROWCOUNT;
-
-RETURN @rowsAffected;
-END;
+You could use the `tools/web_scraper.py` file to scrape the web.
 
 ```
+venv/bin/python ./tools/web_scraper.py --max-concurrent 3 URL1 URL2 URL3
+```
+
+This will output the content of the web pages.
+
+## Search engine
+
+You could use the `tools/search_engine.py` file to search the web.
+
+```
+venv/bin/python ./tools/search_engine.py "your search keywords"
+```
+
+This will output the search results in the following format:
+
+```
+URL: https://example.com
+Title: This is the title of the search result
+Snippet: This is a snippet of the search result
+```
+
+If needed, you can further use the `web_scraper.py` file to scrape the web page content.
+
+# Lessons
+
+## User Specified Lessons
+
+- You have a python venv in ./venv. Use it.
+- Include info useful for debugging in the program output.
+- Read the file before you try to edit it.
+- Due to Cursor's limit, when you use `git` and `gh` and need to submit a multiline commit message, first write the message in a file, and then use `git commit -F <filename>` or similar command to commit. And then remove the file. Include "[Cursor] " in the commit message and PR title.
+
+## Cursor learned
+
+- For search results, ensure proper handling of different character encodings (UTF-8) for international queries
+- Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
+- When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
+- Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
+
+# Scratchpad

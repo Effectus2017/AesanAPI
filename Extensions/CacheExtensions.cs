@@ -42,12 +42,7 @@ public static class CacheExtensions
         return result;
     }
 
-    public static async Task<T> CacheAgencyQuery<T>(
-        this IMemoryCache cache,
-        string key,
-        Func<Task<T>> query,
-        ILogger logger,
-        ApplicationSettings appSettings)
+    public static async Task<T> CacheAgencyQuery<T>(this IMemoryCache cache, string key, Func<Task<T>> query, ILogger logger, ApplicationSettings appSettings)
     {
         // Si el caché está deshabilitado, ejecutar la consulta directamente
         if (!appSettings.Cache.Enabled)
@@ -65,8 +60,7 @@ public static class CacheExtensions
         logger.LogInformation("Cache miss para key: {Key}", key);
         var result = await query();
 
-        var cacheEntryOptions = new MemoryCacheEntryOptions()
-            .SetSlidingExpiration(TimeSpan.FromSeconds(appSettings.Cache.AgencyExpirationSeconds));
+        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromSeconds(appSettings.Cache.AgencyExpirationSeconds));
 
         cache.Set(key, result, cacheEntryOptions);
         return result;

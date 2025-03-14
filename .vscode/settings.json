@@ -5,5 +5,15 @@
   "[csharp]": {
     "editor.defaultFormatter": "ms-dotnettools.csharp"
   },
-  "cSpell.enableFiletypes": ["!scss"]
+  "cSpell.enableFiletypes": ["!scss"],
+  "files.exclude": {
+    "**/obj": true,
+    "**/.git": true,
+    "**/dist": true,
+    "**/temp": true,
+    "**/bin": true,
+    "bump-version.sh": true,
+    "update-version.sh": true,
+    ".github": true
+  }
 }

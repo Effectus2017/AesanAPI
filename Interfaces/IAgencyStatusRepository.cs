@@ -36,6 +36,14 @@ public interface IAgencyStatusRepository
     Task<bool> UpdateAgencyStatus(DTOAgencyStatus status);
 
     /// <summary>
+    /// Actualiza el orden de visualización de un estado de agencia.
+    /// </summary>
+    /// <param name="statusId">El ID del estado a actualizar.</param>
+    /// <param name="displayOrder">El nuevo orden de visualización.</param>
+    /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
+    Task<bool> UpdateAgencyStatusDisplayOrder(int statusId, int displayOrder);
+
+    /// <summary>
     /// Elimina un estado de agencia existente.
     /// </summary>
     /// <param name="id">El ID del estado a eliminar.</param>

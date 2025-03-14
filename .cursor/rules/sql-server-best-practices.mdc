@@ -1,6 +1,7 @@
 ---
 description: Guia para trabajar con SQL Server
 globs: **/*.sql
+alwaysApply: false
 ---
 # Reglas SQL para el Proyecto
 
@@ -11,11 +12,11 @@ globs: **/*.sql
 
 - **Ubicación de Archivos:**
 
-  - Los archivos en `Database/TableName/Tables.sql` corresponden a las definiciones de las tablas.
-  - Los SPs van en `Database/TableName/SPName.sql` segun la tabla van ahi los SPs con sus versiones correspondientes.
+  - Los archivos que no sean SPs en `Database/TableName/Tables.sql` corresponden a las definiciones de las tablas.
+  - Los SPs van en `Database/TableName/SP/SPName.sql` segun la tabla van ahi los SPs con sus versiones correspondientes.
 
 - **Convención de Nombres:**  
-  La convención de nombres para los stored procedures es: `V1.0.0_<ProcedureName>.sql` (donde "1.0.0" es el número de versión). Para nuevos procedimientos o modificaciones, el número de versión se incrementa (1.0.1, 1.0.2, etc.).
+  La convención de nombres para los stored procedures es: `100_<ProcedureName>.sql` (donde "100" es el número de versión). Para nuevos modificaciones, el número de versión se incrementa (101, 102, etc.).
 
 <!-- - **Archivo Consolidado:**  
   Siempre se debe crear un archivo consolidado con todos los stored procedures, con el nombre `{version}_AllStoredProceduresForEntityName.sql`. -->
@@ -23,12 +24,12 @@ globs: **/*.sql
 - **Versionado:**  
  - Siempre que se tenga que hacer una modificacion a un archivo de StoreProcedure crear uno nuevo con una version nueva consecutiva `{version}_StoredProceduresName.sql`.
  - Cuando se relizan cambios en tablas crear un nuevo archivo versionando la tabla `{version}_TableName.sql`, ademas crear un nuevo archivo con el nombre `{vieja_version}-cambio-a{nueva_version}.sql- ` donde se agreguen las modificaciones que se tienen que hacer en la tabla.
- - Crear si no existe un archivo log de los cambios o modificaciones que se van realizando con fecha del dia, tanto para Tablas como SPs. `sql_change_log.md`
+ - Crear si no existe un archivo log de los cambios o modificaciones que se van realizando con fecha del dia, tanto para Tablas como SPs. `sql-change-log-{fechaHOY}.md`
 
 - **Flyway:**
 - Cuando se hagan los cambios es neceario crear los nuevos archivos para poder migrar en con Flywar, usar la nomenglatura correcta.
-- Hacer una copia en el directorio `.flyway/migrations-local-db/` que son para ingresar en la base local de pruebas
-- Hcare lo mismo para el directorio `.flyway/migrations-azure-db/`
+- Hacer una copia en el directorio `/.flyway/migrations-local-db/` que son para ingresar en la base local de pruebas
+- Hcare lo mismo para el directorio `/.flyway/migrations-azure-db/`
 
 ## Ejemplo de Stored Procedures
 

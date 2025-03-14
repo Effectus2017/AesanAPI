@@ -55,6 +55,7 @@ public class CacheKeys
     public string Agency { get; set; } = "Agency_{0}";
     public string AgencyStatuses { get; set; } = "AgencyStatuses_{0}_{1}_{2}_{3}";
     public string AgencyStatus { get; set; } = "AgencyStatus_{0}";
+    public string AgencyUserAssignments { get; set; } = "AgencyUserAssignments_{0}_{1}_{2}";
 
     // Claves para School
     public string Schools { get; set; } = "Schools_{0}_{1}_{2}_{3}";

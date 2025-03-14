@@ -1,0 +1,8 @@
+---
+description: Best practices for JWT authentication in ASP.NET Core
+globs: **/*.cs
+---
+- Use HTTPS for all JWT communications
+- Implement token refresh mechanisms
+- Set appropriate token expiration times
+- Validate token issuer and audience
