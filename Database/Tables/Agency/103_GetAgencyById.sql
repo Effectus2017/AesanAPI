@@ -46,28 +46,39 @@ BEGIN
         a.IsListable,
         a.CreatedAt,
         a.UpdatedAt,
-        a.AgencyCode
+        a.AgencyCode,
+
+        -- Datos del usuario de la agencia
+        u2.Id as UserId,
+        u2.FirstName AS UserFirstName,
+        u2.FatherLastName AS UserFatherLastName,
+
+        -- Datos del usuario monitor
+        aua.UserId as MonitorId,
+        u.FirstName AS MonitorFirstName,
+        u.FatherLastName AS MonitorFatherLastName
+
     FROM Agency a
     INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
     INNER JOIN City c ON a.CityId = c.Id
     INNER JOIN Region r ON a.RegionId = r.Id
     LEFT JOIN City pc ON a.PostalCityId = pc.Id
     LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
+    LEFT JOIN AgencyUserAssignment aua ON a.Id = aua.AgencyId AND aua.IsActive = 1
+    LEFT JOIN AspNetUsers u ON aua.UserId = u.Id
+    LEFT JOIN AspNetUsers u2 ON a.Id = u2.AgencyId
     WHERE a.Id = @Id AND a.IsActive = 1;
 
     -- Obtener los programas asociados a la agencia
-    SELECT 
-        ap.Id,
-        ap.AgencyId,
-        ap.ProgramId,
-        p.Name AS ProgramName,
-        ap.StatusId,
-        aps.Name AS StatusName,
-        ap.CreatedAt,
-        ap.UpdatedAt
-    FROM AgencyProgram ap
-    INNER JOIN Program p ON ap.ProgramId = p.Id
-    INNER JOIN AgencyProgramStatus aps ON ap.StatusId = aps.Id
-    WHERE ap.AgencyId = @Id AND ap.IsActive = 1;
+    SELECT
+        p.Id,
+        p.Name,
+        p.Description,
+        p.IsActive,
+        p.CreatedAt,
+        p.UpdatedAt
+    FROM Program p
+        INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
+    WHERE ap.AgencyId = @Id;
 END;
 GO 

@@ -137,37 +137,57 @@ public class AgencyRepository(
                 param.Add("@regionId", regionId);
                 param.Add("@cityId", cityId);
                 param.Add("@programId", programId);
+                param.Add("@statusId", statusId);
+                param.Add("@userId", userId);
                 param.Add("@alls", alls);
 
-                // Datos del usuario monitor
-                param.Add("@userId", userId);
+                // Variables para almacenar los resultados
+                List<dynamic> agencies = new List<dynamic>();
+                List<dynamic> agenciesPrograms = new List<dynamic>();
+                int count = 0;
 
-                var result = await dbConnection.QueryMultipleAsync(
+                // Usar un bloque using para garantizar que el GridReader se cierre correctamente
+                using (var result = await dbConnection.QueryMultipleAsync(
                     "105_GetAgencies",
                     param,
-                    commandType: CommandType.StoredProcedure
-                );
-
-                if (result == null)
+                    commandType: CommandType.StoredProcedure))
                 {
-                    return null;
-                }
+                    if (result == null)
+                    {
+                        return null;
+                    }
 
-                var agencies = result.Read<dynamic>().Select(MapAgencyFromResult).ToList();
-                var _agenciesPrograms = await result.ReadAsync<dynamic>();
+                    // Leer todos los conjuntos de resultados de manera segura
+                    if (!result.IsConsumed)
+                    {
+                        agencies = result.Read<dynamic>().ToList();
+                    }
 
-                if (_agenciesPrograms != null && _agenciesPrograms.Any())
+                    if (!result.IsConsumed)
+                    {
+                        agenciesPrograms = result.Read<dynamic>().ToList();
+                    }
+
+                    if (!result.IsConsumed)
+                    {
+                        count = result.Read<int>().FirstOrDefault();
+                    }
+                } // El GridReader se cierra aquí
+
+                // Procesar los datos después de que el GridReader se haya cerrado
+                var mappedAgencies = agencies.Select(MapAgencyFromResult).ToList();
+
+                if (agenciesPrograms != null && agenciesPrograms.Any())
                 {
-                    foreach (var agency in agencies)
+                    foreach (var agency in mappedAgencies)
                     {
                         agency.Programs = MapProgramsFromResult(
-                            _agenciesPrograms.Where(ap => ap.AgencyId == agency.Id)
+                            agenciesPrograms.Where(ap => ap.AgencyId == agency.Id)
                         );
                     }
                 }
 
-                var count = result.Read<int>().Single();
-                return new { data = agencies, count };
+                return new { data = mappedAgencies, count };
             },
             _logger,
             _appSettings
@@ -559,7 +579,19 @@ public class AgencyRepository(
             Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
             PostalCity = new DTOCity { Id = item.PostalCityId, Name = item.PostalCityName },
             PostalRegion = new DTORegion { Id = item.PostalRegionId, Name = item.PostalRegionName },
-            Status = new DTOAgencyStatus { Id = item.AgencyStatusId, Name = item.AgencyStatusName }
+            Status = new DTOAgencyStatus { Id = item.AgencyStatusId, Name = item.AgencyStatusName },
+            User = item.UserId != null ? new DTOUser
+            {
+                Id = item.UserId,
+                FirstName = item.UserFirstName,
+                FatherLastName = item.UserFatherLastName,
+            } : null,
+            Monitor = item.MonitorId != null ? new DTOUser
+            {
+                Id = item.MonitorId,
+                FirstName = item.MonitorFirstName,
+                FatherLastName = item.MonitorFatherLastName,
+            } : null
         };
     }
 

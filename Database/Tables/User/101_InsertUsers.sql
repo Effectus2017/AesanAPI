@@ -98,3 +98,54 @@ WHERE u.Email IN (
     'yolanda.ortiz@nutre.com'
 );
 GO
+
+-- Insertar usuarios Administradores (SuperAdministrator) y Empleados Administrativos (Administrator)
+INSERT INTO AspNetUsers
+    (Id, AccessFailedCount, ConcurrencyStamp, Email, EmailConfirmed, LockoutEnabled, 
+    LockoutEnd, NormalizedEmail, NormalizedUserName, PasswordHash, PhoneNumber, 
+    PhoneNumberConfirmed, SecurityStamp, TwoFactorEnabled, UserName, FirstName, 
+    MiddleName, FatherLastName, MotherLastName, AdministrationTitle, IsActive, 
+    IsTemporalPasswordActived, CreatedAt)
+VALUES
+    -- Administradores (SuperAdministrator)
+    (NEWID(), 0, NEWID(), 'marta.melendez@nutre.com', 1, 1, NULL, 
+    'MARTA.MELENDEZ@NUTRE.COM', 'MARTA.MELENDEZ@NUTRE.COM',
+    'AQAAAAIAAYagAAAAELBG1xFqjmYTTyA4QQtU6oT3wSxgYTK4M5zzWuXYhLuA8+f+bKxxqtJJtbTDnB2+tw==',
+    NULL, 0, NEWID(), 0, 'marta.melendez@nutre.com', 'Marta', NULL, 'Meléndez', 'Meléndez', 'Administrador', 1, 0, GETDATE()),
+
+    (NEWID(), 0, NEWID(), 'alberto.miranda@nutre.com', 1, 1, NULL, 
+    'ALBERTO.MIRANDA@NUTRE.COM', 'ALBERTO.MIRANDA@NUTRE.COM',
+    'AQAAAAIAAYagAAAAELBG1xFqjmYTTyA4QQtU6oT3wSxgYTK4M5zzWuXYhLuA8+f+bKxxqtJJtbTDnB2+tw==',
+    NULL, 0, NEWID(), 0, 'alberto.miranda@nutre.com', 'Alberto', NULL, 'Miranda', 'Miranda', 'Administrador', 1, 0, GETDATE()),
+
+    -- Empleados Administrativos (Administrator)
+    (NEWID(), 0, NEWID(), 'lourdes.garcia@nutre.com', 1, 1, NULL, 
+    'LOURDES.GARCIA@NUTRE.COM', 'LOURDES.GARCIA@NUTRE.COM',
+    'AQAAAAIAAYagAAAAELBG1xFqjmYTTyA4QQtU6oT3wSxgYTK4M5zzWuXYhLuA8+f+bKxxqtJJtbTDnB2+tw==',
+    NULL, 0, NEWID(), 0, 'lourdes.garcia@nutre.com', 'Lourdes', NULL, 'García', 'García', 'Empleado Administrativo', 1, 0, GETDATE()),
+
+    (NEWID(), 0, NEWID(), 'odalis.menard@nutre.com', 1, 1, NULL, 
+    'ODALIS.MENARD@NUTRE.COM', 'ODALIS.MENARD@NUTRE.COM',
+    'AQAAAAIAAYagAAAAELBG1xFqjmYTTyA4QQtU6oT3wSxgYTK4M5zzWuXYhLuA8+f+bKxxqtJJtbTDnB2+tw==',
+    NULL, 0, NEWID(), 0, 'odalis.menard@nutre.com', 'Odalis', 'Ariel', 'Menard', 'Menard', 'Empleado Administrativo', 1, 0, GETDATE());
+GO
+
+-- Asignar rol SuperAdministrator a Marta Meléndez y Alberto Miranda
+INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt)
+SELECT u.Id, '4e3a3f3e-540c-4997-8452-b151d5a40392', 1, GETDATE()
+FROM AspNetUsers u 
+WHERE u.Email IN (
+    'marta.melendez@nutre.com',
+    'alberto.miranda@nutre.com'
+);
+GO
+
+-- Asignar rol Administrator a Lourdes García y Odalis Ariel Menard
+INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt)
+SELECT u.Id, '8aeab3f3-540c-4997-8452-b151d5a40391', 1, GETDATE()
+FROM AspNetUsers u 
+WHERE u.Email IN (
+    'lourdes.garcia@nutre.com',
+    'odalis.menard@nutre.com'
+);
+GO

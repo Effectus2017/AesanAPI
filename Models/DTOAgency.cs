@@ -12,11 +12,11 @@ public class DTOAgency
 
     // Datos de la Ciudad y Región
     public string Address { get; set; } = "";
-    public int? ZipCode { get; set; } = 0;
+    public string ZipCode { get; set; } = "";
 
     // Dirección Postal
     public string PostalAddress { get; set; } = "";
-    public int? PostalZipCode { get; set; } = 0;
+    public string PostalZipCode { get; set; } = "";
 
     // Teléfono
     public string Phone { get; set; } = "";

@@ -16,7 +16,7 @@ public class AgencyRequest
 
     // Dirección Física
     public string Address { get; set; } = "";
-    public int ZipCode { get; set; } = 0;
+    public string ZipCode { get; set; } = "";
     public int CityId { get; set; } = 0;
     public int RegionId { get; set; } = 0;
     public double Latitude { get; set; } = 0;
@@ -26,7 +26,7 @@ public class AgencyRequest
     public string PostalAddress { get; set; } = "";
     public int PostalCityId { get; set; } = 0;
     public int PostalRegionId { get; set; } = 0;
-    public int PostalZipCode { get; set; } = 0;
+    public string PostalZipCode { get; set; } = "";
 
     // Imágen - Logo
     public string? ImageUrl { get; set; }

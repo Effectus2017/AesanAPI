@@ -55,19 +55,16 @@ BEGIN
     LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
     WHERE a.Id = @Id AND a.IsActive = 1;
 
-    -- Obtener los programas asociados a la agencia
-    SELECT 
-        ap.Id,
-        ap.AgencyId,
-        ap.ProgramId,
-        p.Name AS ProgramName,
-        ap.StatusId,
-        aps.Name AS StatusName,
-        ap.CreatedAt,
-        ap.UpdatedAt
-    FROM AgencyProgram ap
-    INNER JOIN Program p ON ap.ProgramId = p.Id
-    INNER JOIN AgencyProgramStatus aps ON ap.StatusId = aps.Id
-    WHERE ap.AgencyId = @Id AND ap.IsActive = 1;
+    -- Get associated programs
+    SELECT
+        p.Id,
+        p.Name,
+        p.Description,
+        p.IsActive,
+        p.CreatedAt,
+        p.UpdatedAt
+    FROM Program p
+        INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
+    WHERE ap.AgencyId = @Id;
 END;
 GO 
