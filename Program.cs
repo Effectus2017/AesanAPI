@@ -12,9 +12,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 using Microsoft.Extensions.Caching.Memory;
-using Serilog;
-using Serilog.Events;
-using Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,8 +85,8 @@ builder.Services.AddScoped<IEducationLevelRepository, EducationLevelRepository>(
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
 builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));
 
-// Registrar AgencyUserAssignmentRepository después de los servicios Lazy
-builder.Services.AddScoped<IAgencyUserAssignmentRepository, AgencyUserAssignmentRepository>();
+// Registrar AgencyUsersRepository después de los servicios Lazy
+builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
@@ -129,9 +126,14 @@ builder.Services.AddCors(options =>
         "AllowDevOrigin",
         builder =>
             builder
-                .WithOrigins("http://localhost:4202")
-                .WithOrigins("https://nutre-dev.local:4202")
-                .WithOrigins("https://aesanweb-dev.azurewebsites.net")
+                .WithOrigins(
+                    "http://localhost:4202",
+                    "https://localhost:4202",
+                    "http://localhost:5002",
+                    "https://localhost:5002",
+                    "https://nutre-dev.local:4202",
+                    "https://aesanweb-dev.azurewebsites.net"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials()
@@ -140,9 +142,10 @@ builder.Services.AddCors(options =>
         "AllowProdOrigin",
         builder =>
             builder
-                .WithOrigins("http://localhost:4202")
-                .WithOrigins("https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net")
-                .WithOrigins("https://aesanweb-dev.azurewebsites.net")
+                .WithOrigins(
+                    "https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net",
+                    "https://aesanweb-dev.azurewebsites.net"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials()
@@ -155,92 +158,59 @@ CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 builder.Services.AddMemoryCache();
 
-// Configurar Serilog al inicio de la aplicación
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File(
-        Path.Combine("logs", "api-.log"),
-        rollingInterval: RollingInterval.Day,
-        fileSizeLimitBytes: 10 * 1024 * 1024,
-        retainedFileCountLimit: 30,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .CreateLogger();
+var app = builder.Build();
 
-try
+// Configuración de middleware
+if (app.Environment.IsDevelopment())
 {
-    Log.Information("Iniciando aplicación API");
-
-    // Configurar el builder para usar Serilog
-    builder.Host.UseSerilog();
-
-    var app = builder.Build();
-
-    // Configuración de middleware
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseDeveloperExceptionPage();
-        // Configuración detallada para desarrollo
-    }
-    else
-    {
-        // En producción, no mostrar detalles de errores
-        app.UseExceptionHandler("/error");
-        app.UseHsts();
-
-        // Configuración para producción
-    }
-
+    app.UseDeveloperExceptionPage();
+    app.UseCors("AllowDevOrigin");
+    app.UseSwaggerUI();
+}
+else
+{
     app.UseHttpsRedirection();
-    app.UseRouting();
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // Habilitar Swagger
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
-        c.RoutePrefix = string.Empty; // Hacer que Swagger esté disponible en la raíz
-    });
-
-    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-    if (Directory.Exists(uploadsPath))
-    {
-        app.UseFileServer(enableDirectoryBrowsing: true)
-            .UseStaticFiles(
-                new StaticFileOptions
-                {
-                    FileProvider = new PhysicalFileProvider(uploadsPath),
-                    RequestPath = new PathString("/uploads")
-                }
-            )
-            .UseDirectoryBrowser(
-                new DirectoryBrowserOptions
-                {
-                    FileProvider = new PhysicalFileProvider(uploadsPath),
-                    RequestPath = new PathString("/uploads")
-                }
-            );
-    }
-    else
-    {
-        Directory.CreateDirectory(uploadsPath);
-    }
-
-    app.UseMiddleware<ErrorHandlingMiddleware>();
-
-    app.MapControllers();
-
-    app.Run();
+    app.UseCors("AllowProdOrigin");
+    app.UseSwaggerUI();
 }
-catch (Exception ex)
+
+// Configuración global
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Habilitar Swagger
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    Log.Fatal(ex, "La aplicación API falló al iniciar");
-}
-finally
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
+    c.RoutePrefix = string.Empty; // Hacer que Swagger esté disponible en la raíz
+});
+
+var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+if (Directory.Exists(uploadsPath))
 {
-    Log.CloseAndFlush();
+    app.UseFileServer(enableDirectoryBrowsing: true)
+        .UseStaticFiles(
+            new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsPath),
+                RequestPath = new PathString("/uploads")
+            }
+        )
+        .UseDirectoryBrowser(
+            new DirectoryBrowserOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsPath),
+                RequestPath = new PathString("/uploads")
+            }
+        );
 }
+else
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.MapControllers();
+
+app.Run();

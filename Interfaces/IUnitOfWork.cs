@@ -7,6 +7,6 @@ public interface IUnitOfWork
     IProgramRepository ProgramRepository { get; }
     IAgencyRepository AgencyRepository { get; }
     ISchoolRepository SchoolRepository { get; }
-    IAgencyUserAssignmentRepository AgencyUserAssignmentRepository { get; }
+    IAgencyUsersRepository AgencyUsersRepository { get; }
     void Save();
 }

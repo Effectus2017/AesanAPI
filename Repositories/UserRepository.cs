@@ -22,7 +22,8 @@ public class UserRepository(UserManager<User> userManager,
     ILogger<UserRepository> logger,
     DapperContext context,
     IEmailService emailService,
-    IAgencyRepository agencyRepository) : IUserRepository
+    IAgencyRepository agencyRepository,
+    IAgencyUsersRepository agencyUsersRepository) : IUserRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly UserManager<User> _userManager = userManager;
@@ -32,6 +33,7 @@ public class UserRepository(UserManager<User> userManager,
     private readonly ILogger<UserRepository> _logger = logger;
     private readonly IEmailService _emailService = emailService;
     private readonly IAgencyRepository _agencyRepository = agencyRepository;
+    private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository;
     /// <summary>
     /// Obtiene un usuario por su ID
     /// </summary>
@@ -418,14 +420,25 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Actualizar el usuario con el ID de la agencia
-            user.AgencyId = agencyId;
-            var updateResult = await _userManager.UpdateAsync(user);
+            // user.AgencyId = agencyId;
+            // var updateResult = await _userManager.UpdateAsync(user);
 
-            // Si falla la actualización, eliminar el usuario creado en Identity
-            if (!updateResult.Succeeded)
+            // // Si falla la actualización, eliminar el usuario creado en Identity
+            // if (!updateResult.Succeeded)
+            // {
+            //     await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
+            //     return new BadRequestObjectResult(updateResult.Errors);
+            // }
+
+            // Asignar agencia a usuario
+            if (agencyId != 0)
+            {
+                await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, true);
+            }
+            else
             {
                 await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
-                return new BadRequestObjectResult(updateResult.Errors);
+                return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
             // Enviar correo con la contraseña temporal y bienvenida

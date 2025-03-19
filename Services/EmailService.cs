@@ -270,4 +270,27 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
             throw; // Re-throw the exception to be handled by the caller
         }
     }
+
+    public async Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency)
+    {
+        var subject = "Desasignación de Agencia";
+        var body = $"Estimado/a {user.FirstName} {user.FatherLastName},\n\n" +
+                  $"Le informamos que ha sido desasignado/a como monitor de la agencia {agency.Name}.\n\n" +
+                  "Gracias por su atención.";
+
+        string recipientEmail = user.Email;
+        string recipientName = $"{user.FirstName} {user.FatherLastName}";
+
+#if DEBUG || LOCAL
+        // En modo DEBUG o LOCAL, usar la dirección de desarrollo si está configurada
+        if (!string.IsNullOrEmpty(_appSettings.Gmail.EmailToDev))
+        {
+            recipientEmail = _appSettings.Gmail.EmailToDev;
+            _logger.LogInformation($"Modo DEBUG/LOCAL: Enviando correo a {recipientEmail} en lugar de {user.Email}");
+        }
+#endif
+
+        await SendEmailWithGmailAsync(recipientEmail, subject, body);
+        _logger.LogInformation($"Correo de desasignación de agencia enviado exitosamente a {recipientEmail}");
+    }
 }

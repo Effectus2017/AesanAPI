@@ -22,8 +22,8 @@ public class DTOAgency
     public string Phone { get; set; } = "";
 
     // Coordenadas
-    public double Latitude { get; set; } = 0;
-    public double Longitude { get; set; } = 0;
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 
     // Datos del Contacto
     public string Email { get; set; } = "";
@@ -34,9 +34,8 @@ public class DTOAgency
 
     // Imágen - Logo
     public string ImageURL { get; set; } = "";
+    // Justificación de Rechazo
     public string RejectionJustification { get; set; } = "";
-    // Comentarios
-    public string Comment { get; set; } = "";
     // Cita coordinada
     public bool? AppointmentCoordinated { get; set; }
     // Fecha de la cita

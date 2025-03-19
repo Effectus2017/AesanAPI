@@ -11,7 +11,7 @@ namespace Api.Repositories;
 public class AgencyRepository(
     IEmailService emailService,
     IPasswordService passwordService,
-    IAgencyUserAssignmentRepository agencyUserAssignmentRepository,
+    IAgencyUsersRepository agencyUsersRepository,
     DapperContext context,
     ILogger<AgencyRepository> logger,
     IMemoryCache cache,
@@ -21,7 +21,7 @@ public class AgencyRepository(
     private readonly ILogger<AgencyRepository> _logger = logger;
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
     private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
-    private readonly IAgencyUserAssignmentRepository _agencyUserAssignmentRepository = agencyUserAssignmentRepository ?? throw new ArgumentNullException(nameof(agencyUserAssignmentRepository));
+    private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository ?? throw new ArgumentNullException(nameof(agencyUsersRepository));
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings;
 
@@ -38,7 +38,7 @@ public class AgencyRepository(
         param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
         var result = await dbConnection.QueryMultipleAsync(
-            "103_GetAgencyById",
+            "105_GetAgencyById",
             param,
             commandType: CommandType.StoredProcedure
         );
@@ -69,16 +69,18 @@ public class AgencyRepository(
     /// <returns>La agencia</returns>
     public async Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Agency + "_User_{1}", agencyId, userId);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Agency + "_User_{0}_{1}", agencyId, userId);
+        _logger.LogInformation($"Obteniendo agencia del caché con clave: {cacheKey}");
 
         return await _cache.CacheAgencyQuery(
             cacheKey,
             async () =>
             {
+                _logger.LogInformation($"Caché no encontrado, obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
                 using IDbConnection dbConnection = _context.CreateConnection();
                 var param = new { agencyId, userId };
                 var result = await dbConnection.QueryMultipleAsync(
-                    "101_GetAgencyByIdAndUserId",
+                    "102_GetAgencyByIdAndUserId",
                     param,
                     commandType: CommandType.StoredProcedure
                 );
@@ -99,6 +101,7 @@ public class AgencyRepository(
                     agency.Programs = MapProgramsFromResult(_agenciesPrograms);
                 }
 
+                _logger.LogInformation($"Datos obtenidos de la base de datos y almacenados en caché con clave: {cacheKey}");
                 return agency!;
             },
             _logger,
@@ -148,7 +151,7 @@ public class AgencyRepository(
 
                 // Usar un bloque using para garantizar que el GridReader se cierre correctamente
                 using (var result = await dbConnection.QueryMultipleAsync(
-                    "105_GetAgencies",
+                    "106_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure))
                 {
@@ -237,17 +240,17 @@ public class AgencyRepository(
             parameters.Add("@UieNumber", agencyRequest.UieNumber);
             parameters.Add("@EinNumber", agencyRequest.EinNumber);
             parameters.Add("@Address", agencyRequest.Address);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@Phone", agencyRequest.Phone);
             parameters.Add("@Email", agencyRequest.Email);
             parameters.Add("@CityId", agencyRequest.CityId);
             parameters.Add("@RegionId", agencyRequest.RegionId);
             parameters.Add("@PostalAddress", agencyRequest.PostalAddress);
-            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode);
+            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@PostalCityId", agencyRequest.PostalCityId);
             parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
-            parameters.Add("@Latitude", agencyRequest.Latitude);
-            parameters.Add("@Longitude", agencyRequest.Longitude);
+            parameters.Add("@Latitude", Math.Round(agencyRequest.Latitude, 2));
+            parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
             parameters.Add("@NonProfit", agencyRequest.NonProfit);
             parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
             parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
@@ -319,6 +322,10 @@ public class AgencyRepository(
     {
         try
         {
+            // Obtener la agencia actual para comparar el monitor
+            var currentAgency = await GetAgencyById(agencyId);
+            string currentMonitorId = currentAgency?.Monitor?.Id;
+
             var parameters = new DynamicParameters();
             parameters.Add("@Id", agencyId);
             parameters.Add("@Name", agencyRequest.Name);
@@ -327,13 +334,13 @@ public class AgencyRepository(
             parameters.Add("@UieNumber", agencyRequest.UieNumber);
             parameters.Add("@EinNumber", agencyRequest.EinNumber);
             parameters.Add("@Address", agencyRequest.Address);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode);
+            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@CityId", agencyRequest.CityId);
             parameters.Add("@RegionId", agencyRequest.RegionId);
-            parameters.Add("@Latitude", agencyRequest.Latitude);
-            parameters.Add("@Longitude", agencyRequest.Longitude);
+            parameters.Add("@Latitude", Math.Round(agencyRequest.Latitude, 2));
+            parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
             parameters.Add("@PostalAddress", agencyRequest.PostalAddress);
-            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode);
+            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@PostalCityId", agencyRequest.PostalCityId);
             parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
             parameters.Add("@Phone", agencyRequest.Phone);
@@ -345,12 +352,36 @@ public class AgencyRepository(
             parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
             parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
             parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
-            parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
-            parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
-            parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             using var connection = _context.CreateConnection();
-            var rowsAffected = await connection.ExecuteAsync("103_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("104_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            // Verificar si hay un nuevo monitor asignado y es diferente al actual
+            if (!string.IsNullOrEmpty(agencyRequest.MonitorId) && currentMonitorId != agencyRequest.MonitorId)
+            {
+                // Si había un monitor previo, desasignarlo primero
+                if (!string.IsNullOrEmpty(currentMonitorId))
+                {
+                    _logger.LogInformation($"Desasignando monitor anterior {currentMonitorId} de la agencia {agencyId}");
+                    await _agencyUsersRepository.UnassignAgencyFromUser(currentMonitorId, agencyId);
+
+                    // Enviar correo de desasignación al monitor anterior
+                    var previousMonitor = new DTOUser
+                    {
+                        Id = currentMonitorId,
+                        FirstName = currentAgency.Monitor.FirstName,
+                        FatherLastName = currentAgency.Monitor.FatherLastName,
+                        Email = currentAgency.Monitor.Email
+                    };
+                    await _emailService.SendAgencyUnassignmentEmail(previousMonitor, currentAgency);
+                }
+
+                // Asignar el nuevo monitor
+                _logger.LogInformation($"Asignando nuevo monitor {agencyRequest.MonitorId} a la agencia {agencyId}");
+                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId, agencyId, agencyRequest.AssignedBy, false, true);
+            }
 
             // Invalidar caché
             InvalidateCache(agencyId);
@@ -475,7 +506,7 @@ public class AgencyRepository(
     /// <param name="appointmentCoordinated">Indica si se coordinó la cita</param>
     /// <param name="appointmentDate">Fecha de la cita</param>
     /// <returns>True si se actualizó correctamente</returns>
-    public async Task<bool> UpdateAgencyProgram(int agencyId, int programId, int statusId, string userId, string comment, bool appointmentCoordinated, DateTime? appointmentDate)
+    public async Task<bool> UpdateAgencyProgram(int agencyId, int programId, int statusId, string userId, string rejectionJustification, bool appointmentCoordinated, DateTime? appointmentDate)
     {
         try
         {
@@ -487,13 +518,18 @@ public class AgencyRepository(
             parameters.Add("@ProgramId", programId);
             parameters.Add("@AgencyStatusId", statusId);
             parameters.Add("@UserId", userId);
-            parameters.Add("@Comment", comment);
+            parameters.Add("@RejectionJustification", rejectionJustification);
             parameters.Add("@AppointmentCoordinated", appointmentCoordinated);
             parameters.Add("@AppointmentDate", appointmentDate);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("100_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("101_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@ReturnValue");
+
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(agencyId);
+            }
 
             return rowsAffected > 0;
         }
@@ -538,14 +574,48 @@ public class AgencyRepository(
 
     private void InvalidateCache(int? agencyId = null)
     {
-        if (agencyId.HasValue)
+        try
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.Agency, agencyId));
-        }
+            _logger.LogInformation("Iniciando invalidación de caché");
 
-        // Invalidar listas completas
-        _cache.Remove(_appSettings.Cache.Keys.Agencies);
-        _logger.LogInformation("Cache invalidado para Agency Repository");
+            // Obtener todas las claves actuales en caché
+            var allKeys = _cache.GetKeys<string>().ToList();
+            _logger.LogInformation($"Total de claves en caché antes de invalidar: {allKeys.Count}");
+
+            if (agencyId.HasValue)
+            {
+                // Invalidar caché específico de la agencia
+                var agencyKey = string.Format(_appSettings.Cache.Keys.Agency, agencyId);
+                _logger.LogInformation($"Invalidando caché de agencia con clave: {agencyKey}");
+                _cache.Remove(agencyKey);
+
+                // Invalidar caché de la agencia con usuario
+                var userPattern = $"Agency_{agencyId}_User";
+                _logger.LogInformation($"Invalidando caché de usuarios de agencia con patrón: {userPattern}");
+                _cache.RemoveByPattern(userPattern, _logger);
+            }
+
+            // Invalidar listas completas
+            _logger.LogInformation("Invalidando lista completa de agencias");
+            _cache.Remove(_appSettings.Cache.Keys.Agencies);
+
+            // Invalidar caché de programas de agencia
+            var programPattern = "Agency_Programs";
+            _logger.LogInformation($"Invalidando caché de programas con patrón: {programPattern}");
+            _cache.RemoveByPattern(programPattern, _logger);
+
+            // Verificar claves restantes
+            var remainingKeys = _cache.GetKeys<string>().ToList();
+            _logger.LogInformation($"Total de claves en caché después de invalidar: {remainingKeys.Count}");
+            _logger.LogInformation($"Claves restantes: {string.Join(", ", remainingKeys)}");
+
+            _logger.LogInformation("Cache invalidado para Agency Repository");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al invalidar el caché de Agency Repository");
+            // No relanzamos la excepción para evitar que un error de caché afecte la operación principal
+        }
     }
 
     // Métodos privados de mapeo
@@ -563,15 +633,14 @@ public class AgencyRepository(
             ZipCode = item.ZipCode,
             PostalAddress = item.PostalAddress,
             PostalZipCode = item.PostalZipCode,
-            Latitude = item.Latitude,
-            Longitude = item.Longitude,
+            Latitude = item.Latitude != null ? (float)item.Latitude : null,
+            Longitude = item.Longitude != null ? (float)item.Longitude : null,
             Phone = item.Phone,
             Email = item.Email,
             ImageURL = item.ImageURL,
-            RejectionJustification = item.RejectionJustification,
-            Comment = item.Comment,
-            AppointmentCoordinated = item.AppointmentCoordinated,
-            AppointmentDate = item.AppointmentDate,
+            RejectionJustification = item.ProgramRejectionJustification,
+            AppointmentCoordinated = item.ProgramAppointmentCoordinated,
+            AppointmentDate = item.ProgramAppointmentDate,
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
             AgencyCode = item.AgencyCode,
@@ -584,7 +653,13 @@ public class AgencyRepository(
             {
                 Id = item.UserId,
                 FirstName = item.UserFirstName,
+                MiddleName = item.UserMiddleName,
                 FatherLastName = item.UserFatherLastName,
+                MotherLastName = item.UserMotherLastName,
+                AdministrationTitle = item.UserAdministrationTitle,
+                Email = item.UserEmail,
+                Phone = item.UserPhone,
+                ImageURL = item.UserImageURL,
             } : null,
             Monitor = item.MonitorId != null ? new DTOUser
             {

@@ -28,7 +28,7 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
                     return BadRequest("El ID del usuario es requerido");
                 }
 
-                var agencies = await _unitOfWork.AgencyUserAssignmentRepository.GetUserAssignedAgencies(
+                var agencies = await _unitOfWork.AgencyUsersRepository.GetUserAssignedAgencies(
                     queryParameters.UserId,
                     queryParameters.Take,
                     queryParameters.Skip
@@ -69,7 +69,7 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
                     return BadRequest("El ID de la agencia es requerido");
                 }
 
-                var result = await _unitOfWork.AgencyUserAssignmentRepository.AssignAgencyToUser(
+                var result = await _unitOfWork.AgencyUsersRepository.AssignAgencyToUser(
                     queryParameters.UserId,
                     queryParameters.AgencyId,
                     queryParameters.AssignedBy
@@ -110,7 +110,7 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
                     return BadRequest("El ID de la agencia es requerido");
                 }
 
-                var result = await _unitOfWork.AgencyUserAssignmentRepository.UnassignAgencyFromUser(
+                var result = await _unitOfWork.AgencyUsersRepository.UnassignAgencyFromUser(
                     queryParameters.UserId,
                     queryParameters.AgencyId
                 );

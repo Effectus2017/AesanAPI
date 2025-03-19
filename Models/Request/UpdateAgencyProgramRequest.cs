@@ -9,7 +9,7 @@ public class UpdateAgencyProgramRequest
     public int ProgramId { get; set; } = 0;
     public int StatusId { get; set; } = 0;
     public string UserId { get; set; } = "";
-    public string Comment { get; set; } = "";
+    public string RejectionJustification { get; set; } = "";
     public bool AppointmentCoordinated { get; set; } = false;
     public DateTime? AppointmentDate { get; set; }
 }

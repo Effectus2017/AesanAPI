@@ -15,4 +15,5 @@ public class DTOUser
     public string Password { get; set; } = "";
     public string ImageURL { get; set; } = "";
     public bool IsActive { get; set; }
+    public string Phone { get; set; } = "";
 }

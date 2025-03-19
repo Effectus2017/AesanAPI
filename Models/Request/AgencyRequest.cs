@@ -55,4 +55,9 @@ public class AgencyRequest
     // Tax Exemption
     public int TaxExemptionStatus { get; set; } = 0;
     public int TaxExemptionType { get; set; } = 0;
+    // Nombres
+    public string FirstName { get; set; } = "";
+    public string MiddleName { get; set; } = "";
+    public string FatherLastName { get; set; } = "";
+    public string MotherLastName { get; set; } = "";
 }

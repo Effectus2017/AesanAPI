@@ -1,6 +1,6 @@
 namespace Api.Interfaces;
 
-public interface IAgencyUserAssignmentRepository
+public interface IAgencyUsersRepository
 {
     /// <summary>
     /// Obtiene las agencias asignadas a un usuario
@@ -18,7 +18,7 @@ public interface IAgencyUserAssignmentRepository
     /// <param name="agencyId">ID de la agencia</param>
     /// <param name="assignedBy">ID del usuario que asigna</param>
     /// <returns>True si la asignación fue exitosa</returns>
-    Task<bool> AssignAgencyToUser(string userId, int agencyId, string assignedBy);
+    Task<bool> AssignAgencyToUser(string userId, int agencyId, string assignedBy, bool isOwner = false, bool isMonitor = false);
 
     /// <summary>
     /// Desasigna una agencia de un usuario

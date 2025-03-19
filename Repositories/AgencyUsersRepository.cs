@@ -8,17 +8,17 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Repositories;
 
-public class AgencyUserAssignmentRepository(
+public class AgencyUsersRepository(
     DapperContext context,
-    ILogger<AgencyUserAssignmentRepository> logger,
+    ILogger<AgencyUsersRepository> logger,
     IMemoryCache cache,
     ApplicationSettings appSettings,
     IEmailService emailService,
     Lazy<IUserRepository> userRepository,
-    Lazy<IAgencyRepository> agencyRepository) : IAgencyUserAssignmentRepository
+    Lazy<IAgencyRepository> agencyRepository) : IAgencyUsersRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyUserAssignmentRepository> _logger = logger;
+    private readonly ILogger<AgencyUsersRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings;
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
@@ -34,7 +34,7 @@ public class AgencyUserAssignmentRepository(
     /// <returns>Lista de agencias asignadas al usuario</returns>
     public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyUserAssignments, userId, take, skip);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, take, skip);
 
         return await _cache.CacheQuery(
             cacheKey,
@@ -67,7 +67,7 @@ public class AgencyUserAssignmentRepository(
     /// <param name="userId">ID del usuario</param>
     /// <param name="agencyId">ID de la agencia</param>
     /// <returns>True si la asignación fue exitosa</returns>
-    public async Task<bool> AssignAgencyToUser(string userId, int agencyId, string assignedBy)
+    public async Task<bool> AssignAgencyToUser(string userId, int agencyId, string assignedBy, bool isOwner = false, bool isMonitor = false)
     {
         try
         {
@@ -76,10 +76,12 @@ public class AgencyUserAssignmentRepository(
             parameters.Add("@userId", userId, DbType.String);
             parameters.Add("@agencyId", agencyId, DbType.Int32);
             parameters.Add("@assignedBy", assignedBy, DbType.String);
+            parameters.Add("@isOwner", isOwner, DbType.Boolean);
+            parameters.Add("@isMonitor", isMonitor, DbType.Boolean);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await db.ExecuteAsync(
-                "100_AssignAgencyToUser",
+                "101_AssignAgencyToUser",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -135,7 +137,7 @@ public class AgencyUserAssignmentRepository(
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await db.ExecuteAsync(
-                "100_UnassignAgencyFromUser",
+                "101_UnassignAgencyToUser",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -160,7 +162,7 @@ public class AgencyUserAssignmentRepository(
     private void InvalidateCache(string userId)
     {
         // Invalidar listas completas
-        _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyUserAssignments, userId, "*", "*"));
-        _logger.LogInformation("Cache invalidado para AgencyUserAssignment Repository");
+        _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, "*", "*"));
+        _logger.LogInformation("Cache invalidado para AgencyUsers Repository");
     }
 }

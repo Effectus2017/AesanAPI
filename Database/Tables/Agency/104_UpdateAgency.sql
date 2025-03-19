@@ -36,11 +36,11 @@ CREATE OR ALTER PROCEDURE [104_UpdateAgency]
     @FederalFundsDenied BIT,
     @StateFundsDenied BIT,
     @OrganizedAthleticPrograms BIT,
-    @AtRiskService BIT,
+    @AtRiskService BIT
     -- Nuevas propiedades
-    @ServiceTime DATETIME,
-    @TaxExemptionStatus INT,
-    @TaxExemptionType INT
+    -- @ServiceTime DATETIME,
+    -- @TaxExemptionStatus INT,
+    -- @TaxExemptionType INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -80,9 +80,9 @@ BEGIN
         OrganizedAthleticPrograms = @OrganizedAthleticPrograms,
         AtRiskService = @AtRiskService,
         -- Nuevas propiedades
-        ServiceTime = @ServiceTime,
-        TaxExemptionStatus = @TaxExemptionStatus,
-        TaxExemptionType = @TaxExemptionType,
+        -- ServiceTime = @ServiceTime,
+        -- TaxExemptionStatus = @TaxExemptionStatus,
+        -- TaxExemptionType = @TaxExemptionType,
         -- Auditoría
         UpdatedAt = GETDATE()
     WHERE Id = @Id AND IsActive = 1;

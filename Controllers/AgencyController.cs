@@ -106,24 +106,28 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            _logger.LogInformation("Obteniendo todas las agencias con parámetros: {@Parameters}", queryParameters);
-            var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesFromDb(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.RegionId,
-                queryParameters.CityId,
-                queryParameters.ProgramId,
-                queryParameters.StatusId,
-                queryParameters.UserId,
-                queryParameters.Alls
-            );
-            return Ok(agencies);
+            if (ModelState.IsValid)
+            {
+                var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesFromDb(
+                    queryParameters.Take,
+                    queryParameters.Skip,
+                    queryParameters.Name,
+                    queryParameters.RegionId,
+                    queryParameters.CityId,
+                    queryParameters.ProgramId,
+                    queryParameters.StatusId,
+                    queryParameters.UserId,
+                    queryParameters.Alls
+                );
+                return Ok(agencies);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener agencias: {Message}", ex.Message);
-            throw; // El middleware capturará esta excepción
+            _logger.LogError(ex, "Error al obtener las agencias");
+            return StatusCode(500, "Error al obtener las agencias");
         }
     }
 
@@ -165,14 +169,32 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <param name="agencyRequest">El modelo de la agencia a actualizar</param>
     /// <returns>True si se actualizó correctamente</returns>
     [HttpPut("update-agency")]
-    public async Task<IActionResult> UpdateAgency([FromQuery] QueryParameters queryParameters, [FromBody] AgencyRequest agencyRequest)
+    [SwaggerOperation(Summary = "Actualiza una agencia", Description = "Actualiza una agencia con los datos proporcionados.")]
+    public async Task<IActionResult> UpdateAgency([FromQuery] QueryParameters queryParameters, [FromBody] UserAgencyRequest agencyRequest)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId, agencyRequest);
-                return Ok(result);
+                var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId, agencyRequest.Agency);
+
+                if (result)
+                {
+
+                    await _unitOfWork.UserRepository.Update(new DTOUser
+                    {
+                        Id = agencyRequest.User.Id,
+                        FirstName = agencyRequest.User.FirstName ?? "",
+                        MiddleName = agencyRequest.User.MiddleName ?? "",
+                        FatherLastName = agencyRequest.User.FatherLastName ?? "",
+                        MotherLastName = agencyRequest.User.MotherLastName ?? "",
+                        Email = agencyRequest.User.Email ?? "",
+                    });
+
+                    return Ok(result);
+                }
+
+                return BadRequest("Error al actualizar la agencia");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -252,7 +274,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     updateAgencyProgramRequest.ProgramId,
                     updateAgencyProgramRequest.StatusId,
                     updateAgencyProgramRequest.UserId,
-                    updateAgencyProgramRequest.Comment,
+                    updateAgencyProgramRequest.RejectionJustification,
                     updateAgencyProgramRequest.AppointmentCoordinated,
                     updateAgencyProgramRequest.AppointmentDate
                 );

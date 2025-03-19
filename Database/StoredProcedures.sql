@@ -155,38 +155,6 @@ BEGIN
 END;
 GO
 
--- Procedimiento almacenado para actualizar el programa de una agencia
-CREATE OR ALTER PROCEDURE [100_UpdateAgencyProgram]
-    @AgencyId INT,
-    @ProgramId INT,
-    @StatusId INT,
-    @UserId NVARCHAR(36),
-    @Comments NVARCHAR(MAX) = NULL,
-    @AppointmentCoordinated BIT = NULL,
-    @AppointmentDate DATETIME = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE AgencyProgram
-    SET 
-        ProgramId = @ProgramId,
-        UserId = @UserId,
-        Comments = @Comments,
-        AppointmentCoordinated = @AppointmentCoordinated,
-        AppointmentDate = @AppointmentDate,
-        UpdatedAt = GETDATE()
-    WHERE AgencyId = @AgencyId AND ProgramId = @ProgramId;
-
-    UPDATE Agency
-    SET StatusId = @StatusId
-    WHERE Id = @AgencyId;
-
-    -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
-END;
-GO
-
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertProgram]
     @Name NVARCHAR(255),
     @Description NVARCHAR(MAX),
