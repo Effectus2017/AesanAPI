@@ -12,6 +12,9 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.ApplicationInsights.AspNetCore.Extensions;
+using Api.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -157,6 +160,21 @@ CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 builder.Services.AddMemoryCache();
+
+// Agregar Application Insights
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+    options.EnableAdaptiveSampling = false; // Deshabilitar el muestreo adaptativo si quieres todos los logs
+});
+
+// Configurar el TelemetryConfiguration para enriquecer los logs
+builder.Services.Configure<TelemetryConfiguration>((config) =>
+{
+    config.TelemetryInitializers.Add(new EnvironmentTelemetryInitializer(builder.Environment));
+});
+
+builder.Services.AddScoped<ILoggingService, LoggingService>();
 
 var app = builder.Build();
 

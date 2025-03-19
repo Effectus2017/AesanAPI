@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -13,12 +14,12 @@ public class AgencyRepository(
     IPasswordService passwordService,
     IAgencyUsersRepository agencyUsersRepository,
     DapperContext context,
-    ILogger<AgencyRepository> logger,
+    ILoggingService loggingService,
     IMemoryCache cache,
     ApplicationSettings appSettings) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyRepository> _logger = logger;
+    private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
     private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository ?? throw new ArgumentNullException(nameof(agencyUsersRepository));
@@ -104,7 +105,7 @@ public class AgencyRepository(
                 _logger.LogInformation($"Datos obtenidos de la base de datos y almacenados en caché con clave: {cacheKey}");
                 return agency!;
             },
-            _logger,
+            loggingService,
             _appSettings
         );
     }
@@ -192,7 +193,7 @@ public class AgencyRepository(
 
                 return new { data = mappedAgencies, count };
             },
-            _logger,
+            loggingService,
             _appSettings
         );
     }
@@ -219,7 +220,7 @@ public class AgencyRepository(
                 );
                 return result.ToList();
             },
-            _logger,
+            loggingService,
             _appSettings
         );
     }
@@ -591,8 +592,9 @@ public class AgencyRepository(
 
                 // Invalidar caché de la agencia con usuario
                 var userPattern = $"Agency_{agencyId}_User";
-                _logger.LogInformation($"Invalidando caché de usuarios de agencia con patrón: {userPattern}");
-                _cache.RemoveByPattern(userPattern, _logger);
+                _logger.LogInformation($"Invalidando caché de usuarios de agencia con patrón: {userPattern}",
+                    new Dictionary<string, string> { { "Pattern", userPattern } });
+                _cache.RemoveByPattern(userPattern);
             }
 
             // Invalidar listas completas
@@ -601,8 +603,9 @@ public class AgencyRepository(
 
             // Invalidar caché de programas de agencia
             var programPattern = "Agency_Programs";
-            _logger.LogInformation($"Invalidando caché de programas con patrón: {programPattern}");
-            _cache.RemoveByPattern(programPattern, _logger);
+            _logger.LogInformation($"Invalidando caché de programas con patrón: {programPattern}",
+                new Dictionary<string, string> { { "Pattern", programPattern } });
+            _cache.RemoveByPattern(programPattern);
 
             // Verificar claves restantes
             var remainingKeys = _cache.GetKeys<string>().ToList();
