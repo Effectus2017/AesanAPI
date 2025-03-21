@@ -45,7 +45,6 @@ namespace Api.Controllers
 
                 foreach (var file in files)
                 {
-
                     if (file == null || file.Length == 0)
                     {
                         continue;
@@ -54,9 +53,44 @@ namespace Api.Controllers
                     string lastFragment = file.FileName.Split('.').Last();
                     string upperType = char.ToUpperInvariant(type[0]) + type.Substring(1);
 
-                    string extension = System.IO.Path.GetExtension(fileName);
-                    string result = fileName.Substring(0, fileName.Length - extension.Length);
-                    fullFileName = $"{result}_{DateTime.Now:yyyyMMddHHmmss}{file.FileName.Substring(file.FileName.Length - (lastFragment.Length + 1), lastFragment.Length + 1)}";
+                    string extension = Path.GetExtension(file.FileName);
+                    string fileNameWithoutExtension = fileName;
+
+                    // Buscar archivos existentes con nombre similar
+                    var existingFiles = Directory.GetFiles(uploadsRootFolder)
+                        .Select(f => Path.GetFileName(f))
+                        .Where(f => f.StartsWith(fileNameWithoutExtension, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    if (existingFiles.Any())
+                    {
+                        // Si existe un archivo exactamente igual, usamos ese
+                        var exactMatch = existingFiles.FirstOrDefault(f =>
+                            f.Equals($"{fileNameWithoutExtension}{extension}", StringComparison.OrdinalIgnoreCase));
+
+                        if (exactMatch != null)
+                        {
+                            string existingUrl = Utilities.GetUrl(_appSettings);
+                            string existingUrlPath = existingUrl + Path.Combine(Path.Combine($"uploads/", folder), exactMatch);
+                            return new { file = exactMatch, urlPath = existingUrlPath };
+                        }
+
+                        // Si no hay match exacto, agregamos un número secuencial
+                        int counter = 1;
+                        string newFileName;
+                        do
+                        {
+                            newFileName = $"{fileNameWithoutExtension}_{counter}{extension}";
+                            counter++;
+                        } while (existingFiles.Any(f => f.Equals(newFileName, StringComparison.OrdinalIgnoreCase)));
+
+                        fullFileName = newFileName;
+                    }
+                    else
+                    {
+                        // Si no hay archivos similares, usar el nombre original con timestamp
+                        fullFileName = $"{fileNameWithoutExtension}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+                    }
 
                     var filePath = Path.Combine(uploadsRootFolder, fullFileName);
                     using var fileStream = new FileStream(filePath, FileMode.Create);
@@ -66,7 +100,6 @@ namespace Api.Controllers
                 string url = Utilities.GetUrl(_appSettings);
                 string urlPath = url + Path.Combine(Path.Combine($"uploads/", folder), fullFileName);
                 return new { file = fullFileName, urlPath };
-
             }
             catch (Exception ex)
             {

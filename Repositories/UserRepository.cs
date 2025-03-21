@@ -419,17 +419,6 @@ public class UserRepository(UserManager<User> userManager,
                 await _agencyRepository.InsertAgencyProgram(agencyId, programId);
             }
 
-            // Actualizar el usuario con el ID de la agencia
-            // user.AgencyId = agencyId;
-            // var updateResult = await _userManager.UpdateAsync(user);
-
-            // // Si falla la actualización, eliminar el usuario creado en Identity
-            // if (!updateResult.Succeeded)
-            // {
-            //     await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
-            //     return new BadRequestObjectResult(updateResult.Errors);
-            // }
-
             // Asignar agencia a usuario
             if (agencyId != 0)
             {
@@ -465,19 +454,11 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="model">El modelo de registro de usuario</param>
     /// <param name="role">El rol del usuario</param>
     /// <returns>El resultado de la operación</returns>
-    public async Task<dynamic> RegisterUser(DTOUser model, string role)
+    public async Task<dynamic> RegisterUser(DTOUser model, string role, int agencyId)
     {
 
         try
         {
-
-#if !DEBUG
-            // Generar una contraseña temporal
-            var temporaryPassword = Utilities.GenerateTemporaryPassword();
-#else
-            // Usar la contraseña temporal 9c272156 si estamos en debug
-            var temporaryPassword = "9c272156";
-#endif
 
             User user = new()
             {
@@ -493,10 +474,12 @@ public class UserRepository(UserManager<User> userManager,
                 TwoFactorEnabled = false,
                 LockoutEnabled = false,
                 AccessFailedCount = 0,
-                IsTemporalPasswordActived = true
+                IsTemporalPasswordActived = true,
+                ImageURL = model.ImageURL,
+                IsActive = true
             };
 
-            var result = await _userManager.CreateAsync(user, temporaryPassword);
+            var result = await _userManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
             {
@@ -512,9 +495,13 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(resultRole.Errors);
             }
 
+            // Asignar la agencia al usuario
+            await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, false, false);
+
+
             // Enviar correo con la contraseña temporal
-            await InsertTemporaryPassword(user.Id, temporaryPassword);
-            await _emailService.SendTemporaryPasswordEmail(model.Email, temporaryPassword);
+            await InsertTemporaryPassword(user.Id, model.Password);
+            await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }

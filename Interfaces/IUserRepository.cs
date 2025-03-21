@@ -27,7 +27,7 @@ public interface IUserRepository
 
     Task<dynamic> Login(LoginRequest model);
     Task<dynamic> RegisterUserAgency(UserAgencyRequest model);
-    Task<dynamic> RegisterUser(DTOUser model, string role);
+    Task<dynamic> RegisterUser(DTOUser model, string role, int agencyId);
     Task<dynamic> Update(DTOUser model);
     Task<dynamic> Delete(string userId);
 

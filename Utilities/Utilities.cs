@@ -45,7 +45,8 @@ public static class Utilities
     public static string GetUrl(ApplicationSettings appSettings)
     {
 
-#if DEBUG
+
+#if DEBUG || LOCAL
         return appSettings.LocalURL;
 #endif
 

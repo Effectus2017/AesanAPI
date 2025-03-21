@@ -168,7 +168,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
 #if !DEBUG
     [Authorize(Roles = "Administrator")]
 #endif
-    public async Task<IActionResult> AddUserToDb([FromBody] DTOUser entity)
+    public async Task<IActionResult> AddUserToDb([FromBody] DTOUser entity, [FromQuery] QueryParameters queryParameters)
     {
         try
         {
@@ -186,7 +186,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
                     return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Roles' es requerido." });
                 }
 
-                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles.FirstOrDefault() ?? "Monitor");
+                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles.FirstOrDefault() ?? "Monitor", queryParameters.AgencyId);
                 return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
 
             }

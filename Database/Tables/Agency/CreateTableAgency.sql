@@ -35,6 +35,7 @@ CREATE TABLE Agency
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
     AgencyCode NVARCHAR(50) NULL,
+    IsPropietary BIT NULL DEFAULT 0,
     FOREIGN KEY (AgencyStatusId) REFERENCES AgencyStatus(Id),
     FOREIGN KEY (CityId) REFERENCES City(Id),
     FOREIGN KEY (PostalCityId) REFERENCES City(Id),
@@ -45,6 +46,9 @@ GO
 
 ALTER TABLE Agency
 ADD AtRiskService BIT NULL DEFAULT 0;
+
+ALTER TABLE Agency
+ADD IsPropietary BIT NULL DEFAULT 0;
 
 INSERT INTO Agency
     (Name, AgencyStatusId, CityId, PostalCityId, RegionId, PostalRegionId, SdrNumber, UieNumber, EinNumber, 

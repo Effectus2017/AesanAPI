@@ -41,7 +41,7 @@ BEGIN
         Latitude, Longitude, NonProfit, FederalFundsDenied, StateFundsDenied,
         OrganizedAthleticPrograms, AtRiskService, -- Añadido
         RejectionJustification, ImageURL, Comment,
-        AppointmentCoordinated, AppointmentDate, IsListable, AgencyCode
+        AppointmentCoordinated, AppointmentDate, IsListable, AgencyCode, IsPropietary
     )
     VALUES (
         @Name, @AgencyStatusId, @SdrNumber, @UieNumber, @EinNumber,
@@ -50,7 +50,7 @@ BEGIN
         @Latitude, @Longitude, @NonProfit, @FederalFundsDenied, @StateFundsDenied,
         @OrganizedAthleticPrograms, @AtRiskService, -- Añadido
         @RejectionJustification, @ImageURL, @Comment,
-        @AppointmentCoordinated, @AppointmentDate, @IsListable, @AgencyCode
+        @AppointmentCoordinated, @AppointmentDate, @IsListable, @AgencyCode, false
     );
 
     SET @Id = SCOPE_IDENTITY();

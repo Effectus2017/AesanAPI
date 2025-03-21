@@ -132,6 +132,36 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     }
 
     /// <summary>
+    /// Obtiene todas las agencias de la base de datos
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta</param>
+    /// <returns>Las agencias</returns>
+    [HttpGet("get-all-agencies-list")]
+    [SwaggerOperation(Summary = "Obtiene todas las agencias de la base de datos", Description = "Devuelve una lista de todas las agencias.")]
+    public async Task<IActionResult> GetAllAgenciesList([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesList(
+                    queryParameters.Id,
+                    queryParameters.Name,
+                    queryParameters.Alls
+                );
+                return Ok(agencies);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las agencias");
+            return StatusCode(500, "Error al obtener las agencias");
+        }
+    }
+
+    /// <summary>
     /// Obtiene los programas de una agencia por el ID del usuario
     /// </summary>
     /// <param name="userId">El ID del usuario</param>

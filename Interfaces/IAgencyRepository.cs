@@ -10,6 +10,7 @@ public interface IAgencyRepository
     Task<dynamic> GetAgencyById(int id);
     Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId);
     Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls);
+    Task<dynamic> GetAllAgenciesList(int? id, string name, bool alls);
     Task<dynamic> GetAgencyProgramsByUserId(string userId);
 
     /// ------------------------------------------------------------------------------------------------

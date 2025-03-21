@@ -199,6 +199,46 @@ public class AgencyRepository(
     }
 
     /// <summary>
+    /// Obtiene todas las agencias de la base de datos
+    /// </summary>
+    /// <param name="id">El ID de la agencia</param>
+    /// <param name="name">El nombre de la agencia</param>
+    /// <param name="alls">Si se deben obtener todas las agencias</param>
+    /// <returns>Las agencias</returns>
+    public async Task<dynamic> GetAllAgenciesList(int? id, string name, bool alls)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@id", id);
+            param.Add("@name", name);
+            param.Add("@alls", alls);
+
+            var result = await dbConnection.QueryMultipleAsync(
+                "101_GetAgenciesList",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (result == null)
+                return null;
+
+            var _agenciesResult = await result.ReadAsync<dynamic>();
+
+            if (_agenciesResult == null)
+                return null;
+
+            return _agenciesResult;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las agencias");
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Obtiene los programas de una agencia por el ID del usuario
     /// </summary>
     /// <param name="userId">El ID del usuario</param>
@@ -266,7 +306,7 @@ public class AgencyRepository(
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("103_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("104_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
 
             var agencyId = parameters.Get<int>("@Id");
 

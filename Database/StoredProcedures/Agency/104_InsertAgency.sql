@@ -29,11 +29,7 @@ CREATE OR ALTER PROCEDURE [104_InsertAgency]
     @ServiceTime DATETIME,
     @TaxExemptionStatus INT,
     @TaxExemptionType INT,
-    @RejectionJustification NVARCHAR(MAX) = NULL,
     @ImageURL NVARCHAR(MAX) = NULL,
-    @Comment NVARCHAR(MAX) = NULL,
-    @AppointmentCoordinated BIT = NULL,
-    @AppointmentDate DATETIME = NULL,
     @IsListable BIT = 1,
     @AgencyCode NVARCHAR(50),
     @Id INT OUTPUT
@@ -48,8 +44,8 @@ BEGIN
         Latitude, Longitude, NonProfit, FederalFundsDenied, StateFundsDenied,
         OrganizedAthleticPrograms, AtRiskService, 
         ServiceTime, TaxExemptionStatus, TaxExemptionType,
-        RejectionJustification, ImageURL, Comment,
-        AppointmentCoordinated, AppointmentDate, IsListable, AgencyCode
+        ImageURL, 
+        IsListable, AgencyCode, IsPropietary
     )
     VALUES (
         @Name, @AgencyStatusId, @SdrNumber, @UieNumber, @EinNumber,
@@ -58,8 +54,8 @@ BEGIN
         @Latitude, @Longitude, @NonProfit, @FederalFundsDenied, @StateFundsDenied,
         @OrganizedAthleticPrograms, @AtRiskService, 
         @ServiceTime, @TaxExemptionStatus, @TaxExemptionType,
-        @RejectionJustification, @ImageURL, @Comment,
-        @AppointmentCoordinated, @AppointmentDate, @IsListable, @AgencyCode
+        @ImageURL, 
+        @IsListable, @AgencyCode, 0
     );
 
     SET @Id = SCOPE_IDENTITY();
