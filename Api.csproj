@@ -8,6 +8,18 @@
     <NoWarn>$(NoWarn);*;</NoWarn>
   </PropertyGroup>
 
+   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <DeleteExistingFiles>true</DeleteExistingFiles>
+        <Optimize>true</Optimize>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <OutputPath>bin\Release\</OutputPath>
+    </PropertyGroup>
+
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <Content Remove="appsettings.Development.json" />
+        <None Include="appsettings.Development.json" />
+    </ItemGroup >
+
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
