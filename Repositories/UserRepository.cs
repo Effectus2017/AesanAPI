@@ -521,13 +521,51 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
+            _logger.LogInformation(
+                "Iniciando actualización de usuario. UserId: {UserId}, Email: {Email}",
+                entity.Id,
+                entity.Email
+            );
+
             var user = await _userManager.FindByIdAsync(entity.Id);
 
             if (user == null)
             {
+                _logger.LogWarning(
+                    "Usuario no encontrado durante la actualización. UserId: {UserId}",
+                    entity.Id
+                );
                 return false;
             }
 
+            _logger.LogDebug(
+                "Usuario encontrado. Estado actual - Email: {CurrentEmail}, FirstName: {CurrentFirstName}, IsActive: {CurrentIsActive}",
+                user.Email,
+                user.FirstName,
+                user.IsActive
+            );
+
+            // Registrar los cambios que se van a realizar
+            var changes = new Dictionary<string, (string Old, string New)>();
+            if (user.Email != entity.Email) changes.Add("Email", (user.Email, entity.Email));
+            if (user.FirstName != entity.FirstName) changes.Add("FirstName", (user.FirstName, entity.FirstName));
+            if (user.FatherLastName != entity.FatherLastName) changes.Add("FatherLastName", (user.FatherLastName, entity.FatherLastName));
+            if (user.MiddleName != entity.MiddleName) changes.Add("MiddleName", (user.MiddleName, entity.MiddleName));
+            if (user.MotherLastName != entity.MotherLastName) changes.Add("MotherLastName", (user.MotherLastName, entity.MotherLastName));
+            if (user.AdministrationTitle != entity.AdministrationTitle) changes.Add("AdministrationTitle", (user.AdministrationTitle, entity.AdministrationTitle));
+            if (user.PhoneNumber != entity.PhoneNumber) changes.Add("PhoneNumber", (user.PhoneNumber, entity.PhoneNumber));
+            if (user.ImageURL != entity.ImageURL) changes.Add("ImageURL", (user.ImageURL, entity.ImageURL));
+
+            if (changes.Any())
+            {
+                _logger.LogInformation(
+                    "Cambios detectados para el usuario {UserId}: {@Changes}",
+                    entity.Id,
+                    changes
+                );
+            }
+
+            // Actualizar propiedades
             user.Email = entity.Email;
             user.EmailConfirmed = entity.EmailConfirmed;
             user.FirstName = !string.IsNullOrEmpty(entity.FirstName) ? entity.FirstName : user.FirstName;
@@ -538,43 +576,125 @@ public class UserRepository(UserManager<User> userManager,
             user.PhoneNumber = !string.IsNullOrEmpty(entity.PhoneNumber) ? entity.PhoneNumber : user.PhoneNumber;
             user.ImageURL = !string.IsNullOrEmpty(entity.ImageURL) ? entity.ImageURL : user.ImageURL;
 
-            var resultUser = await _userManager.UpdateAsync(user);
-
-            if (resultUser.Succeeded)
+            try
             {
-                if (entity.Roles.Count != 0)
-                {
-                    var _currentRoles = _userManager.GetRolesAsync(user).Result.First();
-                    var _newRole = entity.Roles[0];
+                var resultUser = await _userManager.UpdateAsync(user);
 
-                    if (_currentRoles != _newRole)
+                if (!resultUser.Succeeded)
+                {
+                    _logger.LogError(
+                        "Error al actualizar usuario {UserId}. Errores: {@Errors}",
+                        entity.Id,
+                        resultUser.Errors
+                    );
+                    return false;
+                }
+
+                _logger.LogInformation(
+                    "Usuario {UserId} actualizado exitosamente",
+                    entity.Id
+                );
+
+                if (entity.Roles?.Count > 0)
+                {
+                    var currentRoles = await _userManager.GetRolesAsync(user);
+                    var currentRole = currentRoles.FirstOrDefault();
+                    var newRole = entity.Roles[0];
+
+                    if (currentRole != newRole)
                     {
-                        var isInRole = await _userManager.IsInRoleAsync(user, _newRole);
+                        _logger.LogInformation(
+                            "Actualizando rol del usuario {UserId} de {OldRole} a {NewRole}",
+                            entity.Id,
+                            currentRole,
+                            newRole
+                        );
+
+                        var isInRole = await _userManager.IsInRoleAsync(user, newRole);
 
                         if (!isInRole)
                         {
-                            var resultDelete = await _userManager.RemoveFromRoleAsync(user, _currentRoles);
-
-                            if (resultDelete.Succeeded)
+                            if (currentRole != null)
                             {
-                                var resultAdd = await _userManager.AddToRoleAsync(user, _newRole);
+                                var resultDelete = await _userManager.RemoveFromRoleAsync(user, currentRole);
+                                if (!resultDelete.Succeeded)
+                                {
+                                    _logger.LogError(
+                                        "Error al eliminar rol {OldRole} del usuario {UserId}. Errores: {@Errors}",
+                                        currentRole,
+                                        entity.Id,
+                                        resultDelete.Errors
+                                    );
+                                    return false;
+                                }
                             }
+
+                            var resultAdd = await _userManager.AddToRoleAsync(user, newRole);
+                            if (!resultAdd.Succeeded)
+                            {
+                                _logger.LogError(
+                                    "Error al agregar rol {NewRole} al usuario {UserId}. Errores: {@Errors}",
+                                    newRole,
+                                    entity.Id,
+                                    resultAdd.Errors
+                                );
+                                return false;
+                            }
+
+                            _logger.LogInformation(
+                                "Rol actualizado exitosamente para el usuario {UserId}",
+                                entity.Id
+                            );
                         }
-                    }
-                    else
-                    {
-                        return true;
                     }
                 }
 
                 return true;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al actualizar usuario {UserId}. Tipo de error: {ErrorType}. Mensaje: {ErrorMessage}. Stack Trace: {StackTrace}",
+                    entity.Id,
+                    ex.GetType().Name,
+                    ex.Message,
+                    ex.StackTrace
+                );
 
-            return false;
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError(
+                        "Inner Exception para usuario {UserId}: Tipo: {ErrorType}. Mensaje: {ErrorMessage}",
+                        entity.Id,
+                        ex.InnerException.GetType().Name,
+                        ex.InnerException.Message
+                    );
+                }
+
+                throw;
+            }
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            _logger.LogError(
+                ex,
+                "Error crítico al procesar la actualización del usuario. Tipo de error: {ErrorType}. Mensaje: {ErrorMessage}. Stack Trace: {StackTrace}",
+                ex.GetType().Name,
+                ex.Message,
+                ex.StackTrace
+            );
+
+            if (ex.InnerException != null)
+            {
+                _logger.LogError(
+                    "Inner Exception: Tipo: {ErrorType}. Mensaje: {ErrorMessage}",
+                    ex.InnerException.GetType().Name,
+                    ex.InnerException.Message
+                );
+            }
+
+            throw new Exception($"Error al actualizar el usuario: {ex.Message}", ex);
         }
     }
 

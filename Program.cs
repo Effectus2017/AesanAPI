@@ -31,7 +31,21 @@ builder.Services.Configure<ApplicationSettings>(
 
 // Configuración de servicios
 builder.Services.AddDbContext<ApplicationDbContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+    options =>
+    {
+        options.UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection"),
+            sqlServerOptionsAction: sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null);
+                sqlOptions.CommandTimeout(60);
+            });
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    },
     ServiceLifetime.Scoped
 );
 
@@ -140,6 +154,7 @@ builder.Services.AddCors(options =>
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials()
+                .SetIsOriginAllowed(_ => true) // Solo para desarrollo
     );
     options.AddPolicy(
         "AllowProdOrigin",
@@ -147,11 +162,19 @@ builder.Services.AddCors(options =>
             builder
                 .WithOrigins(
                     "https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net",
-                    "https://aesanweb-dev.azurewebsites.net"
+                    "https://aesanweb-dev.azurewebsites.net",
+                    "https://aesanapi.azurewebsites.net"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials()
+                .SetIsOriginAllowed(origin =>
+                {
+                    // Log the origin for debugging
+                    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+                    logger.LogInformation("Requested Origin: {Origin}", origin);
+                    return origin.EndsWith("azurewebsites.net");
+                })
     );
 });
 
@@ -176,6 +199,14 @@ builder.Services.Configure<TelemetryConfiguration>((config) =>
 
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 
+builder.Services.AddLogging(logging =>
+{
+    logging.AddConsole();
+    logging.AddDebug();
+    logging.AddApplicationInsights();
+    logging.SetMinimumLevel(LogLevel.Warning);
+});
+
 var app = builder.Build();
 
 // Configuración de middleware
@@ -187,7 +218,32 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseHttpsRedirection();
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+            var exception = exceptionHandlerPathFeature?.Error;
+
+            logger.LogError(
+                exception,
+                "Error no manejado: {Message}. Path: {Path}",
+                exception?.Message,
+                exceptionHandlerPathFeature?.Path
+            );
+
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = "Se produjo un error interno en el servidor",
+                path = exceptionHandlerPathFeature?.Path,
+                detail = app.Environment.IsDevelopment() ? exception?.ToString() : null
+            });
+        });
+    });
+    app.UseHsts();
     app.UseCors("AllowProdOrigin");
     app.UseSwaggerUI();
 }
@@ -228,6 +284,49 @@ else
 {
     Directory.CreateDirectory(uploadsPath);
 }
+
+// Agregar middleware personalizado para logging de solicitudes
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+    logger.LogInformation(
+        "Request: {Method} {Scheme} {Host}{Path} {QueryString}",
+        context.Request.Method,
+        context.Request.Scheme,
+        context.Request.Host,
+        context.Request.Path,
+        context.Request.QueryString
+    );
+
+    logger.LogInformation(
+        "Headers: {@Headers}",
+        context.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString())
+    );
+
+    // Capturar el cuerpo de la respuesta
+    var originalBodyStream = context.Response.Body;
+    using var memoryStream = new MemoryStream();
+    context.Response.Body = memoryStream;
+
+    try
+    {
+        await next.Invoke();
+
+        logger.LogInformation(
+            "Response: Status: {StatusCode}, Headers: {@Headers}",
+            context.Response.StatusCode,
+            context.Response.Headers.ToDictionary(h => h.Key, h => h.Value.ToString())
+        );
+
+        memoryStream.Position = 0;
+        await memoryStream.CopyToAsync(originalBodyStream);
+    }
+    finally
+    {
+        context.Response.Body = originalBodyStream;
+    }
+});
 
 app.MapControllers();
 

@@ -214,20 +214,77 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.Update(entity);
+            _logger.LogInformation(
+                "Recibida solicitud de actualización para usuario. ID: {UserId}, Email: {Email}",
+                entity?.Id,
+                entity?.Email
+            );
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Updated successfully" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "Not updated" });
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning(
+                    "Modelo inválido en actualización de usuario: {@ModelErrors}",
+                    ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                );
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            if (entity == null)
+            {
+                _logger.LogWarning("Entidad nula recibida en actualización de usuario");
+                return BadRequest(new { Message = "La entidad no puede ser nula" });
+            }
+
+            _logger.LogInformation(
+                "Iniciando proceso de actualización para usuario {UserId}",
+                entity.Id
+            );
+
+            bool result = await _unitOfWork.UserRepository.Update(entity);
+
+            if (result)
+            {
+                _logger.LogInformation(
+                    "Usuario {UserId} actualizado exitosamente",
+                    entity.Id
+                );
+                return StatusCode(
+                    StatusCodes.Status200OK,
+                    new { Valid = true, Message = "Usuario actualizado exitosamente" }
+                );
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "No se pudo actualizar el usuario {UserId}",
+                    entity.Id
+                );
+                return StatusCode(
+                    StatusCodes.Status400BadRequest,
+                    new { Valid = false, Message = "No se pudo actualizar el usuario" }
+                );
+            }
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+            _logger.LogError(
+                ex,
+                "Error al actualizar usuario. Tipo: {ErrorType}, Mensaje: {ErrorMessage}",
+                ex.GetType().Name,
+                ex.Message
+            );
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new
+                {
+                    Valid = false,
+                    Message = "Error interno al actualizar el usuario",
+                    Detail = ex.Message
+                }
+            );
         }
     }
 
