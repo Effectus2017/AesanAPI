@@ -83,6 +83,7 @@ python Database/tools/compare_databases.py --sp-name dbo.NombreProcedimiento --s
 ```bash
 # Comparar tablas y procedimientos
 python Database/tools/compare_databases.py --all
+python3 compare_databases.py --all
 
 # Comparación completa con todos los detalles
 python Database/tools/compare_databases.py --all --table-details --show-sp-diff

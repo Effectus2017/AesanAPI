@@ -500,8 +500,8 @@ public class UserRepository(UserManager<User> userManager,
 
 
             // Enviar correo con la contraseña temporal
-            await InsertTemporaryPassword(user.Id, model.Password);
-            await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
+            //await InsertTemporaryPassword(user.Id, model.Password);
+            //await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }

@@ -32,7 +32,7 @@ builder.Services.Configure<ApplicationSettings>(
 // Configuración de servicios
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
-    ServiceLifetime.Transient
+    ServiceLifetime.Scoped
 );
 
 builder.Services
