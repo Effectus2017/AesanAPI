@@ -137,6 +137,8 @@ builder.Services.AddAutoMapper(cfg =>
 });
 
 // Configuración de CORS
+var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
@@ -168,13 +170,7 @@ builder.Services.AddCors(options =>
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials()
-                .SetIsOriginAllowed(origin =>
-                {
-                    // Log the origin for debugging
-                    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-                    logger.LogInformation("Requested Origin: {Origin}", origin);
-                    return origin.EndsWith("azurewebsites.net");
-                })
+                .SetIsOriginAllowed(origin => origin.EndsWith("azurewebsites.net"))
     );
 });
 
@@ -209,12 +205,27 @@ builder.Services.AddLogging(logging =>
 
 var app = builder.Build();
 
+// Middleware para logging de CORS
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    var origin = context.Request.Headers["Origin"].ToString();
+    if (!string.IsNullOrEmpty(origin))
+    {
+        logger.LogInformation(
+            "CORS Request - Origin: {Origin}, Path: {Path}, Method: {Method}",
+            origin,
+            context.Request.Path,
+            context.Request.Method
+        );
+    }
+    await next();
+});
+
 // Configuración de middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.UseCors("AllowDevOrigin");
-    app.UseSwaggerUI();
 }
 else
 {
@@ -244,9 +255,10 @@ else
         });
     });
     app.UseHsts();
-    app.UseCors("AllowProdOrigin");
-    app.UseSwaggerUI();
 }
+
+// CORS debe ir antes de routing y después de los middleware de error
+app.UseCors(app.Environment.IsDevelopment() ? "AllowDevOrigin" : "AllowProdOrigin");
 
 // Configuración global
 app.UseRouting();
@@ -258,7 +270,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
-    c.RoutePrefix = string.Empty; // Hacer que Swagger esté disponible en la raíz
+    c.RoutePrefix = string.Empty;
 });
 
 var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
