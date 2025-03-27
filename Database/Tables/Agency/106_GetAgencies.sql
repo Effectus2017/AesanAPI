@@ -1,14 +1,14 @@
 -- Procedimiento para obtener todas las agencias con las nuevas propiedades
 CREATE OR ALTER PROCEDURE [106_GetAgencies]
-    @Take INT = 10,
-    @Skip INT = 0,
-    @Name NVARCHAR(255) = NULL,
-    @RegionId INT = NULL,
-    @CityId INT = NULL,
-    @ProgramId INT = NULL,
-    @StatusId INT = NULL,
-    @UserId NVARCHAR(450) = NULL,
-    @Alls BIT = 0
+    @take INT = 10,
+    @skip INT = 0,
+    @name NVARCHAR(255) = NULL,
+    @regionId INT = NULL,
+    @cityId INT = NULL,
+    @programId INT = NULL,
+    @statusId INT = NULL,
+    @userId NVARCHAR(450) = NULL,
+    @alls BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -20,12 +20,12 @@ BEGIN
     LEFT JOIN AgencyProgram ap ON a.Id = ap.AgencyId AND ap.IsActive = 1
     LEFT JOIN AgencyUsers aua ON a.Id = aua.AgencyId AND aua.IsActive = 1
     WHERE a.IsActive = 1
-        AND (@Name IS NULL OR a.Name LIKE '%' + @Name + '%')
-        AND (@RegionId IS NULL OR a.RegionId = @RegionId)
-        AND (@CityId IS NULL OR a.CityId = @CityId)
-        AND (@ProgramId IS NULL OR ap.ProgramId = @ProgramId)
-        AND (@StatusId IS NULL OR a.AgencyStatusId = @StatusId)
-        AND (@UserId IS NULL OR aua.UserId = @UserId)
+        AND (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+        AND (@regionId IS NULL OR a.RegionId = @regionId)
+        AND (@cityId IS NULL OR a.CityId = @cityId)
+        AND (@programId IS NULL OR ap.ProgramId = @programId)
+        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+        AND (@userId IS NULL OR aua.UserId = @userId)
         AND (@Alls = 1 OR a.IsListable = 1);
 
     -- Obtener los registros paginados
@@ -59,9 +59,9 @@ BEGIN
         a.StateFundsDenied,
         a.OrganizedAthleticPrograms,
         a.AtRiskService,
-        a.ServiceTime,                -- Nueva propiedad
-        a.TaxExemptionStatus,         -- Nueva propiedad
-        a.TaxExemptionType,           -- Nueva propiedad
+        a.ServiceTime,
+        a.TaxExemptionStatus,
+        a.TaxExemptionType,
 
         a.IsActive,
         a.IsListable,
@@ -85,7 +85,6 @@ BEGIN
         ap.AppointmentCoordinated AS ProgramAppointmentCoordinated,
         ap.AppointmentDate AS ProgramAppointmentDate,
 
-
         @TotalCount AS TotalCount
     FROM Agency a
     INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
@@ -98,13 +97,13 @@ BEGIN
     LEFT JOIN AspNetUsers u ON aua.UserId = u.Id
     LEFT JOIN AspNetUsers u2 ON a.Id = u2.AgencyId
     WHERE a.IsActive = 1
-        AND (@Name IS NULL OR a.Name LIKE '%' + @Name + '%')
-        AND (@RegionId IS NULL OR a.RegionId = @RegionId)
-        AND (@CityId IS NULL OR a.CityId = @CityId)
-        AND (@ProgramId IS NULL OR ap.ProgramId = @ProgramId)
-        AND (@StatusId IS NULL OR a.AgencyStatusId = @StatusId)
-        AND (@UserId IS NULL OR aua.UserId = @UserId)
-        AND (@Alls = 1 OR a.IsListable = 1)
+        AND (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+        AND (@regionId IS NULL OR a.RegionId = @regionId)
+        AND (@cityId IS NULL OR a.CityId = @cityId)
+        AND (@programId IS NULL OR ap.ProgramId = @programId)
+        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+        AND (@userId IS NULL OR aua.UserId = @userId)
+        AND (@alls = 1 OR a.IsListable = 1)
         AND a.Id != 1
     GROUP BY 
         a.Id, a.Name, a.AgencyStatusId, ast.Name, a.SdrNumber, a.UieNumber, a.EinNumber,
@@ -113,12 +112,11 @@ BEGIN
         a.Latitude, a.Longitude, a.Phone, a.Email, a.ImageURL,
         a.NonProfit, a.FederalFundsDenied, a.StateFundsDenied, a.OrganizedAthleticPrograms, a.AtRiskService,
         a.ServiceTime, a.TaxExemptionStatus, a.TaxExemptionType,
-        a.RejectionJustification, a.Comment, a.AppointmentCoordinated, a.AppointmentDate,
         a.IsActive, a.IsListable, a.CreatedAt, a.UpdatedAt, a.AgencyCode,
-        aua.UserId, u.FirstName, u.MiddleName, u.FatherLastName, u.MotherLastName, u.Email,
+        aua.UserId, u.FirstName, u.FatherLastName, u.Email,
         u2.Id, u2.FirstName, u2.FatherLastName, aua.IsOwner, ap.Comments, ap.AppointmentCoordinated, ap.AppointmentDate
     ORDER BY a.Name
-    OFFSET @Skip ROWS
-    FETCH NEXT @Take ROWS ONLY;
+    OFFSET @skip ROWS
+    FETCH NEXT @take ROWS ONLY;
 END;
 GO 

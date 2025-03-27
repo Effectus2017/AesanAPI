@@ -12,4 +12,5 @@ public interface IEmailService
     Task SendDenialSponsorEmail(User user, string rejectionReason);
     Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency);
     Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency);
+    Task SendPasswordChangedEmail(DTOUser user, string newPassword);
 }

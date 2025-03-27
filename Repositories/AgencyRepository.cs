@@ -39,7 +39,7 @@ public class AgencyRepository(
         param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
         var result = await dbConnection.QueryMultipleAsync(
-            "105_GetAgencyById",
+            "106_GetAgencyById",
             param,
             commandType: CommandType.StoredProcedure
         );
@@ -81,7 +81,7 @@ public class AgencyRepository(
                 using IDbConnection dbConnection = _context.CreateConnection();
                 var param = new { agencyId, userId };
                 var result = await dbConnection.QueryMultipleAsync(
-                    "102_GetAgencyByIdAndUserId",
+                    "104_GetAgencyByIdAndUserId",
                     param,
                     commandType: CommandType.StoredProcedure
                 );
@@ -152,7 +152,7 @@ public class AgencyRepository(
 
                 // Usar un bloque using para garantizar que el GridReader se cierre correctamente
                 using (var result = await dbConnection.QueryMultipleAsync(
-                    "106_GetAgencies",
+                    "108_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure))
                 {
@@ -479,7 +479,7 @@ public class AgencyRepository(
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
-            parameters.Add("@AgencyStatusId", statusId);
+            parameters.Add("@statusId", statusId);
             parameters.Add("@rejectionJustification", rejectionJustification);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -555,16 +555,16 @@ public class AgencyRepository(
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@AgencyId", agencyId);
-            parameters.Add("@ProgramId", programId);
-            parameters.Add("@AgencyStatusId", statusId);
-            parameters.Add("@UserId", userId);
-            parameters.Add("@RejectionJustification", rejectionJustification);
-            parameters.Add("@AppointmentCoordinated", appointmentCoordinated);
-            parameters.Add("@AppointmentDate", appointmentDate);
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@programId", programId);
+            parameters.Add("@agencyStatusId", statusId);
+            parameters.Add("@userId", userId);
+            parameters.Add("@rejectionJustification", rejectionJustification);
+            parameters.Add("@appointmentCoordinated", appointmentCoordinated);
+            parameters.Add("@appointmentDate", appointmentDate);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("101_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("102_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@ReturnValue");
 
             if (rowsAffected > 0)

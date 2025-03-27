@@ -271,6 +271,11 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
         }
     }
 
+    /// <summary>
+    /// Envía un correo electrónico notificando la desasignación de una agencia a un usuario
+    /// </summary>
+    /// <param name="user">Usuario al que se le desasignó la agencia</param>
+    /// <param name="agency">Agencia desasignada</param>
     public async Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency)
     {
         var subject = "Desasignación de Agencia";
@@ -292,5 +297,46 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
 
         await SendEmailWithGmailAsync(recipientEmail, subject, body);
         _logger.LogInformation($"Correo de desasignación de agencia enviado exitosamente a {recipientEmail}");
+    }
+
+
+    /// <summary>
+    /// Envía un correo electrónico notificando el cambio de contraseña de un usuario
+    /// </summary>
+    /// <param name="user">Usuario al que se le cambió la contraseña</param>
+    /// <param name="newPassword">Nueva contraseña temporal</param>
+    public async Task SendPasswordChangedEmail(DTOUser user, string newPassword)
+    {
+        var subject = "Tu contraseña temporal ha sido generada";
+        var fullName = $"{user.FirstName} {user.FatherLastName}";
+        var plainTextContent = $"Un administrador ha generado una contraseña temporal para tu cuenta. Tu contraseña temporal es: {newPassword}. Al ingresar con esta contraseña, el sistema te guiará para crear una nueva contraseña segura.";
+
+        var htmlContent = $@"
+            <h2>Se ha generado una contraseña temporal para tu cuenta</h2>
+            <p>Estimado/a {fullName},</p>
+            <p>Un administrador ha generado una contraseña temporal para tu cuenta en el sistema.</p>
+            <p>Tu contraseña temporal es: <strong>{newPassword}</strong></p>
+            <p><strong>Importante:</strong></p>
+            <ul>
+                <li>Esta es una contraseña temporal que debes cambiar en tu próximo inicio de sesión.</li>
+                <li>Al ingresar con esta contraseña, el sistema te guiará automáticamente para crear una nueva contraseña segura.</li>
+                <li>Por razones de seguridad, no compartas esta contraseña con nadie.</li>
+            </ul>
+            <p>Si no has solicitado este cambio o tienes alguna pregunta, por favor contacta al administrador del sistema.</p>
+        ";
+
+        string recipientEmail = user.Email;
+        string recipientName = $"{user.FirstName} {user.FatherLastName}";
+
+#if DEBUG || LOCAL
+        // En modo DEBUG o LOCAL, usar la dirección de desarrollo si está configurada
+        if (!string.IsNullOrEmpty(_appSettings.Gmail.EmailToDev))
+        {
+            recipientEmail = _appSettings.Gmail.EmailToDev;
+            _logger.LogInformation($"Modo DEBUG/LOCAL: Enviando correo a {recipientEmail} en lugar de {user.Email}");
+        }
+#endif
+
+        await SendEmailWithGmailAsync(recipientEmail, subject, htmlContent);
     }
 }

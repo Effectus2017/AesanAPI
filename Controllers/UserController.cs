@@ -29,14 +29,14 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>El usuario</returns>
     [HttpGet("get-user-by-id")]
     [SwaggerOperation(Summary = "Obtiene un usuario por su ID", Description = "Devuelve un usuario basado en el ID proporcionado.")]
-    public IActionResult GetUserById([FromQuery] QueryParameters queryParameters)
+    public async Task<IActionResult> GetUserById([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
                 _logger.LogInformation("Obteniendo usuario con ID: {UserId}", queryParameters.UserId);
-                DTOUser _result = _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
+                DTOUser _result = await _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 
@@ -165,9 +165,6 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>El resultado de la operación</returns>
     [HttpPost("add-user-to-db")]
     [SwaggerOperation(Summary = "Agrega un usuario a la base de datos", Description = "Agrega un usuario a la base de datos.")]
-#if !DEBUG
-    [Authorize(Roles = "Administrator")]
-#endif
     public async Task<IActionResult> AddUserToDb([FromBody] DTOUser entity, [FromQuery] QueryParameters queryParameters)
     {
         try
@@ -200,104 +197,53 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     }
 
     /// <summary>
-    /// Actualiza modelo
+    /// Actualiza modelo de usuario
     /// </summary>
     /// <param name="entity">Modelo a actualizar</param>
     /// <response code="200">Modelo no actualizado</response>
     /// <response code="202">Modelo actualizado correctamente</response>
     /// <response code="400">Incapaz actualizar el modelo</response>
     [HttpPut("update-user-from-db")]
-#if !DEBUG
-    [Authorize(Roles = "Administrator")]
-#endif
     public async Task<IActionResult> Put([FromBody] DTOUser entity)
     {
         try
         {
-            _logger.LogInformation(
-                "Recibida solicitud de actualización para usuario. ID: {UserId}, Email: {Email}",
-                entity?.Id,
-                entity?.Email
-            );
 
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning(
-                    "Modelo inválido en actualización de usuario: {@ModelErrors}",
-                    ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                );
                 return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
 
             if (entity == null)
             {
-                _logger.LogWarning("Entidad nula recibida en actualización de usuario");
                 return BadRequest(new { Message = "La entidad no puede ser nula" });
             }
-
-            _logger.LogInformation(
-                "Iniciando proceso de actualización para usuario {UserId}",
-                entity.Id
-            );
 
             bool result = await _unitOfWork.UserRepository.Update(entity);
 
             if (result)
             {
-                _logger.LogInformation(
-                    "Usuario {UserId} actualizado exitosamente",
-                    entity.Id
-                );
-                return StatusCode(
-                    StatusCodes.Status200OK,
-                    new { Valid = true, Message = "Usuario actualizado exitosamente" }
-                );
+                _logger.LogInformation("Usuario actualizado exitosamente: {@DTOUser}", entity);
+                return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
             }
             else
             {
-                _logger.LogWarning(
-                    "No se pudo actualizar el usuario {UserId}",
-                    entity.Id
-                );
-                return StatusCode(
-                    StatusCodes.Status400BadRequest,
-                    new { Valid = false, Message = "No se pudo actualizar el usuario" }
-                );
+                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar el usuario" });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Error al actualizar usuario. Tipo: {ErrorType}, Mensaje: {ErrorMessage}",
-                ex.GetType().Name,
-                ex.Message
-            );
 
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new
-                {
-                    Valid = false,
-                    Message = "Error interno al actualizar el usuario",
-                    Detail = ex.Message
-                }
-            );
+            return StatusCode(StatusCodes.Status500InternalServerError, new { Valid = false, Message = "Error interno al actualizar el usuario", Detail = ex.Message });
         }
     }
 
-
     /// <summary>
-    /// Elimina usuario
+    /// Elimina usuario de la base de datos
     /// </summary>
     /// <param name="userId">El Id del usuario</param>
     /// <returns></returns>
     [HttpDelete("delete-user-from-db")]
-#if !DEBUG
-    [Authorize(Roles = "Administrator")]
-#endif
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -315,6 +261,138 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Para que un usuario pueda cambiar su contraseña por si mismo
+    /// </summary>
+    /// <param name="model"></param>
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                bool _result = await _unitOfWork.UserRepository.ChangePassword(queryParameters.UserId, queryParameters.Password, queryParameters.NewPassword);
+
+                return _result
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Updated successfully" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "Not updated" });
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Para que un administrador pueda resetear la contraseña de un usuario
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                bool _result = await _unitOfWork.UserRepository.ResetPassword(queryParameters.UserId);
+
+                return _result
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Updated successfully" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "Not updated" });
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Actualiza la contraseña temporal de un usuario
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con UserId y NewPassword</param>
+    /// <returns>Resultado de la operación</returns>
+    [HttpPost("update-temporal-password")]
+    [SwaggerOperation(Summary = "Actualiza la contraseña temporal de un usuario", Description = "Permite a un administrador actualizar la contraseña temporal de un usuario.")]
+    public async Task<IActionResult> UpdateTemporalPassword([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                bool _result = await _unitOfWork.UserRepository.UpdateTemporalPassword(queryParameters.Email, queryParameters.NewPassword, queryParameters.TemporaryPassword);
+
+                return _result
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Updated successfully" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "Not updated" });
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Permite a un administrador forzar una nueva contraseña para un usuario
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con UserId y NewPassword</param>
+    /// <returns>Resultado de la operación</returns>
+    [HttpPost("force-password")]
+    [SwaggerOperation(Summary = "Fuerza una nueva contraseña para un usuario", Description = "Permite a un administrador asignar una nueva contraseña a un usuario.")]
+    public async Task<IActionResult> ForcePassword([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (string.IsNullOrEmpty(queryParameters.UserId))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "UserId y NewPassword son requeridos." });
+                }
+
+                bool result = await _unitOfWork.UserRepository.ForcePassword(queryParameters.UserId);
+
+                if (result)
+                {
+                    return StatusCode(
+                        StatusCodes.Status200OK,
+                        new { Valid = true, Message = "Contraseña actualizada exitosamente" }
+                    );
+                }
+                else
+                {
+                    return StatusCode(
+                        StatusCodes.Status400BadRequest,
+                        new { Valid = false, Message = "No se pudo actualizar la contraseña" }
+                    );
+                }
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error al forzar contraseña. Tipo: {ErrorType}, Mensaje: {ErrorMessage}",
+                ex.GetType().Name,
+                ex.Message
+            );
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
         }
     }

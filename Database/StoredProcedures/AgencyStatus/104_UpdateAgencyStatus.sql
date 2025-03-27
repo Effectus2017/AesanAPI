@@ -1,9 +1,3 @@
--- =============================================
--- Author:      Development Team
--- Create date: 2025-03-07
--- Description: Script para actualizar el procedimiento almacenado que actualiza el estado de una agencia
--- =============================================
-
 -- Actualizamos el procedimiento almacenado para actualizar el estado de una agencia
 CREATE OR ALTER PROCEDURE [dbo].[104_UpdateAgencyStatus]
     @agencyId INT,

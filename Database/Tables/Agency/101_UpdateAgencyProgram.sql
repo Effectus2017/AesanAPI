@@ -11,6 +11,9 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    DECLARE @rowsAffected INT;  
+    SET @rowsAffected = 0;
+
     UPDATE AgencyProgram
     SET 
         ProgramId = @ProgramId,
@@ -25,7 +28,9 @@ BEGIN
     SET AgencyStatusId = @AgencyStatusId
     WHERE Id = @AgencyId;
 
+    SET @rowsAffected = @@ROWCOUNT;
+
     -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
+    RETURN @rowsAffected;
 END;
 GO

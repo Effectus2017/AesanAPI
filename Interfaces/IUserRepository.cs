@@ -6,17 +6,8 @@ namespace Api.Interfaces;
 public interface IUserRepository
 {
 
-    DTOUser GetUserById(string userId);
+    Task<DTOUser> GetUserById(string userId);
     dynamic GetAllUsersFromDb(int take, int skip, string name, string userId);
-    /// <summary>
-    /// Obtiene todos los usuarios usando un stored procedure.
-    /// </summary>
-    /// <param name="take">El número de usuarios a tomar</param>
-    /// <param name="skip">El número de usuarios a saltar</param>
-    /// <param name="name">El nombre del usuario a buscar</param>
-    /// <param name="agencyId">El ID de la agencia (opcional)</param>
-    /// <param name="roles">Lista de roles (opcional)</param>
-    /// <returns>Una lista de usuarios con el conteo total</returns>
     Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, List<string> roles = null);
     dynamic GetAllRolesFromDb();
     dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls);
@@ -42,13 +33,8 @@ public interface IUserRepository
     Task InsertTemporaryPassword(string userId, string temporaryPassword);
     Task<string?> GetTemporaryPassword(string userId);
     Task DeleteTemporaryPassword(string userId);
-
-    /// <summary>
-    /// Resetea la contraseña de un usuario usando la contraseña temporal
-    /// </summary>
-    /// <param name="model">Modelo con email, contraseña temporal y nueva contraseña</param>
-    /// <returns>El resultado de la operación</returns>
-    Task<IActionResult> ResetPassword(ResetPasswordRequest model);
-
+    Task<bool> ResetPassword(string userId);
+    Task<bool> UpdateTemporalPassword(string email, string newPassword, string temporaryPassword);
+    Task<bool> ForcePassword(string userId);
 
 }

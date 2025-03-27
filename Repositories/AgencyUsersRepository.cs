@@ -26,6 +26,34 @@ public class AgencyUsersRepository(
     private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
 
     /// <summary>
+    /// Obtiene la agencia asignada a un usuario
+    /// </summary>
+    /// <param name="userId">ID del usuario</param>
+    /// <returns>La agencia asignada al usuario</returns>
+    public async Task<dynamic> GetUserAssignedAgency(string userId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+
+            var agency = await db.QueryFirstOrDefaultAsync<dynamic>(
+                "102_GetUserAssignedAgency",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return agency;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la agencia asignada al usuario {UserId}", userId);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Obtiene las agencias asignadas a un usuario
     /// </summary>
     /// <param name="userId">ID del usuario</param>
@@ -90,24 +118,19 @@ public class AgencyUsersRepository(
 
             if (id > 0)
             {
-                // Obtener información del usuario usando Lazy<IUserRepository>
-                var user = _userRepository.Value.GetUserById(userId);
-
-                // Obtener información de la agencia usando Lazy<IAgencyRepository>
-                var agency = await _agencyRepository.Value.GetAgencyById(agencyId);
-
-                if (user != null && agency != null)
+                // Solo enviar correo si es una asignación de monitoreo
+                if (isMonitor)
                 {
-                    // Enviar correo electrónico de asignación
-                    await _emailService.SendAgencyAssignmentEmail(user, agency);
-                    _logger.LogInformation($"Correo de asignación enviado al usuario {userId} para la agencia {agencyId}");
-                }
-                else
-                {
-                    _logger.LogWarning($"No se pudo enviar correo de asignación. Usuario o agencia no encontrados. UserId: {userId}, AgencyId: {agencyId}");
+                    var user = await _userRepository.Value.GetUserById(userId);
+                    var agency = await _agencyRepository.Value.GetAgencyById(agencyId);
+
+                    if (user != null && agency != null)
+                    {
+                        await _emailService.SendAgencyAssignmentEmail(user, agency);
+                        _logger.LogInformation($"Correo de asignación enviado al usuario {userId} para monitorear la agencia {agencyId}");
+                    }
                 }
 
-                // Invalidar caché
                 InvalidateCache(userId);
             }
 
@@ -155,6 +178,47 @@ public class AgencyUsersRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al desasignar la agencia del usuario");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza la agencia principal a la que pertenece un usuario
+    /// </summary>
+    /// <param name="userId">ID del usuario</param>
+    /// <param name="agencyId">ID de la nueva agencia</param>
+    /// <param name="assignedBy">ID del usuario que realiza el cambio</param>
+    /// <returns>True si la actualización fue exitosa</returns>
+    public async Task<bool> UpdateUserMainAgency(string userId, int agencyId, string assignedBy)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
+            parameters.Add("@assignedBy", assignedBy, DbType.String);
+            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await db.ExecuteAsync(
+                "101_UpdateUserMainAgency", // Necesitaremos crear este SP
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            var id = parameters.Get<int>("@Id");
+
+            if (id > 0)
+            {
+                // Solo invalidar caché
+                InvalidateCache(userId);
+            }
+
+            return id > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la agencia principal del usuario");
             throw;
         }
     }

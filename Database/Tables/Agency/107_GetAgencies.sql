@@ -1,5 +1,5 @@
 -- Procedimiento para obtener todas las agencias con las nuevas propiedades
-CREATE OR ALTER PROCEDURE [106_GetAgencies]
+CREATE OR ALTER PROCEDURE [107_GetAgencies]
     @take INT = 10,
     @skip INT = 0,
     @name NVARCHAR(255) = NULL,
@@ -45,9 +45,9 @@ BEGIN
         a.StateFundsDenied,
         a.OrganizedAthleticPrograms,
         a.AtRiskService,
-        a.ServiceTime,                -- Nueva propiedad
-        a.TaxExemptionStatus,         -- Nueva propiedad
-        a.TaxExemptionType,           -- Nueva propiedad
+        a.ServiceTime,
+        a.TaxExemptionStatus,
+        a.TaxExemptionType,
 
         a.IsActive,
         a.IsListable,
@@ -99,11 +99,11 @@ BEGIN
         a.NonProfit, a.FederalFundsDenied, a.StateFundsDenied, a.OrganizedAthleticPrograms, a.AtRiskService,
         a.ServiceTime, a.TaxExemptionStatus, a.TaxExemptionType,
         a.IsActive, a.IsListable, a.CreatedAt, a.UpdatedAt, a.AgencyCode,
-        aua.UserId, u.FirstName, u.MiddleName, u.FatherLastName, u.MotherLastName, u.Email,
+        aua.UserId, u.FirstName, u.FatherLastName, u.Email,
         u2.Id, u2.FirstName, u2.FatherLastName, aua.IsOwner, ap.Comments, ap.AppointmentCoordinated, ap.AppointmentDate
     ORDER BY a.Name
-    OFFSET @Skip ROWS
-    FETCH NEXT @Take ROWS ONLY;
+    OFFSET @skip ROWS
+    FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(DISTINCT a.Id)
     FROM Agency a

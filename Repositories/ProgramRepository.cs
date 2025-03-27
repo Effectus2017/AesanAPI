@@ -136,7 +136,7 @@ public class ProgramRepository(
                 var parameters = new { take, skip, agencyId, programId };
 
                 var result = await dbConnection.QueryMultipleAsync(
-                    "100_GetAllProgramInscriptions",
+                    "101_GetAllProgramInscriptions",
                     parameters,
                     commandType: CommandType.StoredProcedure
                 );

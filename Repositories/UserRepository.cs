@@ -39,17 +39,41 @@ public class UserRepository(UserManager<User> userManager,
     /// </summary>
     /// <param name="id">El ID del usuario</param>
     /// <returns>El usuario</returns>
-    public DTOUser GetUserById(string userId)
+    public async Task<DTOUser> GetUserById(string userId)
     {
         try
         {
-            var _result = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).FirstOrDefault(x => x.Id == userId);
-            var _complete = _mapper.Map<User, DTOUser>(_result);
-            return _complete;
+            var user = _userManager.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefault(x => x.Id == userId);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            var dtoUser = _mapper.Map<User, DTOUser>(user);
+
+            // Obtener la agencia asignada al usuario
+            var agency = await _agencyUsersRepository.GetUserAssignedAgency(userId);
+            if (agency != null)
+            {
+                dtoUser.AgencyId = agency.Id;
+                dtoUser.AgencyName = agency.Name;
+            }
+
+            return dtoUser;
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            _logger.LogError(
+                ex,
+                "Error al obtener usuario. UserId: {UserId}, Error: {ErrorMessage}",
+                userId,
+                ex.Message
+            );
+            throw new Exception($"Error al obtener el usuario: {ex.Message}", ex);
         }
     }
 
@@ -77,7 +101,7 @@ public class UserRepository(UserManager<User> userManager,
         }
     }
 
-    // <summary>
+    /// <summary>
     /// Obtiene todos los usuarios de la base de datos usando un Stored Procedure
     /// </summary>
     /// <param name="take">El número de usuarios a obtener</param>
@@ -102,7 +126,7 @@ public class UserRepository(UserManager<User> userManager,
                 parameters.Add("@roles", string.Join(",", roles), DbType.String);
             }
 
-            var result = await db.QueryMultipleAsync("101_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryMultipleAsync("108_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
             var usersFromDb = await result.ReadAsync<DTOUserDB>();
             var count = await result.ReadSingleAsync<int>();
 
@@ -157,7 +181,6 @@ public class UserRepository(UserManager<User> userManager,
             throw new Exception(ex.Message);
         }
     }
-
 
     /// <summary>
     /// Obtiene todos los programas de la base de datos
@@ -226,13 +249,15 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-#if !DEBUG
-
             // Si la contraseña temporal está activa, se debe cambiar
             if (_user.IsTemporalPasswordActived)
             {
                 return new ConflictObjectResult(new { Message = "La contraseña temporal es válida." });
             }
+
+#if !DEBUG
+
+            
 
             // Si el usuario está deshabilitado, se debe devolver un error
             if (!_user.IsActive)
@@ -267,7 +292,7 @@ public class UserRepository(UserManager<User> userManager,
             _logger.LogInformation("Obteniendo la agencia del usuario");
 
             // Obtener la agencia del usuario
-            var agency = _user.AgencyId != null && _user.AgencyId != 0 ? await _agencyRepository.GetAgencyById(_user.AgencyId.Value) : null;
+            var agency = await _agencyUsersRepository.GetUserAssignedAgency(_user.Id);
             var userPrograms = await _agencyRepository.GetAgencyProgramsByUserId(_user.Id);
 
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -296,7 +321,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="user">El usuario</param>
     /// <param name="roles">Los roles del usuario</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, DTOAgency agency, List<DTOProgram> userPrograms)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms)
     {
         try
         {
@@ -325,8 +350,9 @@ public class UserRepository(UserManager<User> userManager,
             claims.AddClaim(new Claim("email", user.Email ?? ""));
             claims.AddClaim(new Claim("agency", agency.Name ?? ""));
             claims.AddClaim(new Claim("agencyId", agency.Id.ToString()));
-            claims.AddClaim(new Claim("programs", string.Join(",", agency.Programs.Select(p => p.Name))));
-            claims.AddClaim(new Claim("programIds", string.Join(",", agency.Programs.Select(p => p.Id.ToString()))));
+
+            claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
+            claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
 
             return claims;
         }
@@ -498,7 +524,6 @@ public class UserRepository(UserManager<User> userManager,
             // Asignar la agencia al usuario
             await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, false, false);
 
-
             // Enviar correo con la contraseña temporal
             //await InsertTemporaryPassword(user.Id, model.Password);
             //await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
@@ -521,29 +546,12 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            _logger.LogInformation(
-                "Iniciando actualización de usuario. UserId: {UserId}, Email: {Email}",
-                entity.Id,
-                entity.Email
-            );
-
             var user = await _userManager.FindByIdAsync(entity.Id);
 
             if (user == null)
             {
-                _logger.LogWarning(
-                    "Usuario no encontrado durante la actualización. UserId: {UserId}",
-                    entity.Id
-                );
                 return false;
             }
-
-            _logger.LogDebug(
-                "Usuario encontrado. Estado actual - Email: {CurrentEmail}, FirstName: {CurrentFirstName}, IsActive: {CurrentIsActive}",
-                user.Email,
-                user.FirstName,
-                user.IsActive
-            );
 
             // Registrar los cambios que se van a realizar
             var changes = new Dictionary<string, (string Old, string New)>();
@@ -555,15 +563,6 @@ public class UserRepository(UserManager<User> userManager,
             if (user.AdministrationTitle != entity.AdministrationTitle) changes.Add("AdministrationTitle", (user.AdministrationTitle, entity.AdministrationTitle));
             if (user.PhoneNumber != entity.PhoneNumber) changes.Add("PhoneNumber", (user.PhoneNumber, entity.PhoneNumber));
             if (user.ImageURL != entity.ImageURL) changes.Add("ImageURL", (user.ImageURL, entity.ImageURL));
-
-            if (changes.Any())
-            {
-                _logger.LogInformation(
-                    "Cambios detectados para el usuario {UserId}: {@Changes}",
-                    entity.Id,
-                    changes
-                );
-            }
 
             // Actualizar propiedades
             user.Email = entity.Email;
@@ -582,18 +581,8 @@ public class UserRepository(UserManager<User> userManager,
 
                 if (!resultUser.Succeeded)
                 {
-                    _logger.LogError(
-                        "Error al actualizar usuario {UserId}. Errores: {@Errors}",
-                        entity.Id,
-                        resultUser.Errors
-                    );
                     return false;
                 }
-
-                _logger.LogInformation(
-                    "Usuario {UserId} actualizado exitosamente",
-                    entity.Id
-                );
 
                 if (entity.Roles?.Count > 0)
                 {
@@ -603,12 +592,6 @@ public class UserRepository(UserManager<User> userManager,
 
                     if (currentRole != newRole)
                     {
-                        _logger.LogInformation(
-                            "Actualizando rol del usuario {UserId} de {OldRole} a {NewRole}",
-                            entity.Id,
-                            currentRole,
-                            newRole
-                        );
 
                         var isInRole = await _userManager.IsInRoleAsync(user, newRole);
 
@@ -617,36 +600,28 @@ public class UserRepository(UserManager<User> userManager,
                             if (currentRole != null)
                             {
                                 var resultDelete = await _userManager.RemoveFromRoleAsync(user, currentRole);
+
                                 if (!resultDelete.Succeeded)
                                 {
-                                    _logger.LogError(
-                                        "Error al eliminar rol {OldRole} del usuario {UserId}. Errores: {@Errors}",
-                                        currentRole,
-                                        entity.Id,
-                                        resultDelete.Errors
-                                    );
                                     return false;
                                 }
                             }
 
                             var resultAdd = await _userManager.AddToRoleAsync(user, newRole);
+
                             if (!resultAdd.Succeeded)
                             {
-                                _logger.LogError(
-                                    "Error al agregar rol {NewRole} al usuario {UserId}. Errores: {@Errors}",
-                                    newRole,
-                                    entity.Id,
-                                    resultAdd.Errors
-                                );
                                 return false;
                             }
 
-                            _logger.LogInformation(
-                                "Rol actualizado exitosamente para el usuario {UserId}",
-                                entity.Id
-                            );
                         }
                     }
+                }
+
+                if (entity.AgencyId != null)
+                {
+                    // Usar el nuevo método para actualizar la agencia principal
+                    await _agencyUsersRepository.UpdateUserMainAgency(user.Id, entity.AgencyId.Value, user.Id);
                 }
 
                 return true;
@@ -742,7 +717,7 @@ public class UserRepository(UserManager<User> userManager,
     /// ------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Cambia la contraseña de un usuario
+    /// Para que un usuario pueda cambiar su contraseña
     /// </summary>
     /// <param name="userId">El ID del usuario</param>
     /// <param name="model">El modelo que contiene la nueva contraseña</param>
@@ -771,6 +746,131 @@ public class UserRepository(UserManager<User> userManager,
         {
             _logger.LogError(ex, "Error al cambiar la contraseña");
             return new BadRequestObjectResult(new { Message = "Error al cambiar la contraseña", Error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Resetea la contraseña de un usuario usando la contraseña temporal
+    /// </summary>
+    /// <param name="model">Modelo con email, contraseña temporal y nueva contraseña</param>
+    /// <returns>El resultado de la operación</returns>
+    public async Task<bool> ResetPassword(string userId)
+    {
+        try
+        {
+            // Buscar el usuario por email
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+#if !DEBUG
+            // Generar una contraseña temporal
+            var temporaryPassword = Utilities.GenerateTemporaryPassword();
+#else
+            // Usar la contraseña temporal 9c272156 si estamos en debug
+            var temporaryPassword = "9c272156";
+#endif
+
+            // Remover la contraseña actual
+            var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+
+            // Establecer la nueva contraseña
+            var addPasswordResult = await _userManager.AddPasswordAsync(user, temporaryPassword);
+
+            if (!addPasswordResult.Succeeded)
+            {
+                return false;
+            }
+
+            // Actualizar el estado de la contraseña temporal
+            user.IsTemporalPasswordActived = true;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+
+            if (!updateResult.Succeeded)
+            {
+                return false;
+            }
+
+            // Enviar correo con la contraseña temporal
+            await InsertTemporaryPassword(user.Id, temporaryPassword);
+            await _emailService.SendTemporaryPasswordEmail(user.Email, temporaryPassword);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al resetear la contraseña");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza la contraseña temporal de un usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    /// <param name="newPassword">La nueva contraseña</param>
+    /// <returns>True si se actualiza correctamente, false en caso contrario</returns>
+    public async Task<bool> UpdateTemporalPassword(string email, string newPassword, string temporaryPassword)
+    {
+        try
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            // Verificar si la contraseña temporal está activa
+            if (!user.IsTemporalPasswordActived)
+            {
+                return false;
+            }
+
+            // comparar la contraseña temporal es valida 
+            var temporaryPasswordResult = await _userManager.CheckPasswordAsync(user, temporaryPassword);
+
+            if (!temporaryPasswordResult)
+            {
+                return false;
+            }
+
+            // Remover la contraseña actual
+            var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+
+            if (!removePasswordResult.Succeeded)
+            {
+                return false;
+            }
+
+            // Establecer la nueva contraseña
+            var addPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
+
+            if (!addPasswordResult.Succeeded)
+            {
+                return false;
+            }
+
+            user.IsTemporalPasswordActived = false;
+            user.UpdatedAt = DateTime.Now;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la contraseña temporal");
+            return false;
         }
     }
 
@@ -818,7 +918,7 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             user.ImageURL = imageUrl;
-            user.UpdatedAt = DateTimeOffset.Now;
+            user.UpdatedAt = DateTime.Now;
 
             var result = await _userManager.UpdateAsync(user);
 
@@ -853,7 +953,7 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             user.IsActive = false; // Deshabilitar el usuario
-            user.UpdatedAt = DateTimeOffset.Now;
+            user.UpdatedAt = DateTime.Now;
             var result = await _userManager.UpdateAsync(user);
 
             if (!result.Succeeded)
@@ -871,7 +971,7 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
-    /// Elimina un usuario y sus datos asociados por su correo electrónico
+    /// Elimina un usuario y todos sus datos relacionados por correo electrónico
     /// </summary>
     /// <param name="email">El correo electrónico del usuario</param>
     /// <returns>El resultado de la operación</returns>
@@ -888,14 +988,19 @@ public class UserRepository(UserManager<User> userManager,
 
             // Eliminar el usuario de su rol de Administrador
             await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
+
             // Eliminar la contraseña temporal del usuario
             await DeleteTemporaryPassword(user.Id);
-            // Eliminar la agencia asociada al usuario
-            if (user.AgencyId != null)
+
+            // Obtener la agencia principal del usuario
+            var agency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
+
+            // Si el usuario tiene una agencia asignada, eliminarla
+            if (agency != null)
             {
-                var agency = user.AgencyId.Value;
-                await _agencyRepository.DeleteAgency(agency);
+                await _agencyRepository.DeleteAgency(agency.Id);
             }
+
             // Finalmente, eliminar el usuario
             await _userManager.DeleteAsync(user);
 
@@ -975,68 +1080,65 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
-    /// Resetea la contraseña de un usuario usando la contraseña temporal
+    /// Fuerza una nueva contraseña para un usuario y envía un correo con las credenciales
     /// </summary>
-    /// <param name="model">Modelo con email, contraseña temporal y nueva contraseña</param>
-    /// <returns>El resultado de la operación</returns>
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequest model)
+    /// <param name="userId">ID del usuario</param>
+    /// <param name="newPassword">Nueva contraseña</param>
+    /// <returns>True si la operación fue exitosa</returns>
+    public async Task<bool> ForcePassword(string userId)
     {
         try
         {
-            // Buscar el usuario por email
-            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            var user = await _userManager.FindByIdAsync(userId);
 
             if (user == null)
             {
-                return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
+                return false;
             }
 
-            // Verificar si el usuario tiene una contraseña temporal activa
-            if (!user.IsTemporalPasswordActived)
-            {
-                return new BadRequestObjectResult(new { Message = "No hay una contraseña temporal activa para este usuario" });
-            }
-
-            // Obtener la contraseña temporal almacenada
-            var storedTempPassword = await GetTemporaryPassword(user.Id);
-
-            if (storedTempPassword == null || storedTempPassword != model.TemporaryPassword)
-            {
-                return new BadRequestObjectResult(new { Message = "La contraseña temporal es inválida" });
-            }
+            // En producción, usar la contraseña proporcionada
+            var password = Utilities.GenerateTemporaryPassword();
 
             // Remover la contraseña actual
             var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+
             if (!removePasswordResult.Succeeded)
             {
-                return new BadRequestObjectResult(removePasswordResult.Errors);
+                return false;
             }
 
             // Establecer la nueva contraseña
-            var addPasswordResult = await _userManager.AddPasswordAsync(user, model.NewPassword);
+            var addPasswordResult = await _userManager.AddPasswordAsync(user, password);
+
             if (!addPasswordResult.Succeeded)
             {
-                return new BadRequestObjectResult(addPasswordResult.Errors);
+                return false;
             }
 
-            // Actualizar el estado de la contraseña temporal
-            user.IsTemporalPasswordActived = false;
+            // Actualizar el estado del usuario
+            user.IsTemporalPasswordActived = true;
+            user.UpdatedAt = DateTime.Now;
+
             var updateResult = await _userManager.UpdateAsync(user);
+
             if (!updateResult.Succeeded)
             {
-                return new BadRequestObjectResult(updateResult.Errors);
+                return false;
             }
 
-            // Eliminar la contraseña temporal de la base de datos
-            await DeleteTemporaryPassword(user.Id);
+            var dtoUser = _mapper.Map<DTOUser>(user);
+            await _emailService.SendPasswordChangedEmail(dtoUser, password);
 
-            return new OkObjectResult(new { Message = "Contraseña actualizada exitosamente" });
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al resetear la contraseña");
-            return new BadRequestObjectResult(new { Message = "Error al resetear la contraseña", Error = ex.Message });
+            _logger.LogError(ex, "Error al forzar contraseña para usuario {UserId}", userId);
+
+            throw;
         }
     }
+
 }
 

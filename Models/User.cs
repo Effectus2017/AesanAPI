@@ -4,7 +4,6 @@ namespace Api.Models;
 
 public class User : IdentityUser
 {
-    public int? AgencyId { get; set; } = null;
     public string? FirstName { get; set; } = "";
     public string? MiddleName { get; set; } = "";
     public string? FatherLastName { get; set; } = "";
@@ -13,7 +12,7 @@ public class User : IdentityUser
     public string? ImageURL { get; set; } = "";
     public bool IsActive { get; set; } = true;
     public bool IsTemporalPasswordActived { get; set; } = true;
-    public DateTimeOffset? UpdatedAt { get; set; } = null;
+    public DateTime? UpdatedAt { get; set; } = null;
     public virtual ICollection<UserRole> UserRoles { get; set; } = [];
 }
 
