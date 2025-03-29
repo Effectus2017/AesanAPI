@@ -142,6 +142,8 @@ public class UserRepository(UserManager<User> userManager,
                 PhoneNumber = u.PhoneNumber,
                 ImageURL = u.ImageURL,
                 IsActive = u.IsActive,
+                IsTemporalPasswordActived = u.IsTemporalPasswordActived,
+                EmailConfirmed = u.EmailConfirmed,
                 Roles = [u.RoleName]
             }).ToList();
 
@@ -257,7 +259,7 @@ public class UserRepository(UserManager<User> userManager,
 
 #if !DEBUG
 
-            
+
 
             // Si el usuario está deshabilitado, se debe devolver un error
             if (!_user.IsActive)
@@ -525,8 +527,8 @@ public class UserRepository(UserManager<User> userManager,
             await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, false, false);
 
             // Enviar correo con la contraseña temporal
-            //await InsertTemporaryPassword(user.Id, model.Password);
-            //await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
+            await InsertTemporaryPassword(user.Id, model.Password);
+            await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }
@@ -1136,6 +1138,175 @@ public class UserRepository(UserManager<User> userManager,
         {
             _logger.LogError(ex, "Error al forzar contraseña para usuario {UserId}", userId);
 
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Genera un token para restablecer la contraseña y envía un correo electrónico
+    /// </summary>
+    public async Task<bool> GeneratePasswordResetTokenAndSendEmail(string email)
+    {
+        try
+        {
+            // Generar un token seguro
+            var token = await _userManager.GeneratePasswordResetTokenAsync(await _userManager.FindByEmailAsync(email));
+            var expirationDate = DateTime.UtcNow.AddMinutes(30); // Token válido por 30 minutos
+
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@email", email, DbType.String);
+            parameters.Add("@token", token, DbType.String);
+            parameters.Add("@expirationDate", expirationDate, DbType.DateTime);
+
+            var result = await connection.ExecuteScalarAsync<int>(
+                "109_GeneratePasswordResetToken",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            switch (result)
+            {
+                case 0: // Éxito
+                    var user = await _userManager.FindByEmailAsync(email);
+                    if (user != null)
+                    {
+                        var webUrl = Utilities.GetUrl(_appSettings);
+                        var resetLink = $"{webUrl}reset-password?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+                        await _emailService.SendPasswordResetEmail(email, resetLink);
+                        _logger.LogInformation("Email de restablecimiento enviado a {Email}", email);
+                        return true;
+                    }
+                    break;
+                case -1:
+                    _logger.LogWarning("Email inválido: {Email}", email);
+                    break;
+                case -2:
+                    _logger.LogError("Token inválido generado para {Email}", email);
+                    break;
+                case -3:
+                    _logger.LogError("Fecha de expiración inválida para {Email}", email);
+                    break;
+                case -4:
+                    _logger.LogWarning("Usuario no encontrado o inactivo: {Email}", email);
+                    break;
+                case -5:
+                    _logger.LogWarning("Demasiados intentos de restablecimiento para {Email}", email);
+                    break;
+                case -99:
+                    _logger.LogError("Error general al generar token para {Email}", email);
+                    break;
+                default:
+                    _logger.LogError("Error desconocido al generar token para {Email}: {Result}", email, result);
+                    break;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al generar token de restablecimiento para {Email}", email);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Valida un token de restablecimiento de contraseña
+    /// </summary>
+    public async Task<bool> ValidatePasswordResetToken(string email, string token)
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@email", email, DbType.String);
+            parameters.Add("@token", token, DbType.String);
+
+            var result = await connection.ExecuteScalarAsync<int>(
+                "110_ValidatePasswordResetToken",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            switch (result)
+            {
+                case 0: // Éxito
+                    _logger.LogInformation("Token validado exitosamente para {Email}", email);
+                    return true;
+                case -1:
+                    _logger.LogWarning("Email inválido: {Email}", email);
+                    break;
+                case -2:
+                    _logger.LogWarning("Token inválido para {Email}", email);
+                    break;
+                case -3:
+                    _logger.LogWarning("Usuario no encontrado o inactivo: {Email}", email);
+                    break;
+                case -4:
+                    _logger.LogWarning("Token no encontrado para {Email}", email);
+                    break;
+                case -5:
+                    _logger.LogWarning("Token expirado para {Email}", email);
+                    break;
+                case -99:
+                    _logger.LogError("Error general al validar token para {Email}", email);
+                    break;
+                default:
+                    _logger.LogError("Error desconocido al validar token para {Email}: {Result}", email, result);
+                    break;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al validar token de restablecimiento para {Email}", email);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Restablece la contraseña usando un token válido
+    /// </summary>
+    public async Task<bool> ResetPasswordWithToken(string email, string token, string newPassword)
+    {
+        try
+        {
+            // Validar el token primero
+            if (!await ValidatePasswordResetToken(email, token))
+            {
+                return false;
+            }
+
+            // Buscar el usuario
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return false;
+            }
+
+            // Generar token de reset de Identity
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // Cambiar la contraseña
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+
+            if (result.Succeeded)
+            {
+                // Desactivar contraseña temporal si estaba activa
+                if (user.IsTemporalPasswordActived)
+                {
+                    user.IsTemporalPasswordActived = false;
+                    await _userManager.UpdateAsync(user);
+                }
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al restablecer contraseña para {Email}", email);
             throw;
         }
     }

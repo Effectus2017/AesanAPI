@@ -18,8 +18,9 @@ public class QueryParameters
     public string? RejectionJustification { get; set; } // Justification for rejection
     public string? UserId { get; set; } // ID del usuario
     public List<string>? Roles { get; set; } // Lista de roles
-    public string? Password { get; set; } // Contraseña
+    public string? Password { get; set; } // Contraseña actual
     public string? NewPassword { get; set; } // Nueva contraseña
     public string? TemporaryPassword { get; set; } // Contraseña temporal
     public string? Email { get; set; } // Email
+    public string? Token { get; set; } // Token para restablecimiento de contraseña
 }

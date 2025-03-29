@@ -37,7 +37,7 @@ public static class Utilities
     {
         string scheame = request.Scheme;
         string host = request.Host.Value;
-        string fullURL = string.Format($"{scheame}//{host}");
+        string fullURL = string.Format($"{scheame}://{host}");
 
         return fullURL;
     }

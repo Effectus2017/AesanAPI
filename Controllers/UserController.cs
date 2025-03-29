@@ -253,11 +253,11 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
                 bool _result = await _unitOfWork.UserRepository.Delete(queryParameters.UserId);
 
                 return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Delete successfully" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "Not deleted" });
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Eliminado correctamente" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "No se pudo eliminar el usuario" });
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "UserId is required" });
+            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "El UserId es requerido" });
         }
         catch (Exception ex)
         {
@@ -279,8 +279,8 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
                 bool _result = await _unitOfWork.UserRepository.ChangePassword(queryParameters.UserId, queryParameters.Password, queryParameters.NewPassword);
 
                 return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Updated successfully" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "Not updated" });
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
             }
 
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
@@ -307,8 +307,8 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
                 bool _result = await _unitOfWork.UserRepository.ResetPassword(queryParameters.UserId);
 
                 return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Updated successfully" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "Not updated" });
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
             }
 
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
@@ -335,8 +335,8 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
                 bool _result = await _unitOfWork.UserRepository.UpdateTemporalPassword(queryParameters.Email, queryParameters.NewPassword, queryParameters.TemporaryPassword);
 
                 return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Updated successfully" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "Not updated" });
+                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
             }
 
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
@@ -369,17 +369,11 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
 
                 if (result)
                 {
-                    return StatusCode(
-                        StatusCodes.Status200OK,
-                        new { Valid = true, Message = "Contraseña actualizada exitosamente" }
-                    );
+                    return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Contraseña actualizada exitosamente" });
                 }
                 else
                 {
-                    return StatusCode(
-                        StatusCodes.Status400BadRequest,
-                        new { Valid = false, Message = "No se pudo actualizar la contraseña" }
-                    );
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar la contraseña" });
                 }
             }
 
@@ -387,13 +381,132 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Error al forzar contraseña. Tipo: {ErrorType}, Mensaje: {ErrorMessage}",
-                ex.GetType().Name,
-                ex.Message
-            );
+            _logger.LogError(ex, "Error al forzar contraseña. Tipo: {ErrorType}, Mensaje: {ErrorMessage}", ex.GetType().Name, ex.Message);
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Inicia el proceso de restablecimiento de contraseña
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el email del usuario</param>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Inicia el proceso de restablecimiento de contraseña", Description = "Envía un correo electrónico con un enlace para restablecer la contraseña.")]
+    public async Task<IActionResult> ForgotPassword([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(queryParameters.Email))
+            {
+                return BadRequest(new { Message = "El correo electrónico es requerido." });
+            }
+
+            // Por seguridad, siempre devolver éxito aunque el email no exista
+            await _unitOfWork.UserRepository.GeneratePasswordResetTokenAndSendEmail(queryParameters.Email);
+
+            return Ok(new { Message = "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en el proceso de contraseña olvidada para {Email}", queryParameters.Email);
+            return StatusCode(500, new { Message = "Error al procesar la solicitud." });
+        }
+    }
+
+    /// <summary>
+    /// Valida un token de restablecimiento de contraseña
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el email y token</param>
+    [HttpPost("validate-reset-token")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Valida un token de restablecimiento de contraseña", Description = "Verifica si el token de restablecimiento es válido.")]
+    public async Task<IActionResult> ValidateResetToken([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(queryParameters.Email) || string.IsNullOrEmpty(queryParameters.Token))
+            {
+                return BadRequest(new { Message = "El correo electrónico y el token son requeridos." });
+            }
+
+            var isValid = await _unitOfWork.UserRepository.ValidatePasswordResetToken(queryParameters.Email, queryParameters.Token);
+
+            if (!isValid)
+            {
+                return BadRequest(new { Message = "El token no es válido o ha expirado." });
+            }
+
+            return Ok(new { Valid = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al validar token de restablecimiento para {Email}", queryParameters.Email);
+            return StatusCode(500, new { Message = "Error al validar el token." });
+        }
+    }
+
+    /// <summary>
+    /// Restablece la contraseña usando un token válido
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el email, token y nueva contraseña</param>
+    [HttpPost("reset-password-with-token")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Restablece la contraseña usando un token", Description = "Cambia la contraseña del usuario usando un token válido.")]
+    public async Task<IActionResult> ResetPasswordWithToken([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(queryParameters.Email) ||
+                string.IsNullOrEmpty(queryParameters.Token) ||
+                string.IsNullOrEmpty(queryParameters.NewPassword))
+            {
+                return BadRequest(new { Message = "Todos los campos son requeridos." });
+            }
+
+            var result = await _unitOfWork.UserRepository.ResetPasswordWithToken(
+                queryParameters.Email,
+                queryParameters.Token,
+                queryParameters.NewPassword
+            );
+
+            if (!result)
+            {
+                return BadRequest(new { Message = "No se pudo restablecer la contraseña. El token puede ser inválido o haber expirado." });
+            }
+
+            return Ok(new { Message = "Contraseña restablecida exitosamente." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al restablecer contraseña con token para {Email}", queryParameters.Email);
+            return StatusCode(500, new { Message = "Error al restablecer la contraseña." });
+        }
+    }
+
+    [HttpPut("update-user-avatar")]
+    [SwaggerOperation(Summary = "Actualiza el avatar del usuario", Description = "Actualiza la imagen de perfil del usuario.")]
+    public async Task<IActionResult> UpdateUserAvatar([FromBody] UserAvatarRequest request)
+    {
+        try
+        {
+            // Validar parámetros requeridos
+            if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.ImageUrl))
+            {
+                _logger.LogWarning("ID de usuario o URL de imagen no proporcionados");
+                return BadRequest(new { message = "ID de usuario y URL de imagen son requeridos" });
+            }
+
+            // Llamar al método del repositorio para actualizar el avatar
+            var result = await _unitOfWork.UserRepository.UpdateUserAvatar(request.UserId, request.ImageUrl);
+
+            // Devolver el resultado
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el avatar del usuario");
+            return StatusCode(500, new { message = "Error al actualizar el avatar del usuario", error = ex.Message });
         }
     }
 

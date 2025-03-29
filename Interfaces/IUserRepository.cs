@@ -37,4 +37,11 @@ public interface IUserRepository
     Task<bool> UpdateTemporalPassword(string email, string newPassword, string temporaryPassword);
     Task<bool> ForcePassword(string userId);
 
+    /// ------------------------------------------------------------------------------------------------
+    /// Métodos para generar y validar tokens de restablecimiento de contraseña
+    /// ------------------------------------------------------------------------------------------------
+
+    Task<bool> GeneratePasswordResetTokenAndSendEmail(string email);
+    Task<bool> ValidatePasswordResetToken(string email, string token);
+    Task<bool> ResetPasswordWithToken(string email, string token, string newPassword);
 }

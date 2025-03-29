@@ -13,4 +13,5 @@ public interface IEmailService
     Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency);
     Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency);
     Task SendPasswordChangedEmail(DTOUser user, string newPassword);
+    Task SendPasswordResetEmail(string email, string token);
 }

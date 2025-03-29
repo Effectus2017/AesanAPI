@@ -34,6 +34,8 @@ BEGIN
            u.PhoneNumber,
            u.ImageURL,
            u.IsActive,
+           u.IsTemporalPasswordActived,
+           u.EmailConfirmed,
            ur.RoleName
     FROM AspNetUsers u
     LEFT JOIN UserRoles ur ON u.Id = ur.UserId

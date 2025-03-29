@@ -339,4 +339,42 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
 
         await SendEmailWithGmailAsync(recipientEmail, subject, htmlContent);
     }
+
+    public async Task SendPasswordResetEmail(string email, string resetLink)
+    {
+        try
+        {
+            var subject = "Restablecimiento de Contraseña - AESAN";
+            var htmlContent = $@"
+                <h2>Solicitud de Restablecimiento de Contraseña</h2>
+                <p>Has solicitado restablecer tu contraseña en el sistema AESAN.</p>
+                <p>Para continuar con el proceso, haz clic en el siguiente enlace:</p>
+                <p><a href='{resetLink}'>Restablecer Contraseña</a></p>
+                <p><strong>Importante:</strong></p>
+                <ul>
+                    <li>Este enlace expirará en 30 minutos por razones de seguridad.</li>
+                    <li>Si no has solicitado este cambio, puedes ignorar este correo.</li>
+                    <li>Tu contraseña actual seguirá siendo válida hasta que completes el proceso de restablecimiento.</li>
+                </ul>
+                <p>Si tienes alguna pregunta, por favor contacta al administrador del sistema.</p>
+            ";
+
+#if DEBUG || LOCAL
+            // En modo DEBUG o LOCAL, usar la dirección de desarrollo si está configurada
+            if (!string.IsNullOrEmpty(_appSettings.Gmail.EmailToDev))
+            {
+                email = _appSettings.Gmail.EmailToDev;
+                _logger.LogInformation($"Modo DEBUG/LOCAL: Enviando correo a {email}");
+            }
+#endif
+
+            await SendEmailWithGmailAsync(email, subject, htmlContent);
+            _logger.LogInformation("Correo de restablecimiento de contraseña enviado a: {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al enviar correo de restablecimiento de contraseña a: {Email}", email);
+            throw;
+        }
+    }
 }

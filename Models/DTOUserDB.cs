@@ -12,6 +12,8 @@ public class DTOUserDB
     public string PhoneNumber { get; set; } = string.Empty;
     public string ImageURL { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public bool IsTemporalPasswordActived { get; set; }
+    public bool EmailConfirmed { get; set; }
     public int? AgencyId { get; set; }
     public string RoleName { get; set; } = string.Empty;
 }

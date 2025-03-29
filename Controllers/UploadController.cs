@@ -97,8 +97,8 @@ namespace Api.Controllers
                     await file.CopyToAsync(fileStream).ConfigureAwait(false);
                 }
 
-                string url = Utilities.GetUrl(_appSettings);
-                string urlPath = url + Path.Combine(Path.Combine($"uploads/", folder), fullFileName);
+                string url = Utilities.GetUrl(Request);
+                string urlPath = url + "/" + Path.Combine(Path.Combine($"uploads/", folder), fullFileName);
                 return new { file = fullFileName, urlPath };
             }
             catch (Exception ex)
