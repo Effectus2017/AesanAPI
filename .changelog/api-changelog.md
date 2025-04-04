@@ -869,3 +869,116 @@ Estos cambios representan una significativa reestructuración del sistema, mejor
 - Optimización de registro de usuarios
 - Mejora en el manejo de respuestas HTTP
 - Actualización de documentación Swagger
+
+## [2025-02-19] hasta [2025-03-28]
+
+### Mejoras en Gestión de Usuarios y Sistema de Agencias
+
+### Controladores y Endpoints
+
+- **UserController**:
+
+  - Implementado nuevo endpoint `AddUserToDb` para agregar usuarios a la base de datos
+  - Mejoradas las validaciones de datos de usuario
+  - Optimizado el manejo de roles y permisos
+
+- **UploadController**:
+
+  - Mejoras en el manejo de subida de archivos
+  - Implementación de validaciones más robustas
+
+- **AgencyController**:
+
+  - Optimización en la obtención de datos de agencias
+  - Mejoras en la asignación de usuarios a agencias
+
+- **AgencyUserAssignmentController**:
+  - Nuevo controlador para la gestión de asignaciones de usuarios a agencias
+  - Implementación de endpoints para asignar y desasignar agencias a usuarios
+
+### Base de Datos
+
+#### Procedimientos Almacenados
+
+- **Nuevos Procedimientos**:
+
+  - `109_GeneratePasswordResetToken`: Generación de tokens para restablecimiento de contraseñas
+  - `110_ValidatePasswordResetToken`: Validación de tokens para restablecimiento de contraseñas
+  - `101_GetAllProgramInscriptions`: Obtiene todas las inscripciones a programas
+  - `103_GetAgencyByIdAndUserId`: Obtiene una agencia por ID y usuario
+  - `104_GetAgencyByIdAndUserId`: Versión mejorada del procedimiento anterior
+
+- **Actualizaciones**:
+  - `108_GetAllUsersFromDb`: Mejora en la obtención de usuarios de la base de datos
+  - `101_AssignAgencyToUser`: Optimización en la asignación de agencias a usuarios
+  - Renombrados varios procedimientos almacenados para mejorar la organización
+
+### Interfaces y Repositorios
+
+- **IUserRepository**:
+
+  - Actualizado el método `RegisterUser` para usar DTO en lugar de entidad User
+  - Añadidos métodos relacionados con la gestión de contraseñas
+
+- **IEmailService**:
+
+  - Añadidas funciones para envío de correos de recuperación de contraseña
+
+- **IAgencyUsersRepository**:
+
+  - Mejorada la interfaz para la gestión de usuarios de agencias
+
+- **UserRepository**:
+
+  - Implementación de la lógica para registro de usuarios con DTOs
+  - Mejoras en la gestión de contraseñas temporales
+  - Soporte para avatares de usuario
+
+- **AgencyRepository**:
+
+  - Implementación de caché para mejorar rendimiento
+  - Mejoras en la actualización de datos de agencias
+
+- **AgencyUserAssignmentRepository**:
+  - Nuevo repositorio para gestionar asignaciones de usuarios a agencias
+
+### Modelos
+
+- **DTOUser** y **DTOUserDB**:
+
+  - Actualizados para incluir más campos relevantes
+  - Mejoras en la validación de datos
+
+- **UserAvatarRequest**:
+
+  - Nuevo modelo para gestionar la subida de avatares de usuario
+
+- **DTOChangePasword**:
+  - Nuevo modelo para el cambio de contraseñas
+
+### Mejoras Generales
+
+- **Configuración CORS**:
+
+  - Actualización de políticas para mejor control de acceso
+  - Soporte para nuevos dominios
+
+- **Caché y Rendimiento**:
+
+  - Implementación de sistema de caché para mejorar tiempos de respuesta
+  - Optimización de consultas a base de datos
+
+- **Seguridad**:
+
+  - Mejoras en la gestión de tokens JWT
+  - Implementación de sistema de recuperación de contraseñas
+  - Validaciones más robustas para datos sensibles
+
+- **Telemetría y Logging**:
+
+  - Implementación de servicio de logging mejorado
+  - Integración con Application Insights para telemetría
+
+- **Gestión de Archivos**:
+  - Mejoras en el sistema de subida y gestión de archivos
+  - Soporte para avatares de usuario

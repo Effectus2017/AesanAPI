@@ -21,6 +21,9 @@ public class ApplicationSettings
     public string StagingWebURL { get; set; } = "";
     public string ProduccionWebURL { get; set; } = "";
 
+    // Azure Storage settings
+    public string AzureStorageConnectionString { get; set; } = "";
+
     // Cache settings
     public CacheSettings Cache { get; set; } = new CacheSettings();
     // Gmail settings

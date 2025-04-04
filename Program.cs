@@ -104,6 +104,7 @@ builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyReposi
 
 // Registrar AgencyUsersRepository después de los servicios Lazy
 builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
+builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
@@ -262,6 +263,16 @@ app.UseCors(app.Environment.IsDevelopment() ? "AllowDevOrigin" : "AllowProdOrigi
 
 // Configuración global
 app.UseRouting();
+
+// Añadir middleware para servir archivos estáticos desde la carpeta uploads
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+    RequestPath = "/uploads"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -273,26 +284,9 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty;
 });
 
+// Asegurar que la carpeta uploads existe
 var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-if (Directory.Exists(uploadsPath))
-{
-    app.UseFileServer(enableDirectoryBrowsing: true)
-        .UseStaticFiles(
-            new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(uploadsPath),
-                RequestPath = new PathString("/uploads")
-            }
-        )
-        .UseDirectoryBrowser(
-            new DirectoryBrowserOptions
-            {
-                FileProvider = new PhysicalFileProvider(uploadsPath),
-                RequestPath = new PathString("/uploads")
-            }
-        );
-}
-else
+if (!Directory.Exists(uploadsPath))
 {
     Directory.CreateDirectory(uploadsPath);
 }

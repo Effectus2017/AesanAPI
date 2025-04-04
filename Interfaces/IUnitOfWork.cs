@@ -8,5 +8,6 @@ public interface IUnitOfWork
     IAgencyRepository AgencyRepository { get; }
     ISchoolRepository SchoolRepository { get; }
     IAgencyUsersRepository AgencyUsersRepository { get; }
+    IAgencyFilesRepository AgencyFilesRepository { get; }
     void Save();
 }

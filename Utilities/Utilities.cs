@@ -44,19 +44,30 @@ public static class Utilities
 
     public static string GetUrl(ApplicationSettings appSettings)
     {
-
+        string url;
 
 #if DEBUG || LOCAL
-        return appSettings.LocalURL;
+        url = appSettings.LocalURL;
 #endif
 
 #if STAGING
-        return appSettings.StagingURL;
+        url = appSettings.StagingURL;
 #endif
 
 #if RELEASE
-        return appSettings.ProduccionURL;
+        url = appSettings.ProduccionURL;
 #endif
+
+        // Asegurar que la URL termina con '/'
+        if (!url.EndsWith("/"))
+        {
+            url += "/";
+        }
+
+        // Eliminar la parte 'api' si existe, ya que no se necesita para las URLs públicas
+        url = url.Replace("/api/", "/").Replace("//", "/").Replace(":/", "://");
+
+        return url;
     }
 
     public static string RemoveSpecialCharacters(string str)

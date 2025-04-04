@@ -497,15 +497,20 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
                 return BadRequest(new { message = "ID de usuario y URL de imagen son requeridos" });
             }
 
+            // Limpiar la URL de la imagen (solucionar problemas con barras invertidas)
+            var cleanImageUrl = request.ImageUrl.Replace("\\\\", "/").Replace("\\", "/");
+            _logger.LogInformation("Actualizando avatar del usuario {UserId}. URL original: {OriginalUrl}, URL limpia: {CleanUrl}",
+                request.UserId, request.ImageUrl, cleanImageUrl);
+
             // Llamar al método del repositorio para actualizar el avatar
-            var result = await _unitOfWork.UserRepository.UpdateUserAvatar(request.UserId, request.ImageUrl);
+            var result = await _unitOfWork.UserRepository.UpdateUserAvatar(request.UserId, cleanImageUrl);
 
             // Devolver el resultado
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el avatar del usuario");
+            _logger.LogError(ex, "Error al actualizar el avatar del usuario {UserId}", request.UserId);
             return StatusCode(500, new { message = "Error al actualizar el avatar del usuario", error = ex.Message });
         }
     }
