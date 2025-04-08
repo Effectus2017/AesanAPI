@@ -2,7 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-ALTER PROCEDURE [104_GetAgencyByIdAndUserId]
+CREATE OR ALTER PROCEDURE [109_GetAgencyByIdAndUserId]
     @agencyId INT = NULL,
     @userId NVARCHAR(450)
 AS
@@ -36,6 +36,7 @@ BEGIN
         a.Email,
         a.ImageURL,
         a.NonProfit,
+        a.BasicEducationRegistry,
         a.FederalFundsDenied,
         a.StateFundsDenied,
         a.OrganizedAthleticPrograms,
@@ -113,4 +114,4 @@ BEGIN
     WHERE aua.UserId = @userId
         AND (@agencyId IS NULL OR ap.AgencyId = @agencyId);
 END;
-GO
+GO 

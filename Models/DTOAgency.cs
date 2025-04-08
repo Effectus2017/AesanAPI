@@ -32,6 +32,9 @@ public class DTOAgency
     public DateTime? CreatedAt { get; set; } = DateTime.Now;
     public DateTime? UpdatedAt { get; set; } = DateTime.Now;
 
+    // Registro de Educación Básica
+    public int BasicEducationRegistry { get; set; } = 0;
+
     // Imágen - Logo
     public string ImageURL { get; set; } = "";
     // Justificación de Rechazo

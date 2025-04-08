@@ -37,6 +37,7 @@ namespace Api.Models.DTO
         public DateTime ServiceTime { get; set; }
         public int TaxExemptionStatus { get; set; }
         public int TaxExemptionType { get; set; }
+        public int BasicEducationRegistry { get; set; }
         public string RejectionJustification { get; set; } = "";
         public string Comment { get; set; } = "";
         public bool? AppointmentCoordinated { get; set; }

@@ -42,14 +42,16 @@ public class AgencyRequest
     // Campos de estado
     public bool IsActive { get; set; } = true;
     public bool IsListable { get; set; } = true;
+    // Registro de Educación Básica
+    public int BasicEducationRegistry { get; set; } = 0;
     // Programas
     public List<int> Programs { get; set; } = [];
     // Codigo de Agencia
     public string? AgencyCode { get; set; }
     // Monitor
-    public string MonitorId { get; set; }
+    public string? MonitorId { get; set; }
     // Usuario que asigna
-    public string AssignedBy { get; set; }
+    public string? AssignedBy { get; set; }
     // Service Time
     public DateTime ServiceTime { get; set; } = DateTime.MinValue;
     // Tax Exemption

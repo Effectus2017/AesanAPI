@@ -39,7 +39,7 @@ public class AgencyRepository(
         param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
         var result = await dbConnection.QueryMultipleAsync(
-            "106_GetAgencyById",
+            "109_GetAgencyById",
             param,
             commandType: CommandType.StoredProcedure
         );
@@ -152,7 +152,7 @@ public class AgencyRepository(
 
                 // Usar un bloque using para garantizar que el GridReader se cierre correctamente
                 using (var result = await dbConnection.QueryMultipleAsync(
-                    "108_GetAgencies",
+                    "109_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure))
                 {
@@ -300,13 +300,14 @@ public class AgencyRepository(
             parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
             parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
             parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
+            parameters.Add("@BasicEducationRegistry", agencyRequest.BasicEducationRegistry);
             parameters.Add("@ImageURL", agencyRequest.ImageUrl);
             parameters.Add("@IsListable", agencyRequest.IsListable);
             parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("104_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("109_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
 
             var agencyId = parameters.Get<int>("@Id");
 
@@ -393,10 +394,14 @@ public class AgencyRepository(
             parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
             parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
             parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
+            parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
+            parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
+            parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
+            parameters.Add("@BasicEducationRegistry", agencyRequest.BasicEducationRegistry);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("104_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("109_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             // Verificar si hay un nuevo monitor asignado y es diferente al actual
@@ -681,9 +686,10 @@ public class AgencyRepository(
             Phone = item.Phone,
             Email = item.Email,
             ImageURL = item.ImageURL,
-            RejectionJustification = item.ProgramRejectionJustification,
-            AppointmentCoordinated = item.ProgramAppointmentCoordinated,
-            AppointmentDate = item.ProgramAppointmentDate,
+            BasicEducationRegistry = item.BasicEducationRegistry,
+            RejectionJustification = item.RejectionJustification,
+            AppointmentCoordinated = item.AppointmentCoordinated,
+            AppointmentDate = item.AppointmentDate,
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
             AgencyCode = item.AgencyCode,
