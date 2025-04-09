@@ -39,7 +39,7 @@ public class AgencyRepository(
         param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
         var result = await dbConnection.QueryMultipleAsync(
-            "109_GetAgencyById",
+            "110_GetAgencyById",
             param,
             commandType: CommandType.StoredProcedure
         );
@@ -81,7 +81,7 @@ public class AgencyRepository(
                 using IDbConnection dbConnection = _context.CreateConnection();
                 var param = new { agencyId, userId };
                 var result = await dbConnection.QueryMultipleAsync(
-                    "104_GetAgencyByIdAndUserId",
+                    "110_GetAgencyByIdAndUserId",
                     param,
                     commandType: CommandType.StoredProcedure
                 );
@@ -307,7 +307,7 @@ public class AgencyRepository(
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("109_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("110_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
 
             var agencyId = parameters.Get<int>("@Id");
 
@@ -401,7 +401,7 @@ public class AgencyRepository(
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("109_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("110_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             // Verificar si hay un nuevo monitor asignado y es diferente al actual
