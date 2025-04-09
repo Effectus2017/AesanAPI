@@ -152,7 +152,7 @@ public class AgencyRepository(
 
                 // Usar un bloque using para garantizar que el GridReader se cierre correctamente
                 using (var result = await dbConnection.QueryMultipleAsync(
-                    "109_GetAgencies",
+                    "110_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure))
                 {
