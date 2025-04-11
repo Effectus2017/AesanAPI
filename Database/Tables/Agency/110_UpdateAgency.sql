@@ -1,40 +1,38 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- Procedimiento para actualizar una agencia con ZipCode y PostalZipCode como NVARCHAR
 CREATE OR ALTER PROCEDURE [110_UpdateAgency]
-    @Id int,
-    @Name nvarchar(255),
-    @AgencyStatusId int,
-    @CityId int,
-    @PostalCityId int,
-    @RegionId int,
-    @PostalRegionId int,
-    @UieNumber int,
-    @EinNumber int,
-    @SdrNumber int,
-    @Address nvarchar(255),
-    @ZipCode nvarchar(20),
-    @PostalAddress nvarchar(255),
-    @PostalZipCode nvarchar(20),
-    @Phone nvarchar(20),
-    @Email nvarchar(255),
-    @Latitude real,
-    @Longitude real,
-    @ImageURL nvarchar(max),
-    @IsActive bit,
-    @IsListable bit,
-    @AgencyCode nvarchar(50),
-    -- Campos para AgencyInscription
-    @NonProfit bit,
-    @FederalFundsDenied bit,
-    @StateFundsDenied bit,
-    @OrganizedAthleticPrograms bit,
-    @AtRiskService bit,
-    @BasicEducationRegistry int,
-    @ServiceTime datetime,
-    @TaxExemptionStatus int,
-    @TaxExemptionType int,
-    @IsPropietary bit
+    @Id INT,
+    @Name NVARCHAR(255),
+    @AgencyStatusId INT,
+    -- Datos de la agencia
+    @SdrNumber INT,
+    @UieNumber INT,
+    @EinNumber INT,
+    -- Dirección fisica
+    @Address NVARCHAR(255),
+    @ZipCode NVARCHAR(20),
+    @CityId INT,
+    @RegionId INT,
+    @Latitude FLOAT,
+    @Longitude FLOAT,
+    -- Dirección postal
+    @PostalAddress NVARCHAR(255),
+    @PostalZipCode NVARCHAR(20),
+    @PostalCityId INT,
+    @PostalRegionId INT,
+    -- Teléfono
+    @Phone NVARCHAR(20),
+    -- Imagen
+    @ImageURL NVARCHAR(MAX) = NULL,
+    -- Datos de contacto
+    @Email NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @rowsAffected INT = 0;
     BEGIN TRANSACTION;
     
     BEGIN TRY
@@ -42,45 +40,37 @@ BEGIN
         UPDATE Agency
         SET Name = @Name,
             AgencyStatusId = @AgencyStatusId,
-            CityId = @CityId,
-            PostalCityId = @PostalCityId,
-            RegionId = @RegionId,
-            PostalRegionId = @PostalRegionId,
+            -- Datos de la agencia
+            SdrNumber = @SdrNumber,
             UieNumber = @UieNumber,
             EinNumber = @EinNumber,
-            SdrNumber = @SdrNumber,
+            -- Dirección fisica
             Address = @Address,
             ZipCode = @ZipCode,
-            PostalAddress = @PostalAddress,
-            PostalZipCode = @PostalZipCode,
-            Phone = @Phone,
-            Email = @Email,
+            CityId = @CityId,
+            RegionId = @RegionId,
             Latitude = @Latitude,
             Longitude = @Longitude,
+            -- Dirección postal
+            PostalAddress = @PostalAddress,
+            PostalZipCode = @PostalZipCode,
+            PostalCityId = @PostalCityId,
+            PostalRegionId = @PostalRegionId,
+            -- Teléfono
+            Phone = @Phone,
+            -- Imagen
             ImageURL = @ImageURL,
-            IsActive = @IsActive,
-            IsListable = @IsListable,
-            AgencyCode = @AgencyCode,
-            IsPropietary = @IsPropietary,
+            -- Datos de contacto
+            Email = @Email,
+            -- Auditoría
             UpdatedAt = GETDATE()
         WHERE Id = @Id;
 
-        -- Actualizamos la inscripción
-        UPDATE ai
-        SET NonProfit = @NonProfit,
-            FederalFundsDenied = @FederalFundsDenied,
-            StateFundsDenied = @StateFundsDenied,
-            OrganizedAthleticPrograms = @OrganizedAthleticPrograms,
-            AtRiskService = @AtRiskService,
-            BasicEducationRegistry = @BasicEducationRegistry,
-            ServiceTime = @ServiceTime,
-            TaxExemptionStatus = @TaxExemptionStatus,
-            TaxExemptionType = @TaxExemptionType
-        FROM AgencyInscription ai
-        INNER JOIN Agency a ON a.AgencyInscriptionId = ai.Id
-        WHERE a.Id = @Id;
+        SET @rowsAffected = @@ROWCOUNT; 
 
         COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;

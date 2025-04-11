@@ -12,6 +12,24 @@ CREATE TABLE AgencyInscription
     TaxExemptionStatus int NULL DEFAULT (0), -- Si la agencia tiene exención de impuestos
     TaxExemptionType int NULL DEFAULT (0), -- Si la agencia tiene exención de impuestos
     RejectionJustification nvarchar(max) NULL, -- Si la agencia fue rechazada, se guarda la justificación
+    Comments NVARCHAR(MAX) NULL, -- Comentarios extras para la agencia
+    AppointmentCoordinated BIT NULL DEFAULT 0, -- Si la agencia tiene cita programada
+    AppointmentDate DATETIME NULL, -- Fecha de la cita programada
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
+GO
+
+ALTER TABLE AgencyInscription
+ADD AppointmentCoordinated BIT NULL DEFAULT 0,
+    AppointmentDate DATETIME NULL,
+    Comments NVARCHAR(MAX) NULL;
+GO
+
+-- alter para agegar UpdateAt
+ALTER TABLE AgencyInscription
+ADD UpdatedAt DATETIME NULL;
+GO
+
+ALTER TABLE AgencyInscription
+ADD CONSTRAINT FK_AgencyInscription_Agency FOREIGN KEY (AgencyId) REFERENCES Agency(Id);
 GO

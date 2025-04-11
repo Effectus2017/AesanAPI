@@ -219,6 +219,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                         FatherLastName = agencyRequest.User.FatherLastName ?? "",
                         MotherLastName = agencyRequest.User.MotherLastName ?? "",
                         Email = agencyRequest.User.Email ?? "",
+                        AdministrationTitle = agencyRequest.User.AdministrationTitle ?? "",
                     });
 
                     return Ok(result);
@@ -302,11 +303,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                 var result = await _unitOfWork.AgencyRepository.UpdateAgencyProgram(
                     updateAgencyProgramRequest.AgencyId,
                     updateAgencyProgramRequest.ProgramId,
-                    updateAgencyProgramRequest.StatusId,
-                    updateAgencyProgramRequest.UserId,
-                    updateAgencyProgramRequest.RejectionJustification,
-                    updateAgencyProgramRequest.AppointmentCoordinated,
-                    updateAgencyProgramRequest.AppointmentDate
+                    updateAgencyProgramRequest.UserId
                 );
 
                 return Ok(result);
@@ -318,6 +315,40 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         {
             _logger.LogError(ex, "Error al actualizar el programa de la agencia");
             return StatusCode(500, "Error al actualizar el programa de la agencia");
+        }
+    }
+
+    /// <summary>
+    /// Actualiza la inscripción de una agencia desde formulario pre-operacional
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta</param>
+    /// <param name="updateAgencyInscriptionRequest">El modelo de la agencia a actualizar</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-agency-inscription")]
+    [SwaggerOperation(Summary = "Actualiza la inscripción de una agencia", Description = "Actualiza la inscripción de una agencia con los datos proporcionados desde el formulario pre-operacional.")]
+    public async Task<IActionResult> UpdateAgencyInscription([FromQuery] QueryParameters queryParameters, [FromBody] UpdateAgencyInscriptionRequest updateAgencyInscriptionRequest)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _unitOfWork.AgencyRepository.UpdateAgencyInscription(
+                    updateAgencyInscriptionRequest.AgencyId,
+                    updateAgencyInscriptionRequest.StatusId,
+                    updateAgencyInscriptionRequest.RejectionJustification,
+                    updateAgencyInscriptionRequest.AppointmentCoordinated,
+                    updateAgencyInscriptionRequest.AppointmentDate
+                );
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la inscripción de la agencia");
+            return StatusCode(500, "Error al actualizar la inscripción de la agencia");
         }
     }
 }

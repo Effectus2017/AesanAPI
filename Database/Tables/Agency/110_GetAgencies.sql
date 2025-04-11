@@ -14,7 +14,7 @@ BEGIN
 
     -- CTEs para mejorar la legibilidad y performance
     WITH AgencyProgramsCTE AS (
-        SELECT DISTINCT AgencyId, Comments, AppointmentCoordinated, AppointmentDate, ProgramId
+        SELECT DISTINCT AgencyId, ProgramId
         FROM AgencyProgram 
         WHERE IsActive = 1
     ),
@@ -82,9 +82,9 @@ BEGIN
         mu.FatherLastName AS MonitorFatherLastName,
 
         -- Comentarios de la asignación de programa
-        ap.Comments as ProgramRejectionJustification,
-        ap.AppointmentCoordinated AS ProgramAppointmentCoordinated,
-        ap.AppointmentDate AS ProgramAppointmentDate
+        ai.Comments as ProgramRejectionJustification,
+        ai.AppointmentCoordinated AS ProgramAppointmentCoordinated,
+        ai.AppointmentDate AS ProgramAppointmentDate
 
     FROM Agency a
     INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id

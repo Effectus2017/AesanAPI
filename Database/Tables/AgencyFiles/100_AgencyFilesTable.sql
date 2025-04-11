@@ -10,9 +10,11 @@ CREATE TABLE AgencyFiles
     FileSize BIGINT NOT NULL, -- Tamaño del archivo en bytes
     Description NVARCHAR(500) NULL, -- Descripción opcional del archivo
     DocumentType NVARCHAR(100) NULL, -- Tipo de documento
-    UploadDate DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha de subida
+    UploadDate DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha de subida, esta fecha NO se actualiza ya que va a existir un servicio que contabiliza 
     UploadedBy NVARCHAR(128) NULL, -- ID del usuario que subió el archivo
     IsActive BIT NOT NULL DEFAULT 1, -- Indica si el archivo está activo
+    IsDeleted BIT NOT NULL DEFAULT 0, -- Indica si el archivo está eliminado
+    IsVerified BIT NOT NULL DEFAULT 0, -- Indica si el archivo está verificado por AESAN para terminar el contador para no rechazar el archivo
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
 GO

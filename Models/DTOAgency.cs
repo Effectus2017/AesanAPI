@@ -37,6 +37,10 @@ public class DTOAgency
 
     // Imágen - Logo
     public string ImageURL { get; set; } = "";
+
+    // Comentarios
+    public string Comments { get; set; } = "";
+
     // Justificación de Rechazo
     public string RejectionJustification { get; set; } = "";
     // Cita coordinada

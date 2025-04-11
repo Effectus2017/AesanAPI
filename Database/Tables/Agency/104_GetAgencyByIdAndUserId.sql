@@ -1,3 +1,6 @@
+ -- Descripción: Obtiene los datos de una agencia por su ID y el ID del usuario
+ -- Deprecated: Se reemplaza por 110_GetAgencyByIdAndUserId
+ -- No Modificar este procedimiento almacenado
 SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON

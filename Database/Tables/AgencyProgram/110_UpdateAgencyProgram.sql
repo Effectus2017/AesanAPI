@@ -1,25 +1,12 @@
 -- Procedimiento almacenado para actualizar el programa de una agencia
--- Deprecated: Se reemplaza por 110_UpdateAgencyProgram
--- No modificar este procedimiento almacenado
-CREATE OR ALTER PROCEDURE [102_UpdateAgencyProgram]
+CREATE OR ALTER PROCEDURE [110_UpdateAgencyProgram]
     @agencyId INT,
     @programId INT,
-    @agencyStatusId INT,
-    @userId NVARCHAR(36),
-    @rejectionJustification NVARCHAR(MAX) = NULL,
-    @appointmentCoordinated BIT = NULL,
-    @appointmentDate DATETIME = NULL
+    @userId NVARCHAR(36)
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @rowsAffected INT;
-
-    -- Verificar si el estado existe
-    IF NOT EXISTS (SELECT 1 FROM AgencyStatus WHERE Id = @agencyStatusId)
-    BEGIN
-        RAISERROR ('El estado de agencia especificado no existe.', 16, 1);
-        RETURN -1;
-    END
 
     BEGIN TRY
         BEGIN TRANSACTION;
@@ -28,15 +15,8 @@ BEGIN
         SET 
             ProgramId = @programId,
             UserId = @userId,
-            Comments = @rejectionJustification,
-            AppointmentCoordinated = @appointmentCoordinated,
-            AppointmentDate = @appointmentDate,
             UpdatedAt = GETDATE()
         WHERE AgencyId = @agencyId;
-
-        UPDATE Agency
-        SET AgencyStatusId = @agencyStatusId
-        WHERE Id = @agencyId;
 
         COMMIT TRANSACTION;
         SET @rowsAffected = @@ROWCOUNT;

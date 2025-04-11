@@ -48,11 +48,17 @@ BEGIN
         ai.TaxExemptionStatus,
         ai.TaxExemptionType,
         ai.RejectionJustification,
+        ai.AppointmentCoordinated,
+        ai.AppointmentDate,
+        ai.Comments,
 
         -- Datos del usuario de la agencia (owner)
         au.UserId as UserId,
         u2.FirstName AS UserFirstName,
+        u2.MiddleName AS UserMiddleName,
         u2.FatherLastName AS UserFatherLastName,
+        u2.MotherLastName AS UserMotherLastName,
+        u2.AdministrationTitle as UserAdministrationTitle,
 
         -- Datos del usuario monitor
         aua.UserId as MonitorId,

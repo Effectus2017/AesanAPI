@@ -79,10 +79,12 @@ public class AgencyRepository(
             {
                 _logger.LogInformation($"Caché no encontrado, obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
                 using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new { agencyId, userId };
+                var parameters = new DynamicParameters();
+                parameters.Add("@agencyId", agencyId);
+                parameters.Add("@userId", userId);
                 var result = await dbConnection.QueryMultipleAsync(
                     "110_GetAgencyByIdAndUserId",
-                    param,
+                    parameters,
                     commandType: CommandType.StoredProcedure
                 );
 
@@ -366,7 +368,7 @@ public class AgencyRepository(
         {
             // Obtener la agencia actual para comparar el monitor
             var currentAgency = await GetAgencyById(agencyId);
-            string currentMonitorId = currentAgency?.Monitor?.Id;
+            string currentMonitorId = currentAgency?.Monitor?.Id ?? throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
 
             var parameters = new DynamicParameters();
             parameters.Add("@Id", agencyId);
@@ -388,16 +390,19 @@ public class AgencyRepository(
             parameters.Add("@Phone", agencyRequest.Phone);
             parameters.Add("@ImageURL", agencyRequest.ImageUrl);
             parameters.Add("@Email", agencyRequest.Email);
-            parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
-            parameters.Add("@NonProfit", agencyRequest.NonProfit);
-            parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
-            parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
-            parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
-            parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
-            parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
-            parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
-            parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
-            parameters.Add("@BasicEducationRegistry", agencyRequest.BasicEducationRegistry);
+
+            //parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
+            //parameters.Add("@NonProfit", agencyRequest.NonProfit);
+            //parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
+            //parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
+            //parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
+            //parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
+            //parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
+            //parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
+            //parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
+            //parameters.Add("@BasicEducationRegistry", agencyRequest.BasicEducationRegistry);
+
+
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             using var connection = _context.CreateConnection();
@@ -407,13 +412,13 @@ public class AgencyRepository(
             // Verificar si hay un nuevo monitor asignado y es diferente al actual
             if (!string.IsNullOrEmpty(agencyRequest.MonitorId) && currentMonitorId != agencyRequest.MonitorId)
             {
-                // Si había un monitor previo, desasignarlo primero
+                // Si había un monitor previo, des asignar el monitor primero
                 if (!string.IsNullOrEmpty(currentMonitorId))
                 {
-                    _logger.LogInformation($"Desasignando monitor anterior {currentMonitorId} de la agencia {agencyId}");
+                    _logger.LogInformation($"Des asignando monitor anterior {currentMonitorId} de la agencia {agencyId}");
                     await _agencyUsersRepository.UnassignAgencyFromUser(currentMonitorId, agencyId);
 
-                    // Enviar correo de desasignación al monitor anterior
+                    // Enviar correo de des asignación al monitor anterior
                     var previousMonitor = new DTOUser
                     {
                         Id = currentMonitorId,
@@ -430,7 +435,10 @@ public class AgencyRepository(
             }
 
             // Invalidar caché
-            InvalidateCache(agencyId);
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(agencyId);
+            }
 
             return rowsAffected > 0;
         }
@@ -469,12 +477,23 @@ public class AgencyRepository(
     }
 
     /// <summary>
-    /// Actualiza el estado de una agencia
+    /// Actualiza el estado de una agencia en el sistema.
+    /// Este método permite cambiar el estado actual de una agencia a un nuevo estado,
+    /// y opcionalmente proporcionar una justificación en caso de rechazo.
+    /// Además, maneja la lógica de notificación por correo electrónico según el nuevo estado.
     /// </summary>
-    /// <param name="agencyId">Id de la agencia</param>
-    /// <param name="statusId">Id del nuevo estado</param>
-    /// <param name="rejectionJustification">Justificación para rechazo</param>
-    /// <returns>True si se actualizó correctamente</returns>
+    /// <param name="agencyId">Identificador único de la agencia a actualizar</param>
+    /// <param name="statusId">Identificador del nuevo estado a asignar a la agencia</param>
+    /// <param name="rejectionJustification">Texto opcional que justifica el rechazo, requerido cuando el estado es de tipo "Rechazado"</param>
+    /// <returns>Retorna true si la actualización fue exitosa, false en caso contrario</returns>
+    /// <remarks>
+    /// Este método realiza las siguientes acciones:
+    /// 1. Actualiza el estado de la agencia en la base de datos
+    /// 2. Envía notificaciones por correo electrónico según el nuevo estado:
+    ///    - En caso de aprobación, envía las credenciales temporales
+    ///    - En caso de rechazo, envía la justificación correspondiente
+    /// 3. Registra todas las operaciones en el sistema de logging
+    /// </remarks>
     public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string? rejectionJustification)
     {
         try
@@ -525,13 +544,15 @@ public class AgencyRepository(
                             _logger.LogWarning($"No se pudo obtener la contraseña temporal para la usuario {User.Id}");
                             // Optionally, you might want to handle this scenario differently
                         }
-                        ;
                     }
                 }
             }
 
             // Invalidar caché
-            InvalidateCache(agencyId);
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(agencyId);
+            }
 
             return rowsAffected > 0;
         }
@@ -547,12 +568,9 @@ public class AgencyRepository(
     /// </summary>
     /// <param name="agencyId">Id de la agencia</param>
     /// <param name="programId">Id del programa</param>
-    /// <param name="statusId">Id del estado</param>
-    /// <param name="comments">Comentarios</param>
-    /// <param name="appointmentCoordinated">Indica si se coordinó la cita</param>
-    /// <param name="appointmentDate">Fecha de la cita</param>
+    /// <param name="userId">Id del usuario</param>
     /// <returns>True si se actualizó correctamente</returns>
-    public async Task<bool> UpdateAgencyProgram(int agencyId, int programId, int statusId, string userId, string rejectionJustification, bool appointmentCoordinated, DateTime? appointmentDate)
+    public async Task<bool> UpdateAgencyProgram(int agencyId, int programId, string userId)
     {
         try
         {
@@ -562,14 +580,10 @@ public class AgencyRepository(
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@programId", programId);
-            parameters.Add("@agencyStatusId", statusId);
             parameters.Add("@userId", userId);
-            parameters.Add("@rejectionJustification", rejectionJustification);
-            parameters.Add("@appointmentCoordinated", appointmentCoordinated);
-            parameters.Add("@appointmentDate", appointmentDate);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("102_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("110_UpdateAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@ReturnValue");
 
             if (rowsAffected > 0)
@@ -582,6 +596,47 @@ public class AgencyRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el programa de la agencia");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza la inscripción de una agencia desde formulario pre-operacional
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia</param>
+    /// <param name="statusId">Id del estado</param>
+    /// <param name="comments">Comentarios</param>
+    /// <param name="appointmentCoordinated">Indica si se coordinó la cita</param>
+    /// <param name="appointmentDate">Fecha de la cita</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateAgencyInscription(int agencyId, int statusId, string comments, bool appointmentCoordinated, DateTime? appointmentDate)
+    {
+        try
+        {
+            _logger.LogInformation($"Actualizando la inscripción de la agencia {agencyId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@statusId", statusId);
+            parameters.Add("@comments", comments);
+            parameters.Add("@appointmentCoordinated", appointmentCoordinated);
+            parameters.Add("@appointmentDate", appointmentDate);
+            parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("110_UpdateAgencyIncriptionPreOpetational", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@ReturnValue");
+
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(agencyId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la inscripción de la agencia");
             throw;
         }
     }
@@ -637,8 +692,7 @@ public class AgencyRepository(
 
                 // Invalidar caché de la agencia con usuario
                 var userPattern = $"Agency_{agencyId}_User";
-                _logger.LogInformation($"Invalidando caché de usuarios de agencia con patrón: {userPattern}",
-                    new Dictionary<string, string> { { "Pattern", userPattern } });
+                _logger.LogInformation($"Invalidando caché de usuarios de agencia con patrón: {userPattern}", new Dictionary<string, string> { { "Pattern", userPattern } });
                 _cache.RemoveByPattern(userPattern);
             }
 
@@ -648,8 +702,7 @@ public class AgencyRepository(
 
             // Invalidar caché de programas de agencia
             var programPattern = "Agency_Programs";
-            _logger.LogInformation($"Invalidando caché de programas con patrón: {programPattern}",
-                new Dictionary<string, string> { { "Pattern", programPattern } });
+            _logger.LogInformation($"Invalidando caché de programas con patrón: {programPattern}", new Dictionary<string, string> { { "Pattern", programPattern } });
             _cache.RemoveByPattern(programPattern);
 
             // Verificar claves restantes
@@ -686,13 +739,22 @@ public class AgencyRepository(
             Phone = item.Phone,
             Email = item.Email,
             ImageURL = item.ImageURL,
+
             BasicEducationRegistry = item.BasicEducationRegistry,
+
+            // Justificación de rechazo
             RejectionJustification = item.RejectionJustification,
+            // Comentarios
+            Comments = item.Comments,
+            // Cita coordinada
             AppointmentCoordinated = item.AppointmentCoordinated,
+            // Fecha de la cita
             AppointmentDate = item.AppointmentDate,
+
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
             AgencyCode = item.AgencyCode,
+
             City = new DTOCity { Id = item.CityId, Name = item.CityName },
             Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
             PostalCity = new DTOCity { Id = item.PostalCityId, Name = item.PostalCityName },
