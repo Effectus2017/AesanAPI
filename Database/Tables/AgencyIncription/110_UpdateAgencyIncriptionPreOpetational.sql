@@ -1,12 +1,8 @@
--- Procedimiento almacenado para actualizar el programa de una agencia
--- Deprecated: Se reemplaza por 110_UpdateAgencyProgram
--- No modificar este procedimiento almacenado
-CREATE OR ALTER PROCEDURE [102_UpdateAgencyProgram]
+-- Procedimiento almacenado para actualizar la inscripción de una agencia desde formulario pre-operacional
+CREATE OR ALTER PROCEDURE [110_UpdateAgencyIncriptionPreOpetational]
     @agencyId INT,
-    @programId INT,
-    @agencyStatusId INT,
-    @userId NVARCHAR(36),
-    @rejectionJustification NVARCHAR(MAX) = NULL,
+    @statusId INT,
+    @comments NVARCHAR(MAX) = NULL,
     @appointmentCoordinated BIT = NULL,
     @appointmentDate DATETIME = NULL
 AS
@@ -14,28 +10,19 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @rowsAffected INT;
 
-    -- Verificar si el estado existe
-    IF NOT EXISTS (SELECT 1 FROM AgencyStatus WHERE Id = @agencyStatusId)
-    BEGIN
-        RAISERROR ('El estado de agencia especificado no existe.', 16, 1);
-        RETURN -1;
-    END
-
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        UPDATE AgencyProgram
+        UPDATE AgencyInscription
         SET 
-            ProgramId = @programId,
-            UserId = @userId,
-            Comments = @rejectionJustification,
+            Comments = @comments,
             AppointmentCoordinated = @appointmentCoordinated,
             AppointmentDate = @appointmentDate,
             UpdatedAt = GETDATE()
         WHERE AgencyId = @agencyId;
 
         UPDATE Agency
-        SET AgencyStatusId = @agencyStatusId
+        SET AgencyStatusId = @statusId
         WHERE Id = @agencyId;
 
         COMMIT TRANSACTION;

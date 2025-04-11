@@ -26,7 +26,8 @@ public interface IAgencyRepository
     Task<bool> UpdateAgency(int agencyId, AgencyRequest agencyRequest);
     Task<bool> UpdateAgencyLogo(int agencyId, string imageUrl);
     Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string rejectionJustification);
-    Task<bool> UpdateAgencyProgram(int agencyId, int programId, int statusId, string userId, string rejectionJustification, bool appointmentCoordinated, DateTime? appointmentDate);
+    Task<bool> UpdateAgencyProgram(int agencyId, int programId, string userId);
+    Task<bool> UpdateAgencyInscription(int agencyId, int statusId, string rejectionJustification, bool appointmentCoordinated, DateTime? appointmentDate);
 
     /// ------------------------------------------------------------------------------------------------    
     /// Eliminar
