@@ -19,15 +19,5 @@ public class UnitOfWork(ApplicationDbContext context,
     public ISchoolRepository SchoolRepository { get; private set; } = schoolRepository;
     public IAgencyUsersRepository AgencyUsersRepository { get; private set; } = agencyUsersRepository;
     public IAgencyFilesRepository AgencyFilesRepository { get; private set; } = agencyFilesRepository;
-    public void Save()
-    {
-        try
-        {
-            _context.SaveChanges();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-    }
+
 }

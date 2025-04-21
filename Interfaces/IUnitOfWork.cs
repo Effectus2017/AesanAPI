@@ -9,5 +9,4 @@ public interface IUnitOfWork
     ISchoolRepository SchoolRepository { get; }
     IAgencyUsersRepository AgencyUsersRepository { get; }
     IAgencyFilesRepository AgencyFilesRepository { get; }
-    void Save();
 }

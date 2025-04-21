@@ -11,55 +11,58 @@ using System;
 using Microsoft.Extensions.Logging;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Api.Models.Request;
 
 namespace Api.Controllers
 {
     [Route("upload")]
-    public class UploadController(IUnitOfWork unitOfWork, IOptions<ConnectionStrings> appConnection, IWebHostEnvironment environment, IOptions<ApplicationSettings> appSettings, ILogger<UploadController> logger) : Controller
+    public class UploadController(
+        IUnitOfWork unitOfWork,
+        IOptions<ConnectionStrings> appConnection,
+        IWebHostEnvironment environment,
+        IOptions<ApplicationSettings> appSettings,
+        ILogger<UploadController> logger) : Controller
     {
         private readonly IWebHostEnvironment _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         private readonly ConnectionStrings _appConnection = appConnection.Value ?? throw new ArgumentNullException(nameof(appConnection));
-        public readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings.Value));
+        private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly ILogger<UploadController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         [HttpPost]
-        [Route("uploadFile")]
-        [Consumes("multipart/form-data")]
-        public async Task<dynamic> UploadFile([FromQuery(Name = "type")] string type, [FromQuery(Name = "fileName")] string fileName, [FromQuery(Name = "folderTo")] string folderTo)
+        [Route("agency/{agencyId}/file")]
+        public async Task<IActionResult> UploadAgencyFile(int agencyId, [FromQuery] string description = null, [FromQuery] string documentType = null)
         {
             try
             {
-                _logger.LogInformation("Iniciando carga de archivo: {FileName}, tipo: {Type}, carpeta: {FolderTo}", fileName, type, folderTo);
+                _logger.LogInformation($"Iniciando carga de archivo para la agencia {agencyId}");
 
-                string folder = string.IsNullOrEmpty(folderTo) ? FilesType.Profile : folderTo;
-                string urlPath;
-                string fullFileName;
-
-                // Limpiar el nombre del archivo
-                fileName = Utilities.RemoveSpecialCharacters(fileName);
-                fileName = Utilities.RemoveDiacritics(fileName);
-
-                IFormFileCollection files = Request.Form.Files;
+                var files = Request.Form.Files;
                 if (!files.Any())
                 {
                     _logger.LogWarning("No se recibieron archivos en la solicitud");
-                    return BadRequest(new { error = "No files received" });
+                    return BadRequest(new { error = "No se recibieron archivos" });
                 }
 
                 var file = files[0];
                 if (file == null || file.Length == 0)
                 {
                     _logger.LogWarning("El archivo está vacío o es nulo");
-                    return BadRequest(new { error = "File is empty" });
+                    return BadRequest(new { error = "El archivo está vacío" });
                 }
 
-                string extension = Path.GetExtension(file.FileName);
-                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                // Limpiar el nombre del archivo
+                string fileName = Utilities.RemoveSpecialCharacters(file.FileName);
+                fileName = Utilities.RemoveDiacritics(fileName);
 
-                // Generar un nombre único para el archivo
+                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                string extension = Path.GetExtension(fileName);
                 string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-                fullFileName = $"{fileNameWithoutExtension}_{timestamp}{extension}";
+                string storedFileName = $"{fileNameWithoutExtension}_{timestamp}{extension}";
+
+                // Definir la carpeta específica para la agencia
+                string agencyFolder = $"agency_{agencyId}";
+                string fileUrl;
 
                 // Verificar el entorno
                 bool isAzureEnvironment = !string.IsNullOrEmpty(_appSettings.AzureStorageConnectionString) &&
@@ -67,106 +70,82 @@ namespace Api.Controllers
 
                 if (isAzureEnvironment)
                 {
-                    _logger.LogInformation("Usando Azure Blob Storage para almacenar el archivo");
-
                     try
                     {
-                        // Crear un cliente de blob
                         var blobServiceClient = new BlobServiceClient(_appSettings.AzureStorageConnectionString);
+                        string containerName = $"agency-files-{agencyId}".ToLower();
 
-                        // Generar un nombre para el contenedor (asegurar que sea minúsculas y válido)
-                        string containerName = $"uploads-{folder.ToLower()}";
-
-                        // Obtener una referencia al contenedor y crear si no existe
                         var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
                         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
-                        // Obtener una referencia al blob y subir el archivo
-                        var blobClient = containerClient.GetBlobClient(fullFileName);
-
-                        _logger.LogInformation("Subiendo archivo a Azure Blob Storage: {ContainerName}/{BlobName}",
-                            containerName, fullFileName);
-
+                        var blobClient = containerClient.GetBlobClient(storedFileName);
                         using (var stream = file.OpenReadStream())
                         {
                             await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
                         }
 
-                        // Obtener la URL del blob
-                        urlPath = blobClient.Uri.ToString();
-
-                        _logger.LogInformation("Archivo subido exitosamente a Azure Blob Storage: {BlobUrl}", urlPath);
+                        fileUrl = blobClient.Uri.ToString();
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error al subir archivo a Azure Blob Storage, usando almacenamiento local como alternativa");
+                        _logger.LogError(ex, "Error al subir archivo a Azure Blob Storage");
 
-                        // Si hay error con Azure Blob, usar almacenamiento local como fallback
-                        string uploadsRootFolder = Path.Combine(_environment.ContentRootPath, "uploads", folder);
+                        // Fallback a almacenamiento local
+                        string uploadsRootFolder = Path.Combine(_environment.ContentRootPath, "uploads", agencyFolder);
+                        Directory.CreateDirectory(uploadsRootFolder);
 
-                        if (!Directory.Exists(uploadsRootFolder))
-                        {
-                            Directory.CreateDirectory(uploadsRootFolder);
-                        }
-
-                        var filePath = Path.Combine(uploadsRootFolder, fullFileName);
+                        string filePath = Path.Combine(uploadsRootFolder, storedFileName);
                         using (var fileStream = new FileStream(filePath, FileMode.Create))
                         {
-                            await file.CopyToAsync(fileStream).ConfigureAwait(false);
+                            await file.CopyToAsync(fileStream);
                         }
 
                         string url = Utilities.GetUrl(_appSettings);
-                        urlPath = $"{url}/uploads/{folder}/{fullFileName}";
-
-                        _logger.LogInformation("Archivo guardado localmente como alternativa: {FilePath}", filePath);
+                        fileUrl = $"{url}/uploads/{agencyFolder}/{storedFileName}";
                     }
                 }
                 else
                 {
-                    _logger.LogInformation("Usando almacenamiento local para el archivo (entorno de desarrollo)");
+                    string uploadsRootFolder = Path.Combine(_environment.ContentRootPath, "uploads", agencyFolder);
+                    Directory.CreateDirectory(uploadsRootFolder);
 
-                    // Usar almacenamiento local
-                    string uploadsRootFolder = Path.Combine(_environment.ContentRootPath, "uploads", folder);
-
-                    // Crear la carpeta si no existe
-                    if (!Directory.Exists(uploadsRootFolder))
-                    {
-                        Directory.CreateDirectory(uploadsRootFolder);
-                    }
-
-                    // Guardar el archivo
-                    var filePath = Path.Combine(uploadsRootFolder, fullFileName);
+                    string filePath = Path.Combine(uploadsRootFolder, storedFileName);
                     using (var fileStream = new FileStream(filePath, FileMode.Create))
                     {
-                        await file.CopyToAsync(fileStream).ConfigureAwait(false);
+                        await file.CopyToAsync(fileStream);
                     }
 
-                    // Generar la URL
                     string url = Utilities.GetUrl(_appSettings);
-                    urlPath = $"{url}/uploads/{folder}/{fullFileName}";
-
-                    _logger.LogInformation("Archivo guardado localmente: {FilePath}", filePath);
+                    fileUrl = $"{url}/uploads/{agencyFolder}/{storedFileName}";
                 }
 
-                _logger.LogInformation("URL generada para el archivo: {UrlPath}", urlPath);
+                // Crear registro en la base de datos usando el repositorio
+                var userId = User.Identity.Name; // Obtener el usuario actual
+                var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(new AgencyFileRequest
+                {
+                    AgencyId = agencyId,
+                    FileName = fileName,
+                    StoredFileName = storedFileName,
+                    FileUrl = fileUrl,
+                    ContentType = file.ContentType,
+                    FileSize = file.Length,
+                    Description = description,
+                    DocumentType = documentType,
+                    UploadedBy = userId
+                }, userId);
 
-                // Normalizar la URL (reemplazar los \ por /)
-                urlPath = urlPath.Replace("\\", "/");
-
-                return new { file = fullFileName, urlPath };
+                return Ok(new
+                {
+                    id = newFileId,
+                    file = storedFileName,
+                    url = fileUrl
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al subir archivo: {ErrorMessage}", ex.Message);
-                return BadRequest(new { error = ex.Message });
+                _logger.LogError(ex, "Error al subir archivo");
+                return StatusCode(500, new { error = "Error interno del servidor" });
             }
-        }
-
-        private static async Task<byte[]> GetByteArrayFromImageAsync(IFormFile file)
-        {
-            using var target = new MemoryStream();
-            await file.CopyToAsync(target);
-            return target.ToArray();
         }
     }
 }
