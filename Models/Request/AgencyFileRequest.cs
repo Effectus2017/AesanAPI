@@ -44,4 +44,9 @@ public class AgencyFileRequest
     /// Tipo de documento
     /// </summary>
     public string DocumentType { get; set; } = "";
+
+    /// <summary>
+    /// Usuario que subió el archivo
+    /// </summary>
+    public string UploadedBy { get; set; } = "";
 }
