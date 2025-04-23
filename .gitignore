@@ -211,3 +211,7 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 uploads/Profile
+.changelog
+.cursor
+.flyway
+.cursorrules
