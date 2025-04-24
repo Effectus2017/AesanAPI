@@ -108,7 +108,8 @@ builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); // Agregar UnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 // Agregar controladores a la inyección de dependencias
 builder.Services.AddControllers();

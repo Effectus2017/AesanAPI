@@ -215,3 +215,8 @@ uploads/Profile
 .cursor
 .flyway
 .cursorrules
+.fake
+
+# Flyway
+*.conf
+uploads

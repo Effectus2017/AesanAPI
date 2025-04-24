@@ -48,4 +48,11 @@ public interface IAgencyFilesRepository
     /// <param name="id">ID del archivo a eliminar</param>
     /// <returns>True si la eliminación fue exitosa</returns>
     Task<bool> DeleteAgencyFile(int id);
+
+    /// <summary>
+    /// Verifica un archivo de agencia
+    /// </summary>
+    /// <param name="id">ID del archivo a verificar</param>
+    /// <returns>True si la verificación fue exitosa</returns>
+    Task<bool> VerifyAgencyFile(int id);
 }

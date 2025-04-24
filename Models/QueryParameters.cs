@@ -7,7 +7,7 @@ public class QueryParameters
     public string? Name { get; set; } // Para endpoints existentes
     public string? Names { get; set; } // Para el filtrado de programas
     public bool Alls { get; set; } = false;
-    public int? Id { get; set; }
+    public int Id { get; set; }
     public int AgencyId { get; set; }
     public string? AssignedBy { get; set; }
     public int? ProgramId { get; set; }
@@ -23,4 +23,6 @@ public class QueryParameters
     public string? TemporaryPassword { get; set; } // Contraseña temporal
     public string? Email { get; set; } // Email
     public string? Token { get; set; } // Token para restablecimiento de contraseña
+    public string? DocumentType { get; set; } // Tipo de documento
+    public string? Description { get; set; } // Descripción del archivo
 }

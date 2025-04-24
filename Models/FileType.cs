@@ -1,10 +1,5 @@
 ﻿namespace Api.Models;
 
-public enum FileType
-{
-    modules
-}
-
 public static class Folders
 {
     public static string Imagenes { get; set; } = "imagenes";

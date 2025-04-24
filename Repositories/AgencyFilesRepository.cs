@@ -11,27 +11,19 @@ namespace Api.Repositories;
 /// <summary>
 /// Repositorio para manejar los archivos de agencia
 /// </summary>
-public class AgencyFilesRepository : IAgencyFilesRepository
+/// <remarks>
+/// Constructor del repositorio de archivos de agencia
+/// </remarks>
+public class AgencyFilesRepository(
+    DapperContext context,
+    ILogger<AgencyFilesRepository> logger,
+    IMemoryCache cache,
+    ApplicationSettings appSettings) : IAgencyFilesRepository
 {
-    private readonly DapperContext _context;
-    private readonly ILogger<AgencyFilesRepository> _logger;
-    private readonly IMemoryCache _cache;
-    private readonly ApplicationSettings _appSettings;
-
-    /// <summary>
-    /// Constructor del repositorio de archivos de agencia
-    /// </summary>
-    public AgencyFilesRepository(
-        DapperContext context,
-        ILogger<AgencyFilesRepository> logger,
-        IMemoryCache cache,
-        ApplicationSettings appSettings)
-    {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
-    }
+    private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<AgencyFilesRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+    private readonly ApplicationSettings _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene todos los archivos asociados a una agencia
@@ -224,5 +216,47 @@ public class AgencyFilesRepository : IAgencyFilesRepository
     {
         // Si se implementa caché para este repositorio, aquí se invalidaría
         _logger.LogInformation("Invalidando caché para archivos de la agencia {AgencyId}", agencyId);
+    }
+
+    /// <summary>
+    /// Verifica un archivo de agencia
+    /// </summary>
+    public async Task<bool> VerifyAgencyFile(int id)
+    {
+        try
+        {
+            // Primero obtenemos el archivo para saber a qué agencia pertenece
+            var existingFile = await GetAgencyFileById(id);
+            if (existingFile == null)
+            {
+                return false;
+            }
+
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await db.ExecuteAsync(
+                "100_VerifyAgencyFile",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            int rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(existingFile.AgencyId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al verificar el archivo con ID {FileId}", id);
+            throw;
+        }
     }
 }
