@@ -5,19 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class EducationLevelRepository(
-    DapperContext context,
-    ILogger<EducationLevelRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IEducationLevelRepository
+public class EducationLevelRepository(DapperContext context, ILogger<EducationLevelRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IEducationLevelRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<EducationLevelRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene un nivel educativo por su ID.

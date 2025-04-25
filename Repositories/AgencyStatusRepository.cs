@@ -5,19 +5,17 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AgencyStatusRepository(
-    DapperContext context,
-    ILogger<AgencyStatusRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IAgencyStatusRepository
+public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyStatusRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyStatusRepository> _logger = logger;
-    private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ILogger<AgencyStatusRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+    private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene un estado de agencia por su ID.

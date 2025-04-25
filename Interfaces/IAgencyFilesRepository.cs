@@ -31,7 +31,7 @@ public interface IAgencyFilesRepository
     /// <param name="request">Datos del archivo a agregar</param>
     /// <param name="uploadedBy">ID del usuario que sube el archivo</param>
     /// <returns>ID del archivo agregado</returns>
-    Task<int> AddAgencyFile(AgencyFileRequest request, string uploadedBy);
+    Task<int> AddAgencyFile(AgencyFileRequest request);
 
     /// <summary>
     /// Actualiza la información de un archivo

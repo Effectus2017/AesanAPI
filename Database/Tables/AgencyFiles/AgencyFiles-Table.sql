@@ -22,3 +22,11 @@ GO
 -- Índice para mejorar el rendimiento en las búsquedas por agencia
 CREATE INDEX IX_AgencyFiles_AgencyId ON AgencyFiles(AgencyId);
 GO 
+
+-- Índice para mejorar el rendimiento en las búsquedas por archivo
+CREATE INDEX IX_AgencyFiles_FileName ON AgencyFiles(FileName);
+GO
+
+-- Índice para mejorar el rendimiento en las búsquedas por fecha de subida
+CREATE INDEX IX_AgencyFiles_UploadDate ON AgencyFiles(UploadDate);
+GO

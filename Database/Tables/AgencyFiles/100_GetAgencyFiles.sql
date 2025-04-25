@@ -27,7 +27,6 @@ BEGIN
         AF.Description,
         AF.DocumentType,
         AF.UploadDate,
-        AF.UploadedBy,
         -- Obtener el nombre del usuario que subió el archivo
         CONCAT(U.FirstName, ' ', U.FatherLastName, ' ', U.MotherLastName) AS UploadedByName
     FROM 

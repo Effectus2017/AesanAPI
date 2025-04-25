@@ -5,21 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-
+using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class ProgramRepository(
-    DapperContext context,
-    ILogger<ProgramRepository> logger,
-    ISchoolRepository schoolRepository,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IProgramRepository
+public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, ISchoolRepository schoolRepository, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<ProgramRepository> _logger = logger;
     private readonly ISchoolRepository _schoolRepository = schoolRepository ?? throw new ArgumentNullException(nameof(schoolRepository));
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene un programa por su ID

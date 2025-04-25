@@ -56,11 +56,6 @@ public class DTOAgencyFile
     public DateTime UploadDate { get; set; }
 
     /// <summary>
-    /// Información del usuario que subió el archivo
-    /// </summary>
-    public string UploadedBy { get; set; } = "";
-
-    /// <summary>
     /// Nombre del usuario que subió el archivo (para mostrar en la UI)
     /// </summary>
     public string UploadedByName { get; set; } = "";

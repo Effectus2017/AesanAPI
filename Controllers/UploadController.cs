@@ -17,6 +17,7 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
     [Consumes("multipart/form-data")]
     public async Task<dynamic> UploadAgencyFile(
         [FromQuery(Name = "agencyId")] int agencyId,
+        [FromQuery(Name = "userId")] string userId,
         [FromQuery(Name = "description")] string description,
         [FromQuery(Name = "documentType")] string documentType
         )
@@ -40,7 +41,7 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
             }
 
             // Guardar el archivo usando el servicio
-            var (storedFileName, fileUrl) = await _fileStorageService.SaveFileAsync(
+            var (storedFileName, relativePath) = await _fileStorageService.SaveFileAsync(
                 file,
                 $"agency_{agencyId}",
                 FileType.AgencyDocument
@@ -52,16 +53,17 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
                 AgencyId = agencyId,
                 FileName = file.FileName,
                 StoredFileName = storedFileName,
-                FileUrl = fileUrl,
+                FileUrl = relativePath,
                 ContentType = file.ContentType,
                 FileSize = file.Length,
                 Description = description,
-                DocumentType = documentType
+                DocumentType = documentType,
+                UploadedBy = User.Identity.Name ?? userId
             };
 
-            var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(agencyFile, User.Identity.Name);
+            var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(agencyFile);
 
-            return new { file = storedFileName, url = fileUrl, id = newFileId };
+            return new { file = storedFileName, url = relativePath, id = newFileId };
         }
         catch (Exception ex)
         {

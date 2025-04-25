@@ -5,19 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class FoodAuthorityRepository(
-    DapperContext context,
-    ILogger<FoodAuthorityRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IFoodAuthorityRepository
+public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorityRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFoodAuthorityRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<FoodAuthorityRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene una autoridad alimentaria por su ID.

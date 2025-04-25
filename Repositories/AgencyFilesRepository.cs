@@ -5,6 +5,7 @@ using Api.Models;
 using Api.Models.Request;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
@@ -18,12 +19,12 @@ public class AgencyFilesRepository(
     DapperContext context,
     ILogger<AgencyFilesRepository> logger,
     IMemoryCache cache,
-    ApplicationSettings appSettings) : IAgencyFilesRepository
+    IOptions<ApplicationSettings> appSettings) : IAgencyFilesRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyFilesRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-    private readonly ApplicationSettings _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene todos los archivos asociados a una agencia
@@ -47,6 +48,18 @@ public class AgencyFilesRepository(
 
             var data = await result.ReadAsync<DTOAgencyFile>();
             var count = await result.ReadSingleAsync<int>();
+
+            // Construir las URLs completas para cada archivo
+            foreach (var file in data)
+            {
+                if (!string.IsNullOrEmpty(file.FileUrl))
+                {
+                    string baseUrl = Utilities.GetUrl(_appSettings);
+                    _logger.LogInformation("URL Base obtenida: {BaseUrl}", baseUrl);
+                    _logger.LogInformation("Configuración actual: {@AppSettings}", _appSettings);
+                    file.FileUrl = $"{baseUrl.TrimEnd('/')}/{file.FileUrl}";
+                }
+            }
 
             return new { data, count };
         }
@@ -74,6 +87,13 @@ public class AgencyFilesRepository(
                 commandType: CommandType.StoredProcedure
             );
 
+            // Construir la URL completa del archivo
+            if (result != null && !string.IsNullOrEmpty(result.FileUrl))
+            {
+                string baseUrl = Utilities.GetUrl(_appSettings);
+                result.FileUrl = $"{baseUrl.TrimEnd('/')}/{result.FileUrl}";
+            }
+
             return result;
         }
         catch (Exception ex)
@@ -86,7 +106,7 @@ public class AgencyFilesRepository(
     /// <summary>
     /// Agrega un nuevo archivo a una agencia
     /// </summary>
-    public async Task<int> AddAgencyFile(AgencyFileRequest request, string uploadedBy)
+    public async Task<int> AddAgencyFile(AgencyFileRequest request)
     {
         try
         {
@@ -100,7 +120,7 @@ public class AgencyFilesRepository(
             parameters.Add("@fileSize", request.FileSize, DbType.Int64);
             parameters.Add("@description", request.Description, DbType.String);
             parameters.Add("@documentType", request.DocumentType, DbType.String);
-            parameters.Add("@uploadedBy", uploadedBy, DbType.String);
+            parameters.Add("@uploadedBy", request.UploadedBy, DbType.String);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await db.ExecuteAsync(

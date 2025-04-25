@@ -5,22 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AgencyUsersRepository(
-    DapperContext context,
-    ILogger<AgencyUsersRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings,
-    IEmailService emailService,
-    Lazy<IUserRepository> userRepository,
-    Lazy<IAgencyRepository> agencyRepository) : IAgencyUsersRepository
+public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, IEmailService emailService, Lazy<IUserRepository> userRepository, Lazy<IAgencyRepository> agencyRepository) : IAgencyUsersRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyUsersRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
     private readonly Lazy<IUserRepository> _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));

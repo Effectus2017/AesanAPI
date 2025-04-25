@@ -5,15 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, ApplicationSettings appSettings) : IGeoRepository
+public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IGeoRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<GeoRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene todas las ciudades de la base de datos local

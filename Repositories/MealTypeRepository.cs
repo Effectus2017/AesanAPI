@@ -5,19 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class MealTypeRepository(
-    DapperContext context,
-    ILogger<MealTypeRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IMealTypeRepository
+public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IMealTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<MealTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene un tipo de comida por su ID.

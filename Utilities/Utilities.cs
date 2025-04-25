@@ -33,6 +33,11 @@ public static class Utilities
         return Guid.NewGuid().ToString("N").Substring(0, 8);
     }
 
+    /// <summary>
+    /// Obtiene la URL base de la aplicación según el entorno
+    /// </summary>
+    /// <param name="request">Solicitud HTTP</param>
+    /// <returns>URL base de la aplicación</returns>
     public static string GetUrl(HttpRequest request)
     {
         string scheame = request.Scheme;
@@ -42,6 +47,11 @@ public static class Utilities
         return fullURL;
     }
 
+    /// <summary>
+    /// Obtiene la URL segun appSettings
+    /// </summary>
+    /// <param name="appSettings">Configuración de la aplicación</param>
+    /// <returns>URL base de la aplicación</returns>
     public static string GetUrl(ApplicationSettings appSettings)
     {
         string url;

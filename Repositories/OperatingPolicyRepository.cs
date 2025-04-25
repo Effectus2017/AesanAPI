@@ -5,19 +5,15 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-
+using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class OperatingPolicyRepository(
-    DapperContext context,
-    ILogger<OperatingPolicyRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IOperatingPolicyRepository
+public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingPolicyRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOperatingPolicyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OperatingPolicyRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene una política operativa por su ID.

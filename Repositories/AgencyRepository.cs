@@ -6,7 +6,7 @@ using Api.Models;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-
+using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
 public class AgencyRepository(
@@ -16,7 +16,7 @@ public class AgencyRepository(
     DapperContext context,
     ILoggingService loggingService,
     IMemoryCache cache,
-    ApplicationSettings appSettings) : IAgencyRepository
+    IOptions<ApplicationSettings> appSettings) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
@@ -24,7 +24,7 @@ public class AgencyRepository(
     private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository ?? throw new ArgumentNullException(nameof(agencyUsersRepository));
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene una agencia por su ID

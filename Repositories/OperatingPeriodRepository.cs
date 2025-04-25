@@ -5,19 +5,15 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-
+using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class OperatingPeriodRepository(
-    DapperContext context,
-    ILogger<OperatingPeriodRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IOperatingPeriodRepository
+public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingPeriodRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOperatingPeriodRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OperatingPeriodRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene un período operativo por su ID.

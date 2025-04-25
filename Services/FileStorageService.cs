@@ -9,26 +9,24 @@ using Api.Interfaces;
 
 namespace Api.Services;
 
-
-
 public class FileStorageService(IWebHostEnvironment environment, IOptions<ApplicationSettings> appSettings, ILogger<FileStorageService> logger) : IFileStorageService
 {
     private readonly IWebHostEnvironment _environment = environment ?? throw new ArgumentNullException(nameof(environment));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly ILogger<FileStorageService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public async Task<(string fileName, string fileUrl)> SaveFileAsync(IFormFile file, string folder, FileType fileType)
+    public async Task<(string fileName, string relativePath)> SaveFileAsync(IFormFile file, string folder, FileType fileType)
     {
         try
         {
             // Limpiar y preparar el nombre del archivo
-            string fileName = Utilities.RemoveSpecialCharacters(file.FileName);
-            fileName = Utilities.RemoveDiacritics(fileName);
+            string originalFileName = Utilities.RemoveSpecialCharacters(file.FileName);
+            originalFileName = Utilities.RemoveDiacritics(originalFileName);
 
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            string extension = Path.GetExtension(fileName);
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(originalFileName);
+            string extension = Path.GetExtension(originalFileName);
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-            string storedFileName = $"{fileNameWithoutExtension}_{timestamp}{extension}";
+            string fileName = $"{fileNameWithoutExtension}_{timestamp}{extension}";
 
             // Determinar la subcarpeta basada en el tipo de archivo
             string subFolder = GetSubFolder(fileType);
@@ -37,27 +35,28 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
             bool isAzureEnvironment = !string.IsNullOrEmpty(_appSettings.AzureStorageConnectionString) &&
                                     !_environment.IsDevelopment();
 
-            string fileUrl;
-
             if (isAzureEnvironment)
             {
                 try
                 {
-                    fileUrl = await SaveToAzureStorageAsync(file, fullFolder, storedFileName);
-                    _logger.LogInformation("Archivo guardado exitosamente en Azure Storage: {FileName}", storedFileName);
+                    await SaveToAzureStorageAsync(file, fullFolder, fileName);
+                    _logger.LogInformation("Archivo guardado exitosamente en Azure Storage: {FileName}", fileName);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error al guardar archivo en Azure Storage. Usando almacenamiento local como fallback");
-                    fileUrl = await SaveToLocalStorageAsync(file, fullFolder, storedFileName);
+                    await SaveToLocalStorageAsync(file, fullFolder, fileName);
                 }
             }
             else
             {
-                fileUrl = await SaveToLocalStorageAsync(file, fullFolder, storedFileName);
+                await SaveToLocalStorageAsync(file, fullFolder, fileName);
             }
 
-            return (storedFileName, fileUrl);
+            // Construir la ruta relativa del archivo (sin la URL base)
+            string relativePath = $"uploads/{folder}/{subFolder}/{fileName}".Replace("\\", "/");
+
+            return (fileName, relativePath);
         }
         catch (Exception ex)
         {
@@ -77,7 +76,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         };
     }
 
-    private async Task<string> SaveToAzureStorageAsync(IFormFile file, string folder, string fileName)
+    private async Task SaveToAzureStorageAsync(IFormFile file, string folder, string fileName)
     {
         var blobServiceClient = new BlobServiceClient(_appSettings.AzureStorageConnectionString);
         string containerName = folder.ToLower().Replace('/', '-');
@@ -90,12 +89,11 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         {
             await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
         }
-
-        return blobClient.Uri.ToString();
     }
 
-    private async Task<string> SaveToLocalStorageAsync(IFormFile file, string folder, string fileName)
+    private async Task SaveToLocalStorageAsync(IFormFile file, string folder, string fileName)
     {
+        // Crear la ruta física donde se guardará el archivo
         string uploadsRootFolder = Path.Combine(_environment.ContentRootPath, "uploads", folder);
         Directory.CreateDirectory(uploadsRootFolder);
 
@@ -105,7 +103,6 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
             await file.CopyToAsync(fileStream);
         }
 
-        string url = Utilities.GetUrl(_appSettings);
-        return $"{url}/uploads/{folder}/{fileName}";
+        _logger.LogInformation("Archivo guardado localmente: {FilePath}", filePath);
     }
 }

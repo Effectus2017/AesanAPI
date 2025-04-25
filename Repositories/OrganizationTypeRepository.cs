@@ -5,19 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class OrganizationTypeRepository(
-    DapperContext context,
-    ILogger<OrganizationTypeRepository> logger,
-    IMemoryCache cache,
-    ApplicationSettings appSettings) : IOrganizationTypeRepository
+public class OrganizationTypeRepository(DapperContext context, ILogger<OrganizationTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOrganizationTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OrganizationTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
-    private readonly ApplicationSettings _appSettings = appSettings;
+    private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
     /// Obtiene un tipo de organización por su ID.

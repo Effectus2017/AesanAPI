@@ -18,16 +18,12 @@ using Api.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddJsonFile(
-    $"appsettings.Development.json",
-    optional: true,
-    reloadOnChange: true
-);
+builder.Configuration.AddJsonFile("appsettings.json", optional: true, true);
+builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, true);
 
-builder.Services.Configure<ApplicationSettings>(
-    builder.Configuration.GetSection(nameof(ApplicationSettings))
-);
+// Configurar ApplicationSettings usando IOptions pattern
+var appSettingsSection = builder.Configuration.GetSection(nameof(ApplicationSettings));
+builder.Services.Configure<ApplicationSettings>(appSettingsSection);
 
 // Configuración de servicios
 builder.Services.AddDbContext<ApplicationDbContext>(
@@ -80,8 +76,6 @@ builder.Services
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
-
-builder.Services.AddSingleton<ApplicationSettings>();
 
 // Agregar repositorios a la inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();
