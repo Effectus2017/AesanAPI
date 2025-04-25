@@ -15,8 +15,9 @@ public interface IAgencyFilesRepository
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
     /// <param name="documentType">Tipo de documento (opcional)</param>
+    /// <param name="name">Nombre del archivo (opcional)</param>
     /// <returns>Lista paginada de archivos de la agencia</returns>
-    Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, string documentType = null);
+    Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, string name = null, string documentType = null);
 
     /// <summary>
     /// Obtiene un archivo específico por su ID

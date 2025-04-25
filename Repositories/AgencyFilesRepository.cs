@@ -15,11 +15,7 @@ namespace Api.Repositories;
 /// <remarks>
 /// Constructor del repositorio de archivos de agencia
 /// </remarks>
-public class AgencyFilesRepository(
-    DapperContext context,
-    ILogger<AgencyFilesRepository> logger,
-    IMemoryCache cache,
-    IOptions<ApplicationSettings> appSettings) : IAgencyFilesRepository
+public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyFilesRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyFilesRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -29,7 +25,7 @@ public class AgencyFilesRepository(
     /// <summary>
     /// Obtiene todos los archivos asociados a una agencia
     /// </summary>
-    public async Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, string documentType = null)
+    public async Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, string name = null, string documentType = null)
     {
         try
         {
@@ -39,12 +35,9 @@ public class AgencyFilesRepository(
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@documentType", documentType, DbType.String);
+            parameters.Add("@name", name, DbType.String);
 
-            var result = await db.QueryMultipleAsync(
-                "100_GetAgencyFiles",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await db.QueryMultipleAsync("100_GetAgencyFiles", parameters, commandType: CommandType.StoredProcedure);
 
             var data = await result.ReadAsync<DTOAgencyFile>();
             var count = await result.ReadSingleAsync<int>();
