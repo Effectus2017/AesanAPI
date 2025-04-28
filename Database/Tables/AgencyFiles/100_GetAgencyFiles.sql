@@ -9,6 +9,7 @@ CREATE OR ALTER PROCEDURE [100_GetAgencyFiles]
     @agencyId INT,
     @take INT = 10,
     @skip INT = 0,
+    @alls BIT = 0,
     @documentType NVARCHAR(100) = NULL,
     @name NVARCHAR(100) = NULL
 AS
@@ -36,11 +37,13 @@ BEGIN
         Agency A ON AF.AgencyId = A.Id
     LEFT JOIN
         AspNetUsers U ON AF.UploadedBy = U.Id
-    WHERE 
+    WHERE (@alls = 1)
+        OR (
         AF.AgencyId = @agencyId
         AND AF.IsActive = 1
         AND (@documentType IS NULL OR AF.DocumentType = @documentType)
         AND (@name IS NULL OR AF.FileName LIKE '%' + @name + '%')
+    )
     ORDER BY 
         AF.UploadDate DESC
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
@@ -49,10 +52,12 @@ BEGIN
     SELECT COUNT(*) 
     FROM 
         AgencyFiles
-    WHERE 
+    WHERE (@alls = 1)
+    OR (
         AgencyId = @agencyId
         AND IsActive = 1
         AND (@documentType IS NULL OR DocumentType = @documentType)
-        AND (@name IS NULL OR FileName LIKE '%' + @name + '%');
+        AND (@name IS NULL OR FileName LIKE '%' + @name + '%')
+    );
 END;
 GO 

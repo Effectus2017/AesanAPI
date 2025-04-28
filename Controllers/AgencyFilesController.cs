@@ -66,7 +66,7 @@ public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitO
             if (ModelState.IsValid)
             {
                 _logger.LogInformation("Obteniendo archivos para la agencia {AgencyId}", queryParameters.AgencyId);
-                var result = await _unitOfWork.AgencyFilesRepository.GetAgencyFiles(queryParameters.AgencyId, queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.DocumentType);
+                var result = await _unitOfWork.AgencyFilesRepository.GetAgencyFiles(queryParameters.AgencyId, queryParameters.Take, queryParameters.Skip, queryParameters.Alls, queryParameters.Name, queryParameters.DocumentType);
                 return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 

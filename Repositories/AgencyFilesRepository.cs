@@ -25,7 +25,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
     /// <summary>
     /// Obtiene todos los archivos asociados a una agencia
     /// </summary>
-    public async Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, string name = null, string documentType = null)
+    public async Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, bool alls, string name = null, string documentType = null)
     {
         try
         {
@@ -34,6 +34,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
             parameters.Add("@agencyId", agencyId, DbType.Int32);
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@alls", alls, DbType.Boolean);
             parameters.Add("@documentType", documentType, DbType.String);
             parameters.Add("@name", name, DbType.String);
 
