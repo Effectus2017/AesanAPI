@@ -159,7 +159,6 @@ builder.Services.AddCors(options =>
         builder =>
             builder
                 .WithOrigins(
-                    "https://aesanweb-fwbfa9hshaaybnbf.canadacentral-01.azurewebsites.net",
                     "https://aesanweb-dev.azurewebsites.net",
                     "https://aesanapi.azurewebsites.net"
                 )
@@ -180,7 +179,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddApplicationInsightsTelemetry(options =>
 {
     options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-    options.EnableAdaptiveSampling = false; // Deshabilitar el muestreo adaptativo si quieres todos los logs
+    options.EnableAdaptiveSampling = true; // Deshabilitar el muestreo adaptativo si quieres todos los logs
 });
 
 // Configurar el TelemetryConfiguration para enriquecer los logs

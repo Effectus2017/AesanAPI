@@ -120,7 +120,7 @@ public class AgencyRepository(
     /// <param name="name">El nombre de la agencia</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
+    public async Task<dynamic> GetAllAgenciesFromDbOld(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
     {
         string cacheKey = string.Format(
             _appSettings.Cache.Keys.Agencies,
@@ -154,7 +154,7 @@ public class AgencyRepository(
 
                 // Usar un bloque using para garantizar que el GridReader se cierre correctamente
                 using (var result = await dbConnection.QueryMultipleAsync(
-                    "110_GetAgencies",
+                    "114_GetAgencies",
                     param,
                     commandType: CommandType.StoredProcedure))
                 {
@@ -774,66 +774,106 @@ public class AgencyRepository(
         }
     }
 
-    // Métodos privados de mapeo
+    /// <summary>
+    /// Mapea una agencia desde un resultado dinámico a un DTOAgency
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DTOAgency</returns>
     private static DTOAgency MapAgencyFromResult(dynamic item)
     {
-        return new DTOAgency
+        try
         {
-            Id = item.Id,
-            Name = item.Name,
-            StatusId = item.AgencyStatusId,
-            SdrNumber = item.SdrNumber,
-            UieNumber = item.UieNumber,
-            EinNumber = item.EinNumber,
-            Address = item.Address,
-            ZipCode = item.ZipCode,
-            PostalAddress = item.PostalAddress,
-            PostalZipCode = item.PostalZipCode,
-            Latitude = item.Latitude != null ? (float)item.Latitude : null,
-            Longitude = item.Longitude != null ? (float)item.Longitude : null,
-            Phone = item.Phone,
-            Email = item.Email,
-            ImageURL = item.ImageURL,
-
-            BasicEducationRegistry = item.BasicEducationRegistry,
-
-            // Justificación de rechazo
-            RejectionJustification = item.RejectionJustification,
-            // Comentarios
-            Comments = item.Comments,
-            // Cita coordinada
-            AppointmentCoordinated = item.AppointmentCoordinated,
-            // Fecha de la cita
-            AppointmentDate = item.AppointmentDate,
-
-            CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt,
-            AgencyCode = item.AgencyCode,
-
-            City = new DTOCity { Id = item.CityId, Name = item.CityName },
-            Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
-            PostalCity = new DTOCity { Id = item.PostalCityId, Name = item.PostalCityName },
-            PostalRegion = new DTORegion { Id = item.PostalRegionId, Name = item.PostalRegionName },
-            Status = new DTOAgencyStatus { Id = item.AgencyStatusId, Name = item.AgencyStatusName },
-            User = item.UserId != null ? new DTOUser
+            if (item == null)
             {
-                Id = item.UserId,
-                FirstName = item.UserFirstName,
-                MiddleName = item.UserMiddleName,
-                FatherLastName = item.UserFatherLastName,
-                MotherLastName = item.UserMotherLastName,
-                AdministrationTitle = item.UserAdministrationTitle,
-                Email = item.UserEmail,
-                Phone = item.UserPhone,
-                ImageURL = item.UserImageURL,
-            } : null,
-            Monitor = item.MonitorId != null ? new DTOUser
+                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
+            }
+
+            return new DTOAgency
             {
-                Id = item.MonitorId,
-                FirstName = item.MonitorFirstName,
-                FatherLastName = item.MonitorFatherLastName,
-            } : null
-        };
+                Id = item.Id ?? 0,
+                Name = item.Name ?? string.Empty,
+                StatusId = item.AgencyStatusId ?? 0,
+                SdrNumber = item.SdrNumber,
+                UieNumber = item.UieNumber,
+                EinNumber = item.EinNumber,
+                Address = item.Address,
+                ZipCode = item.ZipCode,
+                PostalAddress = item.PostalAddress,
+                PostalZipCode = item.PostalZipCode,
+                Latitude = item.Latitude != null ? (float)item.Latitude : null,
+                Longitude = item.Longitude != null ? (float)item.Longitude : null,
+                Phone = item.Phone,
+                Email = item.Email,
+                ImageURL = item.ImageURL,
+
+                BasicEducationRegistry = item.BasicEducationRegistry ?? 0,
+
+                // Justificación de rechazo
+                RejectionJustification = item.RejectionJustification,
+                // Comentarios
+                Comments = item.Comments,
+                // Cita coordinada
+                AppointmentCoordinated = item.AppointmentCoordinated ?? false,
+                // Fecha de la cita
+                AppointmentDate = item.AppointmentDate,
+
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt,
+                AgencyCode = item.AgencyCode,
+
+                City = new DTOCity
+                {
+                    Id = item.CityId ?? 0,
+                    Name = item.CityName ?? string.Empty
+                },
+                Region = new DTORegion
+                {
+                    Id = item.RegionId ?? 0,
+                    Name = item.RegionName ?? string.Empty
+                },
+                PostalCity = new DTOCity
+                {
+                    Id = item.PostalCityId ?? 0,
+                    Name = item.PostalCityName ?? string.Empty
+                },
+                PostalRegion = new DTORegion
+                {
+                    Id = item.PostalRegionId ?? 0,
+                    Name = item.PostalRegionName ?? string.Empty
+                },
+                Status = new DTOAgencyStatus
+                {
+                    Id = item.AgencyStatusId ?? 0,
+                    Name = item.AgencyStatusName ?? string.Empty
+                },
+                User = item.UserId != null ? new DTOUser
+                {
+                    Id = item.UserId,
+                    FirstName = item.UserFirstName ?? string.Empty,
+                    MiddleName = item.UserMiddleName ?? string.Empty,
+                    FatherLastName = item.UserFatherLastName ?? string.Empty,
+                    MotherLastName = item.UserMotherLastName ?? string.Empty,
+                    AdministrationTitle = item.UserAdministrationTitle ?? string.Empty,
+                    Email = item.UserEmail ?? string.Empty,
+                    Phone = item.UserPhone ?? string.Empty,
+                    ImageURL = item.UserImageURL ?? string.Empty,
+                } : null,
+                Monitor = item.MonitorId != null ? new DTOUser
+                {
+                    Id = item.MonitorId,
+                    FirstName = item.MonitorFirstName ?? string.Empty,
+                    FatherLastName = item.MonitorFatherLastName ?? string.Empty,
+                } : null
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear la agencia: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear la agencia: {ex.Message}", ex);
+        }
     }
 
     private static List<DTOProgram> MapProgramsFromResult(IEnumerable<dynamic> programs)
@@ -850,5 +890,76 @@ public class AgencyRepository(
                     }
             )
             .ToList();
+    }
+
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@take", take);
+            param.Add("@skip", skip);
+            param.Add("@name", name);
+            param.Add("@regionId", regionId);
+            param.Add("@cityId", cityId);
+            param.Add("@programId", programId);
+            param.Add("@statusId", statusId);
+            param.Add("@userId", userId);
+            param.Add("@alls", alls);
+
+            // Variables para almacenar los resultados
+            List<dynamic> agencies = new List<dynamic>();
+            List<dynamic> agenciesPrograms = new List<dynamic>();
+            int count = 0;
+
+            // Usar un bloque using para garantizar que el GridReader se cierre correctamente
+            using (var result = await dbConnection.QueryMultipleAsync(
+                "114_GetAgencies",
+                param,
+                commandType: CommandType.StoredProcedure))
+            {
+                if (result == null)
+                {
+                    return null;
+                }
+
+                // Leer todos los conjuntos de resultados de manera segura
+                if (!result.IsConsumed)
+                {
+                    agencies = result.Read<dynamic>().ToList();
+                }
+
+                if (!result.IsConsumed)
+                {
+                    agenciesPrograms = result.Read<dynamic>().ToList();
+                }
+
+                if (!result.IsConsumed)
+                {
+                    count = result.Read<int>().FirstOrDefault();
+                }
+            } // El GridReader se cierra aquí
+
+            // Procesar los datos después de que el GridReader se haya cerrado
+            var mappedAgencies = agencies.Select(MapAgencyFromResult).ToList();
+
+            if (agenciesPrograms != null && agenciesPrograms.Any())
+            {
+                foreach (var agency in mappedAgencies)
+                {
+                    agency.Programs = MapProgramsFromResult(
+                        agenciesPrograms.Where(ap => ap.AgencyId == agency.Id)
+                    );
+                }
+            }
+
+            return new { data = mappedAgencies, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las agencias de la base de datos");
+            throw;
+        }
     }
 }
