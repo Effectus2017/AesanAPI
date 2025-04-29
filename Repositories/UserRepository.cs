@@ -260,8 +260,6 @@ public class UserRepository(UserManager<User> userManager,
 
 #if !DEBUG
 
-
-
             // Si el usuario está deshabilitado, se debe devolver un error
             if (!_user.IsActive)
             {
@@ -269,10 +267,10 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Si el correo electrónico no está confirmado, se debe devolver un error
-            if (!_user.EmailConfirmed)
-            {
-                return new BadRequestObjectResult(new { Message = "El correo electrónico no está confirmado." });
-            }
+            // if (!_user.EmailConfirmed)
+            // {
+            //     return new BadRequestObjectResult(new { Message = "El correo electrónico no está confirmado." });
+            // }
 #endif
 
             // Verificar si la contraseña es correcta
