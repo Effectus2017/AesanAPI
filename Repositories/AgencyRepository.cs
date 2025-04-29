@@ -33,34 +33,50 @@ public class AgencyRepository(
     /// <returns>La agencia</returns>
     public async Task<dynamic> GetAgencyById(int id)
     {
-        using IDbConnection dbConnection = _context.CreateConnection();
-
-        var param = new DynamicParameters();
-        param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
-
-        var result = await dbConnection.QueryMultipleAsync(
-            "110_GetAgencyById",
-            param,
-            commandType: CommandType.StoredProcedure
-        );
-
-        if (result == null)
-            return null;
-
-        var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
-
-        if (_agencyResult == null)
-            return null;
-
-        var agency = MapAgencyFromResult(_agencyResult);
-        var _agenciesPrograms = await result.ReadAsync<dynamic>();
-
-        if (_agenciesPrograms.Any())
+        try
         {
-            agency.Programs = MapProgramsFromResult(_agenciesPrograms);
-        }
+            using IDbConnection dbConnection = _context.CreateConnection();
 
-        return agency;
+            var param = new DynamicParameters();
+            param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
+
+            var result = await dbConnection.QueryMultipleAsync(
+                "110_GetAgencyById",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (result == null)
+            {
+                var error = new Exception($"No se encontraron resultados para la agencia ID: {id}");
+                await _logger.LogError(error, "No se encontraron resultados");
+                return null;
+            }
+
+            var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+
+            if (_agencyResult == null)
+            {
+                var error = new Exception($"No se encontró la agencia con ID: {id}");
+                await _logger.LogError(error, "No se encontró la agencia");
+                return null;
+            }
+
+            var agency = MapAgencyFromResult(_agencyResult);
+            var _agenciesPrograms = await result.ReadAsync<dynamic>();
+
+            if (_agenciesPrograms.Any())
+            {
+                agency.Programs = MapProgramsFromResult(_agenciesPrograms);
+            }
+
+            return agency;
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, "Error al obtener la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
+            throw;
+        }
     }
 
     /// <summary>
@@ -235,7 +251,7 @@ public class AgencyRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las agencias");
+            await _logger.LogError(ex, "Error al obtener las agencias", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -335,13 +351,13 @@ public class AgencyRepository(
             }
 
             // Invalidar caché
-            InvalidateCache(agencyId);
+            await InvalidateCache(agencyId);
 
             return agencyId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la agencia");
+            await _logger.LogError(ex, "Error al insertar la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -384,7 +400,7 @@ public class AgencyRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la inscripción de la agencia");
+            await _logger.LogError(ex, "Error al insertar la inscripción de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -406,7 +422,7 @@ public class AgencyRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el programa de la agencia");
+            await _logger.LogError(ex, "Error al insertar el programa de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw new Exception(ex.Message);
         }
     }
@@ -423,7 +439,13 @@ public class AgencyRepository(
         {
             // Obtener la agencia actual para comparar el monitor
             var currentAgency = await GetAgencyById(agencyId);
-            string currentMonitorId = currentAgency?.Monitor?.Id ?? throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
+
+            if (currentAgency == null)
+            {
+                throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
+            }
+
+            string currentMonitorId = currentAgency?.Monitor?.Id;
 
             var parameters = new DynamicParameters();
             parameters.Add("@Id", agencyId);
@@ -445,18 +467,6 @@ public class AgencyRepository(
             parameters.Add("@Phone", agencyRequest.Phone);
             parameters.Add("@ImageURL", agencyRequest.ImageUrl);
             parameters.Add("@Email", agencyRequest.Email);
-
-            //parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
-            //parameters.Add("@NonProfit", agencyRequest.NonProfit);
-            //parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
-            //parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
-            //parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
-            //parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
-            //parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
-            //parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
-            //parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
-            //parameters.Add("@BasicEducationRegistry", agencyRequest.BasicEducationRegistry);
-
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -492,14 +502,14 @@ public class AgencyRepository(
             // Invalidar caché
             if (rowsAffected > 0)
             {
-                InvalidateCache(agencyId);
+                await InvalidateCache(agencyId);
             }
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la agencia");
+            await _logger.LogError(ex, "Error al actualizar la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -526,7 +536,7 @@ public class AgencyRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el logo de la agencia");
+            await _logger.LogError(ex, "Error al actualizar el logo de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw new Exception(ex.Message);
         }
     }
@@ -606,14 +616,14 @@ public class AgencyRepository(
             // Invalidar caché
             if (rowsAffected > 0)
             {
-                InvalidateCache(agencyId);
+                await InvalidateCache(agencyId);
             }
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado de la agencia");
+            await _logger.LogError(ex, "Error al actualizar el estado de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -643,14 +653,14 @@ public class AgencyRepository(
 
             if (rowsAffected > 0)
             {
-                InvalidateCache(agencyId);
+                await InvalidateCache(agencyId);
             }
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el programa de la agencia");
+            await _logger.LogError(ex, "Error al actualizar el programa de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -684,14 +694,14 @@ public class AgencyRepository(
 
             if (rowsAffected > 0)
             {
-                InvalidateCache(agencyId);
+                await InvalidateCache(agencyId);
             }
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la inscripción de la agencia");
+            await _logger.LogError(ex, "Error al actualizar la inscripción de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -716,19 +726,19 @@ public class AgencyRepository(
             if (rowsAffected > 0)
             {
                 // Invalidar caché
-                InvalidateCache(agencyId);
+                await InvalidateCache(agencyId);
             }
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la agencia");
+            await _logger.LogError(ex, "Error al eliminar la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw new Exception(ex.Message);
         }
     }
 
-    private void InvalidateCache(int? agencyId = null)
+    private async Task InvalidateCache(int? agencyId = null)
     {
         try
         {
@@ -769,7 +779,7 @@ public class AgencyRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al invalidar el caché de Agency Repository");
+            await _logger.LogError(ex, "Error al invalidar el caché de Agency Repository", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             // No relanzamos la excepción para evitar que un error de caché afecte la operación principal
         }
     }
@@ -878,18 +888,25 @@ public class AgencyRepository(
 
     private static List<DTOProgram> MapProgramsFromResult(IEnumerable<dynamic> programs)
     {
-        return programs
-            .Select(
-                ap =>
-                    new DTOProgram
-                    {
-                        Id = ap.Id,
-                        Name = ap.Name,
-                        Description = ap.Description,
-                        AgencyId = ap.AgencyId
-                    }
-            )
-            .ToList();
+        try
+        {
+            return programs
+                .Select(
+                    ap =>
+                        new DTOProgram
+                        {
+                            Id = ap.Id,
+                            Name = ap.Name,
+                            Description = ap.Description,
+                            AgencyId = ap.AgencyId
+                        }
+                )
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear los programas: {ex.Message}", ex);
+        }
     }
 
     public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
@@ -958,7 +975,7 @@ public class AgencyRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las agencias de la base de datos");
+            await _logger.LogError(ex, "Error al obtener las agencias de la base de datos", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }

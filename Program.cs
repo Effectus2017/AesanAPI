@@ -1,5 +1,6 @@
 using System.Globalization;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Mapper;
 using Api.Models;
@@ -15,6 +16,9 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Api.Telemetry;
+using ElmahCore.Mvc;
+using ElmahCore.Sql;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +48,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(
     },
     ServiceLifetime.Scoped
 );
+
+// Configurar HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
 builder.Services
     .AddAuthentication(options =>
@@ -188,6 +195,14 @@ builder.Services.Configure<TelemetryConfiguration>((config) =>
     config.TelemetryInitializers.Add(new EnvironmentTelemetryInitializer(builder.Environment));
 });
 
+// Configuración de ELMAH con SQL Server
+builder.Services.AddElmah<SqlErrorLog>(options =>
+{
+    options.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // Usa la misma conexión que la aplicación
+    options.Path = "/elmah"; // Ruta para acceder al dashboard de ELMAH
+    options.OnPermissionCheck = context => context.User.Identity.IsAuthenticated; // Solo usuarios autenticados pueden ver el dashboard
+});
+
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 
 builder.Services.AddLogging(logging =>
@@ -232,6 +247,9 @@ else
             var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
             var exception = exceptionHandlerPathFeature?.Error;
 
+            // Registrar en ELMAH
+            await context.RaiseError(exception);
+
             logger.LogError(
                 exception,
                 "Error no manejado: {Message}. Path: {Path}",
@@ -255,6 +273,11 @@ else
 // CORS debe ir antes de routing y después de los middleware de error
 app.UseCors(app.Environment.IsDevelopment() ? "AllowDevOrigin" : "AllowProdOrigin");
 
+// Habilitar ELMAH
+app.UseElmah();
+
+app.UseHttpsRedirection();
+
 // Configuración global
 app.UseRouting();
 
@@ -271,12 +294,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Habilitar Swagger
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
-    c.RoutePrefix = string.Empty;
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AESAN API V1");
+        c.RoutePrefix = string.Empty;
+    });
+}
 
 // Asegurar que la carpeta uploads existe
 var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");

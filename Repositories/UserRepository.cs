@@ -12,6 +12,7 @@ using AutoMapper;
 using Api.Data;
 using System.Data;
 using Dapper;
+using Api.Services;
 
 namespace Api.Repositories;
 
@@ -19,7 +20,7 @@ public class UserRepository(UserManager<User> userManager,
     RoleManager<Role> roleManager,
     IOptions<ApplicationSettings> appSettings,
     IMapper mapper,
-    ILogger<UserRepository> logger,
+    ILoggingService loggingService,
     DapperContext context,
     IEmailService emailService,
     IAgencyRepository agencyRepository,
@@ -30,7 +31,7 @@ public class UserRepository(UserManager<User> userManager,
     private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly IMapper _mapper = mapper;
-    private readonly ILogger<UserRepository> _logger = logger;
+    private readonly ILoggingService _loggingService = loggingService;
     private readonly IEmailService _emailService = emailService;
     private readonly IAgencyRepository _agencyRepository = agencyRepository;
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository;
@@ -67,12 +68,12 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Error al obtener usuario. UserId: {UserId}, Error: {ErrorMessage}",
-                userId,
-                ex.Message
-            );
+            var properties = new Dictionary<string, string>
+            {
+                { "UserId", userId },
+                { "ErrorMessage", ex.Message }
+            };
+            await _loggingService.LogError(ex, "Error al obtener usuario", properties);
             throw new Exception($"Error al obtener el usuario: {ex.Message}", ex);
         }
     }
@@ -112,7 +113,7 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            _logger.LogInformation("Obteniendo usuarios con SP");
+            _loggingService.LogInformation("Obteniendo usuarios con SP");
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@take", take, DbType.Int32);
@@ -155,7 +156,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener usuarios con SP");
+            await _loggingService.LogError(ex, "Error al obtener usuarios con SP");
             throw;
         }
     }
@@ -195,7 +196,7 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            _logger.LogInformation("Obteniendo todos los programas de la base de datos");
+            _loggingService.LogInformation("Obteniendo todos los programas de la base de datos");
 
             using IDbConnection dbConnection = _context.CreateConnection();
 
@@ -241,7 +242,7 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            _logger.LogInformation("Iniciando sesión en el sistema");
+            _loggingService.LogInformation("Iniciando sesión en el sistema");
 
             User? _user = await _userManager.FindByNameAsync(model.UserName);
 
@@ -291,7 +292,7 @@ public class UserRepository(UserManager<User> userManager,
             // Obtener los roles del usuario
             var roles = await _userManager.GetRolesAsync(_user);
 
-            _logger.LogInformation("Obteniendo la agencia del usuario");
+            _loggingService.LogInformation("Obteniendo la agencia del usuario");
 
             // Obtener la agencia del usuario
             var agency = await _agencyUsersRepository.GetUserAssignedAgency(_user.Id);
@@ -406,7 +407,10 @@ public class UserRepository(UserManager<User> userManager,
 
             var result = await _userManager.CreateAsync(user, temporaryPassword);
 
-            _logger.LogInformation("Contraseña temporal: {temporaryPassword}", temporaryPassword);
+            _loggingService.LogInformation("Insertando la contraseña temporal en la base de datos", new Dictionary<string, string>
+            {
+                { "TemporaryPassword", temporaryPassword }
+            });
 
             if (!result.Succeeded)
             {
@@ -424,11 +428,11 @@ public class UserRepository(UserManager<User> userManager,
                     return new BadRequestObjectResult(resultRole.Errors);
                 }
 
-                _logger.LogInformation("Insertando la contrasea temporal en la base de datos: {temporaryPassword}", temporaryPassword);
+                _loggingService.LogInformation("Insertando la contraseña temporal en la base de datos", new Dictionary<string, string> { { "temporaryPassword", temporaryPassword } });
                 await InsertTemporaryPassword(user.Id, temporaryPassword);
             }
 
-            _logger.LogInformation("Insertando la agencia en la base de datos");
+            _loggingService.LogInformation("Insertando la agencia en la base de datos");
 
             // Insertar la agencia
             int agencyId = await _agencyRepository.InsertAgency(model.Agency);
@@ -465,7 +469,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al registrar usuario");
+            _loggingService.LogError(ex, "Error al registrar usuario");
 
             if (user != null)
             {
@@ -534,7 +538,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al registrar usuario");
+            _loggingService.LogError(ex, "Error al registrar usuario");
             return new BadRequestObjectResult(new { Message = "Error al registrar usuario", Error = ex.Message });
         }
     }
@@ -630,23 +634,17 @@ public class UserRepository(UserManager<User> userManager,
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error inesperado al actualizar usuario {UserId}. Tipo de error: {ErrorType}. Mensaje: {ErrorMessage}. Stack Trace: {StackTrace}",
-                    entity.Id,
-                    ex.GetType().Name,
-                    ex.Message,
-                    ex.StackTrace
-                );
+                await _loggingService.LogError(ex, "Error inesperado al actualizar usuario", new Dictionary<string, string>
+                {
+                    { "UserId", entity.Id },
+                    { "ErrorType", ex.GetType().Name },
+                    { "ErrorMessage", ex.Message },
+                    { "StackTrace", ex.StackTrace }
+                });
 
                 if (ex.InnerException != null)
                 {
-                    _logger.LogError(
-                        "Inner Exception para usuario {UserId}: Tipo: {ErrorType}. Mensaje: {ErrorMessage}",
-                        entity.Id,
-                        ex.InnerException.GetType().Name,
-                        ex.InnerException.Message
-                    );
+                    await _loggingService.LogError(ex.InnerException, "Inner Exception para usuario {UserId}: Tipo: {ErrorType}. Mensaje: {ErrorMessage}", new Dictionary<string, string> { { "UserId", entity.Id }, { "ErrorType", ex.InnerException.GetType().Name }, { "ErrorMessage", ex.InnerException.Message } });
                 }
 
                 throw;
@@ -654,21 +652,11 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Error crítico al procesar la actualización del usuario. Tipo de error: {ErrorType}. Mensaje: {ErrorMessage}. Stack Trace: {StackTrace}",
-                ex.GetType().Name,
-                ex.Message,
-                ex.StackTrace
-            );
+            await _loggingService.LogError(ex, "Error crítico al procesar la actualización del usuario. Tipo de error: {ErrorType}. Mensaje: {ErrorMessage}. Stack Trace: {StackTrace}", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
 
             if (ex.InnerException != null)
             {
-                _logger.LogError(
-                    "Inner Exception: Tipo: {ErrorType}. Mensaje: {ErrorMessage}",
-                    ex.InnerException.GetType().Name,
-                    ex.InnerException.Message
-                );
+                await _loggingService.LogError(ex.InnerException, "Inner Exception: Tipo: {ErrorType}. Mensaje: {ErrorMessage}", new Dictionary<string, string> { { "ErrorType", ex.InnerException.GetType().Name }, { "ErrorMessage", ex.InnerException.Message } });
             }
 
             throw new Exception($"Error al actualizar el usuario: {ex.Message}", ex);
@@ -746,7 +734,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al cambiar la contraseña");
+            await _loggingService.LogError(ex, "Error al cambiar la contraseña");
             return new BadRequestObjectResult(new { Message = "Error al cambiar la contraseña", Error = ex.Message });
         }
     }
@@ -805,7 +793,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al resetear la contraseña");
+            await _loggingService.LogError(ex, "Error al resetear la contraseña");
             return false;
         }
     }
@@ -871,7 +859,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la contraseña temporal");
+            await _loggingService.LogError(ex, "Error al actualizar la contraseña temporal");
             return false;
         }
     }
@@ -897,7 +885,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al generar el token de restablecimiento de contraseña");
+            await _loggingService.LogError(ex, "Error al generar el token de restablecimiento de contraseña", new Dictionary<string, string> { { "Email", email } });
             throw new Exception("No se pudo generar el token de restablecimiento de contraseña", ex);
         }
     }
@@ -933,7 +921,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el avatar del usuario");
+            await _loggingService.LogError(ex, "Error al actualizar el avatar del usuario");
             return new BadRequestObjectResult(new { Message = "Error al actualizar el avatar", Error = ex.Message });
         }
     }
@@ -967,7 +955,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al deshabilitar el usuario");
+            await _loggingService.LogError(ex, "Error al deshabilitar el usuario");
             return new BadRequestObjectResult(new { Message = "Error al deshabilitar el usuario", Error = ex.Message });
         }
     }
@@ -1010,7 +998,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el usuario y sus datos asociados por correo electrónico");
+            await _loggingService.LogError(ex, "Error al eliminar el usuario y sus datos asociados por correo electrónico");
             return new BadRequestObjectResult(new { Message = "Error al eliminar el usuario", Error = ex.Message });
         }
     }
@@ -1035,7 +1023,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la contraseña temporal");
+            await _loggingService.LogError(ex, "Error al insertar la contraseña temporal");
             throw new Exception("No se pudo insertar la contraseña temporal", ex);
         }
     }
@@ -1056,7 +1044,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la contraseña temporal");
+            await _loggingService.LogError(ex, "Error al obtener la contraseña temporal");
             throw new Exception("No se pudo obtener la contraseña temporal", ex);
         }
     }
@@ -1076,7 +1064,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la contraseña temporal");
+            await _loggingService.LogError(ex, "Error al eliminar la contraseña temporal");
             throw new Exception("No se pudo eliminar la contraseña temporal", ex);
         }
     }
@@ -1136,7 +1124,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al forzar contraseña para usuario {UserId}", userId);
+            await _loggingService.LogError(ex, "Error al forzar contraseña para usuario {UserId}", new Dictionary<string, string> { { "UserId", userId } });
 
             throw;
         }
@@ -1174,30 +1162,30 @@ public class UserRepository(UserManager<User> userManager,
                         var webUrl = Utilities.GetUrl(_appSettings);
                         var resetLink = $"{webUrl}reset-password?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
                         await _emailService.SendPasswordResetEmail(email, resetLink);
-                        _logger.LogInformation("Email de restablecimiento enviado a {Email}", email);
+                        _loggingService.LogInformation("Email de restablecimiento enviado", new Dictionary<string, string> { { "Email", email } });
                         return true;
                     }
                     break;
                 case -1:
-                    _logger.LogWarning("Email inválido: {Email}", email);
+                    await _loggingService.LogError(new Exception("Token inválido"), "Token inválido generado", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -2:
-                    _logger.LogError("Token inválido generado para {Email}", email);
+                    await _loggingService.LogError(new Exception("Token inválido"), "Token inválido generado", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -3:
-                    _logger.LogError("Fecha de expiración inválida para {Email}", email);
+                    await _loggingService.LogError(new Exception("Token expirado"), "Token expirado", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -4:
-                    _logger.LogWarning("Usuario no encontrado o inactivo: {Email}", email);
+                    await _loggingService.LogError(new Exception("Usuario no encontrado o inactivo"), "Usuario no encontrado o inactivo: {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -5:
-                    _logger.LogWarning("Demasiados intentos de restablecimiento para {Email}", email);
+                    await _loggingService.LogError(new Exception("Demasiados intentos de restablecimiento"), "Demasiados intentos de restablecimiento para {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -99:
-                    _logger.LogError("Error general al generar token para {Email}", email);
+                    await _loggingService.LogError(new Exception("Error general"), "Error general al generar token", new Dictionary<string, string> { { "Email", email } });
                     break;
                 default:
-                    _logger.LogError("Error desconocido al generar token para {Email}: {Result}", email, result);
+                    await _loggingService.LogError(new Exception("Error desconocido"), "Error desconocido al generar token", new Dictionary<string, string> { { "Email", email }, { "Result", result.ToString() } });
                     break;
             }
 
@@ -1205,7 +1193,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al generar token de restablecimiento para {Email}", email);
+            await _loggingService.LogError(ex, "Error al generar token de restablecimiento para {Email}", new Dictionary<string, string> { { "Email", email } });
             return false;
         }
     }
@@ -1231,28 +1219,28 @@ public class UserRepository(UserManager<User> userManager,
             switch (result)
             {
                 case 0: // Éxito
-                    _logger.LogInformation("Token validado exitosamente para {Email}", email);
+                    _loggingService.LogInformation("Token validado exitosamente para {Email}", new Dictionary<string, string> { { "Email", email } });
                     return true;
                 case -1:
-                    _logger.LogWarning("Email inválido: {Email}", email);
+                    _loggingService.LogWarning("Email inválido: {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -2:
-                    _logger.LogWarning("Token inválido para {Email}", email);
+                    _loggingService.LogWarning("Token inválido para {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -3:
-                    _logger.LogWarning("Usuario no encontrado o inactivo: {Email}", email);
+                    _loggingService.LogWarning("Usuario no encontrado o inactivo: {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -4:
-                    _logger.LogWarning("Token no encontrado para {Email}", email);
+                    _loggingService.LogWarning("Token no encontrado para {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -5:
-                    _logger.LogWarning("Token expirado para {Email}", email);
+                    await _loggingService.LogError(new Exception("Token expirado"), "Token expirado para {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 case -99:
-                    _logger.LogError("Error general al validar token para {Email}", email);
+                    await _loggingService.LogError(new Exception("Error general"), "Error general al validar token para {Email}", new Dictionary<string, string> { { "Email", email } });
                     break;
                 default:
-                    _logger.LogError("Error desconocido al validar token para {Email}: {Result}", email, result);
+                    await _loggingService.LogError(new Exception("Error desconocido"), "Error desconocido al validar token", new Dictionary<string, string> { { "Email", email }, { "Result", result.ToString() } });
                     break;
             }
 
@@ -1260,7 +1248,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al validar token de restablecimiento para {Email}", email);
+            await _loggingService.LogError(ex, "Error al validar token de restablecimiento para {Email}", new Dictionary<string, string> { { "Email", email } });
             return false;
         }
     }
@@ -1306,7 +1294,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al restablecer contraseña para {Email}", email);
+            await _loggingService.LogError(ex, "Error al restablecer contraseña para {Email}", new Dictionary<string, string> { { "Email", email } });
             throw;
         }
     }

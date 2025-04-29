@@ -1,28 +1,29 @@
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Channel;
+using ElmahCore;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.Services;
 
 public interface ILoggingService
 {
-    void LogError(Exception ex, string message = null, IDictionary<string, string> properties = null);
+    Task LogError(Exception ex, string message = null, IDictionary<string, string> properties = null);
     void LogWarning(string message, IDictionary<string, string> properties = null);
     void LogInformation(string message, IDictionary<string, string> properties = null);
 }
 
-public class LoggingService : ILoggingService
+public class LoggingService(
+    TelemetryClient telemetryClient,
+    IWebHostEnvironment environment,
+    IHttpContextAccessor httpContextAccessor) : ILoggingService
 {
-    private readonly TelemetryClient _telemetryClient;
-    private readonly IWebHostEnvironment _environment;
+    private readonly TelemetryClient _telemetryClient = telemetryClient;
+    private readonly IWebHostEnvironment _environment = environment;
+    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
-    public LoggingService(TelemetryClient telemetryClient, IWebHostEnvironment environment)
-    {
-        _telemetryClient = telemetryClient;
-        _environment = environment;
-    }
-
-    public void LogError(Exception ex, string message = null, IDictionary<string, string> properties = null)
+    public async Task LogError(Exception ex, string message = null, IDictionary<string, string> properties = null)
     {
         var telemetry = new ExceptionTelemetry(ex);
         EnrichTelemetry(telemetry, properties);
@@ -33,6 +34,17 @@ public class LoggingService : ILoggingService
         }
 
         _telemetryClient.TrackException(telemetry);
+
+        // Log to ELMAH
+        var context = _httpContextAccessor.HttpContext;
+        if (context != null)
+        {
+            var errorLog = context.RequestServices.GetService<ErrorLog>();
+            if (errorLog != null)
+            {
+                await errorLog.LogAsync(new Error(ex, context));
+            }
+        }
 
         // Log to console in development
         if (_environment.IsDevelopment())
