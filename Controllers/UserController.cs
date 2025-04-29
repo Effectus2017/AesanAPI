@@ -1,9 +1,11 @@
 using System.Threading.Tasks;
 using Api.Models;
+using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Text.Json;
 
 namespace Api.Controllers;
 
@@ -13,9 +15,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión de usuarios, roles y programas,
 /// incluyendo el registro de usuarios y agencias.
 /// </summary>
-public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logger) : Controller
+public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingService) : Controller
 {
-    private readonly ILogger<UserController> _logger = logger;
+    private readonly ILoggingService _loggingService = loggingService;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     /// ------------------------------------------------------------------------------------------------
@@ -35,7 +37,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Obteniendo usuario con ID: {UserId}", queryParameters.UserId);
+                _loggingService.LogInformation("Obteniendo usuario con ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
                 DTOUser _result = await _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
@@ -44,6 +46,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
+            await _loggingService.LogError(ex, "Error al obtener usuario", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
         }
     }
@@ -54,13 +57,17 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
     /// <returns>Lista de usuarios</returns>
     [HttpGet("get-all-users-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los usuarios de la base de datos", Description = "Devuelve una lista de todos los usuarios.")]
-    public IActionResult GetAllUsersFromDb([FromQuery] QueryParameters queryParameters)
+    public async Task<IActionResult> GetAllUsersFromDb([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Obteniendo lista de usuarios con parámetros: {@QueryParameters}", queryParameters);
+                _loggingService.LogInformation("Obteniendo lista de usuarios", new Dictionary<string, string> {
+                    { "Take", queryParameters.Take.ToString() },
+                    { "Skip", queryParameters.Skip.ToString() },
+                    { "Name", queryParameters.Name ?? "null" }
+                });
                 dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId);
 
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
@@ -70,6 +77,11 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
+            await _loggingService.LogError(ex, "Error al obtener lista de usuarios", new Dictionary<string, string> {
+                { "Take", queryParameters.Take.ToString() },
+                { "Skip", queryParameters.Skip.ToString() },
+                { "Name", queryParameters.Name ?? "null" }
+            });
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
         }
     }
@@ -139,7 +151,10 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Registrando usuario en la agencia: {@UserAgencyRequest}", model);
+                _loggingService.LogInformation("Registrando usuario en la agencia", new Dictionary<string, string> {
+                    { "Email", model.User?.Email ?? "null" },
+                    { "AgencyName", model.Agency?.Name ?? "null" }
+                });
 
                 if (model.Agency == null || model.User == null)
                 {
@@ -154,6 +169,10 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
+            await _loggingService.LogError(ex, "Error al registrar usuario en agencia", new Dictionary<string, string> {
+                { "Email", model.User?.Email ?? "null" },
+                { "AgencyName", model.Agency?.Name ?? "null" }
+            });
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
         }
     }
@@ -171,7 +190,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Agregando usuario a la base de datos: {@DTOUser}", entity);
+                _loggingService.LogInformation("Agregando usuario a la base de datos", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
 
                 if (entity == null)
                 {
@@ -223,7 +242,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
 
             if (result)
             {
-                _logger.LogInformation("Usuario actualizado exitosamente: {@DTOUser}", entity);
+                _loggingService.LogInformation("Usuario actualizado exitosamente", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
                 return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
             }
             else
@@ -381,7 +400,10 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al forzar contraseña. Tipo: {ErrorType}, Mensaje: {ErrorMessage}", ex.GetType().Name, ex.Message);
+            _loggingService.LogError(ex, "Error al forzar contraseña", new Dictionary<string, string> {
+                { "ErrorType", ex.GetType().Name },
+                { "ErrorMessage", ex.Message }
+            });
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
         }
     }
@@ -409,7 +431,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error en el proceso de contraseña olvidada para {Email}", queryParameters.Email);
+            _loggingService.LogError(ex, "Error en el proceso de contraseña olvidada", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al procesar la solicitud." });
         }
     }
@@ -441,7 +463,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al validar token de restablecimiento para {Email}", queryParameters.Email);
+            _loggingService.LogError(ex, "Error al validar token de restablecimiento", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al validar el token." });
         }
     }
@@ -479,7 +501,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al restablecer contraseña con token para {Email}", queryParameters.Email);
+            _loggingService.LogError(ex, "Error al restablecer contraseña con token", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al restablecer la contraseña." });
         }
     }
@@ -493,14 +515,17 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
             // Validar parámetros requeridos
             if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.ImageUrl))
             {
-                _logger.LogWarning("ID de usuario o URL de imagen no proporcionados");
+                _loggingService.LogWarning("ID de usuario o URL de imagen no proporcionados");
                 return BadRequest(new { message = "ID de usuario y URL de imagen son requeridos" });
             }
 
             // Limpiar la URL de la imagen (solucionar problemas con barras invertidas)
             var cleanImageUrl = request.ImageUrl.Replace("\\\\", "/").Replace("\\", "/");
-            _logger.LogInformation("Actualizando avatar del usuario {UserId}. URL original: {OriginalUrl}, URL limpia: {CleanUrl}",
-                request.UserId, request.ImageUrl, cleanImageUrl);
+            _loggingService.LogInformation("Actualizando avatar del usuario", new Dictionary<string, string> {
+                { "UserId", request.UserId },
+                { "OriginalUrl", request.ImageUrl },
+                { "CleanUrl", cleanImageUrl }
+            });
 
             // Llamar al método del repositorio para actualizar el avatar
             var result = await _unitOfWork.UserRepository.UpdateUserAvatar(request.UserId, cleanImageUrl);
@@ -510,7 +535,7 @@ public class UserController(IUnitOfWork unitOfWork, ILogger<UserController> logg
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el avatar del usuario {UserId}", request.UserId);
+            _loggingService.LogError(ex, "Error al actualizar el avatar del usuario", new Dictionary<string, string> { { "UserId", request.UserId } });
             return StatusCode(500, new { message = "Error al actualizar el avatar del usuario", error = ex.Message });
         }
     }

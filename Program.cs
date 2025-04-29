@@ -281,12 +281,17 @@ app.UseHttpsRedirection();
 // Configuración global
 app.UseRouting();
 
-// Añadir middleware para servir archivos estáticos desde la carpeta uploads
+// Asegurar que la carpeta uploads existe
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
 app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+    FileProvider = new PhysicalFileProvider(uploadsPath),
     RequestPath = "/uploads"
 });
 
@@ -302,13 +307,6 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "AESAN API V1");
         c.RoutePrefix = string.Empty;
     });
-}
-
-// Asegurar que la carpeta uploads existe
-var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
 }
 
 // Agregar middleware personalizado para logging de solicitudes
