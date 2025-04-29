@@ -14,7 +14,8 @@ BEGIN
     
     -- Eliminación lógica (marcar como inactivo)
     UPDATE AgencyFiles
-    SET IsActive = 0
+    SET IsActive = 0,
+        IsDeleted = 1
     WHERE Id = @id AND IsActive = 1;
     
     SELECT @rowsAffected = @@ROWCOUNT;

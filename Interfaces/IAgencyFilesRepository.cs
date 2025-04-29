@@ -17,7 +17,7 @@ public interface IAgencyFilesRepository
     /// <param name="documentType">Tipo de documento (opcional)</param>
     /// <param name="name">Nombre del archivo (opcional)</param>
     /// <returns>Lista paginada de archivos de la agencia</returns>
-    Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, bool alls, string name = null, string documentType = null);
+    Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, bool alls, string name = null, string documentType = null, bool includeDeleted = false);
 
     /// <summary>
     /// Obtiene un archivo específico por su ID

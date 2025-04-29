@@ -61,9 +61,18 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
                 UploadedBy = User.Identity.Name ?? userId
             };
 
-            var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(agencyFile);
-
-            return new { file = storedFileName, url = relativePath, id = newFileId };
+            try
+            {
+                var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(agencyFile);
+                return new { file = storedFileName, url = relativePath, id = newFileId };
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Si la agencia no existe, eliminamos el archivo que acabamos de guardar
+                await _fileStorageService.DeleteFileAsync(storedFileName, FileType.AgencyDocument);
+                _logger.LogWarning(ex, "Error al agregar archivo: {Message}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
         }
         catch (Exception ex)
         {

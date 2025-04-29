@@ -59,4 +59,24 @@ public class DTOAgencyFile
     /// Nombre del usuario que subió el archivo (para mostrar en la UI)
     /// </summary>
     public string UploadedByName { get; set; } = "";
+
+    /// <summary>
+    /// Fecha de expiración del archivo
+    /// </summary>
+    public DateTime? ExpirationDate { get; set; }
+
+    /// <summary>
+    /// Indica si el archivo está activo
+    /// </summary>
+    public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Indica si el archivo está eliminado
+    /// </summary>
+    public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// Indica si el archivo está verificado
+    /// </summary>
+    public bool IsVerified { get; set; }
 }

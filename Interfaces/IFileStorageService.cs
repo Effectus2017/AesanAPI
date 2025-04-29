@@ -13,4 +13,6 @@ public interface IFileStorageService
     /// <param name="fileType">Tipo de archivo</param>
     /// <returns>Tupla con el nombre del archivo guardado y su ruta relativa</returns>
     Task<(string fileName, string relativePath)> SaveFileAsync(IFormFile file, string folder, FileType fileType);
+
+    Task<bool> DeleteFileAsync(string fileName, FileType fileType);
 }

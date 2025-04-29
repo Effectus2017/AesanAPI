@@ -23,48 +23,6 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
-    /// Obtiene todos los archivos asociados a una agencia
-    /// </summary>
-    public async Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, bool alls, string name = null, string documentType = null)
-    {
-        try
-        {
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@agencyId", agencyId, DbType.Int32);
-            parameters.Add("@take", take, DbType.Int32);
-            parameters.Add("@skip", skip, DbType.Int32);
-            parameters.Add("@alls", alls, DbType.Boolean);
-            parameters.Add("@documentType", documentType, DbType.String);
-            parameters.Add("@name", name, DbType.String);
-
-            var result = await db.QueryMultipleAsync("100_GetAgencyFiles", parameters, commandType: CommandType.StoredProcedure);
-
-            var data = await result.ReadAsync<DTOAgencyFile>();
-            var count = await result.ReadSingleAsync<int>();
-
-            // Construir las URLs completas para cada archivo
-            foreach (var file in data)
-            {
-                if (!string.IsNullOrEmpty(file.FileUrl))
-                {
-                    string baseUrl = Utilities.GetUrl(_appSettings);
-                    _logger.LogInformation("URL Base obtenida: {BaseUrl}", baseUrl);
-                    _logger.LogInformation("Configuración actual: {@AppSettings}", _appSettings);
-                    file.FileUrl = $"{baseUrl.TrimEnd('/')}/{file.FileUrl}";
-                }
-            }
-
-            return new { data, count };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los archivos de la agencia {AgencyId}", agencyId);
-            throw;
-        }
-    }
-
-    /// <summary>
     /// Obtiene un archivo específico por su ID
     /// </summary>
     public async Task<DTOAgencyFile> GetAgencyFileById(int id)
@@ -97,6 +55,50 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
     }
 
+
+    /// <summary>
+    /// Obtiene todos los archivos asociados a una agencia
+    /// </summary>
+    public async Task<dynamic> GetAgencyFiles(int agencyId, int take, int skip, bool alls, string name = null, string documentType = null, bool includeDeleted = false)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@alls", alls, DbType.Boolean);
+            parameters.Add("@documentType", documentType, DbType.String);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@includeDeleted", includeDeleted, DbType.Boolean);
+
+            var result = await db.QueryMultipleAsync("101_GetAgencyFiles", parameters, commandType: CommandType.StoredProcedure);
+
+            var data = await result.ReadAsync<DTOAgencyFile>();
+            var count = await result.ReadSingleAsync<int>();
+
+            // Construir las URLs completas para cada archivo
+            foreach (var file in data)
+            {
+                if (!string.IsNullOrEmpty(file.FileUrl))
+                {
+                    string baseUrl = Utilities.GetUrl(_appSettings);
+                    _logger.LogInformation("URL Base obtenida: {BaseUrl}", baseUrl);
+                    _logger.LogInformation("Configuración actual: {@AppSettings}", _appSettings);
+                    file.FileUrl = $"{baseUrl.TrimEnd('/')}/{file.FileUrl}";
+                }
+            }
+
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los archivos de la agencia {AgencyId}", agencyId);
+            throw;
+        }
+    }
+
     /// <summary>
     /// Agrega un nuevo archivo a una agencia
     /// </summary>
@@ -118,12 +120,17 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await db.ExecuteAsync(
-                "100_InsertAgencyFile",
+                "101_InsertAgencyFile",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
 
             int newFileId = parameters.Get<int>("@id");
+
+            if (newFileId <= 0)
+            {
+                throw new InvalidOperationException("La agencia especificada no existe o no está activa.");
+            }
 
             // Invalidar caché si es necesario
             InvalidateCache(request.AgencyId);
@@ -200,20 +207,9 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "100_DeleteAgencyFile",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_DeleteAgencyFile", parameters, commandType: CommandType.StoredProcedure);
 
             int rowsAffected = parameters.Get<int>("@rowsAffected");
-
-            if (rowsAffected > 0)
-            {
-                // Invalidar caché
-                InvalidateCache(existingFile.AgencyId);
-            }
-
             return rowsAffected > 0;
         }
         catch (Exception ex)

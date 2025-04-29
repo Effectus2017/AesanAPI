@@ -105,4 +105,50 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
 
         _logger.LogInformation("Archivo guardado localmente: {FilePath}", filePath);
     }
+
+    public async Task<bool> DeleteFileAsync(string fileName, FileType fileType)
+    {
+        try
+        {
+            string subFolder = GetSubFolder(fileType);
+            bool isAzureEnvironment = !string.IsNullOrEmpty(_appSettings.AzureStorageConnectionString) &&
+                                    !_environment.IsDevelopment();
+
+            if (isAzureEnvironment)
+            {
+                try
+                {
+                    var blobServiceClient = new BlobServiceClient(_appSettings.AzureStorageConnectionString);
+                    string containerName = subFolder.ToLower().Replace('/', '-');
+                    var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+                    var blobClient = containerClient.GetBlobClient(fileName);
+
+                    return await blobClient.DeleteIfExistsAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al eliminar archivo de Azure Storage. Intentando eliminar localmente como fallback");
+                    return await DeleteFromLocalStorageAsync(subFolder, fileName);
+                }
+            }
+
+            return await DeleteFromLocalStorageAsync(subFolder, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar el archivo {FileName}", fileName);
+            return false;
+        }
+    }
+
+    private async Task<bool> DeleteFromLocalStorageAsync(string subFolder, string fileName)
+    {
+        string filePath = Path.Combine(_environment.ContentRootPath, "uploads", subFolder, fileName);
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+            return true;
+        }
+        return false;
+    }
 }
