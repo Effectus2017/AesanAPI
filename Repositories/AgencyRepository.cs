@@ -294,24 +294,36 @@ public class AgencyRepository(
             parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
             parameters.Add("@Latitude", Math.Round(agencyRequest.Latitude, 2));
             parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
-            parameters.Add("@NonProfit", agencyRequest.NonProfit);
-            parameters.Add("@FederalFundsDenied", agencyRequest.FederalFundsDenied);
-            parameters.Add("@StateFundsDenied", agencyRequest.StateFundsDenied);
-            parameters.Add("@OrganizedAthleticPrograms", agencyRequest.OrganizedAthleticPrograms);
-            parameters.Add("@AtRiskService", agencyRequest.AtRiskService);
-            parameters.Add("@ServiceTime", agencyRequest.ServiceTime);
-            parameters.Add("@TaxExemptionStatus", agencyRequest.TaxExemptionStatus);
-            parameters.Add("@TaxExemptionType", agencyRequest.TaxExemptionType);
-            parameters.Add("@BasicEducationRegistry", agencyRequest.BasicEducationRegistry);
             parameters.Add("@ImageURL", agencyRequest.ImageUrl);
+            parameters.Add("@IsActive", agencyRequest.IsActive);
+            parameters.Add("@IsPropietary", true);
             parameters.Add("@IsListable", agencyRequest.IsListable);
             parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("110_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("111_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
 
             var agencyId = parameters.Get<int>("@Id");
+
+            if (agencyId <= 0)
+            {
+                throw new Exception("Error al insertar la agencia");
+            }
+
+            // Insertar AgencyInscription
+            await InsertAgencyInscription(
+                agencyId,
+                agencyRequest.NonProfit,
+                agencyRequest.FederalFundsDenied,
+                agencyRequest.StateFundsDenied,
+                agencyRequest.OrganizedAthleticPrograms,
+                agencyRequest.AtRiskService,
+                agencyRequest.BasicEducationRegistry,
+                agencyRequest.ServiceTime,
+                agencyRequest.TaxExemptionStatus,
+                agencyRequest.TaxExemptionType
+            );
 
             // Insertar programas
             if (agencyRequest.Programs != null && agencyRequest.Programs.Count > 0)
@@ -330,6 +342,49 @@ public class AgencyRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar la agencia");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta una inscripción de agencia en la base de datos
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia</param>
+    /// <param name="nonProfit">Si es sin fines de lucro</param>
+    /// <param name="federalFundsDenied">Fondos federales denegados</param>
+    /// <param name="stateFundsDenied">Fondos estatales denegados</param>
+    /// <param name="organizedAthleticPrograms">Programas atléticos organizados</param>
+    /// <param name="atRiskService">Servicio a personas en riesgo</param>
+    /// <param name="basicEducationRegistry">Registro de educación básica</param>
+    /// <param name="serviceTime">Tiempo de servicio</param>
+    /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
+    /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
+    /// <returns>El Id de la inscripción insertada</returns>
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, bool stateFundsDenied, bool organizedAthleticPrograms, bool atRiskService, int basicEducationRegistry, DateTime serviceTime, int taxExemptionStatus, int taxExemptionType)
+    {
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@AgencyId", agencyId);
+            parameters.Add("@NonProfit", nonProfit);
+            parameters.Add("@FederalFundsDenied", federalFundsDenied);
+            parameters.Add("@StateFundsDenied", stateFundsDenied);
+            parameters.Add("@OrganizedAthleticPrograms", organizedAthleticPrograms);
+            parameters.Add("@AtRiskService", atRiskService);
+            parameters.Add("@BasicEducationRegistry", basicEducationRegistry);
+            parameters.Add("@ServiceTime", serviceTime);
+            parameters.Add("@TaxExemptionStatus", taxExemptionStatus);
+            parameters.Add("@TaxExemptionType", taxExemptionType);
+            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            using var connection = _context.CreateConnection();
+            await connection.ExecuteAsync("111_InsertAgencyInscription", parameters, commandType: CommandType.StoredProcedure);
+
+            return parameters.Get<int>("@Id");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar la inscripción de la agencia");
             throw;
         }
     }

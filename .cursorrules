@@ -116,3 +116,5 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
 
 # Scratchpad
+
+sql-sp-version-control: Guía detallada para el control de versiones de Stored Procedures usando un sistema de estado y registro de cambios. Ver sql-sp-version-control.md para más detalles.
