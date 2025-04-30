@@ -1,3 +1,7 @@
+
+-- Esta tabla se encarga de almacenar los usuarios que tienen relacion con las agencias
+-- Los usuarios pueden ser propietarios de la agencia, monitores de la agencia o usuarios activos en la agencia
+
 CREATE TABLE AgencyUsers (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     UserId NVARCHAR(450) NOT NULL, -- Clave foránea que referencia al usuario que se asigna a la agencia

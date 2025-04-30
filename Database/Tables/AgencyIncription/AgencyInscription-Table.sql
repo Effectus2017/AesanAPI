@@ -1,3 +1,6 @@
+
+-- Esta tabla se encarga de almacenar los datos de la solicutud de participación de la agencia (sponsor), no es lo mismo que la solicutud a un programa
+
 CREATE TABLE AgencyInscription
 (
     Id int NOT NULL IDENTITY(1,1),

@@ -327,7 +327,7 @@ public class AgencyRepository(
                 throw new Exception("Error al insertar la agencia");
             }
 
-            // Insertar AgencyInscription
+            // Insertar la solicitud de participación de la Agencia
             await InsertAgencyInscription(
                 agencyId,
                 agencyRequest.NonProfit,
@@ -341,7 +341,7 @@ public class AgencyRepository(
                 agencyRequest.TaxExemptionType
             );
 
-            // Insertar programas
+            // Asignar programas a la agencia
             if (agencyRequest.Programs != null && agencyRequest.Programs.Count > 0)
             {
                 foreach (var programId in agencyRequest.Programs)
@@ -406,17 +406,21 @@ public class AgencyRepository(
     }
 
     /// <summary>
-    /// Inserta un programa de agencia
+    /// Asigna una agencia a un programa
     /// </summary>
     /// <param name="agencyId">Id de la agencia</param>
     /// <param name="programId">Id del programa</param>
-    /// <returns>True si se insertó correctamente</returns>
+    /// <returns>True si se asignó correctamente</returns>
     public async Task<bool> InsertAgencyProgram(int agencyId, int programId)
     {
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new { agencyId, programId };
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@programId", programId);
+
             var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_InsertAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
             return rowsAffected > 0;
         }

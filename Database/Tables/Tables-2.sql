@@ -1,23 +1,3 @@
--- Estados de la agencia
-CREATE TABLE AgencyStatus
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
-
--- Programas de AESAN
-CREATE TABLE Program
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    Description NVARCHAR(MAX) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
 
 -- Niveles de Educación
 CREATE TABLE EducationLevel
