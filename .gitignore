@@ -220,3 +220,4 @@ uploads/Profile
 # Flyway
 *.conf
 uploads
+Database/.DS_Store

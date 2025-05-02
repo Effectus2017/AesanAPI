@@ -53,7 +53,7 @@ CREATE TABLE FoodAssistanceApplication
 (
     Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
     ApplicationNumber NVARCHAR(50) NOT NULL,    -- Número único de solicitud (formato: YYYY-ESCUELA-SECUENCIAL)
-    SchoolId INT NOT NULL,                      -- ID de la escuela donde se presenta la solicitud
+    SchoolId INT NULL,                          -- ID de la escuela donde se presenta la solicitud, SE PUEDE NO INGRESAR 
     ApplicationTypeId INT NOT NULL,             -- Tipo de solicitud (referencia a ApplicationType)
     SchoolYear NVARCHAR(9) NOT NULL,            -- Año escolar en formato 'YYYY-YYYY'
     StreetAddress NVARCHAR(255) NOT NULL,       -- Dirección física del hogar
