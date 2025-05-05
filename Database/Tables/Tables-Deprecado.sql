@@ -154,7 +154,7 @@ CREATE TABLE UserProgram
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
 );
 
--- Crear ��ndice para mejorar el rendimiento de las búsquedas
+-- Crear índice para mejorar el rendimiento de las búsquedas
 CREATE INDEX IX_UserProgram_UserId ON UserProgram(UserId);
 CREATE INDEX IX_UserProgram_ProgramId ON UserProgram(ProgramId);
 
@@ -345,26 +345,6 @@ INSERT INTO OrganizationType
     (Name)
 VALUES
     ('Otros');
-
--- Facilidades	Almacén/Cocina/Salón Comedor
-CREATE TABLE Facility
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL
-);
-
-INSERT INTO Facility
-    (Name)
-VALUES
-    ('Almacén');
-INSERT INTO Facility
-    (Name)
-VALUES
-    ('Cocina');
-INSERT INTO Facility
-    (Name)
-VALUES
-    ('Salón Comedor');
 
 -- Documentos requeridos para solicitar el servicio de merienda:	Lista de Participantes/Plan de Actividades/Menú a Utilizar
 CREATE TABLE DocumentsRequired

@@ -33,38 +33,22 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 parameters.Add("@id", id, DbType.Int32);
 
                 var result = await dbConnection.QueryMultipleAsync(
-                    "100_GetSchoolById",
+                    "101_GetSchoolById",
                     parameters,
                     commandType: CommandType.StoredProcedure
                 );
 
                 var schoolData = await result.ReadFirstOrDefaultAsync<dynamic>();
+                var facilities = (await result.ReadAsync<dynamic>()).ToList();
+                var satellites = (await result.ReadAsync<dynamic>()).ToList();
                 if (schoolData == null)
                     return null;
 
                 return new
                 {
-                    schoolData.Id,
-                    schoolData.Name,
-                    EducationLevel = new DTOEducationLevel
-                    {
-                        Id = schoolData.EducationLevelId,
-                        Name = schoolData.EducationLevelName
-                    },
-                    OperatingPeriod = new DTOOperatingPeriod
-                    {
-                        Id = schoolData.OperatingPeriodId,
-                        Name = schoolData.OperatingPeriodName
-                    },
-                    schoolData.Address,
-                    City = new DTOCity { Id = schoolData.CityId, Name = schoolData.CityName },
-                    Region = new DTORegion { Id = schoolData.RegionId, Name = schoolData.RegionName },
-                    schoolData.ZipCode,
-                    OrganizationType = new DTOOrganizationType
-                    {
-                        Id = schoolData.OrganizationTypeId,
-                        Name = schoolData.OrganizationTypeName
-                    }
+                    schoolData,
+                    Facilities = facilities,
+                    Satellites = satellites
                 };
             },
             _logger,
@@ -96,40 +80,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 parameters.Add("@alls", alls, DbType.Boolean);
 
                 var result = await dbConnection.QueryMultipleAsync(
-                    "100_GetSchools",
+                    "101_GetSchools",
                     parameters,
                     commandType: CommandType.StoredProcedure
                 );
 
-                var schools = result.Read<dynamic>().Select(
-                    item =>
-                        new DTOSchool
-                        {
-                            Id = item.Id,
-                            Name = item.Name,
-                            EducationLevel = new DTOEducationLevel
-                            {
-                                Id = item.EducationLevelId,
-                                Name = item.EducationLevelName
-                            },
-                            OperatingPeriod = new DTOOperatingPeriod
-                            {
-                                Id = item.OperatingPeriodId,
-                                Name = item.OperatingPeriodName
-                            },
-                            Address = item.Address,
-                            City = new DTOCity { Id = item.CityId, Name = item.CityName },
-                            Region = new DTORegion { Id = item.RegionId, Name = item.RegionName },
-                            ZipCode = item.ZipCode,
-                            OrganizationType = new DTOOrganizationType
-                            {
-                                Id = item.OrganizationTypeId,
-                                Name = item.OrganizationTypeName
-                            }
-                        }
-                ).ToList();
-
-                var count = result.Read<int>().Single();
+                var schools = (await result.ReadAsync<dynamic>()).ToList();
+                var count = (await result.ReadAsync<int>()).SingleOrDefault();
                 return new { data = schools, count };
             },
             _logger,
@@ -149,23 +106,38 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@name", request.Name);
-            parameters.Add("@educationLevelId", request.EducationLevelId);
-            parameters.Add("@operatingPeriodId", request.OperatingPeriodId);
-            parameters.Add("@address", request.Address);
-            parameters.Add("@cityId", request.CityId);
-            parameters.Add("@regionId", request.RegionId);
-            parameters.Add("@zipCode", request.ZipCode);
-            parameters.Add("@organizationTypeId", request.OrganizationTypeId);
-            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@Name", request.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@StartDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@Address", request.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@PostalAddress", request.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ZipCode", request.ZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@CityId", request.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@RegionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@AreaCode", request.AreaCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@AdminFullName", request.AdminFullName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Phone", request.Phone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@PhoneExtension", request.PhoneExtension, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Mobile", request.Mobile, DbType.String, ParameterDirection.Input);
+            parameters.Add("@BaseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@NextRenewalYear", request.NextRenewalYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@OrganizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@EducationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@OperatingPeriodId", request.OperatingPeriodId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@KitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@GroupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@DeliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@SponsorTypeId", request.SponsorTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@ApplicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@OperatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync(
-                "100_InsertSchool",
+                "101_InsertSchool",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
 
-            int schoolId = parameters.Get<int>("@id");
+            int schoolId = parameters.Get<int>("@Id");
 
             // Insertar facilidades
             if (request.FacilityIds != null && request.FacilityIds.Any())
@@ -173,20 +145,20 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 foreach (var facilityId in request.FacilityIds)
                 {
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO SchoolFacility (SchoolId, FacilityId) VALUES (@SchoolId, @FacilityId)",
-                        new { SchoolId = schoolId, FacilityId = facilityId }
+                        "INSERT INTO SchoolFacility (SchoolId, FacilityId, IsActive, CreatedAt) VALUES (@SchoolId, @FacilityId, 1, @Now)",
+                        new { SchoolId = schoolId, FacilityId = facilityId, Now = DateTime.UtcNow }
                     );
                 }
             }
 
-            // Insertar tipos de comida
-            if (request.MealTypeIds != null && request.MealTypeIds.Any())
+            // Insertar satélites
+            if (request.SatelliteSchoolIds != null && request.SatelliteSchoolIds.Any())
             {
-                foreach (var mealTypeId in request.MealTypeIds)
+                foreach (var satelliteId in request.SatelliteSchoolIds)
                 {
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO SchoolMeal (SchoolId, MealTypeId) VALUES (@SchoolId, @MealTypeId)",
-                        new { SchoolId = schoolId, MealTypeId = mealTypeId }
+                        "INSERT INTO SatelliteSchool (MainSchoolId, SatelliteSchoolId, IsActive, CreatedAt) VALUES (@MainSchoolId, @SatelliteSchoolId, 1, @Now)",
+                        new { MainSchoolId = schoolId, SatelliteSchoolId = satelliteId, Now = DateTime.UtcNow }
                     );
                 }
             }
@@ -215,25 +187,40 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@id", request.Id);
-            parameters.Add("@name", request.Name);
-            parameters.Add("@educationLevelId", request.EducationLevelId);
-            parameters.Add("@operatingPeriodId", request.OperatingPeriodId);
-            parameters.Add("@address", request.Address);
-            parameters.Add("@cityId", request.CityId);
-            parameters.Add("@regionId", request.RegionId);
-            parameters.Add("@zipCode", request.ZipCode);
-            parameters.Add("@organizationTypeId", request.OrganizationTypeId);
+            parameters.Add("@Id", request.Id, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@Name", request.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@StartDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@Address", request.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@PostalAddress", request.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@ZipCode", request.ZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@CityId", request.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@RegionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@AreaCode", request.AreaCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@AdminFullName", request.AdminFullName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Phone", request.Phone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@PhoneExtension", request.PhoneExtension, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Mobile", request.Mobile, DbType.String, ParameterDirection.Input);
+            parameters.Add("@BaseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@NextRenewalYear", request.NextRenewalYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@OrganizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@EducationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@OperatingPeriodId", request.OperatingPeriodId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@KitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@GroupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@DeliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@SponsorTypeId", request.SponsorTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@ApplicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@OperatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
 
             await dbConnection.ExecuteAsync(
-                "100_UpdateSchool",
+                "101_UpdateSchool",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
 
             // Actualizar facilidades
             await dbConnection.ExecuteAsync(
-                "DELETE FROM SchoolFacility WHERE SchoolId = @SchoolId",
+                "UPDATE SchoolFacility SET IsActive = 0 WHERE SchoolId = @SchoolId",
                 new { SchoolId = request.Id }
             );
             if (request.FacilityIds != null && request.FacilityIds.Any())
@@ -241,24 +228,24 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 foreach (var facilityId in request.FacilityIds)
                 {
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO SchoolFacility (SchoolId, FacilityId) VALUES (@SchoolId, @FacilityId)",
-                        new { SchoolId = request.Id, FacilityId = facilityId }
+                        "INSERT INTO SchoolFacility (SchoolId, FacilityId, IsActive, CreatedAt) VALUES (@SchoolId, @FacilityId, 1, @Now)",
+                        new { SchoolId = request.Id, FacilityId = facilityId, Now = DateTime.UtcNow }
                     );
                 }
             }
 
-            // Actualizar tipos de comida
+            // Actualizar satélites
             await dbConnection.ExecuteAsync(
-                "DELETE FROM SchoolMeal WHERE SchoolId = @SchoolId",
-                new { SchoolId = request.Id }
+                "UPDATE SatelliteSchool SET IsActive = 0 WHERE MainSchoolId = @MainSchoolId",
+                new { MainSchoolId = request.Id }
             );
-            if (request.MealTypeIds != null && request.MealTypeIds.Any())
+            if (request.SatelliteSchoolIds != null && request.SatelliteSchoolIds.Any())
             {
-                foreach (var mealTypeId in request.MealTypeIds)
+                foreach (var satelliteId in request.SatelliteSchoolIds)
                 {
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO SchoolMeal (SchoolId, MealTypeId) VALUES (@SchoolId, @MealTypeId)",
-                        new { SchoolId = request.Id, MealTypeId = mealTypeId }
+                        "INSERT INTO SatelliteSchool (MainSchoolId, SatelliteSchoolId, IsActive, CreatedAt) VALUES (@MainSchoolId, @SatelliteSchoolId, 1, @Now)",
+                        new { MainSchoolId = request.Id, SatelliteSchoolId = satelliteId, Now = DateTime.UtcNow }
                     );
                 }
             }
@@ -286,10 +273,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@id", id);
+            parameters.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
             var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_DeleteSchool",
+                "101_DeleteSchool",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );

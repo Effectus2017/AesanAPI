@@ -37,14 +37,10 @@ public class AgencyRepository(
         {
             using IDbConnection dbConnection = _context.CreateConnection();
 
-            var param = new DynamicParameters();
-            param.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
-            var result = await dbConnection.QueryMultipleAsync(
-                "110_GetAgencyById",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await dbConnection.QueryMultipleAsync("110_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -98,19 +94,19 @@ public class AgencyRepository(
                 var parameters = new DynamicParameters();
                 parameters.Add("@agencyId", agencyId);
                 parameters.Add("@userId", userId);
-                var result = await dbConnection.QueryMultipleAsync(
-                    "110_GetAgencyByIdAndUserId",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await dbConnection.QueryMultipleAsync("110_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
+                {
                     return null;
+                }
 
                 var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
 
                 if (_agencyResult == null)
+                {
                     return null;
+                }
 
                 var agency = MapAgencyFromResult(_agencyResult);
                 var _agenciesPrograms = await result.ReadAsync<dynamic>();
@@ -138,30 +134,23 @@ public class AgencyRepository(
     /// <returns>Las agencias</returns>
     public async Task<dynamic> GetAllAgenciesFromDbOld(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
     {
-        string cacheKey = string.Format(
-            _appSettings.Cache.Keys.Agencies,
-            take,
-            skip,
-            name ?? string.Empty,
-            userId ?? string.Empty,
-            alls
-        );
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Agencies, take, skip, name ?? string.Empty, userId ?? string.Empty, alls);
 
         return await _cache.CacheAgencyQuery(
             cacheKey,
             async () =>
             {
                 using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new DynamicParameters();
-                param.Add("@take", take);
-                param.Add("@skip", skip);
-                param.Add("@name", name);
-                param.Add("@regionId", regionId);
-                param.Add("@cityId", cityId);
-                param.Add("@programId", programId);
-                param.Add("@statusId", statusId);
-                param.Add("@userId", userId);
-                param.Add("@alls", alls);
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take);
+                parameters.Add("@skip", skip);
+                parameters.Add("@name", name);
+                parameters.Add("@regionId", regionId);
+                parameters.Add("@cityId", cityId);
+                parameters.Add("@programId", programId);
+                parameters.Add("@statusId", statusId);
+                parameters.Add("@userId", userId);
+                parameters.Add("@alls", alls);
 
                 // Variables para almacenar los resultados
                 List<dynamic> agencies = new List<dynamic>();
@@ -169,10 +158,7 @@ public class AgencyRepository(
                 int count = 0;
 
                 // Usar un bloque using para garantizar que el GridReader se cierre correctamente
-                using (var result = await dbConnection.QueryMultipleAsync(
-                    "114_GetAgencies",
-                    param,
-                    commandType: CommandType.StoredProcedure))
+                using (var result = await dbConnection.QueryMultipleAsync("114_GetAgencies", parameters, commandType: CommandType.StoredProcedure))
                 {
                     if (result == null)
                     {
@@ -228,16 +214,12 @@ public class AgencyRepository(
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            var param = new DynamicParameters();
-            param.Add("@id", id);
-            param.Add("@name", name);
-            param.Add("@alls", alls);
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id);
+            parameters.Add("@name", name);
+            parameters.Add("@alls", alls);
 
-            var result = await dbConnection.QueryMultipleAsync(
-                "101_GetAgenciesList",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await dbConnection.QueryMultipleAsync("101_GetAgenciesList", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
                 return null;
@@ -270,12 +252,9 @@ public class AgencyRepository(
             async () =>
             {
                 using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new { userId };
-                var result = await dbConnection.QueryAsync<DTOProgram>(
-                    "100_GetAgencyProgramsByUserId",
-                    param,
-                    commandType: CommandType.StoredProcedure
-                );
+                var parameters = new DynamicParameters();
+                parameters.Add("@userId", userId);
+                var result = await dbConnection.QueryAsync<DTOProgram>("100_GetAgencyProgramsByUserId", parameters, commandType: CommandType.StoredProcedure);
                 return result.ToList();
             },
             loggingService,

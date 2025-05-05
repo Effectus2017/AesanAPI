@@ -1,4 +1,3 @@
-
 -- Niveles de Educación
 CREATE TABLE EducationLevel
 (
@@ -29,41 +28,6 @@ CREATE TABLE OrganizationType
     UpdatedAt DATETIME NULL
 );
 
--- Escuelas
-CREATE TABLE School
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    EducationLevelId INT NOT NULL,
-    OperatingPeriodId INT NOT NULL,
-    Address NVARCHAR(255) NOT NULL,
-    CityId INT NOT NULL,
-    RegionId INT NOT NULL,
-    ZipCode INT NOT NULL,
-    OrganizationTypeId INT NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id),
-    FOREIGN KEY (OperatingPeriodId) REFERENCES OperatingPeriod(Id),
-    FOREIGN KEY (CityId) REFERENCES City(Id),
-    FOREIGN KEY (RegionId) REFERENCES Region(Id),
-    FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id)
-);
-
--- Escuelas Satélite
-CREATE TABLE SatelliteSchool
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    MainSchoolId INT NOT NULL,
-    SatelliteSchoolId INT NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    FOREIGN KEY (MainSchoolId) REFERENCES School(Id),
-    FOREIGN KEY (SatelliteSchoolId) REFERENCES School(Id)
-);
-
 -- Tipos de Comida
 CREATE TABLE MealType
 (
@@ -85,29 +49,6 @@ CREATE TABLE SchoolMeal
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (MealTypeId) REFERENCES MealType(Id),
     FOREIGN KEY (SchoolId) REFERENCES School(Id)
-);
-
--- Facilidades
-CREATE TABLE Facility
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
-
--- Facilidades de la Escuela
-CREATE TABLE SchoolFacility
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    SchoolId INT NOT NULL,
-    FacilityId INT NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    FOREIGN KEY (SchoolId) REFERENCES School(Id),
-    FOREIGN KEY (FacilityId) REFERENCES Facility(Id)
 );
 
 -- Resto de las tablas mantienen la misma estructura pero agregando los campos de auditoría

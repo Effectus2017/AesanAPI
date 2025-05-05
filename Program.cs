@@ -98,6 +98,7 @@ builder.Services.AddScoped<IOperatingPeriodRepository, OperatingPeriodRepository
 builder.Services.AddScoped<IOperatingPolicyRepository, OperatingPolicyRepository>();
 builder.Services.AddScoped<IOrganizationTypeRepository, OrganizationTypeRepository>();
 builder.Services.AddScoped<IEducationLevelRepository, EducationLevelRepository>();
+builder.Services.AddScoped<IHouseholdRepository, HouseholdRepository>();
 
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
