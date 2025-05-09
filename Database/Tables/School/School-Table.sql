@@ -27,15 +27,24 @@ CREATE TABLE School (
     OperatingPolicyId INT NULL, -- Política de Funcionamiento (catálogo)
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    -- Relaciones
-    FOREIGN KEY (CityId) REFERENCES City(Id),
-    FOREIGN KEY (RegionId) REFERENCES Region(Id),
-    FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id),
-    FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id),
-    FOREIGN KEY (OperatingPeriodId) REFERENCES OperatingPeriod(Id)
-    -- Los campos tipo catálogo adicionales requieren sus tablas
+    UpdatedAt DATETIME NULL
 );
+
+-- Relaciones
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_City FOREIGN KEY (CityId) REFERENCES City(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_Region FOREIGN KEY (RegionId) REFERENCES Region(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_OrganizationType FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_EducationLevel FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_OperatingPeriod FOREIGN KEY (OperatingPeriodId) REFERENCES OperatingPeriod(Id);
 
 -- Facilidades (Almacén, Salón Comedor) se gestionan en SchoolFacility
 -- Los catálogos KitchenType, GroupType, DeliveryType, SponsorType, ApplicantType, OperatingPolicy deben crearse si no existen. 

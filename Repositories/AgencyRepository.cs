@@ -291,7 +291,7 @@ public class AgencyRepository(
             parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
             parameters.Add("@ImageURL", agencyRequest.ImageUrl);
             parameters.Add("@IsActive", agencyRequest.IsActive);
-            parameters.Add("@IsPropietary", true);
+            //parameters.Add("@IsPropietary", true);
             parameters.Add("@IsListable", agencyRequest.IsListable);
             parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
@@ -656,8 +656,9 @@ public class AgencyRepository(
     /// <param name="comments">Comentarios</param>
     /// <param name="appointmentCoordinated">Indica si se coordinó la cita</param>
     /// <param name="appointmentDate">Fecha de la cita</param>
+    /// <param name="rejectionJustification">Justificación de rechazo</param>
     /// <returns>True si se actualizó correctamente</returns>
-    public async Task<bool> UpdateAgencyInscription(int agencyId, int statusId, string comments, bool appointmentCoordinated, DateTime? appointmentDate)
+    public async Task<bool> UpdateAgencyInscription(int agencyId, int statusId, string comments, bool appointmentCoordinated, DateTime? appointmentDate, string? rejectionJustification)
     {
         try
         {
@@ -670,10 +671,11 @@ public class AgencyRepository(
             parameters.Add("@comments", comments);
             parameters.Add("@appointmentCoordinated", appointmentCoordinated);
             parameters.Add("@appointmentDate", appointmentDate);
-            parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+            parameters.Add("@rejectionJustification", rejectionJustification);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await dbConnection.ExecuteAsync("110_UpdateAgencyIncriptionPreOpetational", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@ReturnValue");
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
             {

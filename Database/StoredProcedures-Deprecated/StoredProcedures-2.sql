@@ -50,29 +50,6 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[100_UpdateAgencyStatus]
-    @agencyId INT,
-    @statusId INT,
-    @rejectionJustification NVARCHAR(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @rowsAffected INT;
-
-    -- Actualiza el estado de la agencia
-    UPDATE Agency
-    SET 
-        AgencyStatusId = @statusId,
-        RejectionJustification = @rejectionJustification,
-        UpdatedAt = GETDATE()
-    WHERE Id = @agencyId;
-
-    -- Obtiene el número de filas afectadas
-    SET @rowsAffected = @@ROWCOUNT;
-
-    -- Retorna el número de filas afectadas directamente
-    RETURN @rowsAffected;
-END;
 GO
 -- Procedimiento almacenado para obtener todos los programas
 CREATE OR ALTER PROCEDURE [100_GetPrograms]

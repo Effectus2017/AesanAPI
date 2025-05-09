@@ -33,11 +33,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var result = await db.QueryFirstOrDefaultAsync<DTOAgencyFile>(
-                "100_GetAgencyFileById",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await db.QueryFirstOrDefaultAsync<DTOAgencyFile>("100_GetAgencyFileById", parameters, commandType: CommandType.StoredProcedure);
 
             // Construir la URL completa del archivo
             if (result != null && !string.IsNullOrEmpty(result.FileUrl))

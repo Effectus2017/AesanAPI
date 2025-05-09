@@ -33,11 +33,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
                 using IDbConnection db = _context.CreateConnection();
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetAgencyStatusById",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await db.QueryMultipleAsync("100_GetAgencyStatusById", parameters, commandType: CommandType.StoredProcedure);
                 var data = await result.ReadSingleAsync<DTOAgencyStatus>();
                 return data;
             },
@@ -68,11 +64,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
                 parameters.Add("@skip", skip, DbType.Int32);
                 parameters.Add("@name", name, DbType.String);
                 parameters.Add("@alls", alls, DbType.Boolean);
-                var result = await db.QueryMultipleAsync(
-                    "105_GetAllAgencyStatus",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await db.QueryMultipleAsync("105_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
                 var data = await result.ReadAsync<DTOAgencyStatus>();
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
@@ -94,13 +86,12 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", status.Name, DbType.String);
+            parameters.Add("@nameEN", status.NameEN, DbType.String);
+            parameters.Add("@isActive", status.IsActive, DbType.Boolean);
+            parameters.Add("@displayOrder", status.DisplayOrder, DbType.Int32);
             parameters.Add("@id", status.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync(
-                "100_InsertAgencyStatus",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_InsertAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
 
             if (id > 0)
@@ -131,13 +122,12 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             var parameters = new DynamicParameters();
             parameters.Add("@id", status.Id, DbType.Int32);
             parameters.Add("@name", status.Name, DbType.String);
+            parameters.Add("@nameEN", status.NameEN, DbType.String);
+            parameters.Add("@isActive", status.IsActive, DbType.Boolean);
+            parameters.Add("@displayOrder", status.DisplayOrder, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "100_UpdateAgencyStatus",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_UpdateAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
@@ -171,11 +161,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             parameters.Add("@displayOrder", displayOrder, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "105_UpdateAgencyStatusDisplayOrder",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("105_UpdateAgencyStatusDisplayOrder", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
@@ -207,11 +193,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "100_DeleteAgencyStatus",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_DeleteAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)

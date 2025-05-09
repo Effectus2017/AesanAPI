@@ -4,7 +4,8 @@ CREATE OR ALTER PROCEDURE [110_UpdateAgencyIncriptionPreOpetational]
     @statusId INT,
     @comments NVARCHAR(MAX) = NULL,
     @appointmentCoordinated BIT = NULL,
-    @appointmentDate DATETIME = NULL
+    @appointmentDate DATETIME = NULL,
+    @rejectionJustification NVARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -18,15 +19,19 @@ BEGIN
             Comments = @comments,
             AppointmentCoordinated = @appointmentCoordinated,
             AppointmentDate = @appointmentDate,
+            RejectionJustification = @rejectionJustification,
             UpdatedAt = GETDATE()
         WHERE AgencyId = @agencyId;
+        DECLARE @rowsAffectedInscription INT = @@ROWCOUNT; 
 
         UPDATE Agency
         SET AgencyStatusId = @statusId
         WHERE Id = @agencyId;
+        DECLARE @rowsAffectedAgency INT = @@ROWCOUNT;
+
+        SET @rowsAffected = @rowsAffectedInscription + @rowsAffectedAgency;
 
         COMMIT TRANSACTION;
-        SET @rowsAffected = @@ROWCOUNT;
         RETURN @rowsAffected;
     END TRY
     BEGIN CATCH

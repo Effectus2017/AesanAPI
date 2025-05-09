@@ -1,0 +1,5 @@
+public class DTOKitchenType
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+}

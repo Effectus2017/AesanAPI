@@ -90,7 +90,7 @@ BEGIN
     INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
     INNER JOIN City c ON a.CityId = c.Id
     INNER JOIN Region r ON a.RegionId = r.Id
-    LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
+    LEFT JOIN AgencyInscription ai ON a.Id = ai.AgencyId
     LEFT JOIN City pc ON a.PostalCityId = pc.Id
     LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
     LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
@@ -186,7 +186,7 @@ BEGIN
     )
     SELECT COUNT(DISTINCT a.Id)
     FROM Agency a
-    LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
+    LEFT JOIN AgencyInscription ai ON a.Id = ai.AgencyId
     LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
     LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
     LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
@@ -205,3 +205,15 @@ BEGIN
     );
 END;
 GO 
+
+
+EXEC [114_GetAgencies]
+    @take = 10,
+    @skip = 0,
+    @name = NULL,
+    @regionId = NULL,
+    @cityId = NULL,
+    @programId = NULL,
+    @statusId = NULL,
+    @userId = NULL,
+    @alls = 1;

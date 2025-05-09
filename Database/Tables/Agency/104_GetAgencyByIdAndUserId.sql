@@ -13,7 +13,7 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Primera consulta: Obtener los datos de las agencias asignadas al usuario
-    SELECT
+    SELECT TOP 1
         a.Id,
         a.Name,
         a.AgencyStatusId,
@@ -38,20 +38,12 @@ BEGIN
         a.Phone,
         a.Email,
         a.ImageURL,
-        a.NonProfit,
-        a.FederalFundsDenied,
-        a.StateFundsDenied,
-        a.OrganizedAthleticPrograms,
-        a.AtRiskService,
-        a.ServiceTime,
-        a.TaxExemptionStatus,
-        a.TaxExemptionType,
-        a.RejectionJustification,
         a.IsActive,
         a.IsListable,
         a.CreatedAt,
         a.UpdatedAt,
         a.AgencyCode,
+        a.IsPropietary,
         
         -- Datos del usuario de la agencia (auspiciador)
         auaSponsor.UserId as UserId,
@@ -67,11 +59,24 @@ BEGIN
         u.MiddleName AS MonitorMiddleName,
         u.FatherLastName AS MonitorFatherLastName,
         u.MotherLastName AS MonitorMotherLastName,
+        u.AdministrationTitle AS MonitorAdministrationTitle,
         
-        -- Comentarios de la asignación de programa
-        ap.Comments as ProgramRejectionJustification,
-        ap.AppointmentCoordinated AS ProgramAppointmentCoordinated,
-        ap.AppointmentDate AS ProgramAppointmentDate
+        -- Campos de AgencyInscription
+        ai.Id AS AgencyInscriptionId,
+        ai.NonProfit,
+        ai.FederalFundsDenied,
+        ai.StateFundsDenied,
+        ai.OrganizedAthleticPrograms,
+        ai.AtRiskService,
+        ai.BasicEducationRegistry,
+        ai.ServiceTime,
+        ai.TaxExemptionStatus,
+        ai.TaxExemptionType,
+        ai.RejectionJustification,
+        ai.AppointmentCoordinated,
+        ai.AppointmentDate,
+        ai.Comments
+
     FROM Agency a
     INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
     INNER JOIN City c ON a.CityId = c.Id
@@ -79,12 +84,15 @@ BEGIN
     LEFT JOIN City pc ON a.PostalCityId = pc.Id
     LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
     -- Join para el monitor (usuario actual)
-    LEFT JOIN AgencyUsers auaMonitor ON a.Id = auaMonitor.AgencyId AND auaMonitor.IsActive = 1
+    LEFT JOIN AgencyUsers auaMonitor ON a.Id = auaMonitor.AgencyId AND auaMonitor.IsActive = 1 AND auaMonitor.UserId = @userId
     LEFT JOIN AspNetUsers u ON auaMonitor.UserId = u.Id
-    -- Join para el auspiciador
-    LEFT JOIN AgencyUsers auaSponsor ON a.Id = auaSponsor.AgencyId AND auaSponsor.IsActive = 1
+    -- Join para el auspiciador (solo uno)
+    LEFT JOIN (
+        SELECT TOP 1 * FROM AgencyUsers WHERE IsActive = 1
+    ) auaSponsor ON a.Id = auaSponsor.AgencyId
     LEFT JOIN AspNetUsers u2 ON auaSponsor.UserId = u2.Id
     LEFT JOIN AgencyProgram ap ON a.Id = ap.AgencyId AND ap.IsActive = 1
+    LEFT JOIN AgencyInscription ai ON a.Id = ai.AgencyId
     WHERE a.IsActive = 1
         AND auaMonitor.UserId = @userId
         AND (@agencyId IS NULL OR a.Id = @agencyId)
@@ -117,3 +125,5 @@ BEGIN
         AND (@agencyId IS NULL OR ap.AgencyId = @agencyId);
 END;
 GO
+
+EXEC [104_GetAgencyByIdAndUserId] 4, 'B03615AF-97D1-47D5-8A60-72AAF0A39ACF';

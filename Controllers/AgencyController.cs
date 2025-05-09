@@ -338,9 +338,10 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                 var result = await _unitOfWork.AgencyRepository.UpdateAgencyInscription(
                     updateAgencyInscriptionRequest.AgencyId,
                     updateAgencyInscriptionRequest.StatusId,
-                    updateAgencyInscriptionRequest.RejectionJustification,
+                    updateAgencyInscriptionRequest.Comments,
                     updateAgencyInscriptionRequest.AppointmentCoordinated,
-                    updateAgencyInscriptionRequest.AppointmentDate
+                    updateAgencyInscriptionRequest.AppointmentDate,
+                    updateAgencyInscriptionRequest.RejectionJustification
                 );
 
                 return Ok(result);

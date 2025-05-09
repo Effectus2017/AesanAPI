@@ -25,12 +25,7 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                var schools = await _unitOfWork.SchoolRepository.GetAllSchools(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Name,
-                    queryParameters.Alls
-                );
+                var schools = await _unitOfWork.SchoolRepository.GetAllSchools(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
                 return Ok(schools);
             }
 
