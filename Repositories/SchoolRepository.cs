@@ -125,7 +125,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             {
                 foreach (var facilityId in request.FacilityIds)
                 {
-                    var ok = await InsertSchoolFacilityAsync(dbConnection, schoolId, facilityId);
+                    var ok = await InsertSchoolFacilityAsync(schoolId, facilityId);
 
                     if (!ok)
                     {
@@ -139,7 +139,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             {
                 foreach (var satelliteId in request.SatelliteSchoolIds)
                 {
-                    var ok = await InsertSatelliteSchoolAsync(dbConnection, schoolId, satelliteId);
+                    var ok = await InsertSatelliteSchoolAsync(schoolId, satelliteId);
 
                     if (!ok)
                     {
@@ -209,7 +209,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             {
                 foreach (var facilityId in request.FacilityIds)
                 {
-                    var ok = await InsertSchoolFacilityAsync(dbConnection, request.Id, facilityId);
+                    var ok = await InsertSchoolFacilityAsync(request.Id, facilityId);
                     if (!ok)
                     {
                         _logger.LogWarning($"No se pudo insertar SchoolFacility para SchoolId={request.Id}, FacilityId={facilityId}");
@@ -227,7 +227,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             {
                 foreach (var satelliteId in request.SatelliteSchoolIds)
                 {
-                    var ok = await InsertSatelliteSchoolAsync(dbConnection, request.Id, satelliteId);
+                    var ok = await InsertSatelliteSchoolAsync(request.Id, satelliteId);
                     if (!ok)
                     {
                         _logger.LogWarning($"No se pudo insertar SatelliteSchool para MainSchoolId={request.Id}, SatelliteSchoolId={satelliteId}");
@@ -289,10 +289,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         _logger.LogInformation("Cache invalidado para School Repository");
     }
 
-    public async Task<bool> InsertSchoolFacilityAsync(IDbConnection dbConnection, int schoolId, int facilityId)
+    public async Task<bool> InsertSchoolFacilityAsync(int schoolId, int facilityId)
     {
         try
         {
+            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@school_id", schoolId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@facility_id", facilityId, DbType.Int32, ParameterDirection.Input);
@@ -308,10 +309,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-    public async Task<bool> InsertSatelliteSchoolAsync(IDbConnection dbConnection, int mainSchoolId, int satelliteSchoolId)
+    public async Task<bool> InsertSatelliteSchoolAsync(int mainSchoolId, int satelliteSchoolId)
     {
         try
         {
+            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@main_school_id", mainSchoolId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@satellite_school_id", satelliteSchoolId, DbType.Int32, ParameterDirection.Input);

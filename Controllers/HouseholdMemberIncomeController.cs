@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Api.Models.Tables;
-using Api.Repositories;
-using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
+using Api.Interfaces;
 
 namespace Api.Controllers
 {
@@ -30,7 +26,7 @@ namespace Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    var result = await _repository.GetAllAsync(queryParameters.Take, queryParameters.Skip);
+                    var result = await _repository.GetAllAsync(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
                     return Ok(result);
                 }
                 return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -67,7 +63,7 @@ namespace Api.Controllers
         /// </summary>
         [HttpPost("insert-household-member-income")]
         [SwaggerOperation(Summary = "Crea un nuevo ingreso de miembro del hogar", Description = "Crea un nuevo ingreso de miembro del hogar.")]
-        public async Task<ActionResult> Insert([FromBody] HouseholdMemberIncome entity)
+        public async Task<ActionResult> Insert([FromBody] DTOHouseholdMemberIncome entity)
         {
             try
             {
@@ -90,7 +86,7 @@ namespace Api.Controllers
         /// </summary>
         [HttpPut("update-household-member-income")]
         [SwaggerOperation(Summary = "Actualiza un ingreso de miembro del hogar existente", Description = "Actualiza los datos de un ingreso de miembro del hogar existente.")]
-        public async Task<ActionResult> Update([FromBody] HouseholdMemberIncome entity)
+        public async Task<ActionResult> Update([FromBody] DTOHouseholdMemberIncome entity)
         {
             try
             {
