@@ -212,8 +212,11 @@ _Pvt_Extensions/
 ModelManifest.xml
 uploads/Profile
 .changelog
+changelog/
 .cursor
+cursor/
 .flyway
+flyway/
 .cursorrules
 .fake
 
@@ -224,3 +227,7 @@ Database/.DS_Store
 logs/
 *.zip
 *.env
+cursor_docs/
+bump-version.sh
+update-version.sh
+*.DS_Store
