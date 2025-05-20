@@ -231,3 +231,4 @@ cursor_docs/
 bump-version.sh
 update-version.sh
 *.DS_Store
+Database/tools/
