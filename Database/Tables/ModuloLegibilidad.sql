@@ -35,47 +35,18 @@ Nota: Para la gestión de documentos se utiliza la tabla existente AgencyFiles
 -- que el sistema puede procesar.
 CREATE TABLE ApplicationType
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    Name NVARCHAR(255) NOT NULL,                -- Nombre del tipo de solicitud (ej: Regular, Categórica, Directa)
-    Description NVARCHAR(MAX) NULL,             -- Descripción detallada del tipo de solicitud
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si el tipo está activo (1) o inactivo (0)
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación del registro
-    UpdatedAt DATETIME NULL                     -- Fecha y hora de la última actualización
-);
-
--- =============================================
--- Tabla: FoodAssistanceApplication (Solicitud Principal)
--- =============================================
--- Tabla principal que almacena las solicitudes de asistencia alimentaria.
--- Contiene la información básica de la solicitud y los datos de contacto
--- del adulto que completa el formulario.
-CREATE TABLE FoodAssistanceApplication
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    ApplicationNumber NVARCHAR(50) NOT NULL,    -- Número único de solicitud (formato: YYYY-ESCUELA-SECUENCIAL)
-    SchoolId INT NULL,                          -- ID de la escuela donde se presenta la solicitud, SE PUEDE NO INGRESAR 
-    ApplicationTypeId INT NOT NULL,             -- Tipo de solicitud (referencia a ApplicationType)
-    SchoolYear NVARCHAR(9) NOT NULL,            -- Año escolar en formato 'YYYY-YYYY'
-    StreetAddress NVARCHAR(255) NOT NULL,       -- Dirección física del hogar
-    ApartmentNumber NVARCHAR(50) NULL,          -- Número de apartamento (opcional)
-    CityId INT NOT NULL,                        -- ID de la ciudad de residencia
-    RegionId INT NOT NULL,                      -- ID de la región/estado
-    ZipCode NVARCHAR(5) NOT NULL,               -- Código postal (5 dígitos)
-    Phone NVARCHAR(50) NULL,                    -- Teléfono de contacto (opcional)
-    Email NVARCHAR(100) NULL,                   -- Correo electrónico (opcional)
-    CompletedByFirstName NVARCHAR(100) NOT NULL,    -- Nombre de quien completa el formulario
-    CompletedByMiddleName NVARCHAR(100) NULL,       -- Segundo nombre (opcional)
-    CompletedByFatherLastName NVARCHAR(100) NOT NULL, -- Apellido paterno
-    CompletedByMotherLastName NVARCHAR(100) NOT NULL, -- Apellido materno
-    CompletedDate DATE NOT NULL,                -- Fecha de completado del formulario
-    Status NVARCHAR(50) NOT NULL DEFAULT 'Pendiente', -- Estado actual de la solicitud
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si la solicitud está activa
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL,                    -- Fecha y hora de última actualización
-    FOREIGN KEY (SchoolId) REFERENCES School(Id),
-    FOREIGN KEY (ApplicationTypeId) REFERENCES ApplicationType(Id),
-    FOREIGN KEY (CityId) REFERENCES City(Id),
-    FOREIGN KEY (RegionId) REFERENCES Region(Id)
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    Name NVARCHAR(255) NOT NULL,
+    -- Nombre del tipo de solicitud (ej: Regular, Categórica, Directa)
+    Description NVARCHAR(MAX) NULL,
+    -- Descripción detallada del tipo de solicitud
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si el tipo está activo (1) o inactivo (0)
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación del registro
+    UpdatedAt DATETIME NULL
+    -- Fecha y hora de la última actualización
 );
 
 -- =============================================
@@ -85,13 +56,20 @@ CREATE TABLE FoodAssistanceApplication
 -- Relaciona la solicitud con programas como SNAP, TANF o FDPIR.
 CREATE TABLE ApplicationProgramParticipation
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    ApplicationId INT NOT NULL,                 -- ID de la solicitud relacionada
-    ProgramId INT NOT NULL,                     -- ID del programa de asistencia
-    CaseNumber NVARCHAR(50) NOT NULL,           -- Número de caso del programa
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si el registro está activo
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL,                    -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    ApplicationId INT NOT NULL,
+    -- ID de la solicitud relacionada
+    ProgramId INT NOT NULL,
+    -- ID del programa de asistencia
+    CaseNumber NVARCHAR(50) NOT NULL,
+    -- Número de caso del programa
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si el registro está activo
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL,
+    -- Fecha y hora de última actualización
     FOREIGN KEY (ApplicationId) REFERENCES FoodAssistanceApplication(Id),
     FOREIGN KEY (ProgramId) REFERENCES Program(Id)
 );
@@ -103,13 +81,20 @@ CREATE TABLE ApplicationProgramParticipation
 -- Diferencia entre ingresos para niños y adultos.
 CREATE TABLE IncomeType
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    Name NVARCHAR(255) NOT NULL,                -- Nombre del tipo de ingreso
-    Description NVARCHAR(MAX) NULL,             -- Descripción detallada
-    AppliesTo NVARCHAR(20) NOT NULL,            -- Indica si aplica a niños ('Child'), adultos ('Adult') o ambos ('Both')
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si el tipo está activo
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL                     -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    Name NVARCHAR(255) NOT NULL,
+    -- Nombre del tipo de ingreso
+    Description NVARCHAR(MAX) NULL,
+    -- Descripción detallada
+    AppliesTo NVARCHAR(20) NOT NULL,
+    -- Indica si aplica a niños ('Child'), adultos ('Adult') o ambos ('Both')
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si el tipo está activo
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL
+    -- Fecha y hora de última actualización
 );
 
 -- =============================================
@@ -119,12 +104,18 @@ CREATE TABLE IncomeType
 -- Incluye el factor de conversión para calcular el ingreso anual.
 CREATE TABLE IncomeFrequency
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    Name NVARCHAR(255) NOT NULL,                -- Nombre de la frecuencia
-    ConversionFactor DECIMAL(10,2) NOT NULL,    -- Factor para convertir a ingreso anual
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si la frecuencia está activa
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL                     -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    Name NVARCHAR(255) NOT NULL,
+    -- Nombre de la frecuencia
+    ConversionFactor DECIMAL(10,2) NOT NULL,
+    -- Factor para convertir a ingreso anual
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si la frecuencia está activa
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL
+    -- Fecha y hora de última actualización
 );
 
 -- =============================================
@@ -134,19 +125,32 @@ CREATE TABLE IncomeFrequency
 -- Incluye cálculos finales y determina la elegibilidad.
 CREATE TABLE ApplicationReview
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    ApplicationId INT NOT NULL,                 -- ID de la solicitud revisada
-    ReviewerId NVARCHAR(450) NOT NULL,          -- ID del usuario que realiza la revisión
-    TotalAnnualIncome DECIMAL(10,2) NOT NULL,   -- Ingreso anual total calculado
-    HouseholdSize INT NOT NULL,                 -- Número total de miembros del hogar
-    EligibilityResult NVARCHAR(50) NOT NULL,    -- Resultado (Free, Reduced, Denied)
-    ReviewDate DATE NOT NULL,                   -- Fecha de la revisión
-    EffectiveDate DATE NOT NULL,                -- Fecha de inicio de la elegibilidad
-    ExpirationDate DATE NOT NULL,               -- Fecha de expiración de la elegibilidad
-    Notes NVARCHAR(MAX) NULL,                   -- Notas adicionales de la revisión
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si la revisión está activa
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL,                    -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    ApplicationId INT NOT NULL,
+    -- ID de la solicitud revisada
+    ReviewerId NVARCHAR(450) NOT NULL,
+    -- ID del usuario que realiza la revisión
+    TotalAnnualIncome DECIMAL(10,2) NOT NULL,
+    -- Ingreso anual total calculado
+    HouseholdSize INT NOT NULL,
+    -- Número total de miembros del hogar
+    EligibilityResult NVARCHAR(50) NOT NULL,
+    -- Resultado (Free, Reduced, Denied)
+    ReviewDate DATE NOT NULL,
+    -- Fecha de la revisión
+    EffectiveDate DATE NOT NULL,
+    -- Fecha de inicio de la elegibilidad
+    ExpirationDate DATE NOT NULL,
+    -- Fecha de expiración de la elegibilidad
+    Notes NVARCHAR(MAX) NULL,
+    -- Notas adicionales de la revisión
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si la revisión está activa
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL,
+    -- Fecha y hora de última actualización
     FOREIGN KEY (ApplicationId) REFERENCES FoodAssistanceApplication(Id),
     FOREIGN KEY (ReviewerId) REFERENCES AspNetUsers(Id)
 );
@@ -158,12 +162,18 @@ CREATE TABLE ApplicationReview
 -- Utilizado para la clasificación demográfica opcional.
 CREATE TABLE Ethnicity
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    Name NVARCHAR(100) NOT NULL,                -- Nombre del grupo étnico
-    Description NVARCHAR(MAX) NULL,             -- Descripción detallada
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si el grupo étnico está activo
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL                     -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    Name NVARCHAR(100) NOT NULL,
+    -- Nombre del grupo étnico
+    Description NVARCHAR(MAX) NULL,
+    -- Descripción detallada
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si el grupo étnico está activo
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL
+    -- Fecha y hora de última actualización
 );
 
 -- =============================================
@@ -173,12 +183,18 @@ CREATE TABLE Ethnicity
 -- Utilizado para la clasificación demográfica opcional.
 CREATE TABLE Race
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    Name NVARCHAR(100) NOT NULL,                -- Nombre del grupo racial
-    Description NVARCHAR(MAX) NULL,             -- Descripción detallada
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si el grupo racial está activo
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL                     -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    Name NVARCHAR(100) NOT NULL,
+    -- Nombre del grupo racial
+    Description NVARCHAR(MAX) NULL,
+    -- Descripción detallada
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si el grupo racial está activo
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL
+    -- Fecha y hora de última actualización
 );
 
 -- =============================================
@@ -188,12 +204,18 @@ CREATE TABLE Race
 -- Permite registrar la etnicidad de cada miembro.
 CREATE TABLE MemberEthnicity
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    MemberId INT NOT NULL,                      -- ID del miembro del hogar
-    EthnicityId INT NOT NULL,                   -- ID de la etnia
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si la relación está activa
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL,                    -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    MemberId INT NOT NULL,
+    -- ID del miembro del hogar
+    EthnicityId INT NOT NULL,
+    -- ID de la etnia
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si la relación está activa
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL,
+    -- Fecha y hora de última actualización
     FOREIGN KEY (MemberId) REFERENCES HouseholdMember(Id),
     FOREIGN KEY (EthnicityId) REFERENCES Ethnicity(Id)
 );
@@ -205,12 +227,18 @@ CREATE TABLE MemberEthnicity
 -- Permite registrar múltiples razas por miembro.
 CREATE TABLE MemberRace
 (
-    Id INT PRIMARY KEY IDENTITY(1,1),           -- Identificador único autoincremental
-    MemberId INT NOT NULL,                      -- ID del miembro del hogar
-    RaceId INT NOT NULL,                        -- ID de la raza
-    IsActive BIT NOT NULL DEFAULT 1,            -- Indica si la relación está activa
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de creación
-    UpdatedAt DATETIME NULL,                    -- Fecha y hora de última actualización
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    -- Identificador único autoincremental
+    MemberId INT NOT NULL,
+    -- ID del miembro del hogar
+    RaceId INT NOT NULL,
+    -- ID de la raza
+    IsActive BIT NOT NULL DEFAULT 1,
+    -- Indica si la relación está activa
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    -- Fecha y hora de creación
+    UpdatedAt DATETIME NULL,
+    -- Fecha y hora de última actualización
     FOREIGN KEY (MemberId) REFERENCES HouseholdMember(Id),
     FOREIGN KEY (RaceId) REFERENCES Race(Id)
 );

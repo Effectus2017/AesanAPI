@@ -2,134 +2,237 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Api.Interfaces;
 using Api.Models.Request;
+using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.Annotations;
+using Api.Models;
 
 namespace Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class HouseholdController : ControllerBase
+    [Route("household")]
+    /// <summary>
+    /// Controlador que maneja todas las operaciones relacionadas con los hogares y sus miembros.
+    /// </summary>
+    public class HouseholdController(IHouseholdRepository repo, ILogger<HouseholdController> logger) : ControllerBase
     {
-        private readonly IHouseholdRepository _repo;
-        public HouseholdController(IHouseholdRepository repo)
+        private readonly IHouseholdRepository _repo = repo;
+        private readonly ILogger<HouseholdController> _logger = logger;
+
+        /// <summary>
+        /// Obtiene un hogar por su Id
+        /// </summary>
+        [HttpGet("get-household-by-id")]
+        [SwaggerOperation(Summary = "Obtiene un hogar por su Id", Description = "Devuelve un hogar basado en el ID proporcionado.")]
+        public async Task<IActionResult> GetHouseholdById([FromQuery] int id)
         {
-            _repo = repo;
+            try
+            {
+                var result = await _repo.GetHouseholdById(id);
+                if (result == null) return NotFound($"Hogar con ID {id} no encontrado");
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el hogar con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor al obtener el hogar");
+            }
         }
 
-        // Household
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetHouseholdById(int id)
+        /// <summary>
+        /// Obtiene una lista paginada de hogares
+        /// </summary>
+        [HttpGet("get-all-households-from-db")]
+        [SwaggerOperation(Summary = "Obtiene todos los hogares", Description = "Devuelve una lista de hogares.")]
+        public async Task<IActionResult> GetHouseholds([FromQuery] QueryParameters queryParameters)
         {
-            var result = await _repo.GetHouseholdById(id);
-            if (result == null) return NotFound();
-            return Ok(result);
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var result = await _repo.GetHouseholds(queryParameters.Take, queryParameters.Skip);
+                    return Ok(result);
+                }
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener todos los hogares");
+                return StatusCode(500, "Error interno del servidor al obtener los hogares");
+            }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetHouseholds([FromQuery] int take = 50, [FromQuery] int skip = 0)
-        {
-            var result = await _repo.GetHouseholds(take, skip);
-            return Ok(result);
-        }
-
-        [HttpPost]
+        /// <summary>
+        /// Inserta un nuevo hogar
+        /// </summary>
+        [HttpPost("insert-household")]
+        [SwaggerOperation(Summary = "Crea un nuevo hogar", Description = "Crea un nuevo hogar.")]
         public async Task<IActionResult> InsertHousehold([FromBody] HouseholdRequest request)
         {
-            var id = await _repo.InsertHousehold(request);
-            return Ok(new { Id = id });
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var id = await _repo.InsertHousehold(request);
+                    return CreatedAtAction(nameof(GetHouseholdById), new { id }, request);
+                }
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear el hogar");
+                return StatusCode(500, "Error interno del servidor al crear el hogar");
+            }
         }
 
-        [HttpPut]
+        /// <summary>
+        /// Actualiza un hogar existente
+        /// </summary>
+        [HttpPut("update-household")]
+        [SwaggerOperation(Summary = "Actualiza un hogar existente", Description = "Actualiza los datos de un hogar existente.")]
         public async Task<IActionResult> UpdateHousehold([FromBody] HouseholdRequest request)
         {
-            var ok = await _repo.UpdateHousehold(request);
-            if (!ok) return NotFound();
-            return Ok();
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var ok = await _repo.UpdateHousehold(request);
+                    if (!ok) return NotFound($"Hogar con ID {request.Id} no encontrado");
+                    return NoContent();
+                }
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar el hogar con ID {Id}", request.Id);
+                return StatusCode(500, "Error interno del servidor al actualizar el hogar");
+            }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteHousehold(int id)
+        /// <summary>
+        /// Elimina un hogar existente
+        /// </summary>
+        [HttpDelete("delete-household")]
+        [SwaggerOperation(Summary = "Elimina un hogar existente", Description = "Elimina un hogar existente.")]
+        public async Task<IActionResult> DeleteHousehold([FromQuery] int id)
         {
-            var ok = await _repo.DeleteHousehold(id);
-            if (!ok) return NotFound();
-            return Ok();
+            try
+            {
+                var ok = await _repo.DeleteHousehold(id);
+                if (!ok) return NotFound($"Hogar con ID {id} no encontrado");
+                return NoContent();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar el hogar con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar el hogar");
+            }
         }
 
         // HouseholdMember
-        [HttpGet("member/{id}")]
-        public async Task<IActionResult> GetHouseholdMemberById(int id)
+        /// <summary>
+        /// Obtiene un miembro del hogar por su Id
+        /// </summary>
+        [HttpGet("get-household-member-by-id")]
+        [SwaggerOperation(Summary = "Obtiene un miembro del hogar por su Id", Description = "Devuelve un miembro del hogar basado en el ID proporcionado.")]
+        public async Task<IActionResult> GetHouseholdMemberById([FromQuery] int id)
         {
-            var result = await _repo.GetHouseholdMemberById(id);
-            if (result == null) return NotFound();
-            return Ok(result);
+            try
+            {
+                var result = await _repo.GetHouseholdMemberById(id);
+                if (result == null) return NotFound($"Miembro con ID {id} no encontrado");
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el miembro con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor al obtener el miembro");
+            }
         }
 
-        [HttpGet("{householdId}/members")]
-        public async Task<IActionResult> GetHouseholdMembers(int householdId, [FromQuery] int take = 50, [FromQuery] int skip = 0)
+        /// <summary>
+        /// Obtiene una lista paginada de miembros del hogar
+        /// </summary>
+        [HttpGet("get-household-members")]
+        [SwaggerOperation(Summary = "Obtiene miembros del hogar", Description = "Devuelve una lista de miembros del hogar.")]
+        public async Task<IActionResult> GetHouseholdMembers([FromQuery] int householdId, [FromQuery] int take = 50, [FromQuery] int skip = 0)
         {
-            var result = await _repo.GetHouseholdMembers(householdId, take, skip);
-            return Ok(result);
+            try
+            {
+                var result = await _repo.GetHouseholdMembers(householdId, take, skip);
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener los miembros del hogar con HouseholdId {Id}", householdId);
+                return StatusCode(500, "Error interno del servidor al obtener los miembros");
+            }
         }
 
-        [HttpPost("member")]
+        /// <summary>
+        /// Inserta un nuevo miembro del hogar
+        /// </summary>
+        [HttpPost("insert-household-member")]
+        [SwaggerOperation(Summary = "Crea un nuevo miembro del hogar", Description = "Crea un nuevo miembro del hogar.")]
         public async Task<IActionResult> InsertHouseholdMember([FromBody] HouseholdMemberRequest request)
         {
-            var id = await _repo.InsertHouseholdMember(request);
-            return Ok(new { Id = id });
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var id = await _repo.InsertHouseholdMember(request);
+                    return CreatedAtAction(nameof(GetHouseholdMemberById), new { id }, request);
+                }
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear el miembro del hogar");
+                return StatusCode(500, "Error interno del servidor al crear el miembro");
+            }
         }
 
-        [HttpPut("member")]
+        /// <summary>
+        /// Actualiza un miembro del hogar existente
+        /// </summary>
+        [HttpPut("update-household-member")]
+        [SwaggerOperation(Summary = "Actualiza un miembro del hogar existente", Description = "Actualiza los datos de un miembro del hogar existente.")]
         public async Task<IActionResult> UpdateHouseholdMember([FromBody] HouseholdMemberRequest request)
         {
-            var ok = await _repo.UpdateHouseholdMember(request);
-            if (!ok) return NotFound();
-            return Ok();
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var ok = await _repo.UpdateHouseholdMember(request);
+                    if (!ok) return NotFound($"Miembro con ID {request.Id} no encontrado");
+                    return NoContent();
+                }
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar el miembro con ID {Id}", request.Id);
+                return StatusCode(500, "Error interno del servidor al actualizar el miembro");
+            }
         }
 
-        [HttpDelete("member/{id}")]
-        public async Task<IActionResult> DeleteHouseholdMember(int id)
+        /// <summary>
+        /// Elimina un miembro del hogar existente
+        /// </summary>
+        [HttpDelete("delete-household-member")]
+        [SwaggerOperation(Summary = "Elimina un miembro del hogar existente", Description = "Elimina un miembro del hogar existente.")]
+        public async Task<IActionResult> DeleteHouseholdMember([FromQuery] int id)
         {
-            var ok = await _repo.DeleteHouseholdMember(id);
-            if (!ok) return NotFound();
-            return Ok();
-        }
-
-        // HouseholdMemberIncome
-        [HttpGet("income/{id}")]
-        public async Task<IActionResult> GetHouseholdMemberIncomeById(int id)
-        {
-            var result = await _repo.GetHouseholdMemberIncomeById(id);
-            if (result == null) return NotFound();
-            return Ok(result);
-        }
-
-        [HttpGet("member/{memberId}/incomes")]
-        public async Task<IActionResult> GetHouseholdMemberIncomes(int memberId, [FromQuery] int take = 50, [FromQuery] int skip = 0)
-        {
-            var result = await _repo.GetHouseholdMemberIncomes(memberId, take, skip);
-            return Ok(result);
-        }
-
-        [HttpPost("income")]
-        public async Task<IActionResult> InsertHouseholdMemberIncome([FromBody] HouseholdMemberIncomeRequest request)
-        {
-            var id = await _repo.InsertHouseholdMemberIncome(request);
-            return Ok(new { Id = id });
-        }
-
-        [HttpPut("income")]
-        public async Task<IActionResult> UpdateHouseholdMemberIncome([FromBody] HouseholdMemberIncomeRequest request)
-        {
-            var ok = await _repo.UpdateHouseholdMemberIncome(request);
-            if (!ok) return NotFound();
-            return Ok();
-        }
-
-        [HttpDelete("income/{id}")]
-        public async Task<IActionResult> DeleteHouseholdMemberIncome(int id)
-        {
-            var ok = await _repo.DeleteHouseholdMemberIncome(id);
-            if (!ok) return NotFound();
-            return Ok();
+            try
+            {
+                var ok = await _repo.DeleteHouseholdMember(id);
+                if (!ok) return NotFound($"Miembro con ID {id} no encontrado");
+                return NoContent();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar el miembro con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar el miembro");
+            }
         }
     }
 }

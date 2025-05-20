@@ -20,12 +20,5 @@ namespace Api.Interfaces
         Task<int> InsertHouseholdMember(HouseholdMemberRequest request);
         Task<bool> UpdateHouseholdMember(HouseholdMemberRequest request);
         Task<bool> DeleteHouseholdMember(int id);
-
-        // HouseholdMemberIncome
-        Task<dynamic> GetHouseholdMemberIncomeById(int id);
-        Task<dynamic> GetHouseholdMemberIncomes(int take, int skip, int memberId);
-        Task<int> InsertHouseholdMemberIncome(HouseholdMemberIncomeRequest request);
-        Task<bool> UpdateHouseholdMemberIncome(HouseholdMemberIncomeRequest request);
-        Task<bool> DeleteHouseholdMemberIncome(int id);
     }
 }

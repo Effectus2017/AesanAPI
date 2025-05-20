@@ -65,7 +65,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         }
     }
 
-    private string GetSubFolder(FileType fileType)
+    private static string GetSubFolder(FileType fileType)
     {
         return fileType switch
         {

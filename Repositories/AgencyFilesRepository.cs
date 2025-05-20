@@ -115,11 +115,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
             parameters.Add("@uploadedBy", request.UploadedBy, DbType.String);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync(
-                "101_InsertAgencyFile",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("101_InsertAgencyFile", parameters, commandType: CommandType.StoredProcedure);
 
             int newFileId = parameters.Get<int>("@id");
 

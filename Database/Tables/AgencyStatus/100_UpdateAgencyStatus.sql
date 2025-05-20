@@ -25,3 +25,4 @@ BEGIN
     SET @rowsaffected = @@ROWCOUNT;
     RETURN @rowsaffected;
 END;
+GO;

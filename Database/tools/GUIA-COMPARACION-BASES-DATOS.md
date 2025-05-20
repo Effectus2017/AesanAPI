@@ -1,5 +1,97 @@
 # Guía de Uso: Herramienta de Comparación de Bases de Datos SQL Server
 
+## Novedades y automatizaciones recientes (mayo 2025)
+
+Se han incorporado nuevas funcionalidades avanzadas para la gestión y organización de procedimientos almacenados (SPs) y archivos SQL, orientadas a la automatización, seguridad y trazabilidad. Todas las opciones están documentadas y alineadas con las mejores prácticas del proyecto.
+
+### 1. Limpieza de versiones viejas de SPs en SQL Server
+
+- **Opción:** `--clean-old-sp-versions` (con `--dry-run` por defecto, ahora puedes usar `--no-dry-run` para ejecutar el borrado real)
+- **¿Qué hace?**
+  - Identifica SPs versionados (`NNN_NombreSP`) y elimina automáticamente todas las versiones antiguas, conservando solo la más reciente en cada grupo.
+  - En modo `--dry-run` (por defecto), solo muestra qué se eliminaría y cuál se conservaría, sin ejecutar cambios.
+  - Genera un log (`sp_cleanup_keep_log_<fecha>.txt`) con los SPs que se conservarán, para trazabilidad y auditoría.
+- **Uso recomendado:**
+  - Ejecutar primero en modo simulación (por defecto) para validar el impacto.
+  - Revisar el log antes de ejecutar la limpieza real.
+  - Para ejecutar el borrado real, usar el flag `--no-dry-run`.
+
+### 2. Sincronización automática de SPs faltantes
+
+- **Opción:** `--sync-missing-sps`
+- **¿Qué hace?**
+  - Tras comparar las bases, ejecuta automáticamente los scripts de SPs que existen en la base fuente (db1) pero faltan en la base destino (db2), usando los archivos locales (`Api/Database/Tables/*/*.sql`).
+  - Divide los scripts por bloques `GO` para evitar errores de ejecución con ODBC.
+  - Se detiene ante el primer error y muestra el mensaje.
+- **Limitaciones:**
+  - Solo sincroniza de db1 a db2.
+  - No resuelve dependencias entre SPs.
+- **Recomendación:**
+  - Validar en entorno de pruebas antes de producción.
+
+### 3. Organización automática de archivos locales de SPs
+
+- **Opción:** `--move-old-sp-files-local`
+- **¿Qué hace?**
+  - Mantiene solo la versión más alta de cada SP en la raíz de cada entidad.
+  - Mueve versiones viejas a una subcarpeta `Deprecated` y las renombra como `{Nombre}-Deprecated.sql`.
+  - No elimina archivos, solo los mueve y renombra para mayor orden y trazabilidad.
+- **Impacto:**
+  - Facilita la navegación y reduce el riesgo de aplicar versiones obsoletas.
+  - Las versiones viejas siguen disponibles para consulta histórica.
+
+### 4. Trazabilidad y documentación
+
+- Todas las nuevas opciones y mejoras están documentadas en:
+  - El propio script (`compare_databases.py`)
+  - Memory Bank (`activeContext.md`)
+  - Changelog (`changelog.md`)
+  - Historial (`.changelog/history/api-YYYY-MM-DD.md`)
+  - Resumen humano (`.changelog/human/api-YYYY-MM-DD.md`)
+- Se recomienda revisar estos documentos para detalles de implementación y ejemplos de uso.
+
+---
+
+## Ejemplos de uso de las nuevas opciones
+
+### Escenario A: Limpieza de versiones viejas de SPs (con y sin dry-run)
+
+```bash
+# Simulación (no borra nada, solo muestra lo que se eliminaría y lo que se conservaría)
+python Database/tools/compare_databases.py --clean-old-sp-versions
+# o explícitamente
+python Database/tools/compare_databases.py --clean-old-sp-versions --dry-run
+
+# Borrado real (elimina versiones viejas y deja solo la más reciente de cada SP)
+python Database/tools/compare_databases.py --clean-old-sp-versions --no-dry-run
+```
+
+- Se generará un archivo de log con los SPs que se conservarán.
+- **¡Advertencia!** El flag `--no-dry-run` ejecuta el borrado real. Úsalo solo después de validar el resultado del dry-run y revisar el log.
+
+### Escenario B: Sincronización automática de SPs faltantes
+
+```bash
+# Sincronizar automáticamente los SPs que existen en db1 pero faltan en db2
+python Database/tools/compare_databases.py --sync-missing-sps
+```
+
+- El script buscará los archivos SQL locales y los ejecutará en la base destino.
+- Si ocurre un error, la sincronización se detiene y muestra el mensaje.
+
+### Escenario C: Organización automática de archivos locales de SPs
+
+```bash
+# Mover versiones viejas de archivos de SPs locales a la subcarpeta Deprecated y renombrarlas
+python Database/tools/compare_databases.py --move-old-sp-files-local
+```
+
+- Solo afecta archivos locales, no la base de datos.
+- Las versiones viejas se mueven a `Deprecated` y se renombran como `{Nombre}-Deprecated.sql`.
+- No elimina archivos, solo los mueve y renombra para mayor orden y trazabilidad.
+
+---
+
 ## Introducción
 
 Esta guía describe cómo utilizar la herramienta de comparación de bases de datos SQL Server (`compare_databases.py`) para identificar diferencias entre dos bases de datos. La herramienta permite comparar tablas, estructuras de columnas y procedimientos almacenados.
@@ -180,7 +272,13 @@ La herramienta está configurada para conectarse a:
    - Usuario: aesan
    - Contraseña: 4ubi4XFygLMxXU
 
-2. **Base de datos Local**:
+<!-- 2. **Base de datos Local**:
+   - Servidor: 192.168.1.144
+   - Base de datos: NUTRE
+   - Usuario: sa
+   - Contraseña: d@rio152325 -->
+
+2. **Base de datos NUTRE 2**:
    - Servidor: 192.168.1.144
    - Base de datos: NUTRE
    - Usuario: sa

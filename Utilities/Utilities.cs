@@ -114,10 +114,7 @@ public static class Utilities
     /// <param name="programIds">IDs de los programas</param>
     /// <param name="existingCodes">Códigos existentes para validar unicidad</param>
     /// <returns>Código identificador único</returns>
-    public static string GenerateAgencyCode(
-        string agencyName,
-        List<int> programIds,
-        List<string> existingCodes)
+    public static string GenerateAgencyCode(string agencyName, List<int> programIds, List<string> existingCodes)
     {
         // Generar iniciales de la agencia (3 letras)
         string initials = GenerateInitials(agencyName);
@@ -140,6 +137,20 @@ public static class Utilities
 
         // Construir el código final
         return $"{uniqueInitials}{randomNum}-{programsStr}-{year}-{sequence}";
+    }
+
+    /// <summary>
+    /// Genera un código único basado en un número aleatorio
+    /// </summary>
+    /// <returns>Código único en formato T-{numero}</returns>
+    public static string GenerateRandomTCode()
+    {
+        // Generar un número aleatorio de 8 dígitos
+        var random = new Random();
+        int randomNumber = random.Next(10000000, 99999999);
+
+        // Formatear como: T-{numero}
+        return $"T-{randomNumber}";
     }
 
     private static string GenerateInitials(string name)

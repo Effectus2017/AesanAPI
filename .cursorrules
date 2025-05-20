@@ -118,3 +118,82 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 # Scratchpad
 
 sql-sp-version-control: Guía detallada para el control de versiones de Stored Procedures usando un sistema de estado y registro de cambios. Ver sql-sp-version-control.md para más detalles.
+
+# Reglas de patrón CRUD para modelos (API + Angular)
+
+## Descripción general
+
+Cuando se indique el nombre de un modelo (por ejemplo, "KitchenType"), debes replicar el siguiente workflow para implementar el CRUD completo, siguiendo el patrón de AgencyStatus/KitchenType. No inventes lógica nueva salvo que se indique explícitamente. Usa siempre las convenciones y estructuras existentes.
+
+---
+
+### 1. Backend (.NET + SQL Server)
+
+#### 1.1. Base de Datos
+
+- Crear la tabla en la base de datos siguiendo las convenciones de nombres y tipos.
+- Crear los Stored Procedures para:
+  - Insertar (Add)
+  - Actualizar (Update)
+  - Eliminar (Delete, preferentemente lógico)
+  - Obtener por ID (GetById)
+  - Listar todos (GetAll)
+- Ubicar scripts en `Database/Tables/<Modelo>/` y `Database/Tables/<Modelo>/SP/`.
+
+#### 1.2. Capa de Datos y Lógica
+
+- Crear el modelo C# en `Models/Tables/`.
+- Crear el DTO en `Models/DTO/` si aplica.
+- Crear la interfaz y la implementación del repositorio en `Repositories/`.
+- Crear el servicio correspondiente en `Services/`.
+- Crear el controlador en `Controllers/`.
+- Seguir el patrón de inyección de dependencias y manejo de errores.
+
+---
+
+### 2. Frontend (Angular)
+
+#### 2.1. Estructura
+
+- Crear un módulo bajo `src/app/modules/admin-portal/<modelo>/`.
+- Incluir componentes para:
+  - Listado (`list/`)
+  - Alta (`add/`)
+  - Edición (`edit/`)
+- Crear el servicio Angular para consumir la API.
+
+#### 2.2. Internacionalización
+
+- Agregar traducciones en los archivos de i18n correspondientes.
+
+#### 2.3. UI/UX
+
+- Usar los componentes y estilos existentes (tablas, formularios, diálogos).
+- Validar formularios y mostrar mensajes de error consistentes.
+
+---
+
+### 3. Pruebas
+
+- Backend: Agregar pruebas unitarias para servicios y repositorios.
+- Frontend: Agregar pruebas unitarias y de integración para componentes y servicios.
+
+---
+
+### 4. Documentación y Progreso
+
+- Actualizar la documentación técnica si aplica.
+- Registrar el avance en `progress.md` y actualizar el Memory Bank si corresponde.
+
+---
+
+### 5. Notas
+
+- No inventar lógica nueva: replicar el patrón AgencyStatus/KitchenType.
+- Si el modelo requiere lógica especial, documentarla explícitamente.
+- Mantener la trazabilidad de cambios en el changelog correspondiente.
+
+---
+
+**Resumen:**
+Al recibir el nombre de un modelo, ejecuta este workflow completo para implementar el CRUD en backend y frontend, siguiendo siempre las convenciones y estructuras existentes en el proyecto.

@@ -221,3 +221,6 @@ uploads/Profile
 *.conf
 uploads
 Database/.DS_Store
+logs/
+*.zip
+*.env

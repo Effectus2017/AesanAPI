@@ -6,9 +6,9 @@ namespace Api.Models.DTO
     {
         public int Id { get; set; }
         public int MemberId { get; set; }
-        public string IncomeType { get; set; }
+        public int IncomeTypeId { get; set; }
         public decimal Amount { get; set; }
-        public string Frequency { get; set; }
+        public int FrequencyId { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

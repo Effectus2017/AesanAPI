@@ -18,6 +18,27 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;
     private readonly ILogger<AgencyStatusController> _logger = logger;
 
+    [HttpGet("get-agency-status-by-id")]
+    [SwaggerOperation(Summary = "Obtiene un estado de agencia por su ID", Description = "Devuelve un estado de agencia basado en el ID proporcionado.")]
+    public async Task<ActionResult> GetById([FromQuery] int id)
+    {
+        try
+        {
+            var status = await _agencyStatusRepository.GetAgencyStatusById(id);
+            if (status == null)
+            {
+                return NotFound($"Estado de agencia con ID {id} no encontrado");
+            }
+
+            return Ok(status);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el estado de agencia con ID {Id}", id);
+            return StatusCode(500, "Error interno del servidor al obtener el estado de agencia");
+        }
+    }
+
     [HttpGet("get-all-agency-status-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los estados de agencia", Description = "Devuelve una lista de estados de agencia.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
@@ -39,24 +60,7 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
         }
     }
 
-    [HttpGet("get-agency-status-by-id")]
-    [SwaggerOperation(Summary = "Obtiene un estado de agencia por su ID", Description = "Devuelve un estado de agencia basado en el ID proporcionado.")]
-    public async Task<ActionResult> GetById([FromQuery] int id)
-    {
-        try
-        {
-            var status = await _agencyStatusRepository.GetAgencyStatusById(id);
-            if (status == null)
-                return NotFound($"Estado de agencia con ID {id} no encontrado");
 
-            return Ok(status);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el estado de agencia con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al obtener el estado de agencia");
-        }
-    }
 
     [HttpPost("insert-agency-status")]
     [SwaggerOperation(Summary = "Crea un nuevo estado de agencia", Description = "Crea un nuevo estado de agencia.")]
@@ -67,8 +71,11 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
             if (ModelState.IsValid)
             {
                 var result = await _agencyStatusRepository.InsertAgencyStatus(status);
+
                 if (result)
+                {
                     return CreatedAtAction(nameof(GetById), new { id = status.Id }, status);
+                }
 
                 return BadRequest("No se pudo crear el estado de agencia");
             }

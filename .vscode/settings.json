@@ -7,14 +7,13 @@
   },
   "cSpell.enableFiletypes": ["!scss"],
   "files.exclude": {
-    "**/obj": true,
     "**/.git": true,
-    "**/dist": true,
-    "**/temp": true,
     "**/bin": true,
+    "**/dist": true,
+    "**/obj": true,
+    "**/temp": true,
     "bump-version.sh": true,
-    "update-version.sh": true,
-    ".github": true
+    "update-version.sh": true
   },
   "spellright.language": ["es", "en"],
   "spellright.documentTypes": ["markdown", "latex", "plaintext", "csharp"]

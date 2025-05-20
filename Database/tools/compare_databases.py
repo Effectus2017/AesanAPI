@@ -10,6 +10,8 @@ import argparse
 from colorama import init, Fore, Style
 import difflib
 import re
+import datetime
+import glob
 
 # Inicializar colorama para colores en la terminal
 init()
@@ -357,6 +359,159 @@ def print_stored_procedure_comparison(comparison, db1_name, db2_name, show_diff=
                         print(f"    {line}")
                 print()
 
+def clean_old_sp_versions(conn, db_name, dry_run=True):
+    """Elimina versiones viejas de SPs versionados (NNN_NombreSP) en la base de datos dada y registra los SPs más recientes que se conservarán en un log."""
+    sps = get_stored_procedures(conn)
+    pattern = re.compile(r'^(?P<version>\d{3})_(?P<base>.+)$')
+    versioned = {}
+    for sp in sps:
+        m = pattern.match(sp['name'])
+        if m:
+            # Normalizar el nombre base: minúsculas y sin espacios
+            base = f"{sp['schema'].lower()}.{m.group('base').replace(' ', '').lower()}"
+            version = int(m.group('version'))
+            versioned.setdefault(base, []).append((version, sp))
+    total_deleted = 0
+    failed_drops = []
+    # Preparar log de SPs que se conservarán
+    log_lines = []
+    fecha = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_filename = f"sp_cleanup_keep_log_{db_name.replace(' ', '_')}_{fecha}.txt"
+    for base, versions in versioned.items():
+        versions.sort(reverse=True)  # De mayor a menor
+        keep = versions[0][1]  # Mantener la versión más alta
+        to_delete = [sp for version, sp in versions[1:]]
+        log_lines.append(f"[{db_name}] Se conservará: [{keep['schema']}].[{keep['name']}] (versión más reciente)")
+        if dry_run:
+            print(f"[DRY RUN] {db_name}: Se conservará la versión más alta: [{keep['schema']}].[{keep['name']}] (versión más reciente)")
+        for sp in to_delete:
+            drop_sql = f"DROP PROCEDURE [{sp['schema']}].[{sp['name']}]"
+            if dry_run:
+                print(f"[DRY RUN] {db_name}: {drop_sql}")
+            else:
+                print(f"Eliminando en {db_name}: {drop_sql}")
+                cursor = conn.cursor()
+                try:
+                    cursor.execute(drop_sql)
+                    print(f"  -> Eliminado: {sp['schema']}.{sp['name']}")
+                    total_deleted += 1
+                except Exception as e:
+                    print(f"  -> ERROR eliminando {sp['schema']}.{sp['name']}: {e}")
+                    failed_drops.append(f"{sp['schema']}.{sp['name']} - {e}")
+                finally:
+                    cursor.close()
+        # Commit tras cada grupo (por seguridad)
+        if not dry_run:
+            try:
+                conn.commit()
+            except Exception as e:
+                print(f"[WARN] Error al hacer commit: {e}")
+    # Guardar el log de SPs que se conservarán
+    with open(log_filename, 'w', encoding='utf-8') as logf:
+        logf.write('\n'.join(log_lines))
+    print(f"\n[LOG] Registro de SPs que se conservarán guardado en: {log_filename}\n")
+    if not dry_run:
+        print(f"Total SPs eliminados en {db_name}: {total_deleted}")
+        if failed_drops:
+            print(f"\n[ERROR] No se pudieron eliminar los siguientes SPs:")
+            for fail in failed_drops:
+                print(f"  - {fail}")
+
+def sync_missing_sps(db1_conn, db2_conn):
+    """Sincroniza los SPs que existen en db1 pero faltan en db2 ejecutando los scripts SQL correspondientes en db2."""
+    print(f"\n{Fore.CYAN}=== SINCRONIZACIÓN DE SPs FALTANTES EN DB2 ==={Style.RESET_ALL}")
+    db1_procs = get_stored_procedures(db1_conn)
+    db2_procs = get_stored_procedures(db2_conn)
+    db1_proc_names = set(f"{p['schema']}.{p['name']}" for p in db1_procs)
+    db2_proc_names = set(f"{p['schema']}.{p['name']}" for p in db2_procs)
+    missing_in_db2 = db1_proc_names - db2_proc_names
+    if not missing_in_db2:
+        print(f"{Fore.GREEN}No hay SPs faltantes en DB2.{Style.RESET_ALL}")
+        return
+    print(f"{Fore.YELLOW}Procedimientos a sincronizar en DB2: {len(missing_in_db2)}{Style.RESET_ALL}")
+    # Buscar archivos SQL en Api/Database/Tables/*/*.sql
+    sql_files = glob.glob(os.path.join(os.path.dirname(__file__), '../Tables/*/*.sql'))
+    sql_files_map = {os.path.basename(f).replace('.sql',''): f for f in sql_files}
+    for sp_fullname in missing_in_db2:
+        sp_name = sp_fullname.split('.')[-1]
+        sql_file = sql_files_map.get(sp_name)
+        if not sql_file:
+            print(f"{Fore.RED}No se encontró archivo SQL para {sp_fullname}{Style.RESET_ALL}")
+            continue
+        print(f"Sincronizando {sp_fullname} desde archivo {os.path.basename(sql_file)}...")
+        with open(sql_file, 'r', encoding='utf-8') as f:
+            sql = f.read()
+        # Separar por bloques usando 'GO' como separador
+        blocks = [block.strip() for block in re.split(r'^\s*GO\s*$', sql, flags=re.MULTILINE) if block.strip()]
+        try:
+            cursor = db2_conn.cursor()
+            for block in blocks:
+                cursor.execute(block)
+            cursor.commit()
+            cursor.close()
+            print(f"{Fore.GREEN}SP {sp_fullname} sincronizado correctamente.{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}Error al sincronizar {sp_fullname}: {e}{Style.RESET_ALL}")
+            print(f"Se detiene la sincronización.")
+            break
+
+def move_old_sp_files_local():
+    """
+    Herramienta de comparación y mantenimiento de bases de datos SQL Server
+
+    NUEVO: Limpieza y organización de archivos locales de SPs
+    --------------------------------------------------------
+
+    Opción: --move-old-sp-files-local
+
+    Permite mover automáticamente las versiones viejas de archivos de procedimientos almacenados (SPs) locales a una subcarpeta Deprecated dentro de cada entidad.
+
+    - Busca archivos versionados (NNN_NombreSP.sql) en cada carpeta de entidad bajo Api/Database/Tables.
+    - Mantiene solo la versión más alta de cada SP.
+    - Mueve las versiones viejas a la subcarpeta Deprecated (creándola si no existe).
+    - Renombra los archivos movidos como {Nombre}-Deprecated.sql.
+
+    USO:
+      python compare_databases.py --move-old-sp-files-local
+
+    Limitaciones:
+    - Solo afecta archivos locales, no la base de datos.
+    - No elimina archivos, solo los mueve y renombra.
+    - No revisa dependencias entre SPs.
+    """
+    print(f"\n{Fore.CYAN}=== MOVIENDO ARCHIVOS DE SPs VERSIONADOS ANTIGUOS A Deprecated/ ==={Style.RESET_ALL}")
+    base_dir = os.path.join(os.path.dirname(__file__), '../Tables')
+    for entity_dir in os.listdir(base_dir):
+        entity_path = os.path.join(base_dir, entity_dir)
+        if not os.path.isdir(entity_path):
+            continue
+        # Buscar archivos NNN_NombreSP.sql
+        sp_files = [f for f in os.listdir(entity_path) if re.match(r'\d{3}_.+\.sql$', f)]
+        if not sp_files:
+            continue
+        # Agrupar por base name (sin versión)
+        sp_map = {}
+        for f in sp_files:
+            m = re.match(r'(?P<version>\d{3})_(?P<base>.+)\.sql$', f)
+            if m:
+                base = m.group('base')
+                version = int(m.group('version'))
+                sp_map.setdefault(base, []).append((version, f))
+        for base, versions in sp_map.items():
+            versions.sort(reverse=True)
+            keep = versions[0][1]
+            to_move = [f for v, f in versions[1:]]
+            if not to_move:
+                continue
+            deprecated_dir = os.path.join(entity_path, 'Deprecated')
+            os.makedirs(deprecated_dir, exist_ok=True)
+            for f in to_move:
+                src = os.path.join(entity_path, f)
+                dst = os.path.join(deprecated_dir, f.replace('.sql', '-Deprecated.sql'))
+                print(f"Moviendo {src} -> {dst}")
+                os.rename(src, dst)
+    print(f"\n{Fore.GREEN}Archivos antiguos movidos y renombrados correctamente.{Style.RESET_ALL}")
+
 def main():
     parser = argparse.ArgumentParser(description='Comparar dos bases de datos SQL Server')
     parser.add_argument('--azure', action='store_true', help='Usar configuración de Azure DB')
@@ -370,11 +525,17 @@ def main():
     parser.add_argument('--show-sp-diff', action='store_true', help='Mostrar diferencias en el código de los procedimientos almacenados')
     parser.add_argument('--export-sp', type=str, help='Directorio para exportar los procedimientos almacenados diferentes')
     parser.add_argument('--sp-name', type=str, help='Nombre específico de un procedimiento almacenado para comparar')
+    parser.add_argument('--clean-old-sp-versions', action='store_true', help='Eliminar versiones viejas de SPs versionados en ambas bases')
+    parser.add_argument('--dry-run', dest='dry_run', action='store_true', help='Solo mostrar los SPs que se eliminarían, sin ejecutar DROP (por defecto activo)')
+    parser.add_argument('--no-dry-run', dest='dry_run', action='store_false', help='Ejecutar realmente el borrado de SPs viejos')
+    parser.set_defaults(dry_run=True)
+    parser.add_argument('--sync-missing-sps', action='store_true', help='Sincronizar SPs que existen en la base fuente pero faltan en la base destino (solo DB2)')
+    parser.add_argument('--move-old-sp-files-local', action='store_true', help='Mover versiones viejas de SPs locales a carpeta Deprecated y renombrar como -Deprecated.sql')
     
     args = parser.parse_args()
     
     # Si no se especifica ninguna opción, mostrar ayuda
-    if not (args.azure or args.local or args.tables or args.procedures or args.all or args.table_details or args.all_tables or args.show_sp_diff or args.export_sp or args.sp_name):
+    if not (args.azure or args.local or args.tables or args.procedures or args.all or args.table_details or args.all_tables or args.show_sp_diff or args.export_sp or args.sp_name or args.clean_old_sp_versions or args.sync_missing_sps or args.move_old_sp_files_local):
         parser.print_help()
         return
     
@@ -383,6 +544,7 @@ def main():
         sys.stdout = open(args.output, 'w', encoding='utf-8')
     
     # Configuración de bases de datos
+    # Azure DB
     db1_config = {
         'server': 'aesanserver.database.windows.net',
         'database': 'aesan2',
@@ -391,17 +553,28 @@ def main():
         'encrypt': True
     }
     
+    # Local DB
+    # db2_config = {
+    #     'server': '192.168.1.144',
+    #     'database': 'NUTRE',
+    #     'username': 'sa',
+    #     'password': 'd@rio152325',
+    #     'encrypt': False
+    # }
+
+    # Azure DB NUTRE 2
     db2_config = {
-        'server': '192.168.1.144',
-        'database': 'NUTRE',
-        'username': 'sa',
-        'password': 'd@rio152325',
-        'encrypt': False
+        'server': 'testaes.database.windows.net',
+        'database': 'aesbd',
+        'username': 'serverdbaes',
+        'password': 'EsU8jWyEgLHK',
+        'encrypt': True
     }
     
     # Nombres para mostrar
-    db1_name = "Azure DB (aesan2)"
-    db2_name = "Local DB (NUTRE)"
+    db1_name = "Azure DB (NUTRE OLD)"
+    # db2_name = "Local DB (NUTRE)"
+    db2_name = "Azure DB (NUTRE NEW)"
     
     # Establecer conexiones
     db1_conn = get_connection(**db1_config)
@@ -412,6 +585,21 @@ def main():
         return
     
     try:
+        # Limpiar versiones viejas de SPs si se solicita
+        if args.clean_old_sp_versions:
+            print(f"\n{Fore.CYAN}=== LIMPIEZA DE VERSIONES VIEJAS DE SPs (NNN_NombreSP) ==={Style.RESET_ALL}")
+            clean_old_sp_versions(db1_conn, db1_name, dry_run=args.dry_run)
+            clean_old_sp_versions(db2_conn, db2_name, dry_run=args.dry_run)
+            return
+        
+        if args.sync_missing_sps:
+            sync_missing_sps(db1_conn, db2_conn)
+            return
+        
+        if args.move_old_sp_files_local:
+            move_old_sp_files_local()
+            return
+        
         # Comparar tablas
         if args.tables or args.all:
             db1_tables = get_tables(db1_conn)

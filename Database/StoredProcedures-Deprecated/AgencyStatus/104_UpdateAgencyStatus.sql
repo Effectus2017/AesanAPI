@@ -10,7 +10,9 @@ BEGIN
     DECLARE @validStatus BIT = 0;
 
     -- Verificamos que el estado exista
-    IF EXISTS (SELECT 1 FROM AgencyStatus WHERE Id = @statusId)
+    IF EXISTS (SELECT 1
+    FROM AgencyStatus
+    WHERE Id = @statusId)
     BEGIN
         SET @validStatus = 1;
     END
@@ -22,10 +24,6 @@ BEGIN
         UPDATE Agency
         SET 
             AgencyStatusId = @statusId,
-            RejectionJustification = CASE 
-                                        WHEN @statusId = 6 THEN @rejectionJustification -- 'No cumple con los requisitos'
-                                        ELSE NULL
-                                    END,
             UpdatedAt = GETDATE()
         WHERE Id = @agencyId;
 

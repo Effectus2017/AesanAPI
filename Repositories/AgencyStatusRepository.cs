@@ -24,22 +24,20 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// <returns>El estado encontrado.</returns>
     public async Task<dynamic> GetAgencyStatusById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyStatus, id);
-
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync("100_GetAgencyStatusById", parameters, commandType: CommandType.StoredProcedure);
-                var data = await result.ReadSingleAsync<DTOAgencyStatus>();
-                return data;
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetAgencyStatusById", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadSingleAsync<DTOAgencyStatus>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el estado de agencia por ID");
+            throw;
+        }
     }
 
     /// <summary>
