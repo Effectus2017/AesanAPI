@@ -32,11 +32,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             var parameters = new DynamicParameters();
             parameters.Add("@userId", userId, DbType.String);
 
-            var agency = await db.QueryFirstOrDefaultAsync<dynamic>(
-                "102_GetUserAssignedAgency",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var agency = await db.QueryFirstOrDefaultAsync<dynamic>("103_GetUserAssignedAgency", parameters, commandType: CommandType.StoredProcedure);
 
             return agency;
         }

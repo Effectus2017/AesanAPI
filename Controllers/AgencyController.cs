@@ -120,6 +120,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     queryParameters.UserId,
                     queryParameters.Alls
                 );
+
                 return Ok(agencies);
             }
 
@@ -277,7 +278,14 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? ""));
+                var result = await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? "");
+
+                if (result)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest("Error al actualizar el estado de la agencia");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));

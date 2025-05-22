@@ -7,12 +7,13 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
-[Route("agency-status")]
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con los estados de las agencias.
 /// Proporciona endpoints para la gestión completa de estados, incluyendo creación,
 /// lectura, actualización y eliminación de estados de agencias.
 /// </summary>
+[Route("agency-status")]
+[ApiController]
 public class AgencyStatusController(IAgencyStatusRepository agencyStatusRepository, ILogger<AgencyStatusController> logger) : ControllerBase
 {
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;

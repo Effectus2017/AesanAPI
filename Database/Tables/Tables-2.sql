@@ -106,14 +106,7 @@ CREATE TABLE AlternativeCommunication
     UpdatedAt DATETIME NULL
 );
 
-CREATE TABLE OptionSelection
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
+
 
 CREATE TABLE DocumentsRequired
 (

@@ -15,6 +15,7 @@ public class QueryParameters
     public int? CityId { get; set; } // ID de la ciudad
     public int? StatusId { get; set; } // ID del estado
     public int? MemberId { get; set; } // ID del miembro
+    public int OptionSelectionId { get; set; } // ID de la opción de selección
     public string? ImageUrl { get; set; } // URL de la imagen
     public string? RejectionJustification { get; set; } // Justification for rejection
     public string? UserId { get; set; } // ID del usuario
@@ -26,4 +27,5 @@ public class QueryParameters
     public string? Token { get; set; } // Token para restablecimiento de contraseña
     public string? DocumentType { get; set; } // Tipo de documento
     public string? Description { get; set; } // Descripción del archivo
+    public string? OptionType { get; set; } // Tipo de opción
 }
