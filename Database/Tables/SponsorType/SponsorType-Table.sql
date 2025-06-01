@@ -1,0 +1,10 @@
+CREATE TABLE [dbo].[SponsorType]
+(
+    [Id] INT IDENTITY(1,1) PRIMARY KEY,
+    [Name] NVARCHAR(100) NOT NULL,
+    [NameEN] NVARCHAR(255) NOT NULL DEFAULT '',
+    [IsActive] BIT NOT NULL DEFAULT 1,
+    [DisplayOrder] INT NOT NULL DEFAULT 0,
+    [CreatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
+    [UpdatedAt] DATETIME NULL
+); 

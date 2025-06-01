@@ -1,55 +1,82 @@
+/*
+===========================================
+Tabla: OptionSelection (Selección de Opciones)
+===========================================
+Catálogo estandarizado de opciones para selección en formularios.
+Proporciona valores consistentes para campos como Sí/No/N/A, estados y otros.
+
+Versión: 1.0
+Fecha: 2025-01-01
+
+Propósito:
+- Tabla de referencia para opciones estandarizadas
+- Valores consistentes para selecciones comunes
+- Soporte multilingüe (español/inglés)
+
+Características:
+- Agrupación lógica por OptionKey
+- Control de orden de visualización (DisplayOrder)
+- Gestión de estado activo/inactivo (IsActive)
+- Marcas de tiempo para auditoría (CreatedAt, UpdatedAt)
+
+Estructura:
+- Id: Identificador único
+- Name/Nombre: Texto en español
+- NameEN: Texto en inglés  
+- OptionKey: Clave de agrupación
+- IsActive: Estado activo/inactivo
+- BooleanValue: Valor booleano para yesNo
+- DisplayOrder: Orden de visualización
+- CreatedAt/UpdatedAt: Auditoría
+
+Relaciones:
+- Referenciada por múltiples tablas
+- Usada en formularios UI
+
+Ejemplos de uso:
+- Atributos booleanos (isStudent, isFoster)
+- Estados de procesos (En Proceso, Otorgado)
+- Opciones Sí/No/N/A
+*/
+
 CREATE TABLE OptionSelection
 (
     Id INT PRIMARY KEY IDENTITY(1,1),
     Name NVARCHAR(255) NOT NULL,
-    -- nombre de la opción
     NameEN NVARCHAR(255) NOT NULL,
-    -- nombre de la opción en inglés
     OptionKey NVARCHAR(255) NOT NULL,
-    -- clave de la opción para identificarla
+    BooleanValue BIT NOT NULL DEFAULT 0,
+    -- Solo para yesNo
     IsActive BIT NOT NULL DEFAULT 1,
-    -- si el estado sigue activo
     DisplayOrder INT NOT NULL DEFAULT 0,
-    -- orden de visualización
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    -- fecha de creación
     UpdatedAt DATETIME NULL
-    -- fecha de modificación
 );
-
-ALTER TABLE OptionSelection 
-ADD NameEN NVARCHAR(255) NOT NULL, 
-DisplayOrder INT NOT NULL DEFAULT 0,
-OptionKey NVARCHAR(255) NOT NULL;
+-- Datos iniciales actualizados
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Si', 'Yes', 'yesNo', 1, 1, 10),
+    ('No', 'No', 'yesNo', 0, 1, 20),
+    ('En Proceso', 'In Progress', 'exceptionStatus', 0, 1, 30),
+    ('Otorgado', 'Granted', 'exceptionStatus', 0, 1, 40),
+    ('Denegado', 'Denied', 'exceptionStatus', 0, 1, 50),
+    ('Semanal', 'Weekly', 'incomeFrequency', 0, 1, 60),
+    ('Quincenal', 'Bi-weekly', 'incomeFrequency', 0, 1, 70),
+    ('Bi semestral', 'Bi-semestral', 'incomeFrequency', 0, 1, 80),
+    ('Mensual', 'Monthly', 'incomeFrequency', 0, 1, 90),
+    ('Anual', 'Annual', 'incomeFrequency', 0, 1, 100),
+    ('Estatal', 'State', 'taxExemptionType', 0, 1, 110),
+    ('Federal', 'Federal', 'taxExemptionType', 0, 1, 120),
+    ('Gobierno', 'Government', 'typeOfEntity', 0, 1, 130),
+    ('Privado', 'Private', 'typeOfEntity', 0, 1, 140),
+    ('Laico', 'Laic', 'typeOfApplicant', 0, 1, 150),
+    ('Base de fe', 'Faith-based', 'typeOfApplicant', 0, 1, 160),
+    ('Socio-Económico', 'Socio-Economic', 'typeOfEntity', 0, 1, 170),
+    ('Híbrido', 'Hybrid', 'typeOfEntity', 0, 1, 180);
 
 INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
 VALUES
-    ('Si', 'Yes', 'yesNo', 1, 10);
-INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
-VALUES
-    ('No', 'No', 'yesNo', 1, 20);
-INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
-VALUES
-    ('N/A', 'N/A', 'yesNo', 1, 30);
-
-
-INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
-VALUES
-    ('En Proceso', 'In Progress', 'status', 1, 40);
-INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
-VALUES
-    ('Otorgado', 'Granted', 'status', 1, 50);
-INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
-VALUES
-    ('Denegada', 'Denied', 'status', 1, 60);
-
-
-
-
-
+    ('Socio-Económico', 'Socio-Economic', 'publicAllianceContract', 0, 1, 170),
+    ('Híbrido', 'Hybrid', 'publicAllianceContract', 0, 1, 180);

@@ -101,6 +101,9 @@ builder.Services.AddScoped<IEducationLevelRepository, EducationLevelRepository>(
 builder.Services.AddScoped<IHouseholdRepository, HouseholdRepository>();
 builder.Services.AddScoped<IKitchenTypeRepository, KitchenTypeRepository>();
 builder.Services.AddScoped<IHouseholdMemberIncomeRepository, HouseholdMemberIncomeRepository>();
+builder.Services.AddScoped<IOptionSelectionRepository, OptionSelectionRepository>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IGroupTypeRepository, GroupTypeRepository>();
 
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
@@ -216,6 +219,47 @@ builder.Services.AddLogging(logging =>
     logging.AddApplicationInsights();
     logging.SetMinimumLevel(LogLevel.Warning);
 });
+
+// --- INICIO: Configuración de políticas de permisos granulares (deshabilitado por ahora) ---
+// builder.Services.AddAuthorization(options =>
+// {
+//     options.AddPolicy("Permission:UserView", policy => policy.RequireClaim("permission", "UserView"));
+//     options.AddPolicy("Permission:UserCreate", policy => policy.RequireClaim("permission", "UserCreate"));
+//     options.AddPolicy("Permission:UserEdit", policy => policy.RequireClaim("permission", "UserEdit"));
+//     options.AddPolicy("Permission:UserDelete", policy => policy.RequireClaim("permission", "UserDelete"));
+//     options.AddPolicy("Permission:UserAssignRole", policy => policy.RequireClaim("permission", "UserAssignRole"));
+//     options.AddPolicy("Permission:UserAssignAgency", policy => policy.RequireClaim("permission", "UserAssignAgency"));
+//     options.AddPolicy("Permission:RoleView", policy => policy.RequireClaim("permission", "RoleView"));
+//     options.AddPolicy("Permission:RoleCreate", policy => policy.RequireClaim("permission", "RoleCreate"));
+//     options.AddPolicy("Permission:RoleEdit", policy => policy.RequireClaim("permission", "RoleEdit"));
+//     options.AddPolicy("Permission:RoleDelete", policy => policy.RequireClaim("permission", "RoleDelete"));
+//     options.AddPolicy("Permission:RoleAssignPermission", policy => policy.RequireClaim("permission", "RoleAssignPermission"));
+//     options.AddPolicy("Permission:AgencyView", policy => policy.RequireClaim("permission", "AgencyView"));
+//     options.AddPolicy("Permission:AgencyCreate", policy => policy.RequireClaim("permission", "AgencyCreate"));
+//     options.AddPolicy("Permission:AgencyEdit", policy => policy.RequireClaim("permission", "AgencyEdit"));
+//     options.AddPolicy("Permission:AgencyDelete", policy => policy.RequireClaim("permission", "AgencyDelete"));
+//     options.AddPolicy("Permission:AgencyApprove", policy => policy.RequireClaim("permission", "AgencyApprove"));
+//     options.AddPolicy("Permission:AgencyAssignUser", policy => policy.RequireClaim("permission", "AgencyAssignUser"));
+//     options.AddPolicy("Permission:ProgramView", policy => policy.RequireClaim("permission", "ProgramView"));
+//     options.AddPolicy("Permission:ProgramCreate", policy => policy.RequireClaim("permission", "ProgramCreate"));
+//     options.AddPolicy("Permission:ProgramEdit", policy => policy.RequireClaim("permission", "ProgramEdit"));
+//     options.AddPolicy("Permission:ProgramDelete", policy => policy.RequireClaim("permission", "ProgramDelete"));
+//     options.AddPolicy("Permission:ProgramAssignAgency", policy => policy.RequireClaim("permission", "ProgramAssignAgency"));
+//     options.AddPolicy("Permission:DocumentView", policy => policy.RequireClaim("permission", "DocumentView"));
+//     options.AddPolicy("Permission:DocumentUpload", policy => policy.RequireClaim("permission", "DocumentUpload"));
+//     options.AddPolicy("Permission:DocumentDelete", policy => policy.RequireClaim("permission", "DocumentDelete"));
+//     options.AddPolicy("Permission:DocumentDownload", policy => policy.RequireClaim("permission", "DocumentDownload"));
+//     options.AddPolicy("Permission:SchoolView", policy => policy.RequireClaim("permission", "SchoolView"));
+//     options.AddPolicy("Permission:SchoolCreate", policy => policy.RequireClaim("permission", "SchoolCreate"));
+//     options.AddPolicy("Permission:SchoolEdit", policy => policy.RequireClaim("permission", "SchoolEdit"));
+//     options.AddPolicy("Permission:SchoolDelete", policy => policy.RequireClaim("permission", "SchoolDelete"));
+//     options.AddPolicy("Permission:ReportView", policy => policy.RequireClaim("permission", "ReportView"));
+//     options.AddPolicy("Permission:DashboardView", policy => policy.RequireClaim("permission", "DashboardView"));
+//     options.AddPolicy("Permission:CatalogView", policy => policy.RequireClaim("permission", "CatalogView"));
+//     options.AddPolicy("Permission:CatalogEdit", policy => policy.RequireClaim("permission", "CatalogEdit"));
+//     options.AddPolicy("Permission:AuditView", policy => policy.RequireClaim("permission", "AuditView"));
+// });
+// --- FIN: Configuración de políticas de permisos granulares ---
 
 var app = builder.Build();
 

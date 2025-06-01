@@ -8,18 +8,12 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Api.Controllers;
 
 [Route("education-level")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
 public class EducationLevelController(IEducationLevelRepository educationLevelRepository, ILogger<EducationLevelController> logger) : ControllerBase
 {
     private readonly IEducationLevelRepository _educationLevelRepository = educationLevelRepository;
     private readonly ILogger<EducationLevelController> _logger = logger;
 
     [HttpGet("get-all-education-levels-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
     [SwaggerOperation(Summary = "Obtiene todos los niveles educativos", Description = "Devuelve una lista de niveles educativos.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
@@ -42,9 +36,6 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
 
     [HttpGet("get-education-level-by-id")]
     [SwaggerOperation(Summary = "Obtiene un nivel educativo por su ID", Description = "Devuelve un nivel educativo basado en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
@@ -64,9 +55,6 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
 
     [HttpPost("insert-education-level")]
     [SwaggerOperation(Summary = "Crea un nuevo nivel educativo", Description = "Crea un nuevo nivel educativo.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<ActionResult> Insert([FromBody] DTOEducationLevel educationLevel)
     {
         try
@@ -91,9 +79,6 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
 
     [HttpPut("update-education-level")]
     [SwaggerOperation(Summary = "Actualiza un nivel educativo existente", Description = "Actualiza los datos de un nivel educativo existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Update([FromBody] DTOEducationLevel educationLevel)
     {
         try
@@ -118,9 +103,6 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
 
     [HttpDelete("delete-education-level")]
     [SwaggerOperation(Summary = "Elimina un nivel educativo existente", Description = "Elimina un nivel educativo existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
         try

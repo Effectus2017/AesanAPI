@@ -78,6 +78,33 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
         }
     }
 
+    [HttpGet("get-option-selection-by-option-key")]
+    [SwaggerOperation(Summary = "Obtiene una opción de selección por su clave de opción", Description = "Devuelve una opción de selección basada en la clave de opción proporcionada.")]
+    public async Task<ActionResult> GetByOptionKey([FromQuery] string optionKey)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(optionKey);
+
+                if (result == null)
+                {
+                    return NotFound($"Opción de selección con clave {optionKey} no encontrada");
+                }
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la opción de selección con clave {OptionKey}", optionKey);
+            return StatusCode(500, "Error interno del servidor al obtener la opción de selección");
+        }
+    }
+
     [HttpPost("insert-option-selection")]
     [SwaggerOperation(Summary = "Crea una nueva opción de selección", Description = "Crea una nueva opción de selección.")]
     public async Task<ActionResult> Insert([FromBody] DTOOptionSelection option)

@@ -29,12 +29,50 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// <returns>The option selection data/Los datos de la selección de opción</returns>
     public async Task<dynamic> GetOptionSelectionById(int id)
     {
-        using IDbConnection db = _context.CreateConnection();
-        var parameters = new DynamicParameters();
-        parameters.Add("@id", id, DbType.Int32);
-        var result = await db.QueryMultipleAsync("100_GetOptionSelectionById", parameters, commandType: CommandType.StoredProcedure);
-        var data = await result.ReadSingleAsync<DTOOptionSelection>();
-        return data;
+        try
+        {
+
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetOptionSelectionById", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadSingleAsync<DTOOptionSelection>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la opción de selección por ID/Error getting option selection by ID");
+            throw;
+        }
+        finally
+        {
+            _logger.LogInformation("Fin de la ejecución de GetOptionSelectionById");
+        }
+    }
+
+    /// <summary>
+    /// Gets option selections by their option key
+    /// Obtiene selecciones de opción por su clave de opción
+    /// </summary>
+    /// <param name="optionKey">The option key to filter by/La clave de opción para filtrar</param>
+    /// <returns>List of option selections matching the key/Lista de selecciones de opción que coinciden con la clave</returns>
+    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey)
+    {
+        string cacheKey = string.Format(_appSettings.Cache.Keys.OptionSelectionByKey, optionKey);
+        return await _cache.CacheQuery(
+            cacheKey,
+            async () =>
+            {
+                using IDbConnection db = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@optionKey", optionKey, DbType.String);
+                var result = await db.QueryMultipleAsync("100_GetOptionSelectionByOptionKey", parameters, commandType: CommandType.StoredProcedure);
+                var data = await result.ReadAsync<DTOOptionSelection>();
+                return new { data, count = data.Count() };
+            },
+            _logger,
+            _appSettings
+        );
     }
 
     /// <summary>

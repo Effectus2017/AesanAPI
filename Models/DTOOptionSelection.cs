@@ -4,6 +4,7 @@ public class DTOOptionSelection
     public string Name { get; set; }
     public string NameEN { get; set; }
     public string OptionKey { get; set; }
+    public bool BooleanValue { get; set; }
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
 }

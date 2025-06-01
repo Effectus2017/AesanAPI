@@ -7,16 +7,10 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+
 namespace Api.Repositories;
 
-public class AgencyRepository(
-    IEmailService emailService,
-    IPasswordService passwordService,
-    IAgencyUsersRepository agencyUsersRepository,
-    DapperContext context,
-    ILoggingService loggingService,
-    IMemoryCache cache,
-    IOptions<ApplicationSettings> appSettings) : IAgencyRepository
+public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, IAgencyUsersRepository agencyUsersRepository, DapperContext context, ILoggingService loggingService, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
@@ -40,7 +34,7 @@ public class AgencyRepository(
             var parameters = new DynamicParameters();
             parameters.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
-            var result = await dbConnection.QueryMultipleAsync("110_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("111_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -59,6 +53,7 @@ public class AgencyRepository(
             }
 
             var agency = MapAgencyFromResult(_agencyResult);
+
             var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
             if (_agenciesPrograms.Any())
@@ -82,46 +77,36 @@ public class AgencyRepository(
     /// <returns>La agencia</returns>
     public async Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Agency + "_User_{0}_{1}", agencyId, userId);
-        _logger.LogInformation($"Obteniendo agencia del caché con clave: {cacheKey}");
+        _logger.LogInformation($"Obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
+        using IDbConnection dbConnection = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@agencyId", agencyId);
+        parameters.Add("@userId", userId);
+        var result = await dbConnection.QueryMultipleAsync("111_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
 
-        return await _cache.CacheAgencyQuery(
-            cacheKey,
-            async () =>
-            {
-                _logger.LogInformation($"Caché no encontrado, obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@agencyId", agencyId);
-                parameters.Add("@userId", userId);
-                var result = await dbConnection.QueryMultipleAsync("110_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
+        if (result == null)
+        {
+            return null;
+        }
 
-                if (result == null)
-                {
-                    return null;
-                }
+        var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
 
-                var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+        if (_agencyResult == null)
+        {
+            return null;
+        }
 
-                if (_agencyResult == null)
-                {
-                    return null;
-                }
+        var agency = MapAgencyFromResult(_agencyResult);
 
-                var agency = MapAgencyFromResult(_agencyResult);
-                var _agenciesPrograms = await result.ReadAsync<dynamic>();
+        var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
-                if (_agenciesPrograms != null && _agenciesPrograms.Any())
-                {
-                    agency.Programs = MapProgramsFromResult(_agenciesPrograms);
-                }
+        if (_agenciesPrograms != null && _agenciesPrograms.Any())
+        {
+            agency.Programs = MapProgramsFromResult(_agenciesPrograms);
+        }
 
-                _logger.LogInformation($"Datos obtenidos de la base de datos y almacenados en caché con clave: {cacheKey}");
-                return agency!;
-            },
-            loggingService,
-            _appSettings
-        );
+        _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
+        return agency!;
     }
 
     /// <summary>
@@ -132,74 +117,69 @@ public class AgencyRepository(
     /// <param name="name">El nombre de la agencia</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesFromDbOld(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Agencies, take, skip, name ?? string.Empty, userId ?? string.Empty, alls);
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@take", take);
+            param.Add("@skip", skip);
+            param.Add("@name", name);
+            param.Add("@regionId", regionId);
+            param.Add("@cityId", cityId);
+            param.Add("@programId", programId);
+            param.Add("@statusId", statusId);
+            param.Add("@userId", userId);
+            param.Add("@alls", alls);
 
-        return await _cache.CacheAgencyQuery(
-            cacheKey,
-            async () =>
+            // Variables para almacenar los resultados
+            List<dynamic> agencies = new List<dynamic>();
+            List<dynamic> agenciesPrograms = new List<dynamic>();
+            int count = 0;
+
+            // Usar un bloque using para garantizar que el GridReader se cierre correctamente
+            using var result = await dbConnection.QueryMultipleAsync("115_GetAgencies", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
             {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@take", take);
-                parameters.Add("@skip", skip);
-                parameters.Add("@name", name);
-                parameters.Add("@regionId", regionId);
-                parameters.Add("@cityId", cityId);
-                parameters.Add("@programId", programId);
-                parameters.Add("@statusId", statusId);
-                parameters.Add("@userId", userId);
-                parameters.Add("@alls", alls);
+                return null;
+            }
 
-                // Variables para almacenar los resultados
-                List<dynamic> agencies = new List<dynamic>();
-                List<dynamic> agenciesPrograms = new List<dynamic>();
-                int count = 0;
+            // Leer todos los conjuntos de resultados de manera segura
+            if (!result.IsConsumed)
+            {
+                agencies = result.Read<dynamic>().ToList();
+            }
 
-                // Usar un bloque using para garantizar que el GridReader se cierre correctamente
-                using (var result = await dbConnection.QueryMultipleAsync("114_GetAgencies", parameters, commandType: CommandType.StoredProcedure))
+            if (!result.IsConsumed)
+            {
+                agenciesPrograms = result.Read<dynamic>().ToList();
+            }
+
+            if (!result.IsConsumed)
+            {
+                count = result.Read<int>().FirstOrDefault();
+            }
+
+            // Procesar los datos después de que el GridReader se haya cerrado
+            var mappedAgencies = agencies.Select(MapAgencyFromResult).ToList();
+
+            if (agenciesPrograms != null && agenciesPrograms.Count != 0)
+            {
+                foreach (var agency in mappedAgencies)
                 {
-                    if (result == null)
-                    {
-                        return null;
-                    }
-
-                    // Leer todos los conjuntos de resultados de manera segura
-                    if (!result.IsConsumed)
-                    {
-                        agencies = result.Read<dynamic>().ToList();
-                    }
-
-                    if (!result.IsConsumed)
-                    {
-                        agenciesPrograms = result.Read<dynamic>().ToList();
-                    }
-
-                    if (!result.IsConsumed)
-                    {
-                        count = result.Read<int>().FirstOrDefault();
-                    }
-                } // El GridReader se cierra aquí
-
-                // Procesar los datos después de que el GridReader se haya cerrado
-                var mappedAgencies = agencies.Select(MapAgencyFromResult).ToList();
-
-                if (agenciesPrograms != null && agenciesPrograms.Any())
-                {
-                    foreach (var agency in mappedAgencies)
-                    {
-                        agency.Programs = MapProgramsFromResult(
-                            agenciesPrograms.Where(ap => ap.AgencyId == agency.Id)
-                        );
-                    }
+                    agency.Programs = MapProgramsFromResult(agenciesPrograms.Where(ap => ap.AgencyId == agency.Id));
                 }
+            }
 
-                return new { data = mappedAgencies, count };
-            },
-            loggingService,
-            _appSettings
-        );
+            return new { data = mappedAgencies, count };
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, "Error al obtener las agencias de la base de datos", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
+            throw;
+        }
     }
 
     /// <summary>
@@ -291,9 +271,9 @@ public class AgencyRepository(
             parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
             parameters.Add("@ImageURL", agencyRequest.ImageUrl);
             parameters.Add("@IsActive", agencyRequest.IsActive);
-            //parameters.Add("@IsPropietary", true);
             parameters.Add("@IsListable", agencyRequest.IsListable);
             parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
+            parameters.Add("@IsPropietary", true);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
@@ -314,10 +294,12 @@ public class AgencyRepository(
                 agencyRequest.StateFundsDenied,
                 agencyRequest.OrganizedAthleticPrograms,
                 agencyRequest.AtRiskService,
-                agencyRequest.BasicEducationRegistry,
+                agencyRequest.BasicEducationRegistryId,
                 agencyRequest.ServiceTime,
-                agencyRequest.TaxExemptionStatus,
-                agencyRequest.TaxExemptionType
+                agencyRequest.TaxExemptionStatusId,
+                agencyRequest.TaxExemptionTypeId,
+                agencyRequest.PublicAllianceContractId,
+                agencyRequest.NationalYouthProgram
             );
 
             // Asignar programas a la agencia
@@ -355,7 +337,7 @@ public class AgencyRepository(
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, bool stateFundsDenied, bool organizedAthleticPrograms, bool atRiskService, int basicEducationRegistry, DateTime serviceTime, int taxExemptionStatus, int taxExemptionType)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, bool stateFundsDenied, bool organizedAthleticPrograms, bool atRiskService, int basicEducationRegistryId, DateTime serviceTime, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram)
     {
         try
         {
@@ -366,14 +348,16 @@ public class AgencyRepository(
             parameters.Add("@StateFundsDenied", stateFundsDenied);
             parameters.Add("@OrganizedAthleticPrograms", organizedAthleticPrograms);
             parameters.Add("@AtRiskService", atRiskService);
-            parameters.Add("@BasicEducationRegistry", basicEducationRegistry);
+            parameters.Add("@BasicEducationRegistryId", basicEducationRegistryId);
             parameters.Add("@ServiceTime", serviceTime);
-            parameters.Add("@TaxExemptionStatus", taxExemptionStatus);
-            parameters.Add("@TaxExemptionType", taxExemptionType);
+            parameters.Add("@TaxExemptionStatusId", taxExemptionStatusId);
+            parameters.Add("@TaxExemptionTypeId", taxExemptionTypeId);
+            parameters.Add("@PublicAllianceContractId", publicAllianceContractId);
+            parameters.Add("@NationalYouthProgram", nationalYouthProgram);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("111_InsertAgencyInscription", parameters, commandType: CommandType.StoredProcedure);
+            await connection.ExecuteAsync("112_InsertAgencyInscription", parameters, commandType: CommandType.StoredProcedure);
 
             return parameters.Get<int>("@Id");
         }
@@ -894,74 +878,5 @@ public class AgencyRepository(
         }
     }
 
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var param = new DynamicParameters();
-            param.Add("@take", take);
-            param.Add("@skip", skip);
-            param.Add("@name", name);
-            param.Add("@regionId", regionId);
-            param.Add("@cityId", cityId);
-            param.Add("@programId", programId);
-            param.Add("@statusId", statusId);
-            param.Add("@userId", userId);
-            param.Add("@alls", alls);
 
-            // Variables para almacenar los resultados
-            List<dynamic> agencies = new List<dynamic>();
-            List<dynamic> agenciesPrograms = new List<dynamic>();
-            int count = 0;
-
-            // Usar un bloque using para garantizar que el GridReader se cierre correctamente
-            using (var result = await dbConnection.QueryMultipleAsync(
-                "114_GetAgencies",
-                param,
-                commandType: CommandType.StoredProcedure))
-            {
-                if (result == null)
-                {
-                    return null;
-                }
-
-                // Leer todos los conjuntos de resultados de manera segura
-                if (!result.IsConsumed)
-                {
-                    agencies = result.Read<dynamic>().ToList();
-                }
-
-                if (!result.IsConsumed)
-                {
-                    agenciesPrograms = result.Read<dynamic>().ToList();
-                }
-
-                if (!result.IsConsumed)
-                {
-                    count = result.Read<int>().FirstOrDefault();
-                }
-            } // El GridReader se cierra aquí
-
-            // Procesar los datos después de que el GridReader se haya cerrado
-            var mappedAgencies = agencies.Select(MapAgencyFromResult).ToList();
-
-            if (agenciesPrograms != null && agenciesPrograms.Any())
-            {
-                foreach (var agency in mappedAgencies)
-                {
-                    agency.Programs = MapProgramsFromResult(
-                        agenciesPrograms.Where(ap => ap.AgencyId == agency.Id)
-                    );
-                }
-            }
-
-            return new { data = mappedAgencies, count };
-        }
-        catch (Exception ex)
-        {
-            await _logger.LogError(ex, "Error al obtener las agencias de la base de datos", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
-        }
-    }
 }

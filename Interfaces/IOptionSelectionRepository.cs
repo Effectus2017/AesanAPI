@@ -6,6 +6,7 @@ namespace Api.Interfaces;
 public interface IOptionSelectionRepository
 {
     Task<dynamic> GetOptionSelectionById(int id);
+    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey);
     Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionType, bool alls);
     Task<bool> InsertOptionSelection(DTOOptionSelection optionSelection);
     Task<bool> UpdateOptionSelection(DTOOptionSelection optionSelection);

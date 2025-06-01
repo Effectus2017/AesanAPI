@@ -13,6 +13,30 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     private readonly ILogger<ProgramController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
+    [HttpGet("get-program-by-id")]
+    [SwaggerOperation(Summary = "Obtiene un programa por su ID", Description = "Devuelve un programa basado en el ID proporcionado.")]
+    // #if !DEBUG
+    //     [Authorize]
+    // #endif
+    public async Task<IActionResult> GetProgramById([FromQuery] int id)
+    {
+        try
+        {
+            var program = await _unitOfWork.ProgramRepository.GetProgramById(id);
+            if (program == null)
+            {
+                return NotFound($"Programa con ID {id} no encontrado");
+            }
+            return Ok(program);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el programa");
+            return StatusCode(500, "Error al obtener el programa");
+        }
+    }
+
+
     [HttpGet("get-all-programs-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas. Se pueden filtrar por múltiples nombres separados por coma.")]
     // #if !DEBUG
@@ -39,29 +63,6 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
         {
             _logger.LogError(ex, "Error al obtener los programas");
             return StatusCode(500, "Error al obtener los programas");
-        }
-    }
-
-    [HttpGet("get-program-by-id")]
-    [SwaggerOperation(Summary = "Obtiene un programa por su ID", Description = "Devuelve un programa basado en el ID proporcionado.")]
-    // #if !DEBUG
-    //     [Authorize]
-    // #endif
-    public async Task<IActionResult> GetProgramById([FromQuery] int id)
-    {
-        try
-        {
-            var program = await _unitOfWork.ProgramRepository.GetProgramById(id);
-            if (program == null)
-            {
-                return NotFound($"Programa con ID {id} no encontrado");
-            }
-            return Ok(program);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el programa");
-            return StatusCode(500, "Error al obtener el programa");
         }
     }
 

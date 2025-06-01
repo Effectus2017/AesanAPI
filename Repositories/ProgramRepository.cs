@@ -77,7 +77,9 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                 );
 
                 if (result == null)
+                {
                     return null;
+                }
 
                 var data = result
                     .Read<dynamic>()

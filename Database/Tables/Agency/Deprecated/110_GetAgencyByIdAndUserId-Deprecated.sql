@@ -1,6 +1,6 @@
 
 -- Descripción: Obtiene los datos de una agencia por su ID y el ID del usuario
-
+-- Deprecada
 CREATE OR ALTER PROCEDURE [110_GetAgencyByIdAndUserId]
     @agencyId int,
     @userId nvarchar(450)
@@ -53,7 +53,7 @@ BEGIN
         r.Name as RegionName,
         pr.Name as PostalRegionName,
         ast.Name as StatusName
-        
+
 
     FROM Agency a
         LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id

@@ -12,22 +12,29 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- CTEs para mejorar la legibilidad y performance
-    WITH AgencyProgramsCTE AS (
-        SELECT DISTINCT AgencyId, ProgramId
-        FROM AgencyProgram 
-        WHERE IsActive = 1
-    ),
-    AgencyOwnersCTE AS (
-        SELECT DISTINCT AgencyId, UserId, IsOwner
-        FROM AgencyUsers
-        WHERE IsOwner = 1 AND IsActive = 1
-    ),
-    AgencyMonitorsCTE AS (
-        SELECT DISTINCT AgencyId, UserId
-        FROM AgencyUsers
-        WHERE IsMonitor = 1 AND IsActive = 1
-    )
+    -- CTEs para mejorar la performance
+    WITH
+        AgencyProgramsCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, ProgramId
+            FROM AgencyProgram
+            WHERE IsActive = 1
+        ),
+        AgencyOwnersCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, UserId, IsOwner
+            FROM AgencyUsers
+            WHERE IsOwner = 1 AND IsActive = 1
+        ),
+        AgencyMonitorsCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, UserId
+            FROM AgencyUsers
+            WHERE IsMonitor = 1 AND IsActive = 1
+        )
     SELECT DISTINCT
         a.Id,
         a.Name,
@@ -87,27 +94,27 @@ BEGIN
         ai.AppointmentDate AS ProgramAppointmentDate
 
     FROM Agency a
-    INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
-    INNER JOIN City c ON a.CityId = c.Id
-    INNER JOIN Region r ON a.RegionId = r.Id
-    LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
-    LEFT JOIN City pc ON a.PostalCityId = pc.Id
-    LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
-    LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
-    LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
-    LEFT JOIN AspNetUsers u ON own.UserId = u.Id
-    LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
-    LEFT JOIN AspNetUsers mu ON mon.UserId = mu.Id
+        INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
+        INNER JOIN City c ON a.CityId = c.Id
+        INNER JOIN Region r ON a.RegionId = r.Id
+        LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
+        LEFT JOIN City pc ON a.PostalCityId = pc.Id
+        LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
+        LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
+        LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
+        LEFT JOIN AspNetUsers u ON own.UserId = u.Id
+        LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+        LEFT JOIN AspNetUsers mu ON mon.UserId = mu.Id
     WHERE a.IsPropietary = 0
-    AND (
+        AND (
         @alls = 1
         OR (
             (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-            AND (@regionId IS NULL OR a.RegionId = @regionId)
-            AND (@cityId IS NULL OR a.CityId = @cityId)
-            AND (@programId IS NULL OR ap.ProgramId = @programId)
-            AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-            AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+        AND (@regionId IS NULL OR a.RegionId = @regionId)
+        AND (@cityId IS NULL OR a.CityId = @cityId)
+        AND (@programId IS NULL OR ap.ProgramId = @programId)
+        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
         )
     )
     ORDER BY a.Name
@@ -115,31 +122,40 @@ BEGIN
     FETCH NEXT @take ROWS ONLY;
 
     -- Obtener programas asociados a las agencias filtradas y al usuario
-    WITH AgencyProgramsCTE AS (
-        SELECT DISTINCT AgencyId, ProgramId
-        FROM AgencyProgram 
-        WHERE IsActive = 1
-    ),
-    AgencyOwnersCTE AS (
-        SELECT DISTINCT AgencyId, UserId
-        FROM AgencyUsers
-        WHERE IsOwner = 1 AND IsActive = 1
-    ),
-    AgencyMonitorsCTE AS (
-        SELECT DISTINCT AgencyId, UserId
-        FROM AgencyUsers
-        WHERE IsMonitor = 1 AND IsActive = 1
-    ),
-    FilteredAgencies AS (
-        SELECT DISTINCT a.Id
-        FROM Agency a
-        LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
-        LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
-        LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
-        WHERE a.IsPropietary = 0
-        AND (
+    WITH
+        AgencyProgramsCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, ProgramId
+            FROM AgencyProgram
+            WHERE IsActive = 1
+        ),
+        AgencyOwnersCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, UserId
+            FROM AgencyUsers
+            WHERE IsOwner = 1 AND IsActive = 1
+        ),
+        AgencyMonitorsCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, UserId
+            FROM AgencyUsers
+            WHERE IsMonitor = 1 AND IsActive = 1
+        ),
+        FilteredAgencies
+        AS
+        (
+            SELECT DISTINCT a.Id
+            FROM Agency a
+                LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
+                LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
+                LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+            WHERE a.IsPropietary = 0
+                AND (
             @alls = 1
-            OR (
+                OR (
                 (@name IS NULL OR a.Name LIKE '%' + @name + '%')
                 AND (@regionId IS NULL OR a.RegionId = @regionId)
                 AND (@cityId IS NULL OR a.CityId = @cityId)
@@ -148,10 +164,10 @@ BEGIN
                 AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
             )
         )
-        ORDER BY a.Id
+            ORDER BY a.Id
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY
-    )
+        )
     SELECT DISTINCT
         p.Id,
         p.Name,
@@ -166,45 +182,52 @@ BEGIN
         u.FatherLastName,
         u.MotherLastName
     FROM Program p
-    INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
-    LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
-    INNER JOIN FilteredAgencies fa ON ap.AgencyId = fa.Id
-    LEFT JOIN AspNetUsers u ON ap.UserId = u.Id
+        INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
+        LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
+        INNER JOIN FilteredAgencies fa ON ap.AgencyId = fa.Id
+        LEFT JOIN AspNetUsers u ON ap.UserId = u.Id
     WHERE ap.IsActive = 1;
 
     -- Count query
-    WITH AgencyProgramsCTE AS (
-        SELECT DISTINCT AgencyId, ProgramId
-        FROM AgencyProgram 
-        WHERE IsActive = 1
-    ),
-    AgencyOwnersCTE AS (
-        SELECT DISTINCT AgencyId, UserId
-        FROM AgencyUsers
-        WHERE IsOwner = 1 AND IsActive = 1
-    ),
-    AgencyMonitorsCTE AS (
-        SELECT DISTINCT AgencyId, UserId
-        FROM AgencyUsers
-        WHERE IsMonitor = 1 AND IsActive = 1
-    )
+    WITH
+        AgencyProgramsCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, ProgramId
+            FROM AgencyProgram
+            WHERE IsActive = 1
+        ),
+        AgencyOwnersCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, UserId
+            FROM AgencyUsers
+            WHERE IsOwner = 1 AND IsActive = 1
+        ),
+        AgencyMonitorsCTE
+        AS
+        (
+            SELECT DISTINCT AgencyId, UserId
+            FROM AgencyUsers
+            WHERE IsMonitor = 1 AND IsActive = 1
+        )
     SELECT COUNT(DISTINCT a.Id)
     FROM Agency a
-    LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
-    LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
-    LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
-    LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+        LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
+        LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
+        LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
+        LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
     WHERE a.IsPropietary = 0
-    AND (
+        AND (
         @alls = 1
         OR (
             (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-            AND (@regionId IS NULL OR a.RegionId = @regionId)
-            AND (@cityId IS NULL OR a.CityId = @cityId)
-            AND (@programId IS NULL OR ap.ProgramId = @programId)
-            AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-            AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
-            AND (a.IsListable = 1)
+        AND (@regionId IS NULL OR a.RegionId = @regionId)
+        AND (@cityId IS NULL OR a.CityId = @cityId)
+        AND (@programId IS NULL OR ap.ProgramId = @programId)
+        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+        AND (a.IsListable = 1)
         )
     );
 END;

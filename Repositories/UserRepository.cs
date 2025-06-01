@@ -228,6 +228,25 @@ public class UserRepository(UserManager<User> userManager,
         }
     }
 
+    /// <summary>
+    /// Obtiene los permisos de un usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    /// <returns>Los permisos del usuario</returns>
+    public async Task<dynamic> GetPermissionsByUserId(string userId)
+    {
+        using var db = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@userId", userId, DbType.String);
+        var permissions = await db.QueryAsync<dynamic>("100_GetUserPermissions", parameters, commandType: CommandType.StoredProcedure);
+
+        if (permissions == null)
+        {
+            return null;
+        }
+
+        return permissions;
+    }
 
     /// ------------------------------------------------------------------------------------------------
     /// Métodos para la autenticación
@@ -289,6 +308,7 @@ public class UserRepository(UserManager<User> userManager,
 
             // Obtener los roles del usuario
             var roles = await _userManager.GetRolesAsync(_user);
+            var permissions = await GetPermissionsByUserId(_user.Id);
 
             _loggingService.LogInformation("Obteniendo la agencia del usuario");
 
@@ -298,7 +318,7 @@ public class UserRepository(UserManager<User> userManager,
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = GetClaims(_user, roles, agency, userPrograms),
+                Subject = GetClaims(_user, roles, agency, userPrograms, permissions),
                 Expires = DateTime.UtcNow.AddDays(days),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
@@ -322,7 +342,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="user">El usuario</param>
     /// <param name="roles">Los roles del usuario</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions)
     {
         try
         {
@@ -354,6 +374,14 @@ public class UserRepository(UserManager<User> userManager,
 
             claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
             claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
+
+            if (permissions != null)
+            {
+                foreach (var permission in permissions)
+                {
+                    claims.AddClaim(new Claim("permissions", permission.Name));
+                }
+            }
 
             return claims;
         }
@@ -462,6 +490,9 @@ public class UserRepository(UserManager<User> userManager,
 
             // Enviar correo con la contraseña temporal y bienvenida
             await _emailService.SendWelcomeAgencyEmail(model, temporaryPassword);
+
+            // Asignar permisos CRUD de escuelas al usuario
+            await AssignSchoolCrudPermissionsToUserAsync(user.Id);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }
@@ -1295,6 +1326,19 @@ public class UserRepository(UserManager<User> userManager,
             await _loggingService.LogError(ex, "Error al restablecer contraseña para {Email}", new Dictionary<string, string> { { "Email", email } });
             throw;
         }
+    }
+
+    /// <summary>
+    /// Asigna permisos CRUD de escuelas a un usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    private async Task AssignSchoolCrudPermissionsToUserAsync(string userId)
+    {
+        using var db = _context.CreateConnection();
+        // Llama al SP que asigna los permisos CRUD de escuelas
+        var parameters = new DynamicParameters();
+        parameters.Add("@userId", userId);
+        await db.ExecuteAsync("100_AssignSchoolCrudPermissionsToUser", parameters, commandType: CommandType.StoredProcedure);
     }
 
 }

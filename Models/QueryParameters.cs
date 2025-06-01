@@ -16,6 +16,8 @@ public class QueryParameters
     public int? StatusId { get; set; } // ID del estado
     public int? MemberId { get; set; } // ID del miembro
     public int OptionSelectionId { get; set; } // ID de la opción de selección
+    public int? PermissionId { get; set; } // ID del permiso
+    public string? RoleId { get; set; } // ID del rol
     public string? ImageUrl { get; set; } // URL de la imagen
     public string? RejectionJustification { get; set; } // Justification for rejection
     public string? UserId { get; set; } // ID del usuario

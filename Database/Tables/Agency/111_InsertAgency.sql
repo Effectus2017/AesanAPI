@@ -28,15 +28,17 @@ BEGIN
     BEGIN TRANSACTION;
     BEGIN TRY
         -- Insertar solo la agencia
-        INSERT INTO Agency (
-            Name, AgencyStatusId, CityId, PostalCityId,
-            RegionId, PostalRegionId, UieNumber, EinNumber,
-            SdrNumber, Address, ZipCode, PostalAddress,
-            PostalZipCode, Phone, Email, Latitude,
-            Longitude, ImageURL, IsActive, IsListable,
-            AgencyCode, IsPropietary
+        INSERT INTO Agency
+        (
+        Name, AgencyStatusId, CityId, PostalCityId,
+        RegionId, PostalRegionId, UieNumber, EinNumber,
+        SdrNumber, Address, ZipCode, PostalAddress,
+        PostalZipCode, Phone, Email, Latitude,
+        Longitude, ImageURL, IsActive, IsListable,
+        AgencyCode, IsPropietary
         )
-        VALUES (
+    VALUES
+        (
             @Name, @AgencyStatusId, @CityId, @PostalCityId,
             @RegionId, @PostalRegionId, @UieNumber, @EinNumber,
             @SdrNumber, @Address, @ZipCode, @PostalAddress,

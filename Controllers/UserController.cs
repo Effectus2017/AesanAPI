@@ -29,6 +29,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     /// </summary>
     /// <param name="id">El ID del usuario</param>
     /// <returns>El usuario</returns>
+    // [AuthorizePermission("UserView")] // Ejemplo: proteger por permiso granular
     [HttpGet("get-user-by-id")]
     [SwaggerOperation(Summary = "Obtiene un usuario por su ID", Description = "Devuelve un usuario basado en el ID proporcionado.")]
     public async Task<IActionResult> GetUserById([FromQuery] QueryParameters queryParameters)
@@ -55,6 +56,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     /// Obtiene todos los usuarios de la base de datos
     /// </summary>
     /// <returns>Lista de usuarios</returns>
+    // [AuthorizePermission("UserView")] // Ejemplo: proteger por permiso granular
     [HttpGet("get-all-users-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los usuarios de la base de datos", Description = "Devuelve una lista de todos los usuarios.")]
     public async Task<IActionResult> GetAllUsersFromDb([FromQuery] QueryParameters queryParameters)
@@ -222,6 +224,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     /// <response code="200">Modelo no actualizado</response>
     /// <response code="202">Modelo actualizado correctamente</response>
     /// <response code="400">Incapaz actualizar el modelo</response>
+    // [AuthorizePermission("UserEdit")] // Ejemplo: proteger por permiso granular
     [HttpPut("update-user-from-db")]
     public async Task<IActionResult> Put([FromBody] DTOUser entity)
     {
@@ -262,6 +265,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     /// </summary>
     /// <param name="userId">El Id del usuario</param>
     /// <returns></returns>
+    // [AuthorizePermission("UserDelete")] // Ejemplo: proteger por permiso granular
     [HttpDelete("delete-user-from-db")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {

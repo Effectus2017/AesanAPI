@@ -1,3 +1,4 @@
+-- Deprecada
 CREATE OR ALTER PROCEDURE [111_InsertAgencyInscription]
     @AgencyId int,
     @NonProfit bit,
@@ -15,13 +16,15 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRANSACTION;
     BEGIN TRY
-        INSERT INTO AgencyInscription (
-            AgencyId, NonProfit, FederalFundsDenied, StateFundsDenied,
-            OrganizedAthleticPrograms, AtRiskService,
-            BasicEducationRegistry, ServiceTime,
-            TaxExemptionStatus, TaxExemptionType
+        INSERT INTO AgencyInscription
+        (
+        AgencyId, NonProfit, FederalFundsDenied, StateFundsDenied,
+        OrganizedAthleticPrograms, AtRiskService,
+        BasicEducationRegistry, ServiceTime,
+        TaxExemptionStatus, TaxExemptionType
         )
-        VALUES (
+    VALUES
+        (
             @AgencyId, @NonProfit, @FederalFundsDenied, @StateFundsDenied,
             @OrganizedAthleticPrograms, @AtRiskService,
             @BasicEducationRegistry, @ServiceTime,
