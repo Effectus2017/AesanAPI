@@ -104,6 +104,7 @@ builder.Services.AddScoped<IHouseholdMemberIncomeRepository, HouseholdMemberInco
 builder.Services.AddScoped<IOptionSelectionRepository, OptionSelectionRepository>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IGroupTypeRepository, GroupTypeRepository>();
+builder.Services.AddScoped<ISponsorTypeRepository, SponsorTypeRepository>();
 
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));

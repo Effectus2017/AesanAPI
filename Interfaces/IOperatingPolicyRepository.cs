@@ -16,10 +16,10 @@ public interface IOperatingPolicyRepository
     /// </summary>
     /// <param name="take">El número de políticas operativas a tomar.</param>
     /// <param name="skip">El número de políticas operativas a saltar.</param>
-    /// <param name="description">La descripción de la política operativa a buscar.</param>
+    /// <param name="name">El nombre de la política operativa a buscar.</param>
     /// <param name="alls">Si se deben obtener todas las políticas operativas.</param>
     /// <returns>Una lista de políticas operativas.</returns>
-    Task<dynamic> GetAllOperatingPolicies(int take, int skip, string description, bool alls);
+    Task<dynamic> GetAllOperatingPolicies(int take, int skip, string name, bool alls);
 
     /// <summary>
     /// Inserta una nueva política operativa.
