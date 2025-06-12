@@ -1,16 +1,13 @@
 using Api.Interfaces;
 using Api.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
 /// <summary>
-/// Controlador que maneja todas las operaciones relacionadas con los estados de las agencias.
-/// Proporciona endpoints para la gestión completa de estados, incluyendo creación,
-/// lectura, actualización y eliminación de estados de agencias.
+/// Controller that manages all operations related to agency statuses.
+/// Provides endpoints for full CRUD management of agency statuses.
 /// </summary>
 [Route("agency-status")]
 [ApiController]
@@ -19,88 +16,128 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;
     private readonly ILogger<AgencyStatusController> _logger = logger;
 
+    /// <summary>
+    /// Gets an agency status by its ID.
+    /// </summary>
+    /// <param name="queryParameters">Query parameters containing the ID.</param>
+    /// <returns>The agency status if found, NotFound if not, or InternalServerError on error.</returns>
     [HttpGet("get-agency-status-by-id")]
-    [SwaggerOperation(Summary = "Obtiene un estado de agencia por su ID", Description = "Devuelve un estado de agencia basado en el ID proporcionado.")]
-    public async Task<ActionResult> GetById([FromQuery] int id)
+    [SwaggerOperation(Summary = "Gets an agency status by its ID", Description = "Returns an agency status based on the provided ID.")]
+    public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            var status = await _agencyStatusRepository.GetAgencyStatusById(id);
-            if (status == null)
+            if (ModelState.IsValid)
             {
-                return NotFound($"Estado de agencia con ID {id} no encontrado");
+                _logger.LogInformation("Getting agency status by ID: {Id}", queryParameters.Id);
+
+                if (queryParameters.Id == 0)
+                {
+                    return BadRequest("The agency status ID is required");
+                }
+
+                var result = await _agencyStatusRepository.GetAgencyStatusById(queryParameters.Id);
+
+                if (result == null)
+                {
+                    return NotFound($"Agency status with ID {queryParameters.Id} not found");
+                }
+
+                return Ok(result);
             }
 
-            return Ok(status);
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el estado de agencia con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al obtener el estado de agencia");
+            _logger.LogError(ex, "Error getting agency status by ID {Id}", queryParameters.Id);
+            return StatusCode(500, "Internal server error while getting agency status");
         }
     }
 
+    /// <summary>
+    /// Gets all agency statuses with filtering and pagination options.
+    /// </summary>
+    /// <param name="queryParameters">Query parameters for filtering and pagination.</param>
+    /// <returns>List of agency statuses, BadRequest if parameters are invalid, or InternalServerError on error.</returns>
     [HttpGet("get-all-agency-status-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los estados de agencia", Description = "Devuelve una lista de estados de agencia.")]
+    [SwaggerOperation(Summary = "Gets all agency statuses", Description = "Returns a list of agency statuses.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var statuses = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                return Ok(statuses);
+                var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+
+                if (result == null)
+                {
+                    return NotFound("No agency statuses found");
+                }
+
+                return Ok(result);
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todos los estados de agencia");
-            return StatusCode(500, "Error interno del servidor al obtener los estados de agencia");
+            _logger.LogError(ex, "Error getting all agency statuses");
+            return StatusCode(500, "Internal server error while getting agency statuses");
         }
     }
 
-
-
+    /// <summary>
+    /// Creates a new agency status.
+    /// </summary>
+    /// <param name="request">The agency status to create.</param>
+    /// <returns>Ok if created successfully, BadRequest if data is invalid or creation fails, or InternalServerError on error.</returns>
     [HttpPost("insert-agency-status")]
-    [SwaggerOperation(Summary = "Crea un nuevo estado de agencia", Description = "Crea un nuevo estado de agencia.")]
-    public async Task<ActionResult> Insert([FromBody] DTOAgencyStatus status)
+    [SwaggerOperation(Summary = "Creates a new agency status", Description = "Creates a new agency status.")]
+    public async Task<ActionResult> Insert([FromBody] AgencyStatusRequest request)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _agencyStatusRepository.InsertAgencyStatus(status);
+                var result = await _agencyStatusRepository.InsertAgencyStatus(request);
 
                 if (result)
                 {
-                    return CreatedAtAction(nameof(GetById), new { id = status.Id }, status);
+                    return Ok(result);
                 }
 
-                return BadRequest("No se pudo crear el estado de agencia");
+                return BadRequest("Could not create the agency status");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear el estado de agencia");
-            return StatusCode(500, "Error interno del servidor al crear el estado de agencia");
+            _logger.LogError(ex, "Error creating agency status");
+            return StatusCode(500, "Internal server error while creating agency status");
         }
     }
 
+    /// <summary>
+    /// Updates an existing agency status.
+    /// </summary>
+    /// <param name="request">The agency status with updated data.</param>
+    /// <returns>NoContent if updated successfully, NotFound if not found, BadRequest if data is invalid, or InternalServerError on error.</returns>
     [HttpPut("update-agency-status")]
-    [SwaggerOperation(Summary = "Actualiza un estado de agencia existente", Description = "Actualiza los datos de un estado de agencia existente.")]
-    public async Task<IActionResult> Update([FromBody] DTOAgencyStatus status)
+    [SwaggerOperation(Summary = "Updates an existing agency status", Description = "Updates the data of an existing agency status.")]
+    public async Task<IActionResult> Update([FromBody] DTOAgencyStatus request)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _agencyStatusRepository.UpdateAgencyStatus(status);
+                var result = await _agencyStatusRepository.UpdateAgencyStatus(request);
+
                 if (!result)
-                    return NotFound($"Estado de agencia con ID {status.Id} no encontrado");
+                {
+                    return NotFound($"Agency status with ID {request.Id} not found");
+                }
 
                 return NoContent();
             }
@@ -109,13 +146,19 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado de agencia con ID {Id}", status.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el estado de agencia");
+            _logger.LogError(ex, "Error updating agency status with ID {Id}", request.Id);
+            return StatusCode(500, "Internal server error while updating agency status");
         }
     }
 
+    /// <summary>
+    /// Updates the display order of an agency status.
+    /// </summary>
+    /// <param name="statusId">ID of the agency status to update.</param>
+    /// <param name="displayOrder">New display order.</param>
+    /// <returns>NoContent if updated successfully, NotFound if not found, BadRequest if data is invalid, or InternalServerError on error.</returns>
     [HttpPut("update-agency-status-display-order")]
-    [SwaggerOperation(Summary = "Actualiza el orden de visualización de un estado de agencia", Description = "Actualiza el orden de visualización de un estado de agencia existente.")]
+    [SwaggerOperation(Summary = "Updates the display order of an agency status", Description = "Updates the display order of an existing agency status.")]
     public async Task<IActionResult> UpdateDisplayOrder([FromQuery] int statusId, [FromQuery] int displayOrder)
     {
         try
@@ -123,8 +166,11 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
             if (ModelState.IsValid)
             {
                 var result = await _agencyStatusRepository.UpdateAgencyStatusDisplayOrder(statusId, displayOrder);
+
                 if (!result)
-                    return NotFound($"Estado de agencia con ID {statusId} no encontrado");
+                {
+                    return NotFound($"Agency status with ID {statusId} not found");
+                }
 
                 return NoContent();
             }
@@ -133,22 +179,30 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del estado de agencia con ID {Id}", statusId);
-            return StatusCode(500, "Error interno del servidor al actualizar el orden de visualización del estado de agencia");
+            _logger.LogError(ex, "Error updating display order of agency status with ID {Id}", statusId);
+            return StatusCode(500, "Internal server error while updating display order of agency status");
         }
     }
 
+    /// <summary>
+    /// Deletes an existing agency status.
+    /// </summary>
+    /// <param name="queryParameters">Query parameters containing the ID.</param>
+    /// <returns>NoContent if deleted successfully, NotFound if not found, BadRequest if data is invalid, or InternalServerError on error.</returns>
     [HttpDelete("delete-agency-status")]
-    [SwaggerOperation(Summary = "Elimina un estado de agencia existente", Description = "Elimina un estado de agencia existente.")]
-    public async Task<IActionResult> Delete([FromQuery] int id)
+    [SwaggerOperation(Summary = "Deletes an existing agency status", Description = "Deletes an existing agency status.")]
+    public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _agencyStatusRepository.DeleteAgencyStatus(id);
+                var result = await _agencyStatusRepository.DeleteAgencyStatus(queryParameters.Id);
+
                 if (!result)
-                    return NotFound($"Estado de agencia con ID {id} no encontrado");
+                {
+                    return NotFound($"Agency status with ID {queryParameters.Id} not found");
+                }
 
                 return NoContent();
             }
@@ -157,8 +211,8 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el estado de agencia con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al eliminar el estado de agencia");
+            _logger.LogError(ex, "Error deleting agency status with ID {Id}", queryParameters.Id);
+            return StatusCode(500, "Internal server error while deleting agency status");
         }
     }
 }

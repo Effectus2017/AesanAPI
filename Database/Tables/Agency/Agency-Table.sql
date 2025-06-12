@@ -31,6 +31,7 @@ CREATE TABLE Agency
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
     AgencyCode NVARCHAR(50) NULL,
+    -- EL valor por defecto es 0, porque es una agencia auspiciadora, 1 es unicamente para NUTRE para que no se muestre en la lista de agencias
     IsPropietary BIT NULL DEFAULT 0,
     FOREIGN KEY (AgencyStatusId) REFERENCES AgencyStatus(Id),
     FOREIGN KEY (CityId) REFERENCES City(Id),

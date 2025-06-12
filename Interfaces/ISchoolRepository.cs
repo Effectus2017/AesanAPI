@@ -7,12 +7,12 @@ public interface ISchoolRepository
     /// <summary>
     /// Obtiene una escuela por su ID
     /// </summary>
-    Task<dynamic> GetSchoolById(int id);
+    Task<DTOSchool> GetSchoolById(int id);
 
     /// <summary>
     /// Obtiene todas las escuelas
     /// </summary>
-    Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllSchoolsFromDB(int take, int skip, string name, int? cityId, int? regionId, bool alls);
 
     /// <summary>
     /// Inserta una nueva escuela

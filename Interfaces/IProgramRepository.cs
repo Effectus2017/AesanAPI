@@ -26,14 +26,14 @@ public interface IProgramRepository
     /// </summary>
     /// <param name="programRequest">Datos del programa a insertar</param>
     /// <returns>El ID del programa insertado</returns>
-    Task<int> InsertProgram(ProgramRequest programRequest);
+    Task<bool> InsertProgram(ProgramRequest programRequest);
 
     /// <summary>
     /// Inserta una nueva inscripción de programa
     /// </summary>
     /// <param name="request">Datos de la inscripción</param>
     /// <returns>El ID de la inscripción insertada</returns>
-    Task<int> InsertProgramInscription(ProgramInscriptionRequest request);
+    Task<bool> InsertProgramInscription(ProgramInscriptionRequest request);
 
     /// <summary>
     /// Obtiene todas las inscripciones de programas

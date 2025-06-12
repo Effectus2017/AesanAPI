@@ -1,19 +1,19 @@
 -- Insertar una inscripción de agencia
 -- 1.1.2
 CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
-    @AgencyId int,
-    @NonProfit bit,
-    @FederalFundsDenied bit,
-    @StateFundsDenied bit,
-    @OrganizedAthleticPrograms bit,
-    @AtRiskService bit,
-    @BasicEducationRegistryId int,
-    @ServiceTime datetime,
-    @TaxExemptionStatusId int,
-    @TaxExemptionTypeId int,
-    @PublicAllianceContractId int,
-    @NationalYouthProgram bit,
-    @Id int OUTPUT
+    @agencyId int,
+    @nonProfit bit,
+    @federalFundsDenied bit,
+    @stateFundsDenied bit,
+    @organizedAthleticPrograms bit,
+    @atRiskService bit,
+    @basicEducationRegistryId int,
+    @serviceTime datetime,
+    @taxExemptionStatusId int,
+    @taxExemptionTypeId int,
+    @publicAllianceContractId int,
+    @nationalYouthProgram bit,
+    @id int OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -29,13 +29,13 @@ BEGIN
         )
     VALUES
         (
-            @AgencyId, @NonProfit, @FederalFundsDenied, @StateFundsDenied,
-            @OrganizedAthleticPrograms, @AtRiskService,
-            @BasicEducationRegistryId, @ServiceTime,
-            @TaxExemptionStatusId, @TaxExemptionTypeId,
-            @PublicAllianceContractId, @NationalYouthProgram
+            @agencyId, @nonProfit, @federalFundsDenied, @stateFundsDenied,
+            @organizedAthleticPrograms, @atRiskService,
+            @basicEducationRegistryId, @serviceTime,
+            @taxExemptionStatusId, @taxExemptionTypeId,
+            @publicAllianceContractId, @nationalYouthProgram
         );
-        SET @Id = SCOPE_IDENTITY();
+        SET @id = SCOPE_IDENTITY();
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH

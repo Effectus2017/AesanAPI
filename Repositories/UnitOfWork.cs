@@ -9,15 +9,17 @@ public class UnitOfWork(ApplicationDbContext context,
     IAgencyRepository agencyRepository,
     ISchoolRepository schoolRepository,
     IAgencyUsersRepository agencyUsersRepository,
-    IAgencyFilesRepository agencyFilesRepository) : IUnitOfWork
+    IAgencyFilesRepository agencyFilesRepository,
+    ICenterTypeRepository centerTypeRepository
+    ) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
-    public IUserRepository UserRepository { get; private set; } = userRepository; // Asignar repositorio
-    public IGeoRepository GeoRepository { get; private set; } = geoRepository; // Asignar repositorio
-    public IProgramRepository ProgramRepository { get; private set; } = programRepository; // Asignar repositorio
-    public IAgencyRepository AgencyRepository { get; private set; } = agencyRepository; // Asignar repositorio
+    public IUserRepository UserRepository { get; private set; } = userRepository;
+    public IGeoRepository GeoRepository { get; private set; } = geoRepository;
+    public IProgramRepository ProgramRepository { get; private set; } = programRepository;
+    public IAgencyRepository AgencyRepository { get; private set; } = agencyRepository;
     public ISchoolRepository SchoolRepository { get; private set; } = schoolRepository;
     public IAgencyUsersRepository AgencyUsersRepository { get; private set; } = agencyUsersRepository;
     public IAgencyFilesRepository AgencyFilesRepository { get; private set; } = agencyFilesRepository;
-
+    public ICenterTypeRepository CenterTypeRepository { get; private set; } = centerTypeRepository;
 }

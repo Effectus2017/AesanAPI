@@ -175,11 +175,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 using IDbConnection db = _context.CreateConnection();
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", regionId, DbType.Int32);
-                return await db.QueryFirstOrDefaultAsync<dynamic>(
-                    "100_GetRegionById",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                return await db.QueryFirstOrDefaultAsync<dynamic>("100_GetRegionById", parameters, commandType: CommandType.StoredProcedure);
             },
             _logger,
             _appSettings
@@ -217,7 +213,11 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         );
     }
 
-    // Método para invalidar el caché manualmente si es necesario
+    /// <summary>
+    /// Invalida el caché de la base de datos local
+    /// </summary>
+    /// <param name="cityId">El ID de la ciudad</param>
+    /// <param name="regionId">El ID de la región</param>
     public void InvalidateCache(int? cityId = null, int? regionId = null)
     {
         if (cityId.HasValue)

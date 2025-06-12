@@ -1,7 +1,7 @@
 -- Obtener una agencia por su id
--- 1.1.0
+-- 1.1.1
 CREATE OR ALTER PROCEDURE [111_GetAgencyById]
-    @Id INT
+    @id INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -82,7 +82,7 @@ BEGIN
         LEFT JOIN AspNetUsers u ON aua.UserId = u.Id
         LEFT JOIN AgencyUsers au ON a.Id = au.AgencyId AND au.IsActive = 1 AND au.IsOwner = 1
         LEFT JOIN AspNetUsers u2 ON au.UserId = u2.Id
-    WHERE a.Id = @Id AND a.IsActive = 1;
+    WHERE a.Id = @id AND a.IsActive = 1;
 
     -- Obtener los programas asociados a la agencia
     SELECT
@@ -94,9 +94,9 @@ BEGIN
         p.UpdatedAt
     FROM Program p
         INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
-    WHERE ap.AgencyId = @Id;
+    WHERE ap.AgencyId = @id;
 END;
 GO
 
 
-exec [110_GetAgencyById] 1;
+exec [111_GetAgencyById] 1;

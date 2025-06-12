@@ -50,26 +50,24 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// <returns>Una lista de estados de agencia.</returns>
     public async Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyStatuses, take, skip, name, alls);
-
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@take", take, DbType.Int32);
-                parameters.Add("@skip", skip, DbType.Int32);
-                parameters.Add("@name", name, DbType.String);
-                parameters.Add("@alls", alls, DbType.Boolean);
-                var result = await db.QueryMultipleAsync("105_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
-                var data = await result.ReadAsync<DTOAgencyStatus>();
-                var count = await result.ReadSingleAsync<int>();
-                return new { data, count };
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
+            var result = await db.QueryMultipleAsync("105_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<DTOAgencyStatus>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener todos los estados de agencia");
+            throw;
+        }
     }
 
     /// <summary>
@@ -77,17 +75,17 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// </summary>
     /// <param name="status">El estado a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    public async Task<bool> InsertAgencyStatus(DTOAgencyStatus status)
+    public async Task<bool> InsertAgencyStatus(AgencyStatusRequest request)
     {
         try
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@name", status.Name, DbType.String);
-            parameters.Add("@nameEN", status.NameEN, DbType.String);
-            parameters.Add("@isActive", status.IsActive, DbType.Boolean);
-            parameters.Add("@displayOrder", status.DisplayOrder, DbType.Int32);
-            parameters.Add("@id", status.Id, DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@name", request.Name, DbType.String);
+            parameters.Add("@nameEN", request.NameEN, DbType.String);
+            parameters.Add("@isActive", request.IsActive, DbType.Boolean);
+            parameters.Add("@displayOrder", request.DisplayOrder, DbType.Int32);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await db.ExecuteAsync("100_InsertAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");

@@ -170,16 +170,16 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     /// <returns>Los programas de la agencia</returns>
     [HttpGet("get-agency-programs-by-user-id")]
     [SwaggerOperation(Summary = "Obtiene los programas de una agencia por el ID del usuario", Description = "Devuelve los programas asociados a la agencia del usuario.")]
-    public async Task<IActionResult> GetAgencyProgramsByUserId([FromQuery] string userId)
+    public async Task<IActionResult> GetAgencyProgramsByUserId([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(queryParameters.UserId))
             {
                 return BadRequest("El ID del usuario no puede estar vacío.");
             }
 
-            var programs = await _unitOfWork.AgencyRepository.GetAgencyProgramsByUserId(userId);
+            var programs = await _unitOfWork.AgencyRepository.GetAgencyProgramsByUserId(queryParameters.UserId);
             if (programs == null || !programs.Any())
             {
                 return NotFound("No se encontraron programas para el usuario especificado.");

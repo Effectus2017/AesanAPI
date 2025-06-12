@@ -26,7 +26,7 @@ public interface IKitchenTypeRepository
     /// </summary>
     /// <param name="kitchenType">El tipo de cocina a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    Task<bool> InsertKitchenType(DTOKitchenType kitchenType);
+    Task<bool> InsertKitchenType(KitchenTypeRequest request);
 
     /// <summary>
     /// Actualiza un tipo de cocina existente.

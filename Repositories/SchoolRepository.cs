@@ -20,29 +20,27 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// </summary>
     /// <param name="id">El ID de la escuela a obtener.</param>
     /// <returns>La escuela encontrada.</returns>
-    public async Task<dynamic> GetSchoolById(int id)
+    public async Task<DTOSchool> GetSchoolById(int id)
     {
         using IDbConnection dbConnection = _context.CreateConnection();
         var parameters = new DynamicParameters();
-        parameters.Add("@id", id, DbType.Int32);
+        parameters.Add("@Id", id, DbType.Int32);
 
-        var result = await dbConnection.QueryMultipleAsync("101_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
+        var result = await dbConnection.QueryMultipleAsync("102_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
 
         var schoolData = await result.ReadFirstOrDefaultAsync<dynamic>();
-        var facilities = (await result.ReadAsync<dynamic>()).ToList();
-        var satellites = (await result.ReadAsync<dynamic>()).ToList();
+        var facilities = result.Read<dynamic>().ToList();
+        var satellites = result.Read<dynamic>().ToList();
 
         if (schoolData == null)
         {
             return null;
         }
 
-        return new
-        {
-            schoolData,
-            Facilities = facilities,
-            Satellites = satellites
-        };
+        var dtoSchool = MapSchoolFromResult(schoolData);
+        dtoSchool.Facilities = facilities.Select(MapFacilityFromResult).ToList();
+        dtoSchool.Satellites = satellites.Select(MapSatelliteFromResult).ToList();
+        return dtoSchool;
     }
 
     /// <summary>
@@ -53,30 +51,40 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// <param name="name">El nombre de la escuela a buscar.</param>
     /// <param name="alls">Si se deben obtener todas las escuelas.</param>
     /// <returns>Las escuelas encontradas.</returns>
-    public async Task<dynamic> GetAllSchools(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllSchoolsFromDB(int take, int skip, string name, int? cityId, int? regionId, bool alls)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Schools, take, skip, name, alls);
+        using IDbConnection dbConnection = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@take", take, DbType.Int32);
+        parameters.Add("@skip", skip, DbType.Int32);
+        parameters.Add("@name", name, DbType.String);
+        parameters.Add("@cityId", cityId, DbType.Int32);
+        parameters.Add("@regionId", regionId, DbType.Int32);
+        parameters.Add("@alls", alls, DbType.Boolean);
 
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@take", take, DbType.Int32);
-                parameters.Add("@skip", skip, DbType.Int32);
-                parameters.Add("@name", name, DbType.String);
-                parameters.Add("@alls", alls, DbType.Boolean);
+        var schoolsDynamic = new List<dynamic>();
+        var count = 0;
 
-                var result = await dbConnection.QueryMultipleAsync("101_GetSchools", parameters, commandType: CommandType.StoredProcedure);
+        using var result = await dbConnection.QueryMultipleAsync("102_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
-                var schools = (await result.ReadAsync<dynamic>()).ToList();
-                var count = (await result.ReadAsync<int>()).SingleOrDefault();
-                return new { data = schools, count };
-            },
-            _logger,
-            _appSettings
-        );
+        if (result == null)
+        {
+            return null;
+        }
+
+        if (!result.IsConsumed)
+        {
+            schoolsDynamic = result.Read<dynamic>().ToList();
+        }
+
+        if (!result.IsConsumed)
+        {
+            count = result.ReadFirstOrDefault<int>();
+        }
+
+        var data = schoolsDynamic.Select(MapSchoolFromResult).ToList();
+
+        return new { data, count };
     }
 
     /// <summary>
@@ -91,62 +99,54 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@Name", request.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@StartDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@Address", request.Address, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PostalAddress", request.PostalAddress, DbType.String, ParameterDirection.Input);
-            parameters.Add("@ZipCode", request.ZipCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@CityId", request.CityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@RegionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@AreaCode", request.AreaCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@AdminFullName", request.AdminFullName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@Phone", request.Phone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PhoneExtension", request.PhoneExtension, DbType.String, ParameterDirection.Input);
-            parameters.Add("@Mobile", request.Mobile, DbType.String, ParameterDirection.Input);
-            parameters.Add("@BaseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@NextRenewalYear", request.NextRenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@OrganizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@EducationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@OperatingPeriodId", request.OperatingPeriodId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@KitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@GroupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@DeliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@SponsorTypeId", request.SponsorTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@ApplicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@OperatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@ame", request.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@startDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@address", request.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@cityId", request.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@regionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@zipCode", request.ZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@latitude", request.Latitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@longitude", request.Longitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@postalAddress", request.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalCityId", request.PostalCityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@postalRegionId", request.PostalRegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@postalZipCode", request.PostalZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@sameAsPhysicalAddress", request.SameAsPhysicalAddress, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@organizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@centerId", request.CenterId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@sponsorTypeId", request.SponsorTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@applicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@residentialTypeId", request.ResidentialTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
+            parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@breakfast", request.Breakfast, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@breakfastFrom", request.BreakfastFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@breakfastTo", request.BreakfastTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lunch", request.Lunch, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@lunchFrom", request.LunchFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lunchTo", request.LunchTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@isMainSchool", request.IsMainSchool, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("101_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("102_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
 
             int schoolId = parameters.Get<int>("@Id");
-
-            // Insertar facilidades
-            if (request.FacilityIds != null && request.FacilityIds.Any())
-            {
-                foreach (var facilityId in request.FacilityIds)
-                {
-                    var ok = await InsertSchoolFacilityAsync(schoolId, facilityId);
-
-                    if (!ok)
-                    {
-                        _logger.LogWarning($"No se pudo insertar SchoolFacility para SchoolId={schoolId}, FacilityId={facilityId}");
-                    }
-                }
-            }
-
-            // Insertar satélites
-            if (request.SatelliteSchoolIds != null && request.SatelliteSchoolIds.Any())
-            {
-                foreach (var satelliteId in request.SatelliteSchoolIds)
-                {
-                    var ok = await InsertSatelliteSchoolAsync(schoolId, satelliteId);
-
-                    if (!ok)
-                    {
-                        _logger.LogWarning($"No se pudo insertar SatelliteSchool para MainSchoolId={schoolId}, SatelliteSchoolId={satelliteId}");
-                    }
-                }
-            }
 
             // Invalidar caché
             InvalidateCache(schoolId);
@@ -172,68 +172,52 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@Id", request.Id, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@Name", request.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@StartDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@Address", request.Address, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PostalAddress", request.PostalAddress, DbType.String, ParameterDirection.Input);
-            parameters.Add("@ZipCode", request.ZipCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@CityId", request.CityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@RegionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@AreaCode", request.AreaCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@AdminFullName", request.AdminFullName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@Phone", request.Phone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PhoneExtension", request.PhoneExtension, DbType.String, ParameterDirection.Input);
-            parameters.Add("@Mobile", request.Mobile, DbType.String, ParameterDirection.Input);
-            parameters.Add("@BaseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@NextRenewalYear", request.NextRenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@OrganizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@EducationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@OperatingPeriodId", request.OperatingPeriodId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@KitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@GroupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@DeliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@SponsorTypeId", request.SponsorTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@ApplicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@OperatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@id", request.Id, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@name", request.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@startDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@address", request.Address, DbType.String, ParameterDirection.Input);
+            parameters.Add("@cityId", request.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@regionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@zipCode", request.ZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@latitude", request.Latitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@longitude", request.Longitude, DbType.Double, ParameterDirection.Input);
+            parameters.Add("@postalAddress", request.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalCityId", request.PostalCityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@postalRegionId", request.PostalRegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@postalZipCode", request.PostalZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@sameAsPhysicalAddress", request.SameAsPhysicalAddress, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@organizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@centerId", request.CenterId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@sponsorTypeId", request.SponsorTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@applicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@residentialTypeId", request.ResidentialTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
+            parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@breakfast", request.Breakfast, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@breakfastFrom", request.BreakfastFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@breakfastTo", request.BreakfastTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lunch", request.Lunch, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@lunchFrom", request.LunchFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lunchTo", request.LunchTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@isMainSchool", request.IsMainSchool, DbType.Boolean, ParameterDirection.Input);
 
-            await dbConnection.ExecuteAsync("101_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
-
-            // Actualizar facilidades
-            var facilityParams = new DynamicParameters();
-            facilityParams.Add("@school_id", request.Id, DbType.Int32, ParameterDirection.Input);
-            facilityParams.Add("@is_active", false, DbType.Boolean, ParameterDirection.Input);
-            await dbConnection.ExecuteAsync("102_UpdateSchoolFacilityIsActive", facilityParams, commandType: CommandType.StoredProcedure);
-
-            if (request.FacilityIds != null && request.FacilityIds.Count != 0)
-            {
-                foreach (var facilityId in request.FacilityIds)
-                {
-                    var ok = await InsertSchoolFacilityAsync(request.Id, facilityId);
-                    if (!ok)
-                    {
-                        _logger.LogWarning($"No se pudo insertar SchoolFacility para SchoolId={request.Id}, FacilityId={facilityId}");
-                    }
-                }
-            }
-
-            // Actualizar satélites
-            var satelliteParams = new DynamicParameters();
-            satelliteParams.Add("@main_school_id", request.Id, DbType.Int32, ParameterDirection.Input);
-            satelliteParams.Add("@is_active", false, DbType.Boolean, ParameterDirection.Input);
-            await dbConnection.ExecuteAsync("102_UpdateSatelliteSchoolIsActive", satelliteParams, commandType: CommandType.StoredProcedure);
-
-            if (request.SatelliteSchoolIds != null && request.SatelliteSchoolIds.Count != 0)
-            {
-                foreach (var satelliteId in request.SatelliteSchoolIds)
-                {
-                    var ok = await InsertSatelliteSchoolAsync(request.Id, satelliteId);
-                    if (!ok)
-                    {
-                        _logger.LogWarning($"No se pudo insertar SatelliteSchool para MainSchoolId={request.Id}, SatelliteSchoolId={satelliteId}");
-                    }
-                }
-            }
+            await dbConnection.ExecuteAsync("102_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
 
             // Invalidar caché
             InvalidateCache(request.Id);
@@ -260,7 +244,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var parameters = new DynamicParameters();
             parameters.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
 
-            var rowsAffected = await dbConnection.ExecuteAsync("101_DeleteSchool", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = await dbConnection.ExecuteAsync("102_DeleteSchool", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -295,11 +279,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@school_id", schoolId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@facility_id", facilityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@is_active", true, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@created_at", DateTime.UtcNow, DbType.DateTime, ParameterDirection.Input);
-            await dbConnection.ExecuteAsync("101_InsertSchoolFacility", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("@schoolId", schoolId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@facilityId", facilityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isActive", true, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@createdAt", DateTime.UtcNow, DbType.DateTime, ParameterDirection.Input);
+            await dbConnection.ExecuteAsync("102_InsertSchoolFacility", parameters, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
@@ -315,11 +299,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@main_school_id", mainSchoolId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@satellite_school_id", satelliteSchoolId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@is_active", true, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@created_at", DateTime.UtcNow, DbType.DateTime, ParameterDirection.Input);
-            await dbConnection.ExecuteAsync("101_InsertSatelliteSchool", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("@mainSchoolId", mainSchoolId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@satelliteSchoolId", satelliteSchoolId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isActive", true, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@createdAt", DateTime.UtcNow, DbType.DateTime, ParameterDirection.Input);
+            await dbConnection.ExecuteAsync("102_InsertSatelliteSchool", parameters, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
@@ -328,4 +312,194 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             return false;
         }
     }
+
+    /// <summary>
+    /// Maps a dynamic result to a DTOSchool object
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DTOSchool</returns>
+    private static DTOSchool MapSchoolFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
+            }
+
+            return new DTOSchool
+            {
+                Id = item.Id ?? 0,
+                Name = item.Name ?? string.Empty,
+                StartDate = item.StartDate,
+                Address = item.Address ?? string.Empty,
+                CityId = item.CityId ?? 0,
+                RegionId = item.RegionId ?? 0,
+                ZipCode = item.ZipCode ?? string.Empty,
+                Latitude = item.Latitude,
+                Longitude = item.Longitude,
+                PostalAddress = item.PostalAddress ?? string.Empty,
+                PostalCityId = item.PostalCityId,
+                PostalRegionId = item.PostalRegionId,
+                PostalZipCode = item.PostalZipCode ?? string.Empty,
+                SameAsPhysicalAddress = item.SameAsPhysicalAddress,
+                OrganizationTypeId = item.OrganizationTypeId ?? 0,
+                CenterId = item.CenterId,
+                NonProfit = item.NonProfit,
+                BaseYear = item.BaseYear,
+                RenewalYear = item.RenewalYear,
+                EducationLevelId = item.EducationLevelId ?? 0,
+                OperatingDays = item.OperatingDays,
+                KitchenTypeId = item.KitchenTypeId,
+                GroupTypeId = item.GroupTypeId,
+                DeliveryTypeId = item.DeliveryTypeId,
+                SponsorTypeId = item.SponsorTypeId,
+                ApplicantTypeId = item.ApplicantTypeId,
+                ResidentialTypeId = item.ResidentialTypeId,
+                OperatingPolicyId = item.OperatingPolicyId,
+                HasWarehouse = item.HasWarehouse,
+                HasDiningRoom = item.HasDiningRoom,
+                AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
+                SitePhone = item.SitePhone ?? string.Empty,
+                Extension = item.Extension ?? string.Empty,
+                MobilePhone = item.MobilePhone ?? string.Empty,
+                Breakfast = item.Breakfast,
+                BreakfastFrom = item.BreakfastFrom,
+                BreakfastTo = item.BreakfastTo,
+                Lunch = item.Lunch,
+                LunchFrom = item.LunchFrom,
+                LunchTo = item.LunchTo,
+                Snack = item.Snack,
+                SnackFrom = item.SnackFrom,
+                SnackTo = item.SnackTo,
+                IsActive = item.IsActive ?? true,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt,
+                // Nested catalogs (if needed, can be mapped here)
+                City = item.CityId != null ? new DTOCity
+                {
+                    Id = item.CityId,
+                    Name = item.CityName ?? string.Empty
+                } : null,
+                Region = item.RegionId != null ? new DTORegion
+                {
+                    Id = item.RegionId,
+                    Name = item.RegionName ?? string.Empty
+                } : null,
+                PostalCity = item.PostalCityId != null ? new DTOCity
+                {
+                    Id = item.PostalCityId,
+                    Name = item.PostalCityName ?? string.Empty
+                } : null,
+                PostalRegion = item.PostalRegionId != null ? new DTORegion
+                {
+                    Id = item.PostalRegionId,
+                    Name = item.PostalRegionName ?? string.Empty
+                } : null,
+                EducationLevel = item.EducationLevelId != null ? new DTOEducationLevel
+                {
+                    Id = item.EducationLevelId,
+                    Name = item.EducationLevelName ?? string.Empty,
+                    NameEN = item.EducationLevelNameEN ?? string.Empty
+                } : null,
+                OrganizationType = item.OrganizationTypeId != null
+                    ? new DTOOrganizationType
+                    {
+                        Id = item.OrganizationTypeId,
+                        Name = item.OrganizationTypeName ?? string.Empty,
+                        NameEN = item.OrganizationTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                KitchenType = item.KitchenTypeId != null
+                    ? new DTOKitchenType
+                    {
+                        Id = item.KitchenTypeId,
+                        Name = item.KitchenTypeName ?? string.Empty,
+                        NameEN = item.KitchenTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                GroupType = item.GroupTypeId != null
+                    ? new DTOGroupType
+                    {
+                        Id = item.GroupTypeId,
+                        Name = item.GroupTypeName ?? string.Empty,
+                        NameEN = item.GroupTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                DeliveryType = item.DeliveryTypeId != null
+                    ? new DTODeliveryType
+                    {
+                        Id = item.DeliveryTypeId,
+                        Name = item.DeliveryTypeName ?? string.Empty,
+                        NameEN = item.DeliveryTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                SponsorType = item.SponsorTypeId != null
+                    ? new DTOSponsorType
+                    {
+                        Id = item.SponsorTypeId,
+                        Name = item.SponsorTypeName ?? string.Empty,
+                        NameEN = item.SponsorTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                ApplicantType = item.ApplicantTypeId != null
+                    ? new DTOApplicantType
+                    {
+                        Id = item.ApplicantTypeId,
+                        Name = item.ApplicantTypeName ?? string.Empty,
+                        NameEN = item.ApplicantTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                ResidentialType = item.ResidentialTypeId != null
+                    ? new DTOResidentialType
+                    {
+                        Id = item.ResidentialTypeId,
+                        Name = item.ResidentialTypeName ?? string.Empty,
+                        NameEN = item.ResidentialTypeNameEN ?? string.Empty
+                    }
+                    : null,
+                OperatingPolicy = item.OperatingPolicyId != null
+                    ? new DTOOperatingPolicy
+                    {
+                        Id = item.OperatingPolicyId,
+                        Name = item.OperatingPolicyName ?? string.Empty,
+                        NameEN = item.OperatingPolicyNameEN ?? string.Empty
+                    }
+                    : null,
+                CenterType = item.CenterId != null ? new DTOCenterType
+                {
+                    Id = item.CenterId,
+                    Name = item.CenterName ?? string.Empty,
+                    NameEN = item.CenterNameEN ?? string.Empty
+                } : null
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error mapping school: Property not found or invalid. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Unexpected error mapping school: {ex.Message}", ex);
+        }
+    }
+
+    private static DTOFacility MapFacilityFromResult(dynamic item)
+    {
+        return new DTOFacility
+        {
+            Id = item.Id,
+            Name = item.Name
+        };
+    }
+
+    private static DTOFacility MapSatelliteFromResult(dynamic item)
+    {
+        return new DTOFacility
+        {
+            Id = item.Id,
+            Name = item.Name
+        };
+    }
 }
+

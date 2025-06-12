@@ -322,30 +322,6 @@ INSERT INTO MealType
 VALUES
     ('Alimentos Federales');
 
--- Tipo de Organización	Escuela/Satélite/Institución Residencial/Otros
-CREATE TABLE OrganizationType
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL
-);
-
-INSERT INTO OrganizationType
-    (Name)
-VALUES
-    ('Escuela');
-INSERT INTO OrganizationType
-    (Name)
-VALUES
-    ('Satélite');
-INSERT INTO OrganizationType
-    (Name)
-VALUES
-    ('Institución Residencial');
-INSERT INTO OrganizationType
-    (Name)
-VALUES
-    ('Otros');
-
 -- Documentos requeridos para solicitar el servicio de merienda:	Lista de Participantes/Plan de Actividades/Menú a Utilizar
 CREATE TABLE DocumentsRequired
 (

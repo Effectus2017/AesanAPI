@@ -1,108 +1,143 @@
 using Api.Interfaces;
 using Api.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
+/// <summary>
+/// Controller that manages all operations related to alternative communications.
+/// Provides endpoints for full CRUD management of alternative communications.
+/// </summary>
 [Route("alternative-communication")]
-#if !DEBUG
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-#endif
+[ApiController]
 public class AlternativeCommunicationController(IAlternativeCommunicationRepository alternativeCommunicationRepository, ILogger<AlternativeCommunicationController> logger) : ControllerBase
 {
     private readonly IAlternativeCommunicationRepository _alternativeCommunicationRepository = alternativeCommunicationRepository;
     private readonly ILogger<AlternativeCommunicationController> _logger = logger;
 
-    [HttpGet("get-all-alternative-communications-from-db")]
-#if !DEBUG
-    [Authorize]
-#endif
-    [SwaggerOperation(Summary = "Obtiene todas las comunicaciones alternativas", Description = "Devuelve una lista de comunicaciones alternativas.")]
-    public async Task<ActionResult> GetAllAlternativeCommunicationsFromDb([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                var alternativeCommunications = await _alternativeCommunicationRepository.GetAllAlternativeCommunications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                return Ok(alternativeCommunications);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todas las comunicaciones alternativas");
-            return StatusCode(500, "Error interno del servidor al obtener las comunicaciones alternativas");
-        }
-    }
-
+    /// <summary>
+    /// Gets an alternative communication by its ID.
+    /// </summary>
+    /// <param name="queryParameters">Query parameters containing the ID.</param>
+    /// <returns>The alternative communication if found, NotFound if not, or InternalServerError on error.</returns>
     [HttpGet("get-alternative-communication-by-id")]
-    [SwaggerOperation(Summary = "Obtiene una comunicación alternativa por su ID", Description = "Devuelve una comunicación alternativa basada en el ID proporcionado.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<ActionResult> GetById([FromQuery] int id)
+    [SwaggerOperation(Summary = "Gets an alternative communication by its ID", Description = "Returns an alternative communication based on the provided ID.")]
+    public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            var alternativeCommunication = await _alternativeCommunicationRepository.GetAlternativeCommunicationById(id);
-            if (alternativeCommunication == null)
-                return NotFound($"Comunicación alternativa con ID {id} no encontrada");
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Getting alternative communication by ID: {Id}", queryParameters.Id);
 
-            return Ok(alternativeCommunication);
+                if (queryParameters.Id == 0)
+                {
+                    return BadRequest("The alternative communication ID is required");
+                }
+
+                var result = await _alternativeCommunicationRepository.GetAlternativeCommunicationById(queryParameters.Id);
+
+                if (result == null)
+                {
+                    return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
+                }
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la comunicación alternativa con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al obtener la comunicación alternativa");
+            _logger.LogError(ex, "Error getting alternative communication by ID {Id}", queryParameters.Id);
+            return StatusCode(500, "Internal server error while getting alternative communication");
         }
     }
 
+    /// <summary>
+    /// Gets all alternative communications with filtering and pagination options.
+    /// </summary>
+    /// <param name="queryParameters">Query parameters for filtering and pagination.</param>
+    /// <returns>List of alternative communications, BadRequest if parameters are invalid, or InternalServerError on error.</returns>
+    [HttpGet("get-all-alternative-communications-from-db")]
+    [SwaggerOperation(Summary = "Gets all alternative communications", Description = "Returns a list of alternative communications.")]
+    public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _alternativeCommunicationRepository.GetAllAlternativeCommunications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+
+                if (result == null)
+                {
+                    return NotFound("No alternative communications found");
+                }
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all alternative communications");
+            return StatusCode(500, "Internal server error while getting alternative communications");
+        }
+    }
+
+    /// <summary>
+    /// Creates a new alternative communication.
+    /// </summary>
+    /// <param name="request">The alternative communication to create.</param>
+    /// <returns>Ok if created successfully, BadRequest if data is invalid or creation fails, or InternalServerError on error.</returns>
     [HttpPost("insert-alternative-communication")]
-    [SwaggerOperation(Summary = "Crea una nueva comunicación alternativa", Description = "Crea una nueva comunicación alternativa.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<ActionResult> Insert([FromBody] DTOAlternativeCommunication alternativeCommunication)
+    [SwaggerOperation(Summary = "Creates a new alternative communication", Description = "Creates a new alternative communication.")]
+    public async Task<ActionResult> Insert([FromBody] DTOAlternativeCommunication request)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _alternativeCommunicationRepository.InsertAlternativeCommunication(alternativeCommunication);
+                var result = await _alternativeCommunicationRepository.InsertAlternativeCommunication(request);
+
                 if (result)
+                {
                     return Ok(result);
+                }
 
-                return BadRequest("No se pudo insertar la comunicación alternativa");
+                return BadRequest("Could not create the alternative communication");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear la comunicación alternativa");
-            return StatusCode(500, "Error interno del servidor al crear la comunicación alternativa");
+            _logger.LogError(ex, "Error creating alternative communication");
+            return StatusCode(500, "Internal server error while creating alternative communication");
         }
     }
 
+    /// <summary>
+    /// Updates an existing alternative communication.
+    /// </summary>
+    /// <param name="request">The alternative communication with updated data.</param>
+    /// <returns>NoContent if updated successfully, NotFound if not found, BadRequest if data is invalid, or InternalServerError on error.</returns>
     [HttpPut("update-alternative-communication")]
-    [SwaggerOperation(Summary = "Actualiza una comunicación alternativa existente", Description = "Actualiza los datos de una comunicación alternativa existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<IActionResult> Update([FromBody] DTOAlternativeCommunication alternativeCommunication)
+    [SwaggerOperation(Summary = "Updates an existing alternative communication", Description = "Updates the data of an existing alternative communication.")]
+    public async Task<IActionResult> Update([FromBody] DTOAlternativeCommunication request)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _alternativeCommunicationRepository.UpdateAlternativeCommunication(alternativeCommunication);
+                var result = await _alternativeCommunicationRepository.UpdateAlternativeCommunication(request);
+
                 if (!result)
-                    return NotFound($"Comunicación alternativa con ID {alternativeCommunication.Id} no encontrada");
+                {
+                    return NotFound($"Alternative communication with ID {request.Id} not found");
+                }
 
                 return NoContent();
             }
@@ -111,25 +146,30 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la comunicación alternativa con ID {Id}", alternativeCommunication.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar la comunicación alternativa");
+            _logger.LogError(ex, "Error updating alternative communication with ID {Id}", request.Id);
+            return StatusCode(500, "Internal server error while updating alternative communication");
         }
     }
 
+    /// <summary>
+    /// Deletes an existing alternative communication.
+    /// </summary>
+    /// <param name="id">ID of the alternative communication to delete.</param>
+    /// <returns>NoContent if deleted successfully, NotFound if not found, BadRequest if data is invalid, or InternalServerError on error.</returns>
     [HttpDelete("delete-alternative-communication")]
-    [SwaggerOperation(Summary = "Elimina una comunicación alternativa existente", Description = "Elimina una comunicación alternativa existente.")]
-#if !DEBUG
-    [Authorize]
-#endif
-    public async Task<IActionResult> Delete([FromQuery] int id)
+    [SwaggerOperation(Summary = "Deletes an existing alternative communication", Description = "Deletes an existing alternative communication.")]
+    public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _alternativeCommunicationRepository.DeleteAlternativeCommunication(id);
+                var result = await _alternativeCommunicationRepository.DeleteAlternativeCommunication(queryParameters.Id);
+
                 if (!result)
-                    return NotFound($"Comunicación alternativa con ID {id} no encontrada");
+                {
+                    return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
+                }
 
                 return NoContent();
             }
@@ -138,8 +178,8 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la comunicación alternativa con ID {Id}", id);
-            return StatusCode(500, "Error interno del servidor al eliminar la comunicación alternativa");
+            _logger.LogError(ex, "Error deleting alternative communication with ID {Id}", queryParameters.Id);
+            return StatusCode(500, "Internal server error while deleting alternative communication");
         }
     }
 }

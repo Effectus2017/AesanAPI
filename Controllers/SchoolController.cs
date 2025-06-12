@@ -17,27 +17,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     private readonly ILogger<SchoolController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
-    [HttpGet("get-all-schools-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
-    public async Task<IActionResult> GetAllSchools([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                var schools = await _unitOfWork.SchoolRepository.GetAllSchools(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                return Ok(schools);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las escuelas");
-            return StatusCode(500, "Error al obtener las escuelas");
-        }
-    }
-
     [HttpGet("get-school-by-id")]
     [SwaggerOperation(Summary = "Obtiene una escuela por su ID", Description = "Devuelve una escuela basada en el ID proporcionado.")]
     public async Task<IActionResult> GetSchoolById([FromQuery] int id)
@@ -55,6 +34,27 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         {
             _logger.LogError(ex, "Error al obtener la escuela");
             return StatusCode(500, "Error al obtener la escuela");
+        }
+    }
+
+    [HttpGet("get-all-schools-from-db")]
+    [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
+    public async Task<IActionResult> GetAllSchoolsFromDB([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var schools = await _unitOfWork.SchoolRepository.GetAllSchoolsFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.Alls);
+                return Ok(schools);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las escuelas");
+            return StatusCode(500, "Error al obtener las escuelas");
         }
     }
 

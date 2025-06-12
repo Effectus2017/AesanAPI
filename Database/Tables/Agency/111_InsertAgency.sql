@@ -1,27 +1,27 @@
 CREATE OR ALTER PROCEDURE [111_InsertAgency]
-    @Name nvarchar(255),
-    @AgencyStatusId int,
-    @CityId int,
-    @PostalCityId int,
-    @RegionId int,
-    @PostalRegionId int,
-    @UieNumber int,
-    @EinNumber int,
-    @SdrNumber int,
-    @Address nvarchar(255),
-    @ZipCode nvarchar(20),
-    @PostalAddress nvarchar(255),
-    @PostalZipCode nvarchar(20),
-    @Phone nvarchar(20),
-    @Email nvarchar(255),
-    @Latitude real,
-    @Longitude real,
-    @ImageURL nvarchar(max),
-    @IsActive bit,
-    @IsListable bit,
-    @AgencyCode nvarchar(50),
-    @IsPropietary bit,
-    @Id int OUTPUT
+    @name nvarchar(255),
+    @agencyStatusId int,
+    @cityId int,
+    @postalCityId int,
+    @regionId int,
+    @postalRegionId int,
+    @uieNumber int,
+    @einNumber int,
+    @sdrNumber int,
+    @address nvarchar(255),
+    @zipCode nvarchar(20),
+    @postalAddress nvarchar(255),
+    @postalZipCode nvarchar(20),
+    @phone nvarchar(20),
+    @email nvarchar(255),
+    @latitude real,
+    @longitude real,
+    @imageUrl nvarchar(max),
+    @isActive bit,
+    @isListable bit,
+    @agencyCode nvarchar(50),
+    @isPropietary bit,
+    @id int OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -39,15 +39,15 @@ BEGIN
         )
     VALUES
         (
-            @Name, @AgencyStatusId, @CityId, @PostalCityId,
-            @RegionId, @PostalRegionId, @UieNumber, @EinNumber,
-            @SdrNumber, @Address, @ZipCode, @PostalAddress,
-            @PostalZipCode, @Phone, @Email, @Latitude,
-            @Longitude, @ImageURL, @IsActive, @IsListable,
-            @AgencyCode, @IsPropietary
+            @name, @agencyStatusId, @cityId, @postalCityId,
+            @regionId, @postalRegionId, @uieNumber, @einNumber,
+            @sdrNumber, @address, @zipCode, @postalAddress,
+            @postalZipCode, @phone, @email, @latitude,
+            @longitude, @imageUrl, @isActive, @isListable,
+            @agencyCode, @isPropietary
         );
 
-        SET @Id = SCOPE_IDENTITY();
+        SET @id = SCOPE_IDENTITY();
 
         COMMIT TRANSACTION;
     END TRY

@@ -1,5 +1,5 @@
 -- Obtener todas las agencias
--- 1.1.0
+-- 1.1.5
 CREATE OR ALTER PROCEDURE [115_GetAgencies]
     @take INT = 10,
     @skip INT = 0,
@@ -114,8 +114,7 @@ BEGIN
     WHERE a.IsPropietary = 0
         AND (
         @alls = 1
-        OR (
-            (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+        OR ((@name IS NULL OR a.Name LIKE '%' + @name + '%')
         AND (@regionId IS NULL OR a.RegionId = @regionId)
         AND (@cityId IS NULL OR a.CityId = @cityId)
         AND (@programId IS NULL OR ap.ProgramId = @programId)

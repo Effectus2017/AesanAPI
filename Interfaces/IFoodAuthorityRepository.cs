@@ -26,7 +26,7 @@ public interface IFoodAuthorityRepository
     /// </summary>
     /// <param name="foodAuthority">La autoridad alimentaria a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    Task<bool> InsertFoodAuthority(DTOFoodAuthority foodAuthority);
+    Task<bool> InsertFoodAuthority(FoodAuthorityRequest request);
 
     /// <summary>
     /// Actualiza una autoridad alimentaria existente.

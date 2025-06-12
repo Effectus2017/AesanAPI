@@ -11,8 +11,8 @@ public class QueryParameters
     public int AgencyId { get; set; }
     public string? AssignedBy { get; set; }
     public int? ProgramId { get; set; }
-    public int? RegionId { get; set; } // ID de la región
-    public int? CityId { get; set; } // ID de la ciudad
+    public int RegionId { get; set; }  // ID de la región
+    public int CityId { get; set; } // ID de la ciudad
     public int? StatusId { get; set; } // ID del estado
     public int? MemberId { get; set; } // ID del miembro
     public int OptionSelectionId { get; set; } // ID de la opción de selección

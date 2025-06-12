@@ -31,9 +31,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@userId", userId, DbType.String);
-
             var agency = await db.QueryFirstOrDefaultAsync<dynamic>("103_GetUserAssignedAgency", parameters, commandType: CommandType.StoredProcedure);
-
             return agency;
         }
         catch (Exception ex)

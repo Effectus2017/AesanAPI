@@ -10,6 +10,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
+/// <summary>
+/// Repositorio de agencias
+/// </summary>
 public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, IAgencyUsersRepository agencyUsersRepository, DapperContext context, ILoggingService loggingService, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -32,7 +35,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             using IDbConnection dbConnection = _context.CreateConnection();
 
             var parameters = new DynamicParameters();
-            parameters.Add("@Id", id, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@id", id, DbType.Int32, ParameterDirection.Input);
 
             var result = await dbConnection.QueryMultipleAsync("111_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
@@ -43,16 +46,16 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 return null;
             }
 
-            var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+            var _agencyDynamic = await result.ReadFirstOrDefaultAsync<dynamic>();
 
-            if (_agencyResult == null)
+            if (_agencyDynamic == null)
             {
                 var error = new Exception($"No se encontró la agencia con ID: {id}");
                 await _logger.LogError(error, "No se encontró la agencia");
                 return null;
             }
 
-            var agency = MapAgencyFromResult(_agencyResult);
+            var agency = MapAgencyFromResult(_agencyDynamic);
 
             var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
@@ -71,7 +74,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     }
 
     /// <summary>
-    /// Obtiene una agencia por su ID
+    /// Obtiene una agencia por su ID y el ID del usuario
     /// </summary>
     /// <param name="id">El ID de la agencia</param>
     /// <returns>La agencia</returns>
@@ -89,14 +92,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             return null;
         }
 
-        var _agencyResult = await result.ReadFirstOrDefaultAsync<dynamic>();
+        var _agencyDynamic = await result.ReadFirstOrDefaultAsync<dynamic>();
 
-        if (_agencyResult == null)
+        if (_agencyDynamic == null)
         {
             return null;
         }
 
-        var agency = MapAgencyFromResult(_agencyResult);
+        var agency = MapAgencyFromResult(_agencyDynamic);
 
         var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
@@ -134,8 +137,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@alls", alls);
 
             // Variables para almacenar los resultados
-            List<dynamic> agencies = new List<dynamic>();
-            List<dynamic> agenciesPrograms = new List<dynamic>();
+            List<dynamic> agencies = [];
+            List<dynamic> agenciesPrograms = [];
             int count = 0;
 
             // Usar un bloque using para garantizar que el GridReader se cierre correctamente
@@ -159,21 +162,21 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             if (!result.IsConsumed)
             {
-                count = result.Read<int>().FirstOrDefault();
+                count = result.ReadFirstOrDefault<int>();
             }
 
             // Procesar los datos después de que el GridReader se haya cerrado
-            var mappedAgencies = agencies.Select(MapAgencyFromResult).ToList();
+            var data = agencies.Select(MapAgencyFromResult).ToList();
 
             if (agenciesPrograms != null && agenciesPrograms.Count != 0)
             {
-                foreach (var agency in mappedAgencies)
+                foreach (var agency in data)
                 {
                     agency.Programs = MapProgramsFromResult(agenciesPrograms.Where(ap => ap.AgencyId == agency.Id));
                 }
             }
 
-            return new { data = mappedAgencies, count };
+            return new { data, count };
         }
         catch (Exception ex)
         {
@@ -202,14 +205,18 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var result = await dbConnection.QueryMultipleAsync("101_GetAgenciesList", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
+            {
                 return null;
+            }
 
-            var _agenciesResult = await result.ReadAsync<dynamic>();
+            var _agenciesDynamic = await result.ReadAsync<dynamic>();
 
-            if (_agenciesResult == null)
+            if (_agenciesDynamic == null)
+            {
                 return null;
+            }
 
-            return _agenciesResult;
+            return _agenciesDynamic;
         }
         catch (Exception ex)
         {
@@ -225,21 +232,19 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <returns>Los programas de la agencia</returns>
     public async Task<dynamic> GetAgencyProgramsByUserId(string userId)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Agency + "_Programs_{0}", userId);
-
-        return await _cache.CacheAgencyQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@userId", userId);
-                var result = await dbConnection.QueryAsync<DTOProgram>("100_GetAgencyProgramsByUserId", parameters, commandType: CommandType.StoredProcedure);
-                return result.ToList();
-            },
-            loggingService,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId);
+            var result = await dbConnection.QueryAsync<DTOProgram>("100_GetAgencyProgramsByUserId", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, "Error al obtener los programas de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
+            throw;
+        }
     }
 
     /// <summary>
@@ -252,34 +257,34 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         try
         {
             var parameters = new DynamicParameters();
-            parameters.Add("@Name", agencyRequest.Name);
-            parameters.Add("@AgencyStatusId", agencyRequest.StatusId);
-            parameters.Add("@SdrNumber", agencyRequest.SdrNumber);
-            parameters.Add("@UieNumber", agencyRequest.UieNumber);
+            parameters.Add("@name", agencyRequest.Name);
+            parameters.Add("@agencyStatusId", agencyRequest.StatusId);
+            parameters.Add("@sdrNumber", agencyRequest.SdrNumber);
+            parameters.Add("@uieNumber", agencyRequest.UieNumber);
             parameters.Add("@EinNumber", agencyRequest.EinNumber);
-            parameters.Add("@Address", agencyRequest.Address);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@Phone", agencyRequest.Phone);
-            parameters.Add("@Email", agencyRequest.Email);
-            parameters.Add("@CityId", agencyRequest.CityId);
-            parameters.Add("@RegionId", agencyRequest.RegionId);
-            parameters.Add("@PostalAddress", agencyRequest.PostalAddress);
-            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PostalCityId", agencyRequest.PostalCityId);
-            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
-            parameters.Add("@Latitude", Math.Round(agencyRequest.Latitude, 2));
-            parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
-            parameters.Add("@ImageURL", agencyRequest.ImageUrl);
-            parameters.Add("@IsActive", agencyRequest.IsActive);
-            parameters.Add("@IsListable", agencyRequest.IsListable);
-            parameters.Add("@AgencyCode", agencyRequest.AgencyCode);
-            parameters.Add("@IsPropietary", true);
-            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@address", agencyRequest.Address);
+            parameters.Add("@zipCode", agencyRequest.ZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@phone", agencyRequest.Phone);
+            parameters.Add("@email", agencyRequest.Email);
+            parameters.Add("@cityId", agencyRequest.CityId);
+            parameters.Add("@regionId", agencyRequest.RegionId);
+            parameters.Add("@postalAddress", agencyRequest.PostalAddress);
+            parameters.Add("@postalZipCode", agencyRequest.PostalZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalCityId", agencyRequest.PostalCityId);
+            parameters.Add("@postalRegionId", agencyRequest.PostalRegionId);
+            parameters.Add("@latitude", Math.Round(agencyRequest.Latitude, 2));
+            parameters.Add("@longitude", Math.Round(agencyRequest.Longitude, 2));
+            parameters.Add("@imageUrl", agencyRequest.ImageUrl);
+            parameters.Add("@isActive", agencyRequest.IsActive);
+            parameters.Add("@isListable", agencyRequest.IsListable);
+            parameters.Add("@agencyCode", agencyRequest.AgencyCode);
+            parameters.Add("@isPropietary", false);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
             await connection.ExecuteAsync("111_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
 
-            var agencyId = parameters.Get<int>("@Id");
+            var agencyId = parameters.Get<int>("@id");
 
             if (agencyId <= 0)
             {
@@ -342,24 +347,24 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         try
         {
             var parameters = new DynamicParameters();
-            parameters.Add("@AgencyId", agencyId);
-            parameters.Add("@NonProfit", nonProfit);
-            parameters.Add("@FederalFundsDenied", federalFundsDenied);
-            parameters.Add("@StateFundsDenied", stateFundsDenied);
-            parameters.Add("@OrganizedAthleticPrograms", organizedAthleticPrograms);
-            parameters.Add("@AtRiskService", atRiskService);
-            parameters.Add("@BasicEducationRegistryId", basicEducationRegistryId);
-            parameters.Add("@ServiceTime", serviceTime);
-            parameters.Add("@TaxExemptionStatusId", taxExemptionStatusId);
-            parameters.Add("@TaxExemptionTypeId", taxExemptionTypeId);
-            parameters.Add("@PublicAllianceContractId", publicAllianceContractId);
-            parameters.Add("@NationalYouthProgram", nationalYouthProgram);
-            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@nonProfit", nonProfit);
+            parameters.Add("@federalFundsDenied", federalFundsDenied);
+            parameters.Add("@stateFundsDenied", stateFundsDenied);
+            parameters.Add("@organizedAthleticPrograms", organizedAthleticPrograms);
+            parameters.Add("@atRiskService", atRiskService);
+            parameters.Add("@basicEducationRegistryId", basicEducationRegistryId);
+            parameters.Add("@serviceTime", serviceTime);
+            parameters.Add("@taxExemptionStatusId", taxExemptionStatusId);
+            parameters.Add("@taxExemptionTypeId", taxExemptionTypeId);
+            parameters.Add("@publicAllianceContractId", publicAllianceContractId);
+            parameters.Add("@nationalYouthProgram", nationalYouthProgram);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
             await connection.ExecuteAsync("112_InsertAgencyInscription", parameters, commandType: CommandType.StoredProcedure);
 
-            return parameters.Get<int>("@Id");
+            return parameters.Get<int>("@id");
         }
         catch (Exception ex)
         {
@@ -404,6 +409,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     {
         try
         {
+            using IDbConnection connection = _context.CreateConnection();
+
             // Obtener la agencia actual para comparar el monitor
             var currentAgency = await GetAgencyById(agencyId);
 
@@ -412,33 +419,33 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
             }
 
-            string currentMonitorId = currentAgency?.Monitor?.Id;
+            string currentMonitorId = currentAgency.Monitor.Id;
 
             var parameters = new DynamicParameters();
-            parameters.Add("@Id", agencyId);
-            parameters.Add("@Name", agencyRequest.Name);
-            parameters.Add("@AgencyStatusId", agencyRequest.StatusId);
-            parameters.Add("@SdrNumber", agencyRequest.SdrNumber);
-            parameters.Add("@UieNumber", agencyRequest.UieNumber);
-            parameters.Add("@EinNumber", agencyRequest.EinNumber);
-            parameters.Add("@Address", agencyRequest.Address);
-            parameters.Add("@ZipCode", agencyRequest.ZipCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@CityId", agencyRequest.CityId);
-            parameters.Add("@RegionId", agencyRequest.RegionId);
-            parameters.Add("@Latitude", Math.Round(agencyRequest.Latitude, 2));
-            parameters.Add("@Longitude", Math.Round(agencyRequest.Longitude, 2));
-            parameters.Add("@PostalAddress", agencyRequest.PostalAddress);
-            parameters.Add("@PostalZipCode", agencyRequest.PostalZipCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@PostalCityId", agencyRequest.PostalCityId);
-            parameters.Add("@PostalRegionId", agencyRequest.PostalRegionId);
-            parameters.Add("@Phone", agencyRequest.Phone);
-            parameters.Add("@ImageURL", agencyRequest.ImageUrl);
-            parameters.Add("@Email", agencyRequest.Email);
+            parameters.Add("@id", agencyId);
+            parameters.Add("@name", agencyRequest.Name);
+            parameters.Add("@agencyStatusId", agencyRequest.StatusId);
+            parameters.Add("@sdrNumber", agencyRequest.SdrNumber);
+            parameters.Add("@uieNumber", agencyRequest.UieNumber);
+            parameters.Add("@einNumber", agencyRequest.EinNumber);
+            parameters.Add("@address", agencyRequest.Address);
+            parameters.Add("@zipCode", agencyRequest.ZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@cityId", agencyRequest.CityId);
+            parameters.Add("@regionId", agencyRequest.RegionId);
+            parameters.Add("@latitude", Math.Round(agencyRequest.Latitude, 2));
+            parameters.Add("@longitude", Math.Round(agencyRequest.Longitude, 2));
+            parameters.Add("@postalAddress", agencyRequest.PostalAddress);
+            parameters.Add("@postalZipCode", agencyRequest.PostalZipCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalCityId", agencyRequest.PostalCityId);
+            parameters.Add("@postalRegionId", agencyRequest.PostalRegionId);
+            parameters.Add("@phone", agencyRequest.Phone);
+            parameters.Add("@imageURL", agencyRequest.ImageUrl);
+            parameters.Add("@email", agencyRequest.Email);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("110_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
+
+            await connection.ExecuteAsync("111_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             // Verificar si hay un nuevo monitor asignado y es diferente al actual
@@ -495,8 +502,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@ImageUrl", imageUrl, DbType.String, ParameterDirection.Input);
+            parameters.Add("@agencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@imageUrl", imageUrl, DbType.String, ParameterDirection.Input);
 
             var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_UpdateAgencyLogo", parameters, commandType: CommandType.StoredProcedure);
             return rowsAffected > 0;

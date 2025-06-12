@@ -1,10 +1,11 @@
+-- DEPRECATED: Esta versión del SP GetSchoolById ha sido reemplazada por una nueva versión. No modificar ni usar para nuevas migraciones.
 CREATE OR ALTER PROCEDURE [dbo].[101_GetSchoolById]
     @id INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
+    SELECT
         s.Id,
         s.Name,
         s.StartDate,
@@ -44,28 +45,28 @@ BEGIN
         s.CreatedAt,
         s.UpdatedAt
     FROM School s
-    LEFT JOIN City c ON s.CityId = c.Id
-    LEFT JOIN Region r ON s.RegionId = r.Id
-    LEFT JOIN OrganizationType ot ON s.OrganizationTypeId = ot.Id
-    LEFT JOIN EducationLevel el ON s.EducationLevelId = el.Id
-    LEFT JOIN OperatingPeriod op ON s.OperatingPeriodId = op.Id
-    LEFT JOIN KitchenType kt ON s.KitchenTypeId = kt.Id
-    LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
-    LEFT JOIN DeliveryType dt ON s.DeliveryTypeId = dt.Id
-    LEFT JOIN SponsorType st ON s.SponsorTypeId = st.Id
-    LEFT JOIN ApplicantType at ON s.ApplicantTypeId = at.Id
-    LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
+        LEFT JOIN City c ON s.CityId = c.Id
+        LEFT JOIN Region r ON s.RegionId = r.Id
+        LEFT JOIN OrganizationType ot ON s.OrganizationTypeId = ot.Id
+        LEFT JOIN EducationLevel el ON s.EducationLevelId = el.Id
+        LEFT JOIN OperatingPeriod op ON s.OperatingPeriodId = op.Id
+        LEFT JOIN KitchenType kt ON s.KitchenTypeId = kt.Id
+        LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
+        LEFT JOIN DeliveryType dt ON s.DeliveryTypeId = dt.Id
+        LEFT JOIN SponsorType st ON s.SponsorTypeId = st.Id
+        LEFT JOIN ApplicantType at ON s.ApplicantTypeId = at.Id
+        LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
     WHERE s.Id = @id;
 
     -- Facilidades
     SELECT sf.FacilityId, f.Name AS FacilityName
     FROM SchoolFacility sf
-    INNER JOIN Facility f ON sf.FacilityId = f.Id
+        INNER JOIN Facility f ON sf.FacilityId = f.Id
     WHERE sf.SchoolId = @id AND sf.IsActive = 1;
 
     -- Satélites
     SELECT ss.Id, ss.SatelliteSchoolId, s2.Name AS SatelliteSchoolName, ss.AssignmentDate, ss.Status, ss.Comment
     FROM SatelliteSchool ss
-    INNER JOIN School s2 ON ss.SatelliteSchoolId = s2.Id
+        INNER JOIN School s2 ON ss.SatelliteSchoolId = s2.Id
     WHERE ss.MainSchoolId = @id AND ss.IsActive = 1;
 END; 

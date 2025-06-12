@@ -75,8 +75,16 @@ VALUES
     ('Socio-Económico', 'Socio-Economic', 'typeOfEntity', 0, 1, 170),
     ('Híbrido', 'Hybrid', 'typeOfEntity', 0, 1, 180);
 
+
 INSERT INTO OptionSelection
     (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
 VALUES
     ('Socio-Económico', 'Socio-Economic', 'publicAllianceContract', 0, 1, 170),
     ('Híbrido', 'Hybrid', 'publicAllianceContract', 0, 1, 180);
+
+-- Tipos de Institución Infantil Residencial (RCCI) = Pernoctan o No Pernoctan=Requerido
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Pernoctan', 'Residential', 'typeOfResidential', 0, 1, 190),
+    ('No Pernoctan', 'Non-Residential', 'typeOfResidential', 0, 1, 200);

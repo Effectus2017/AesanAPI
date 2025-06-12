@@ -2,6 +2,9 @@ using Api.Models;
 
 namespace Api.Interfaces;
 
+/// <summary>
+/// Interfaz para el repositorio de estados de agencia
+/// </summary>
 public interface IAgencyStatusRepository
 {
     /// <summary>
@@ -26,7 +29,7 @@ public interface IAgencyStatusRepository
     /// </summary>
     /// <param name="status">El estado a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    Task<bool> InsertAgencyStatus(DTOAgencyStatus status);
+    Task<bool> InsertAgencyStatus(AgencyStatusRequest status);
 
     /// <summary>
     /// Actualiza un estado de agencia existente.

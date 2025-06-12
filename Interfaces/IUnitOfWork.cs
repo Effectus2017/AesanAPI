@@ -1,4 +1,6 @@
 using Api.Interfaces;
+using Api.Models;
+
 
 public interface IUnitOfWork
 {
@@ -9,4 +11,5 @@ public interface IUnitOfWork
     ISchoolRepository SchoolRepository { get; }
     IAgencyUsersRepository AgencyUsersRepository { get; }
     IAgencyFilesRepository AgencyFilesRepository { get; }
+    ICenterTypeRepository CenterTypeRepository { get; }
 }

@@ -23,26 +23,20 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     /// <returns>La autoridad alimentaria encontrada.</returns>
     public async Task<dynamic> GetFoodAuthorityById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.FoodAuthority, id);
-
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetFoodAuthorityById",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-                var data = await result.ReadSingleAsync<DTOFoodAuthority>();
-                return data;
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetFoodAuthorityById", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadSingleAsync<DTOFoodAuthority>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la autoridad alimentaria por ID");
+            throw;
+        }
     }
 
     /// <summary>
@@ -67,11 +61,7 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
                 parameters.Add("@skip", skip, DbType.Int32);
                 parameters.Add("@name", name, DbType.String);
                 parameters.Add("@alls", alls, DbType.Boolean);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetAllFoodAuthorities",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await db.QueryMultipleAsync("100_GetAllFoodAuthorities", parameters, commandType: CommandType.StoredProcedure);
                 var data = await result.ReadAsync<DTOFoodAuthority>();
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
@@ -86,26 +76,23 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     /// </summary>
     /// <param name="foodAuthority">La autoridad alimentaria a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    public async Task<bool> InsertFoodAuthority(DTOFoodAuthority foodAuthority)
+    public async Task<bool> InsertFoodAuthority(FoodAuthorityRequest request)
     {
         try
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@name", foodAuthority.Name, DbType.String);
-            parameters.Add("@id", foodAuthority.Id, DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@name", request.Name, DbType.String);
+            parameters.Add("@nameEN", request.NameEN, DbType.String);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync(
-                "100_InsertFoodAuthority",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_InsertFoodAuthority", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
 
             if (id > 0)
             {
                 // Invalidar caché
-                InvalidateCache(id);
+                InvalidateCache();
             }
 
             return id > 0;

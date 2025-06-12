@@ -1,3 +1,4 @@
+-- DEPRECATED: Esta versión del SP DeleteSchool ha sido reemplazada por una nueva versión. No modificar ni usar para nuevas migraciones.
 CREATE OR ALTER PROCEDURE [dbo].[101_DeleteSchool]
     @Id INT
 AS

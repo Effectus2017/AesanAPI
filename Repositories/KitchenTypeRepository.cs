@@ -17,25 +17,37 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
+    /// <summary>
+    /// Obtiene un tipo de cocina por su ID
+    /// </summary>
+    /// <param name="id">El ID del tipo de cocina a obtener</param>
+    /// <returns>El tipo de cocina encontrado</returns>
     public async Task<dynamic> GetKitchenTypeById(int id)
     {
-        string cacheKey = $"KitchenType_{id}";
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync("100_GetKitchenTypeById", parameters, commandType: CommandType.StoredProcedure);
-                var data = await result.ReadSingleAsync<DTOKitchenType>();
-                return data;
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetKitchenTypeById", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadSingleAsync<DTOKitchenType>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el tipo de cocina con ID {Id}", id);
+            throw;
+        }
     }
 
+    /// <summary>
+    /// Obtiene todos los tipos de cocina
+    /// </summary>
+    /// <param name="take">El número de tipos de cocina a obtener</param>
+    /// <param name="skip">El número de tipos de cocina a saltar</param>
+    /// <param name="name">El nombre de los tipos de cocina a buscar</param>
+    /// <param name="alls">Si se deben obtener todos los tipos de cocina</param>
+    /// <returns>Los tipos de cocina encontrados</returns>
     public async Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls)
     {
         try
@@ -58,7 +70,12 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
     }
 
-    public async Task<bool> InsertKitchenType(DTOKitchenType kitchenType)
+    /// <summary>
+    /// Inserta un tipo de cocina
+    /// </summary>
+    /// <param name="kitchenType">El tipo de cocina a insertar</param>
+    /// <returns>True si la inserción fue exitosa, false en caso contrario</returns>
+    public async Task<bool> InsertKitchenType(KitchenTypeRequest kitchenType)
     {
         try
         {
@@ -68,10 +85,9 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
             parameters.Add("@nameEN", kitchenType.NameEN, DbType.String);
             parameters.Add("@isActive", kitchenType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", kitchenType.DisplayOrder, DbType.Int32);
-            parameters.Add("@id", kitchenType.Id, DbType.Int32, direction: ParameterDirection.Output);
 
             await db.ExecuteAsync("100_InsertKitchenType", parameters, commandType: CommandType.StoredProcedure);
-            var id = parameters.Get<int>("@id");
+            var id = parameters.Get<int>("@Id");
 
             if (id > 0)
             {
@@ -87,6 +103,11 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
     }
 
+    /// <summary>
+    /// Actualiza un tipo de cocina
+    /// </summary>
+    /// <param name="kitchenType">El tipo de cocina a actualizar</param>
+    /// <returns>True si la actualización fue exitosa, false en caso contrario</returns>
     public async Task<bool> UpdateKitchenType(DTOKitchenType kitchenType)
     {
         try
@@ -117,6 +138,12 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
     }
 
+    /// <summary>
+    /// Actualiza el orden de visualización de un tipo de cocina
+    /// </summary>
+    /// <param name="kitchenTypeId">El ID del tipo de cocina a actualizar</param>
+    /// <param name="displayOrder">El nuevo orden de visualización</param>
+    /// <returns>True si la actualización fue exitosa, false en caso contrario</returns>
     public async Task<bool> UpdateKitchenTypeDisplayOrder(int kitchenTypeId, int displayOrder)
     {
         try
@@ -144,6 +171,11 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
     }
 
+    /// <summary>
+    /// Elimina un tipo de cocina
+    /// </summary>
+    /// <param name="id">El ID del tipo de cocina a eliminar</param>
+    /// <returns>True si la eliminación fue exitosa, false en caso contrario</returns>
     public async Task<bool> DeleteKitchenType(int id)
     {
         try

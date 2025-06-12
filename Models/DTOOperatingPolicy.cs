@@ -5,6 +5,7 @@ public class DTOOperatingPolicy
     public int Id { get; set; } = 0;
     public string Name { get; set; } = "";
     public string NameEN { get; set; } = "";
+    public string Description { get; set; } = "";
     public bool IsActive { get; set; } = true;
     public int DisplayOrder { get; set; } = 0;
 }

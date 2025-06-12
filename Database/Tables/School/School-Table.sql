@@ -1,30 +1,54 @@
+-- DEPRECATED: Esta versión de la tabla School ha sido reemplazada por una nueva versión. No modificar ni usar para nuevas migraciones
 -- Tabla: School (Sitios/Escuelas)
--- Versión 1.0 - Estructura extendida según requerimientos
-CREATE TABLE School (
+-- Versión 2.0 - Estructura extendida y actualizada según nuevos requerimientos
+CREATE TABLE School
+(
     Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL, -- Nombre del Sitio
-    StartDate DATE NULL, -- Fecha de Inicio
-    Address NVARCHAR(255) NOT NULL, -- Dirección Física
-    PostalAddress NVARCHAR(255) NULL, -- Dirección Postal
-    ZipCode NVARCHAR(20) NOT NULL, -- Código Postal
-    CityId INT NOT NULL, -- Pueblo
-    RegionId INT NOT NULL, -- Región
-    AreaCode NVARCHAR(10) NULL, -- Código de Área
-    AdminFullName NVARCHAR(255) NULL, -- Nombre y Apellidos del Administrador/Representante
-    Phone NVARCHAR(20) NULL, -- Teléfono
-    PhoneExtension NVARCHAR(10) NULL, -- Extensión
-    Mobile NVARCHAR(20) NULL, -- Celular
-    BaseYear INT NULL, -- Año Base
-    NextRenewalYear INT NULL, -- Año Próxima Renovación
-    OrganizationTypeId INT NOT NULL, -- Tipo de Organización
-    EducationLevelId INT NOT NULL, -- Nivel Educativo
-    OperatingPeriodId INT NOT NULL, -- Período de Funcionamiento
-    KitchenTypeId INT NULL, -- Tipo de Cocina (catálogo)
-    GroupTypeId INT NULL, -- Tipo de Grupo (catálogo)
-    DeliveryTypeId INT NULL, -- Tipo de Entrega (catálogo)
-    SponsorTypeId INT NULL, -- Tipo de Auspiciador (catálogo)
-    ApplicantTypeId INT NULL, -- Tipo de Solicitante (catálogo)
-    OperatingPolicyId INT NULL, -- Política de Funcionamiento (catálogo)
+    Name NVARCHAR(255) NOT NULL,
+
+    StartDate DATE NULL,
+    Address NVARCHAR(255) NOT NULL,
+    CityId INT NOT NULL,
+    RegionId INT NOT NULL,
+    ZipCode NVARCHAR(20) NOT NULL,
+    Latitude FLOAT NULL,
+    Longitude FLOAT NULL,
+
+    PostalAddress NVARCHAR(255) NULL,
+    PostalCityId INT NULL,
+    PostalRegionId INT NULL,
+    PostalZipCode NVARCHAR(20) NULL,
+    SameAsPhysicalAddress BIT NULL,
+
+    OrganizationTypeId INT NOT NULL,
+    CenterId INT NULL,
+    NonProfit BIT NULL,
+    BaseYear INT NULL,
+    RenewalYear INT NULL,
+    EducationLevelId INT NOT NULL,
+    OperatingDays INT NULL,
+    KitchenTypeId INT NULL,
+    GroupTypeId INT NULL,
+    DeliveryTypeId INT NULL,
+    SponsorTypeId INT NULL,
+    ApplicantTypeId INT NULL,
+    ResidentialTypeId INT NULL,
+    OperatingPolicyId INT NULL,
+    HasWarehouse BIT NULL,
+    HasDiningRoom BIT NULL,
+    AdministratorAuthorizedName NVARCHAR(255) NULL,
+    SitePhone NVARCHAR(20) NULL,
+    Extension NVARCHAR(10) NULL,
+    MobilePhone NVARCHAR(20) NULL,
+    Breakfast BIT NULL,
+    BreakfastFrom TIME NULL,
+    BreakfastTo TIME NULL,
+    Lunch BIT NULL,
+    LunchFrom TIME NULL,
+    LunchTo TIME NULL,
+    Snack BIT NULL,
+    SnackFrom TIME NULL,
+    SnackTo TIME NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
@@ -44,7 +68,31 @@ ALTER TABLE School
     ADD CONSTRAINT FK_School_EducationLevel FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id);
 
 ALTER TABLE School
-    ADD CONSTRAINT FK_School_OperatingPeriod FOREIGN KEY (OperatingPeriodId) REFERENCES OperatingPeriod(Id);
+    ADD CONSTRAINT FK_School_KitchenType FOREIGN KEY (KitchenTypeId) REFERENCES KitchenType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_GroupType FOREIGN KEY (GroupTypeId) REFERENCES GroupType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_DeliveryType FOREIGN KEY (DeliveryTypeId) REFERENCES DeliveryType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_SponsorType FOREIGN KEY (SponsorTypeId) REFERENCES SponsorType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_ApplicantType FOREIGN KEY (ApplicantTypeId) REFERENCES ApplicantType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_ResidentialType FOREIGN KEY (ResidentialTypeId) REFERENCES ResidentialType(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_OperatingPolicy FOREIGN KEY (OperatingPolicyId) REFERENCES OperatingPolicy(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_PostalCity FOREIGN KEY (PostalCityId) REFERENCES City(Id);
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_PostalRegion FOREIGN KEY (PostalRegionId) REFERENCES Region(Id);
 
 -- Facilidades (Almacén, Salón Comedor) se gestionan en SchoolFacility
 -- Los catálogos KitchenType, GroupType, DeliveryType, SponsorType, ApplicantType, OperatingPolicy deben crearse si no existen. 
