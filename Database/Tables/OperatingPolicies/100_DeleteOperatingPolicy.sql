@@ -7,7 +7,7 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @rowsaffected INT;
 
-    DELETE FROM OperatingPolicies WHERE Id = @id;
+    DELETE FROM OperatingPolicy WHERE Id = @id;
 
     SET @rowsaffected = @@ROWCOUNT;
     RETURN @rowsaffected;

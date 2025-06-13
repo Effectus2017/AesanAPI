@@ -1,5 +1,6 @@
 CREATE OR ALTER PROCEDURE [dbo].[102_UpdateSchool]
     @id INT,
+    @agencyId INT,
     @name NVARCHAR(255),
     @startDate DATE = NULL,
     @address NVARCHAR(255),
@@ -14,7 +15,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_UpdateSchool]
     @postalZipCode NVARCHAR(20) = NULL,
     @sameAsPhysicalAddress BIT = NULL,
     @organizationTypeId INT,
-    @centerId INT = NULL,
+    @centerTypeId INT = NULL,
     @nonProfit BIT = NULL,
     @baseYear INT = NULL,
     @renewalYear INT = NULL,
@@ -48,7 +49,8 @@ BEGIN
     DECLARE @rowsAffected INT;
 
     UPDATE School
-    SET Name = @name,
+    SET AgencyId = @agencyId,
+        Name = @name,
         StartDate = @startDate,
         Address = @address,
         CityId = @cityId,
@@ -62,7 +64,7 @@ BEGIN
         PostalZipCode = @postalZipCode,
         SameAsPhysicalAddress = @sameAsPhysicalAddress,
         OrganizationTypeId = @organizationTypeId,
-        CenterId = @centerId,
+        CenterTypeId = @centerTypeId,
         NonProfit = @nonProfit,
         BaseYear = @baseYear,
         RenewalYear = @renewalYear,

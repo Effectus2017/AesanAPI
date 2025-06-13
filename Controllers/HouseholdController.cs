@@ -8,32 +8,43 @@ using Api.Models;
 
 namespace Api.Controllers
 {
-    [ApiController]
-    [Route("household")]
     /// <summary>
     /// Controlador que maneja todas las operaciones relacionadas con los hogares y sus miembros.
+    /// Proporciona endpoints para la gestión completa de hogares, incluyendo creación,
+    /// lectura, actualización y eliminación de registros de hogares.
     /// </summary>
-    public class HouseholdController(IHouseholdRepository repo, ILogger<HouseholdController> logger) : ControllerBase
+    [Route("household")]
+    [ApiController]
+
+    public class HouseholdController(ILogger<HouseholdController> logger, IUnitOfWork unitOfWork) : ControllerBase
     {
-        private readonly IHouseholdRepository _repo = repo;
+
         private readonly ILogger<HouseholdController> _logger = logger;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
         /// <summary>
         /// Obtiene un hogar por su Id
         /// </summary>
+        /// <param name="id">El ID del hogar</param>
+        /// <returns>El hogar</returns>
         [HttpGet("get-household-by-id")]
         [SwaggerOperation(Summary = "Obtiene un hogar por su Id", Description = "Devuelve un hogar basado en el ID proporcionado.")]
-        public async Task<IActionResult> GetHouseholdById([FromQuery] int id)
+        public async Task<IActionResult> GetHouseholdById([FromQuery] QueryParameters queryParameters)
         {
             try
             {
-                var result = await _repo.GetHouseholdById(id);
-                if (result == null) return NotFound($"Hogar con ID {id} no encontrado");
+                var result = await _unitOfWork.HouseholdRepository.GetHouseholdById(queryParameters.Id);
+
+                if (result == null)
+                {
+                    return NotFound($"Hogar con ID {queryParameters.Id} no encontrado");
+                }
+
                 return Ok(result);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener el hogar con ID {Id}", id);
+                _logger.LogError(ex, "Error al obtener el hogar con ID {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al obtener el hogar");
             }
         }
@@ -41,6 +52,8 @@ namespace Api.Controllers
         /// <summary>
         /// Obtiene una lista paginada de hogares
         /// </summary>
+        /// <param name="queryParameters">Los parámetros de consulta</param>
+        /// <returns>Una lista de hogares</returns>
         [HttpGet("get-all-households-from-db")]
         [SwaggerOperation(Summary = "Obtiene todos los hogares", Description = "Devuelve una lista de hogares.")]
         public async Task<IActionResult> GetHouseholds([FromQuery] QueryParameters queryParameters)
@@ -49,7 +62,7 @@ namespace Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    var result = await _repo.GetHouseholds(queryParameters.Take, queryParameters.Skip);
+                    var result = await _unitOfWork.HouseholdRepository.GetAllHouseholds(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
                     return Ok(result);
                 }
                 return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -64,6 +77,8 @@ namespace Api.Controllers
         /// <summary>
         /// Inserta un nuevo hogar
         /// </summary>
+        /// <param name="request">Los datos del hogar</param>
+        /// <returns>El hogar creado</returns>
         [HttpPost("insert-household")]
         [SwaggerOperation(Summary = "Crea un nuevo hogar", Description = "Crea un nuevo hogar.")]
         public async Task<IActionResult> InsertHousehold([FromBody] HouseholdRequest request)
@@ -72,8 +87,14 @@ namespace Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    var id = await _repo.InsertHousehold(request);
-                    return CreatedAtAction(nameof(GetHouseholdById), new { id }, request);
+                    var result = await _unitOfWork.HouseholdRepository.InsertHousehold(request);
+
+                    if (result)
+                    {
+                        return Ok(result);
+                    }
+
+                    return BadRequest("Error al crear el hogar");
                 }
                 return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
@@ -87,6 +108,8 @@ namespace Api.Controllers
         /// <summary>
         /// Actualiza un hogar existente
         /// </summary>
+        /// <param name="request">Los datos del hogar</param>
+        /// <returns>El hogar actualizado</returns>
         [HttpPut("update-household")]
         [SwaggerOperation(Summary = "Actualiza un hogar existente", Description = "Actualiza los datos de un hogar existente.")]
         public async Task<IActionResult> UpdateHousehold([FromBody] HouseholdRequest request)
@@ -95,9 +118,14 @@ namespace Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    var ok = await _repo.UpdateHousehold(request);
-                    if (!ok) return NotFound($"Hogar con ID {request.Id} no encontrado");
-                    return NoContent();
+                    var result = await _unitOfWork.HouseholdRepository.UpdateHousehold(request);
+
+                    if (result)
+                    {
+                        return Ok(result);
+                    }
+
+                    return BadRequest("Error al actualizar el hogar");
                 }
                 return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
@@ -111,19 +139,26 @@ namespace Api.Controllers
         /// <summary>
         /// Elimina un hogar existente
         /// </summary>
+        /// <param name="id">El ID del hogar</param>
+        /// <returns>El hogar eliminado</returns>
         [HttpDelete("delete-household")]
         [SwaggerOperation(Summary = "Elimina un hogar existente", Description = "Elimina un hogar existente.")]
-        public async Task<IActionResult> DeleteHousehold([FromQuery] int id)
+        public async Task<IActionResult> DeleteHousehold([FromQuery] QueryParameters queryParameters)
         {
             try
             {
-                var ok = await _repo.DeleteHousehold(id);
-                if (!ok) return NotFound($"Hogar con ID {id} no encontrado");
-                return NoContent();
+                var result = await _unitOfWork.HouseholdRepository.DeleteHousehold(queryParameters.Id);
+
+                if (result)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest("Error al eliminar el hogar");
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el hogar con ID {Id}", id);
+                _logger.LogError(ex, "Error al eliminar el hogar con ID {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al eliminar el hogar");
             }
         }

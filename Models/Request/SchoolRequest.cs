@@ -1,10 +1,12 @@
 namespace Api.Models;
+
 using System;
 using System.Collections.Generic;
 
 public class SchoolRequest
 {
     public int? Id { get; set; }
+    public int? AgencyId { get; set; }
     public string Name { get; set; }
 
     // Dirección Física
@@ -24,7 +26,7 @@ public class SchoolRequest
 
     // Información Administrativa
     public int OrganizationTypeId { get; set; }
-    public int? CenterId { get; set; }
+    public int? CenterTypeId { get; set; }
     public bool? NonProfit { get; set; }
     public DateTime? StartDate { get; set; }
     public int? BaseYear { get; set; }

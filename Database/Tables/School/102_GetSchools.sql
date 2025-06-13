@@ -4,6 +4,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_GetSchools]
     @name NVARCHAR(255) = NULL,
     @cityId INT = NULL,
     @regionId INT = NULL,
+    @agencyId INT = NULL,
     @alls BIT = 0
 AS
 BEGIN
@@ -11,6 +12,8 @@ BEGIN
 
     SELECT
         s.Id,
+        s.AgencyId,
+        a.Name AS AgencyName,
         s.Name,
         s.StartDate,
         s.Address,
@@ -30,8 +33,8 @@ BEGIN
         s.SameAsPhysicalAddress,
         s.OrganizationTypeId,
         ot.Name AS OrganizationTypeName,
-        s.CenterId,
-        ct.Name AS CenterName,
+        s.CenterTypeId,
+        ct.Name AS CenterTypeName,
         s.NonProfit,
         s.BaseYear,
         s.RenewalYear,
@@ -77,7 +80,7 @@ BEGIN
         LEFT JOIN City ps ON s.PostalCityId = ps.Id
         LEFT JOIN Region pr ON s.PostalRegionId = pr.Id
         LEFT JOIN OrganizationType ot ON s.OrganizationTypeId = ot.Id
-        LEFT JOIN CenterType ct ON s.CenterId = ct.Id
+        LEFT JOIN CenterType ct ON s.CenterTypeId = ct.Id
         LEFT JOIN EducationLevel el ON s.EducationLevelId = el.Id
         LEFT JOIN KitchenType kt ON s.KitchenTypeId = kt.Id
         LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
@@ -86,12 +89,14 @@ BEGIN
         LEFT JOIN ApplicantType at ON s.ApplicantTypeId = at.Id
         LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
+        LEFT JOIN Agency a ON s.AgencyId = a.Id
     WHERE s.IsActive = 1
         AND (
             @alls = 1
         OR ((@name IS NULL OR s.Name LIKE '%' + @name + '%')
         AND (@cityId IS NULL OR s.CityId = @cityId)
         AND (@regionId IS NULL OR s.RegionId = @regionId)
+        AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             )
         )
     ORDER BY s.Name
@@ -108,6 +113,3 @@ BEGIN
             )
         )
 END;
-
-
-EXEC [102_GetSchools] @take = 10, @skip = 0, @name = NULL, @cityId = NULL, @regionId = NULL, @alls = 1;

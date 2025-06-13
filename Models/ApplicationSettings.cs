@@ -105,6 +105,9 @@ public class CacheKeys
     public string DeliveryType { get; set; } = "DeliveryType_{0}";
 
     public string OptionSelectionByKey { get; set; } = "OptionSelection_{0}";
+
+    // Claves para CenterType
+    public string CenterTypes { get; set; } = "CenterTypes_{0}_{1}_{2}_{3}";
 }
 
 public class GmailSettings

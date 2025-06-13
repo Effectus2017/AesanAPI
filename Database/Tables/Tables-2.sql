@@ -1,12 +1,5 @@
--- Niveles de Educación
-CREATE TABLE EducationLevel
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
-);
+
+
 
 -- Períodos de funcionamiento
 CREATE TABLE OperatingPeriod

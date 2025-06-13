@@ -20,7 +20,7 @@ public interface ICenterTypeRepository
     /// <param name="name">Los nombres de los tipos de centro a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de centro</param>
     /// <returns>Los tipos de centro encontrados</returns>
-    Task<dynamic> GetAllCenterTypes(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllCenterTypes(int take, int skip, string name, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un tipo de centro

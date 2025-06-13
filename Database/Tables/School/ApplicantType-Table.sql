@@ -1,7 +1,0 @@
-CREATE TABLE [dbo].[ApplicantType] (
-    [Id] INT IDENTITY(1,1) PRIMARY KEY,
-    [Name] NVARCHAR(100) NOT NULL,
-    [IsActive] BIT NOT NULL DEFAULT 1,
-    [CreatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
-    [UpdatedAt] DATETIME NULL
-); 

@@ -23,21 +23,20 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
     /// <returns>La política operativa encontrada.</returns>
     public async Task<dynamic> GetOperatingPolicyById(int id)
     {
-        string cacheKey = $"OperatingPolicy_{id}";
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync("100_GetOperatingPolicyById", parameters, commandType: CommandType.StoredProcedure);
-                var data = await result.ReadSingleAsync<DTOOperatingPolicy>();
-                return data;
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetOperatingPolicyById", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadSingleAsync<DTOOperatingPolicy>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la política operativa con ID {Id}", id);
+            throw;
+        }
     }
 
     /// <summary>
@@ -58,7 +57,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllOperatingPolicies", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryMultipleAsync("100_GetAllOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
             var data = await result.ReadAsync<DTOOperatingPolicy>();
             var count = await result.ReadSingleAsync<int>();
             return new { data, count };
@@ -87,7 +86,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@displayOrder", operatingPolicy.DisplayOrder, DbType.Int32);
             parameters.Add("@id", operatingPolicy.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync("100_InsertOperatingPolicy", parameters, commandType: CommandType.StoredProcedure); // 100_InsertOperatingPolicy
             var id = parameters.Get<int>("@id");
 
             if (id > 0)
@@ -123,7 +122,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@displayOrder", operatingPolicy.DisplayOrder, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_UpdateOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync("100_UpdateOperatingPolicy", parameters, commandType: CommandType.StoredProcedure); // 100_UpdateOperatingPolicy
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
@@ -155,7 +154,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync("100_DeleteOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync("100_DeleteOperatingPolicy", parameters, commandType: CommandType.StoredProcedure); // 100_DeleteOperatingPolicy
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)

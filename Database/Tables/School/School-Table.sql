@@ -4,6 +4,7 @@
 CREATE TABLE School
 (
     Id INT PRIMARY KEY IDENTITY(1,1),
+    AgencyId INT NOT NULL,
     Name NVARCHAR(255) NOT NULL,
 
     StartDate DATE NULL,
@@ -21,7 +22,7 @@ CREATE TABLE School
     SameAsPhysicalAddress BIT NULL,
 
     OrganizationTypeId INT NOT NULL,
-    CenterId INT NULL,
+    CenterTypeId INT NULL,
     NonProfit BIT NULL,
     BaseYear INT NULL,
     RenewalYear INT NULL,
@@ -61,29 +62,37 @@ ALTER TABLE School
 ALTER TABLE School
     ADD CONSTRAINT FK_School_Region FOREIGN KEY (RegionId) REFERENCES Region(Id);
 
+-- OrganizationType se maneja en su tabla OrganizationType
 ALTER TABLE School
     ADD CONSTRAINT FK_School_OrganizationType FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id);
 
+-- EducationLevel se maneja en su tabla EducationLevel
 ALTER TABLE School
     ADD CONSTRAINT FK_School_EducationLevel FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id);
 
+-- KitchenType se maneja en su tabla KitchenType
 ALTER TABLE School
     ADD CONSTRAINT FK_School_KitchenType FOREIGN KEY (KitchenTypeId) REFERENCES KitchenType(Id);
 
+-- GroupType se maneja en su tabla GroupType
 ALTER TABLE School
     ADD CONSTRAINT FK_School_GroupType FOREIGN KEY (GroupTypeId) REFERENCES GroupType(Id);
 
+-- DeliveryType se maneja en su tabla DeliveryType
 ALTER TABLE School
     ADD CONSTRAINT FK_School_DeliveryType FOREIGN KEY (DeliveryTypeId) REFERENCES DeliveryType(Id);
 
+-- SponsorType se maneja en su tabla SponsorType
 ALTER TABLE School
     ADD CONSTRAINT FK_School_SponsorType FOREIGN KEY (SponsorTypeId) REFERENCES SponsorType(Id);
 
+-- ApplicantType se maneja en OptionSelection (Fix)
 ALTER TABLE School
-    ADD CONSTRAINT FK_School_ApplicantType FOREIGN KEY (ApplicantTypeId) REFERENCES ApplicantType(Id);
+    ADD CONSTRAINT FK_School_ApplicantType FOREIGN KEY (ApplicantTypeId) REFERENCES OptionSelection(Id);
 
+-- ResidentialType se maneja en OptionSelection (Fix)
 ALTER TABLE School
-    ADD CONSTRAINT FK_School_ResidentialType FOREIGN KEY (ResidentialTypeId) REFERENCES ResidentialType(Id);
+    ADD CONSTRAINT FK_School_ResidentialType FOREIGN KEY (ResidentialTypeId) REFERENCES OptionSelection(Id);
 
 ALTER TABLE School
     ADD CONSTRAINT FK_School_OperatingPolicy FOREIGN KEY (OperatingPolicyId) REFERENCES OperatingPolicy(Id);
@@ -94,5 +103,25 @@ ALTER TABLE School
 ALTER TABLE School
     ADD CONSTRAINT FK_School_PostalRegion FOREIGN KEY (PostalRegionId) REFERENCES Region(Id);
 
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_Agency FOREIGN KEY (AgencyId) REFERENCES Agency(Id);
+
+
 -- Facilidades (Almacén, Salón Comedor) se gestionan en SchoolFacility
 -- Los catálogos KitchenType, GroupType, DeliveryType, SponsorType, ApplicantType, OperatingPolicy deben crearse si no existen. 
+
+-- Cambiar de CenterId a CenterTypeId
+-- Cambiar nombre de la propiedad CenterId a CenterTypeId
+
+-- Cambiar nombre de la tabla CenterType a CenterType
+ALTER TABLE CenterType
+    RENAME TO CenterType;
+
+-- Cambiar nombre de la propiedad CenterId a CenterTypeId
+EXEC sp_rename 'School.CenterId', 'CenterTypeId', 'COLUMN';
+
+ALTER TABLE School
+    DROP CONSTRAINT FK_School_CenterType;
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_CenterType FOREIGN KEY (CenterTypeId) REFERENCES CenterType(Id);

@@ -2,9 +2,12 @@ using Api.Models;
 using System;
 using System.Collections.Generic;
 
+namespace Api.Models;
+
 public class DTOSchool
 {
     public int Id { get; set; }
+    public int AgencyId { get; set; }
     public string Name { get; set; }
     public DateTime? StartDate { get; set; }
     public string Address { get; set; }
@@ -21,7 +24,7 @@ public class DTOSchool
 
     // Información Administrativa
     public int OrganizationTypeId { get; set; }
-    public int? CenterId { get; set; }
+    public int? CenterTypeId { get; set; }
     public bool? NonProfit { get; set; }
     public int? BaseYear { get; set; }
     public int? RenewalYear { get; set; }
@@ -57,21 +60,22 @@ public class DTOSchool
     public TimeSpan? SnackTo { get; set; }
 
     // Dirección Física
-    public DTOCity City { get; set; }
-    public DTORegion Region { get; set; }
-    public DTOCity PostalCity { get; set; }
-    public DTORegion PostalRegion { get; set; }
-    public DTOEducationLevel EducationLevel { get; set; }
-    public DTOOperatingPeriod OperatingPeriod { get; set; }
-    public DTOOrganizationType OrganizationType { get; set; }
-    public DTOKitchenType KitchenType { get; set; }
-    public DTOGroupType GroupType { get; set; }
-    public DTODeliveryType DeliveryType { get; set; }
-    public DTOSponsorType SponsorType { get; set; }
-    public DTOApplicantType ApplicantType { get; set; }
-    public DTOResidentialType ResidentialType { get; set; }
-    public DTOOperatingPolicy OperatingPolicy { get; set; }
-    public DTOCenterType CenterType { get; set; }
+    public DTOCity? City { get; set; }
+    public DTORegion? Region { get; set; }
+    public DTOCity? PostalCity { get; set; }
+    public DTORegion? PostalRegion { get; set; }
+    public DTOEducationLevel? EducationLevel { get; set; }
+    public DTOOperatingPeriod? OperatingPeriod { get; set; }
+    public DTOOrganizationType? OrganizationType { get; set; }
+    public DTOKitchenType? KitchenType { get; set; }
+    public DTOGroupType? GroupType { get; set; }
+    public DTODeliveryType? DeliveryType { get; set; }
+    public DTOSponsorType? SponsorType { get; set; }
+    public DTOApplicantType? ApplicantType { get; set; }
+    public DTOResidentialType? ResidentialType { get; set; }
+    public DTOOperatingPolicy? OperatingPolicy { get; set; }
+    public DTOCenterType? CenterType { get; set; }
+    public DTOAgency? Agency { get; set; }
     public bool IsMainSchool { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }

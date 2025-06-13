@@ -6,29 +6,37 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Api.Controllers;
 
-[Route("school")]
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con las escuelas.
 /// Proporciona endpoints para la gestión completa de escuelas, incluyendo creación,
 /// lectura, actualización y eliminación de registros escolares.
 /// </summary>
+[Route("school")]
+[ApiController]
 public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
+    /// <summary>
+    /// Obtiene una escuela por su ID
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta para la obtención de la escuela</param>
+    /// <returns>La escuela encontrada</returns>
     [HttpGet("get-school-by-id")]
     [SwaggerOperation(Summary = "Obtiene una escuela por su ID", Description = "Devuelve una escuela basada en el ID proporcionado.")]
-    public async Task<IActionResult> GetSchoolById([FromQuery] int id)
+    public async Task<IActionResult> GetSchoolById([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            var school = await _unitOfWork.SchoolRepository.GetSchoolById(id);
-            if (school == null)
+            var result = await _unitOfWork.SchoolRepository.GetSchoolById(queryParameters.Id);
+
+            if (result == null)
             {
-                return NotFound($"Escuela con ID {id} no encontrada");
+                return NotFound($"Escuela con ID {queryParameters.Id} no encontrada");
             }
-            return Ok(school);
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -37,6 +45,11 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
     }
 
+    /// <summary>
+    /// Obtiene todas las escuelas
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta para la paginación y filtrado</param>
+    /// <returns>Una lista paginada de escuelas</returns>
     [HttpGet("get-all-schools-from-db")]
     [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
     public async Task<IActionResult> GetAllSchoolsFromDB([FromQuery] QueryParameters queryParameters)
@@ -45,8 +58,14 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                var schools = await _unitOfWork.SchoolRepository.GetAllSchoolsFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.Alls);
-                return Ok(schools);
+                var result = await _unitOfWork.SchoolRepository.GetAllSchoolsFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls);
+
+                if (result == null)
+                {
+                    return NotFound("No se encontraron escuelas");
+                }
+
+                return Ok(result);
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -58,6 +77,11 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
     }
 
+    /// <summary>
+    /// Inserta una nueva escuela
+    /// </summary>
+    /// <param name="request">La escuela a insertar</param>
+    /// <returns>La escuela insertada</returns>
     [HttpPost("insert-school")]
     [SwaggerOperation(Summary = "Inserta una nueva escuela", Description = "Crea una nueva escuela en la base de datos.")]
     public async Task<IActionResult> InsertSchool([FromBody] SchoolRequest request)
@@ -66,8 +90,14 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                var schoolId = await _unitOfWork.SchoolRepository.InsertSchool(request);
-                return Ok(new { id = schoolId });
+                var result = await _unitOfWork.SchoolRepository.InsertSchool(request);
+
+                if (result)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest("Error al insertar la escuela");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -79,6 +109,11 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
     }
 
+    /// <summary>
+    /// Actualiza una escuela existente
+    /// </summary>
+    /// <param name="request">La escuela a actualizar</param>
+    /// <returns>La escuela actualizada</returns>
     [HttpPut("update-school")]
     [SwaggerOperation(Summary = "Actualiza una escuela existente", Description = "Actualiza los datos de una escuela existente.")]
     public async Task<IActionResult> UpdateSchool([FromBody] SchoolRequest request)
@@ -88,10 +123,12 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
             if (ModelState.IsValid)
             {
                 var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
+
                 if (result)
                 {
-                    return Ok(new { message = "Escuela actualizada correctamente" });
+                    return Ok(result);
                 }
+
                 return NotFound($"Escuela con ID {request.Id} no encontrada");
             }
 
@@ -104,18 +141,25 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
     }
 
+    /// <summary>
+    /// Elimina una escuela
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta para la eliminación</param>
+    /// <returns>La escuela eliminada</returns>
     [HttpDelete("delete-school")]
     [SwaggerOperation(Summary = "Elimina una escuela", Description = "Elimina una escuela de la base de datos.")]
-    public async Task<IActionResult> DeleteSchool(int id)
+    public async Task<IActionResult> DeleteSchool([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            var result = await _unitOfWork.SchoolRepository.DeleteSchool(id);
+            var result = await _unitOfWork.SchoolRepository.DeleteSchool(queryParameters.Id);
+
             if (result)
             {
-                return Ok(new { message = "Escuela eliminada correctamente" });
+                return Ok(result);
             }
-            return NotFound($"Escuela con ID {id} no encontrada");
+
+            return NotFound($"Escuela con ID {queryParameters.Id} no encontrada");
         }
         catch (Exception ex)
         {

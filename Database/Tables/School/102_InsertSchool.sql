@@ -1,5 +1,6 @@
 -- DEPRECATED: Esta versión del SP InsertSchool ha sido reemplazada por una nueva versión. No modificar ni usar para nuevas migraciones.
 CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
+    @agencyId INT,
     @name NVARCHAR(255),
     @startDate DATE = NULL,
     @address NVARCHAR(255),
@@ -14,7 +15,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
     @postalZipCode NVARCHAR(20) = NULL,
     @sameAsPhysicalAddress BIT = NULL,
     @organizationTypeId INT,
-    @centerId INT = NULL,
+    @centerTypeId INT = NULL,
     @nonProfit BIT = NULL,
     @baseYear INT = NULL,
     @renewalYear INT = NULL,
@@ -42,17 +43,30 @@ CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
     @snack BIT = NULL,
     @snackFrom TIME = NULL,
     @snackTo TIME = NULL,
-    @isMainSchool BIT = 1,
-    @Id INT OUTPUT
+    @id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    DECLARE @isMainSchool BIT = 1;
+
+    -- Lógica para asegurar que solo una escuela principal por agencia
+    IF EXISTS (SELECT 1
+    FROM School
+    WHERE AgencyId = @agencyId AND IsMainSchool = 1 AND IsActive = 1)
+    BEGIN
+        SET @isMainSchool = 0;
+    END
+    ELSE
+    BEGIN
+        SET @isMainSchool = 1;
+    END
+
     INSERT INTO School
         (
-        Name, StartDate, Address, CityId, RegionId, ZipCode, Latitude, Longitude,
+        AgencyId, Name, StartDate, Address, CityId, RegionId, ZipCode, Latitude, Longitude,
         PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
-        OrganizationTypeId, CenterId, NonProfit, BaseYear, RenewalYear, EducationLevelId, OperatingDays,
+        OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, EducationLevelId, OperatingDays,
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId,
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         Breakfast, BreakfastFrom, BreakfastTo, Lunch, LunchFrom, LunchTo, Snack, SnackFrom, SnackTo, IsMainSchool,
@@ -60,14 +74,14 @@ BEGIN
         )
     VALUES
         (
-            @name, @startDate, @address, @cityId, @regionId, @zipCode, @latitude, @longitude,
+            @agencyId, @name, @startDate, @address, @cityId, @regionId, @zipCode, @latitude, @longitude,
             @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
-            @organizationTypeId, @centerId, @nonProfit, @baseYear, @renewalYear, @educationLevelId, @operatingDays,
+            @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @educationLevelId, @operatingDays,
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId,
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
-            @breakfast, @breakfastFrom, @breakfastTo, @lunch, @lunchFrom, @lunchTo, @snack, @snackFrom, @snackTo,
-            @isMainSchool, 1, GETDATE()
+            @breakfast, @breakfastFrom, @breakfastTo, @lunch, @lunchFrom, @lunchTo, @snack, @snackFrom, @snackTo, @isMainSchool,
+            1, GETDATE()
     );
 
-    SET @Id = SCOPE_IDENTITY();
+    SET @id = SCOPE_IDENTITY();
 END; 

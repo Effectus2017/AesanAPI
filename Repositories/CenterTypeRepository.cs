@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
@@ -48,20 +49,43 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
     /// <param name="name">Los nombres de los tipos de centro a buscar (separados por coma)</param>
     /// <param name="alls">Si se deben obtener todos los tipos de centro</param>
     /// <returns>Los tipos de centro encontrados</returns>
-    public async Task<dynamic> GetAllCenterTypes(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllCenterTypes(int take, int skip, string name, bool alls, bool isList)
     {
         try
         {
+
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOCenterType>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.CenterTypes, take, skip, name, alls);
+
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
+                        var data = await result.ReadAsync<DTOCenterType>();
+                        var count = await result.ReadSingleAsync<int>();
+                        return new { data, count };
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(5)
+                );
+            }
+            else
+            {
+                var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
+                var data = await result.ReadAsync<DTOCenterType>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            }
         }
         catch (Exception ex)
         {

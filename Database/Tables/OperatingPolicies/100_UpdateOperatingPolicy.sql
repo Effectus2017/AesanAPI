@@ -11,7 +11,7 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @rowsaffected INT;
 
-    UPDATE OperatingPolicies
+    UPDATE OperatingPolicy
     SET Name = @name,
         NameEN = @nameEN,
         IsActive = @isActive,

@@ -10,17 +10,17 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Obtener las inscripciones con información relacionada sin utilizar CTE
-    SELECT 
+    SELECT
         pi.*,
         a.Name AS AgencyName,
         p.Name AS ProgramName,
-        p.Description AS ProgramDescription,
+        '' AS ProgramDescription,
         fa.Name AS FoodAuthorityName,
-        op.Description AS OperatingPolicyDescription,
+        '' AS OperatingPolicyDescription,
         ac.Name AS AlternativeCommunicationName,
         os1.Name AS NeedsFederalRelayServiceName,
         os2.Name AS ShowEvidenceName,
-        ffc.FundingAmount, 
+        ffc.FundingAmount,
         ffc.Description AS FederalFundingDescription
     FROM ProgramInscription pi
         LEFT JOIN Agency a ON pi.AgencyId = a.Id
@@ -33,8 +33,8 @@ BEGIN
         LEFT JOIN FederalFundingCertification ffc ON pi.FederalFundingCertificationId = ffc.Id
         LEFT JOIN AgencyUsers uaa ON a.Id = uaa.AgencyId AND (@userId IS NULL OR uaa.UserId = @userId)
     WHERE (@agencyId IS NULL OR pi.AgencyId = @agencyId)
-      AND (@programId IS NULL OR pi.ProgramId = @programId)
-      AND (@alls = 1 OR (@userId IS NULL OR uaa.IsActive = 1))
+        AND (@programId IS NULL OR pi.ProgramId = @programId)
+        AND (@alls = 1 OR (@userId IS NULL OR uaa.IsActive = 1))
     ORDER BY pi.CreatedAt DESC
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
@@ -42,5 +42,6 @@ BEGIN
     SELECT COUNT(*)
     FROM ProgramInscription pi
     WHERE (@agencyId IS NULL OR pi.AgencyId = @agencyId)
-      AND (@programId IS NULL OR pi.ProgramId = @programId);
+        AND (@programId IS NULL OR pi.ProgramId = @programId);
 END;
+

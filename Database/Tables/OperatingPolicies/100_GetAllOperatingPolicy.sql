@@ -1,6 +1,6 @@
 -- 100_GetAllOperatingPolicies.sql
 -- Obtiene todas las políticas operativas
-CREATE OR ALTER PROCEDURE [100_GetAllOperatingPolicies]
+CREATE OR ALTER PROCEDURE [100_GetAllOperatingPolicy]
     @take INT,
     @skip INT,
     @name NVARCHAR(255),
@@ -16,14 +16,14 @@ BEGIN
         CreatedAt,
         UpdatedAt,
         DisplayOrder
-    FROM OperatingPolicies
+    FROM OperatingPolicy
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%')
     ORDER BY DisplayOrder, Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*)
-    FROM OperatingPolicies
+    FROM OperatingPolicy
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%');
 END;

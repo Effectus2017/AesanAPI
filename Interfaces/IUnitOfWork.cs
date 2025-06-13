@@ -12,4 +12,5 @@ public interface IUnitOfWork
     IAgencyUsersRepository AgencyUsersRepository { get; }
     IAgencyFilesRepository AgencyFilesRepository { get; }
     ICenterTypeRepository CenterTypeRepository { get; }
+    IHouseholdRepository HouseholdRepository { get; }
 }

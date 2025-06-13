@@ -23,26 +23,24 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     /// <returns>El nivel educativo encontrado.</returns>
     public async Task<dynamic> GetEducationLevelById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.EducationLevel, id);
-
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetEducationLevelById",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-                var data = await result.ReadSingleAsync<DTOEducationLevel>();
-                return data;
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync(
+                "100_GetEducationLevelById",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+            var data = await result.ReadSingleAsync<DTOEducationLevel>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el nivel educativo con ID {Id}", id);
+            throw;
+        }
     }
 
     /// <summary>
@@ -55,30 +53,24 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     /// <returns>Una lista de niveles educativos.</returns>
     public async Task<dynamic> GetAllEducationLevels(int take, int skip, string name, bool alls)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.EducationLevels, take, skip, name, alls);
-
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
-            {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@take", take, DbType.Int32);
-                parameters.Add("@skip", skip, DbType.Int32);
-                parameters.Add("@name", name, DbType.String);
-                parameters.Add("@alls", alls, DbType.Boolean);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetAllEducationLevels",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-                var data = await result.ReadAsync<DTOEducationLevel>();
-                var count = await result.ReadSingleAsync<int>();
-                return new { data, count };
-            },
-            _logger,
-            _appSettings
-        );
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
+            var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<DTOEducationLevel>();
+            var count = await result.ReadSingleAsync<int>();
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los niveles educativos");
+            throw;
+        }
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 -- Facilidades
+-- VER SI ESTA DEPRECADA ESTA TABLA
 CREATE TABLE Facility
 (
     Id INT PRIMARY KEY IDENTITY(1,1),
@@ -9,6 +10,15 @@ CREATE TABLE Facility
 );
 
 
-INSERT INTO Facility (Name) VALUES ('Almacén');
-INSERT INTO Facility (Name) VALUES ('Cocina');
-INSERT INTO Facility (Name) VALUES ('Salón Comedor');
+INSERT INTO Facility
+    (Name)
+VALUES
+    ('Almacén');
+INSERT INTO Facility
+    (Name)
+VALUES
+    ('Cocina');
+INSERT INTO Facility
+    (Name)
+VALUES
+    ('Salón Comedor');
