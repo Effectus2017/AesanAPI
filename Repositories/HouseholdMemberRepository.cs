@@ -73,7 +73,7 @@ namespace Api.Repositories
         /// </summary>
         /// <param name="request">Datos del miembro a insertar</param>
         /// <returns>Id del miembro insertado</returns>
-        public async Task<int> InsertHouseholdMember(HouseholdMemberRequest request)
+        public async Task<bool> InsertHouseholdMember(HouseholdMemberRequest request)
         {
             try
             {
@@ -86,7 +86,7 @@ namespace Api.Repositories
                 parameters.Add("@Gender", request.Gender, DbType.String, ParameterDirection.Input);
                 parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.Output);
                 await dbConnection.ExecuteAsync("101_InsertHouseholdMember", parameters, commandType: CommandType.StoredProcedure);
-                return parameters.Get<int>("@Id");
+                return true;
             }
             catch (Exception ex)
             {
@@ -141,6 +141,30 @@ namespace Api.Repositories
                 await _logger.LogError(ex, $"Error al eliminar HouseholdMember Id: {id}");
                 throw;
             }
+        }
+
+        public async Task<dynamic> GetAllHouseholdMembers(int take, int skip, bool alls)
+        {
+            try
+            {
+                using IDbConnection dbConnection = _context.CreateConnection();
+                var parameters = new DynamicParameters();
+                parameters.Add("@take", take, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@skip", skip, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@alls", alls, DbType.Boolean, ParameterDirection.Input);
+                var result = await dbConnection.QueryAsync<DTOHouseholdMember>("101_GetAllHouseholdMembers", parameters, commandType: CommandType.StoredProcedure);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await _logger.LogError(ex, $"Error al obtener todos los HouseholdMembers: {take}, {skip}, {alls}");
+                throw;
+            }
+        }
+
+        Task<bool> IHouseholdMemberRepository.InsertHouseholdMember(HouseholdMemberRequest request)
+        {
+            throw new NotImplementedException();
         }
     }
 }

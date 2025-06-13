@@ -173,7 +173,7 @@ namespace Api.Controllers
         {
             try
             {
-                var result = await _repo.GetHouseholdMemberById(id);
+                var result = await _unitOfWork.HouseholdMemberRepository.GetHouseholdMemberById(id);
                 if (result == null) return NotFound($"Miembro con ID {id} no encontrado");
                 return Ok(result);
             }
@@ -189,16 +189,16 @@ namespace Api.Controllers
         /// </summary>
         [HttpGet("get-household-members")]
         [SwaggerOperation(Summary = "Obtiene miembros del hogar", Description = "Devuelve una lista de miembros del hogar.")]
-        public async Task<IActionResult> GetHouseholdMembers([FromQuery] int householdId, [FromQuery] int take = 50, [FromQuery] int skip = 0)
+        public async Task<IActionResult> GetHouseholdMembers([FromQuery] QueryParameters queryParameters)
         {
             try
             {
-                var result = await _repo.GetHouseholdMembers(householdId, take, skip);
+                var result = await _unitOfWork.HouseholdMemberRepository.GetAllHouseholdMembers(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
                 return Ok(result);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener los miembros del hogar con HouseholdId {Id}", householdId);
+                _logger.LogError(ex, "Error al obtener los miembros del hogar con HouseholdId {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al obtener los miembros");
             }
         }
@@ -214,7 +214,7 @@ namespace Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    var id = await _repo.InsertHouseholdMember(request);
+                    var id = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
                     return CreatedAtAction(nameof(GetHouseholdMemberById), new { id }, request);
                 }
                 return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -237,7 +237,7 @@ namespace Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    var ok = await _repo.UpdateHouseholdMember(request);
+                    var ok = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
                     if (!ok) return NotFound($"Miembro con ID {request.Id} no encontrado");
                     return NoContent();
                 }
@@ -259,7 +259,7 @@ namespace Api.Controllers
         {
             try
             {
-                var ok = await _repo.DeleteHouseholdMember(id);
+                var ok = await _unitOfWork.HouseholdMemberRepository.DeleteHouseholdMember(id);
                 if (!ok) return NotFound($"Miembro con ID {id} no encontrado");
                 return NoContent();
             }

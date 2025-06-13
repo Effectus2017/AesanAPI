@@ -272,5 +272,23 @@ namespace Api.Repositories
                 throw;
             }
         }
+
+        Task<dynamic> IHouseholdRepository.GetAllHouseholds(int take, int skip, bool alls)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<bool> IHouseholdRepository.InsertHousehold(HouseholdRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<bool> IHouseholdRepository.UpdateHousehold(HouseholdRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
     }
 }

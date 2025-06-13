@@ -107,6 +107,7 @@ builder.Services.AddScoped<IGroupTypeRepository, GroupTypeRepository>();
 builder.Services.AddScoped<ISponsorTypeRepository, SponsorTypeRepository>();
 builder.Services.AddScoped<IDeliveryTypeRepository, DeliveryTypeRepository>();
 builder.Services.AddScoped<ICenterTypeRepository, CenterTypeRepository>();
+builder.Services.AddScoped<IHouseholdMemberRepository, HouseholdMemberRepository>();
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
 builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));

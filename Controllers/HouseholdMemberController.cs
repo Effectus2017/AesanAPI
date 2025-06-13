@@ -55,7 +55,7 @@ namespace Api.Controllers
         {
             try
             {
-                var result = await _unitOfWork.HouseholdMemberRepository.GetHouseholdMembers(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
+                var result = await _unitOfWork.HouseholdMemberRepository.GetAllHouseholdMembers(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
                 return Ok(result);
             }
             catch (System.Exception ex)
