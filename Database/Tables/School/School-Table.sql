@@ -110,18 +110,5 @@ ALTER TABLE School
 -- Facilidades (Almacén, Salón Comedor) se gestionan en SchoolFacility
 -- Los catálogos KitchenType, GroupType, DeliveryType, SponsorType, ApplicantType, OperatingPolicy deben crearse si no existen. 
 
--- Cambiar de CenterId a CenterTypeId
--- Cambiar nombre de la propiedad CenterId a CenterTypeId
-
--- Cambiar nombre de la tabla CenterType a CenterType
-ALTER TABLE CenterType
-    RENAME TO CenterType;
-
--- Cambiar nombre de la propiedad CenterId a CenterTypeId
-EXEC sp_rename 'School.CenterId', 'CenterTypeId', 'COLUMN';
-
-ALTER TABLE School
-    DROP CONSTRAINT FK_School_CenterType;
-
 ALTER TABLE School
     ADD CONSTRAINT FK_School_CenterType FOREIGN KEY (CenterTypeId) REFERENCES CenterType(Id);

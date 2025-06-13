@@ -370,15 +370,6 @@ CREATE TABLE School
     FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id)
 );
 
-CREATE TABLE SatelliteSchool
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    MainSchoolId INT NOT NULL,
-    SatelliteSchoolId INT NOT NULL,
-    FOREIGN KEY (MainSchoolId) REFERENCES School(Id),
-    FOREIGN KEY (SatelliteSchoolId) REFERENCES School(Id)
-);
-
 -- servicio que solicita la escuela
 CREATE TABLE SchoolMeal
 (

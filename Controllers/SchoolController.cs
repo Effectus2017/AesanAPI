@@ -58,7 +58,7 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.SchoolRepository.GetAllSchoolsFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls);
+                var result = await _unitOfWork.SchoolRepository.GetAllSchoolsFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {

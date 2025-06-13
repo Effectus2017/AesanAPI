@@ -69,14 +69,14 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                     cacheKey,
                     async () =>
                     {
-                        var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
+                        using var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
                         var data = await result.ReadAsync<DTOCenterType>();
                         var count = await result.ReadSingleAsync<int>();
                         return new { data, count };
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(5)
+                    TimeSpan.FromMinutes(30)
                 );
             }
             else

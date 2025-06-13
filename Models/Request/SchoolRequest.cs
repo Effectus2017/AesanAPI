@@ -64,4 +64,5 @@ public class SchoolRequest
 
     // Escuela Principal
     public bool? IsMainSchool { get; set; }
+    public int? MainSchoolId { get; set; }
 }
