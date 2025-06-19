@@ -51,6 +51,8 @@ CREATE TABLE School
     SnackFrom TIME NULL,
     SnackTo TIME NULL,
     IsActive BIT NOT NULL DEFAULT 1,
+    InactiveJustification NVARCHAR(500) NULL,
+    InactiveDate DATETIME NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
 );

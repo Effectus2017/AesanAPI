@@ -84,7 +84,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// <param name="name">Name filter (optional)/Filtro de nombre (opcional)</param>
     /// <param name="alls">Whether to get all records ignoring pagination/Si obtener todos los registros ignorando la paginación</param>
     /// <returns>Object containing the list of option selections and total count/Objeto que contiene la lista de selecciones de opciones y el conteo total</returns>
-    public async Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionKey, bool alls)
+    public async Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionKey, bool alls, bool isList)
     {
         try
         {
@@ -95,10 +95,43 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@optionKey", optionKey, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllOptionSelections", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOOptionSelection>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.OptionSelections, take, skip, name, optionKey, alls);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetAllOptionSelections", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapOptionSelectionListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetAllOptionSelections", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapOptionSelectionFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
+                return new { data, count };
+            }
+
         }
         catch (Exception ex)
         {
@@ -258,5 +291,38 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         _cache.Remove("OptionSelections");
         _logger.LogInformation("Cache invalidado para OptionSelection Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una lista de selecciones de opción
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Lista de selecciones de opción</returns>
+    private static DTOOptionSelection MapOptionSelectionListFromResult(dynamic result)
+    {
+        return new DTOOptionSelection
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una selección de opción
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Selección de opción</returns>
+    private static DTOOptionSelection MapOptionSelectionFromResult(dynamic result)
+    {
+        return new DTOOptionSelection
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            OptionKey = result.OptionKey,
+            IsActive = result.IsActive,
+            DisplayOrder = result.DisplayOrder,
+        };
     }
 }

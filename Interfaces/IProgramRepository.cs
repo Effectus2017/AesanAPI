@@ -19,7 +19,7 @@ public interface IProgramRepository
     /// <param name="names">Los nombres de los programas a buscar (separados por coma)</param>
     /// <param name="alls">Si se deben obtener todos los programas</param>
     /// <returns>Los programas</returns>
-    Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls);
+    Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un nuevo programa en la base de datos
@@ -44,6 +44,4 @@ public interface IProgramRepository
     /// <param name="programId">El ID del programa</param>
     /// <returns>Las inscripciones de programas</returns>
     Task<dynamic> GetAllProgramInscriptions(int take, int skip, int? agencyId = null, int? programId = null);
-
-    Task<List<DTOOptionSelection>> GetAllOptionSelections();
 }

@@ -1,4 +1,4 @@
-namespace Api.Models.DTO;
+namespace Api.Models;
 
 public class DTOOrganizationType
 {

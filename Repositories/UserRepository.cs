@@ -192,41 +192,41 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="skip">El número de programas a saltar</param>
     /// <param name="name">El nombre del programa</param>
     /// <returns>Una lista de programas</returns>
-    public dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls)
-    {
-        try
-        {
-            _loggingService.LogInformation("Obteniendo todos los programas de la base de datos");
+    // public dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls)
+    // {
+    //     try
+    //     {
+    //         _loggingService.LogInformation("Obteniendo todos los programas de la base de datos");
 
-            using IDbConnection dbConnection = _context.CreateConnection();
+    //         using IDbConnection dbConnection = _context.CreateConnection();
 
-            var param = new { take, skip, name, alls };
+    //         var param = new { take, skip, name, alls };
 
-            var _result = dbConnection.QueryMultiple("100_GetPrograms", param, commandType: CommandType.StoredProcedure);
+    //         var _result = dbConnection.QueryMultiple("100_GetPrograms", param, commandType: CommandType.StoredProcedure);
 
-            if (_result == null)
-            {
-                return null;
-            }
+    //         if (_result == null)
+    //         {
+    //             return null;
+    //         }
 
-            var programs = _result.Read<dynamic>().Select(item => new DTOProgram
-            {
-                Id = item.Id,
-                Name = item.Name,
-                Description = item.Description
-            }).ToList();
+    //         var programs = _result.Read<dynamic>().Select(item => new DTOProgram
+    //         {
+    //             Id = item.Id,
+    //             Name = item.Name,
+    //             Description = item.Description
+    //         }).ToList();
 
-            var count = _result.Read<int>().Single();
+    //         var count = _result.Read<int>().Single();
 
-            var _complete = new { data = programs, count };
+    //         var _complete = new { data = programs, count };
 
-            return _complete;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-    }
+    //         return _complete;
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         throw new Exception(ex.Message);
+    //     }
+    // }
 
     /// <summary>
     /// Obtiene los permisos de un usuario

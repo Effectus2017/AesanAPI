@@ -71,7 +71,8 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
                     queryParameters.Take,
                     queryParameters.Skip,
                     queryParameters.Names,
-                    queryParameters.Alls
+                    queryParameters.Alls,
+                    queryParameters.IsList
                 );
                 return Ok(programs);
             }

@@ -69,7 +69,7 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
         {
             if (ModelState.IsValid)
             {
-                var result = await _groupTypeRepository.GetAllGroupTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _groupTypeRepository.GetAllGroupTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {
@@ -95,17 +95,17 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     /// <returns>El tipo de grupo creado si la operación es exitosa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
     [HttpPost("insert-group-type")]
     [SwaggerOperation(Summary = "Crea un nuevo tipo de grupo", Description = "Crea un nuevo tipo de grupo.")]
-    public async Task<ActionResult> Insert([FromBody] DTOGroupType type)
+    public async Task<ActionResult> Insert([FromBody] DTOGroupType request)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _groupTypeRepository.InsertGroupType(type);
+                var result = await _groupTypeRepository.InsertGroupType(request);
 
                 if (result)
                 {
-                    return Ok(type);
+                    return Ok(result);
                 }
 
                 return BadRequest("No se pudo crear el tipo de grupo");

@@ -5,28 +5,37 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
-[Route("sponsor-type")]
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con los tipos de auspiciador.
 /// Proporciona endpoints para la gestión completa de tipos de auspiciador, incluyendo creación,
 /// lectura, actualización y eliminación de tipos de auspiciador.
 /// </summary>
+[Route("sponsor-type")]
+[ApiController]
 public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository, ILogger<SponsorTypeController> logger) : ControllerBase
 {
     private readonly ISponsorTypeRepository _sponsorTypeRepository = sponsorTypeRepository;
     private readonly ILogger<SponsorTypeController> _logger = logger;
 
+    /// <summary>
+    /// Obtiene un tipo de auspiciador por su ID
+    /// </summary>
+    /// <param name="id">ID del tipo de auspiciador</param>
+    /// <returns>Tipo de auspiciador</returns>
     [HttpGet("get-sponsor-type-by-id")]
     [SwaggerOperation(Summary = "Obtiene un tipo de auspiciador por su ID", Description = "Devuelve un tipo de auspiciador basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
         try
         {
-            var type = await _sponsorTypeRepository.GetSponsorTypeById(id);
-            if (type == null)
-                return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
+            var result = await _sponsorTypeRepository.GetSponsorTypeById(id);
 
-            return Ok(type);
+            if (result == null)
+            {
+                return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -35,6 +44,11 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
         }
     }
 
+    /// <summary>
+    /// Obtiene todos los tipos de auspiciador
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta</param>
+    /// <returns>Lista de tipos de auspiciador</returns>
     [HttpGet("get-all-sponsor-types-from-db")]
     [SwaggerOperation(Summary = "Obtiene todos los tipos de auspiciador", Description = "Devuelve una lista de tipos de auspiciador.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
@@ -43,7 +57,11 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
         {
             if (ModelState.IsValid)
             {
-                var types = await _sponsorTypeRepository.GetAllSponsorTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var types = await _sponsorTypeRepository.GetAllSponsorTypes(queryParameters.Take,
+                    queryParameters.Skip,
+                    queryParameters.Name,
+                    queryParameters.Alls,
+                    queryParameters.IsList);
                 return Ok(types);
             }
 
@@ -56,6 +74,11 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
         }
     }
 
+    /// <summary>
+    /// Crea un nuevo tipo de auspiciador
+    /// </summary>
+    /// <param name="type">Tipo de auspiciador a crear</param>
+    /// <returns>Tipo de auspiciador creado</returns>
     [HttpPost("insert-sponsor-type")]
     [SwaggerOperation(Summary = "Crea un nuevo tipo de auspiciador", Description = "Crea un nuevo tipo de auspiciador.")]
     public async Task<ActionResult> Insert([FromBody] DTOSponsorType type)
@@ -82,6 +105,11 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
         }
     }
 
+    /// <summary>
+    /// Actualiza un tipo de auspiciador existente
+    /// </summary>
+    /// <param name="type">Tipo de auspiciador a actualizar</param>
+    /// <returns>Tipo de auspiciador actualizado</returns>
     [HttpPut("update-sponsor-type")]
     [SwaggerOperation(Summary = "Actualiza un tipo de auspiciador existente", Description = "Actualiza los datos de un tipo de auspiciador existente.")]
     public async Task<IActionResult> Update([FromBody] DTOSponsorType type)
@@ -109,6 +137,11 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
         }
     }
 
+    /// <summary>
+    /// Elimina un tipo de auspiciador existente
+    /// </summary>
+    /// <param name="id">ID del tipo de auspiciador a eliminar</param>
+    /// <returns>Tipo de auspiciador eliminado</returns>
     [HttpDelete("delete-sponsor-type")]
     [SwaggerOperation(Summary = "Elimina un tipo de auspiciador existente", Description = "Elimina un tipo de auspiciador existente.")]
     public async Task<IActionResult> Delete([FromQuery] int id)

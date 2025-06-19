@@ -22,7 +22,7 @@ public interface IAgencyStatusRepository
     /// <param name="name">El nombre del estado a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los estados.</param>
     /// <returns>Una lista de estados de agencia.</returns>
-    Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un nuevo estado de agencia.

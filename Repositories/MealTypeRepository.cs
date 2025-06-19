@@ -23,7 +23,7 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     /// <returns>El tipo de comida encontrado.</returns>
     public async Task<dynamic> GetMealTypeById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.MealType, id);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.MealTypes, 0, 0, "", false);
 
         return await _cache.CacheQuery(
             cacheKey,
@@ -194,7 +194,7 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
     {
         if (mealTypeId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.MealType, mealTypeId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.MealTypes, 0, 0, "", false));
         }
 
         // Invalidar listas completas

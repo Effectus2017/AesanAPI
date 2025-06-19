@@ -75,8 +75,13 @@ BEGIN
         s.SnackFrom,
         s.SnackTo,
         s.IsActive,
+        s.InactiveJustification,
+        s.InactiveDate,
+        s.IsMainSchool,
         s.CreatedAt,
-        s.UpdatedAt
+        s.UpdatedAt,
+        -- Main School
+        ss.MainSchoolId AS MainSchoolId
     FROM School s
         LEFT JOIN City c ON s.CityId = c.Id
         LEFT JOIN Region r ON s.RegionId = r.Id
@@ -93,17 +98,32 @@ BEGIN
         LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
+        LEFT JOIN SchoolSatellite ss ON s.Id = ss.SatelliteSchoolId
     WHERE s.Id = @id;
 
--- Facilidades
--- SELECT sf.FacilityId, f.Name AS FacilityName
--- FROM SchoolFacility sf
---     INNER JOIN Facility f ON sf.FacilityId = f.Id
--- WHERE sf.SchoolId = @Id AND sf.IsActive = 1;
+    -- Facilidades
+    -- SELECT sf.FacilityId, f.Name AS FacilityName
+    -- FROM SchoolFacility sf
+    --     INNER JOIN Facility f ON sf.FacilityId = f.Id
+    -- WHERE sf.SchoolId = @Id AND sf.IsActive = 1;
 
--- Satélites
--- SELECT ss.Id, ss.SatelliteSchoolId, s2.Name AS SatelliteSchoolName, ss.AssignmentDate, ss.Status, ss.Comment
--- FROM SatelliteSchool ss
---     INNER JOIN School s2 ON ss.SatelliteSchoolId = s2.Id
--- WHERE ss.MainSchoolId = @Id AND ss.IsActive = 1;
-END; 
+    -- obtener todas las escuelas satélite de la escuela principal
+    SELECT
+        ss.Id,
+        ss.MainSchoolId,
+        ss.SatelliteSchoolId,
+        s2.Name AS SatelliteSchoolName,
+        ss.AssignmentDate,
+        ss.Comment,
+        ss.IsActive,
+        ss.CreatedAt,
+        ss.UpdatedAt
+    FROM SchoolSatellite ss
+        INNER JOIN School s2 ON ss.SatelliteSchoolId = s2.Id
+    WHERE ss.MainSchoolId = @id;
+
+
+END;
+
+
+EXEC [102_GetSchoolById] @id = 3;

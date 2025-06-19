@@ -19,7 +19,7 @@ public interface IKitchenTypeRepository
     /// <param name="name">El nombre del tipo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos.</param>
     /// <returns>Una lista de tipos de cocina.</returns>
-    Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un nuevo tipo de cocina.

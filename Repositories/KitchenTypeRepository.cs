@@ -48,7 +48,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
     /// <param name="name">El nombre de los tipos de cocina a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de cocina</param>
     /// <returns>Los tipos de cocina encontrados</returns>
-    public async Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls, bool isList)
     {
         try
         {
@@ -58,14 +58,48 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllKitchenTypes", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOKitchenType>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.KitchenTypes, take, skip, name, alls);
+
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetAllKitchenTypes", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapKitchenTypeListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetAllKitchenTypes", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapKitchenTypeFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
+                return new { data, count };
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina");
+            _logger.LogError(ex, "Error al obtener los tipos de cocina con parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
+                take, skip, name, alls, isList);
             throw;
         }
     }
@@ -210,5 +244,37 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         _cache.Remove("KitchenTypes");
         _logger.LogInformation("Cache invalidado para KitchenType Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una lista de tipos de cocina
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Lista de tipos de cocina</returns> 
+    private static DTOKitchenType MapKitchenTypeListFromResult(dynamic result)
+    {
+        return new DTOKitchenType
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a un tipo de cocina
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Tipo de cocina</returns>
+    private static DTOKitchenType MapKitchenTypeFromResult(dynamic result)
+    {
+        return new DTOKitchenType
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            IsActive = result.IsActive,
+            DisplayOrder = result.DisplayOrder,
+        };
     }
 }

@@ -71,7 +71,7 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
             {
                 _logger.LogInformation("Obteniendo todas las opciones de selección");
 
-                var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls);
+                var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {

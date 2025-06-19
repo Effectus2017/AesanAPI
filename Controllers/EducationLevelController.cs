@@ -64,7 +64,7 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
         {
             if (ModelState.IsValid)
             {
-                var result = await _educationLevelRepository.GetAllEducationLevels(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _educationLevelRepository.GetAllEducationLevels(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {

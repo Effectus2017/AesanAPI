@@ -10,7 +10,7 @@ public interface IUserRepository
     dynamic GetAllUsersFromDb(int take, int skip, string name, string userId);
     Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, List<string> roles = null);
     dynamic GetAllRolesFromDb();
-    dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls);
+    //dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls);
 
     /// ------------------------------------------------------------------------------------------------
     /// Métodos para la autenticación

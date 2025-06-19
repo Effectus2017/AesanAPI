@@ -47,7 +47,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
     /// <param name="name">El nombre de la política operativa a buscar.</param>
     /// <param name="alls">Si se deben obtener todas las políticas operativas.</param>
     /// <returns>Una lista de políticas operativas.</returns>
-    public async Task<dynamic> GetAllOperatingPolicies(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllOperatingPolicies(int take, int skip, string name, bool alls, bool isList)
     {
         try
         {
@@ -57,10 +57,43 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOOperatingPolicy>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.OperatingPolicies, take, skip, name, alls);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetAllOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapOperatingPolicyListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetAllOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapOperatingPolicyFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
+                return new { data, count };
+            }
+
         }
         catch (Exception ex)
         {
@@ -172,6 +205,10 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
     }
 
+    /// <summary>
+    /// Invalida el caché de la política operativa
+    /// </summary>
+    /// <param name="operatingPolicyId">El ID de la política operativa a invalidar</param>
     private void InvalidateCache(int? operatingPolicyId = null)
     {
         if (operatingPolicyId.HasValue)
@@ -180,5 +217,37 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
         _cache.Remove("OperatingPolicies");
         _logger.LogInformation("Cache invalidado para OperatingPolicy Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una lista de políticas operativas
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Lista de políticas operativas</returns>
+    private static DTOOperatingPolicy MapOperatingPolicyListFromResult(dynamic result)
+    {
+        return new DTOOperatingPolicy
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una política operativa
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Política operativa</returns>
+    private static DTOOperatingPolicy MapOperatingPolicyFromResult(dynamic result)
+    {
+        return new DTOOperatingPolicy
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            IsActive = result.IsActive,
+            DisplayOrder = result.DisplayOrder,
+        };
     }
 }

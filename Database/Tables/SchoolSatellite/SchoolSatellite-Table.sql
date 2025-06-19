@@ -9,11 +9,10 @@ CREATE TABLE SchoolSatellite
     -- Escuela satélite
     AssignmentDate DATE NULL,
     -- Fecha de asignación
-    Status NVARCHAR(50) NULL,
-    -- Estado de la relación (ej: Activa, Suspendida, etc.)
     Comment NVARCHAR(255) NULL,
     -- Comentario adicional
     IsActive BIT NOT NULL DEFAULT 1,
+    -- Estado de la relación (ej: Activa, Suspendida, etc.)
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
     FOREIGN KEY (MainSchoolId) REFERENCES School(Id),

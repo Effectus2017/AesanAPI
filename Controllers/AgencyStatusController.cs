@@ -68,7 +68,7 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
         {
             if (ModelState.IsValid)
             {
-                var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {

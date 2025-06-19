@@ -19,6 +19,11 @@ public class QueryParameters
     public int OptionSelectionId { get; set; } // ID de la opción de selección
     public int? PermissionId { get; set; } // ID del permiso
     public string? RoleId { get; set; } // ID del rol
+    public bool? IsActive { get; set; } // Estado activo
+    public string? InactiveJustification { get; set; } // Justificación para inactivación
+    public DateTime? InactiveDate { get; set; } // Fecha de inactivación
+    public int? SchoolId { get; set; } // ID de la escuela
+
     public string? ImageUrl { get; set; } // URL de la imagen
     public string? RejectionJustification { get; set; } // Justification for rejection
     public string? UserId { get; set; } // ID del usuario

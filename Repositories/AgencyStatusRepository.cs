@@ -48,7 +48,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// <param name="name">El nombre del estado a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los estados.</param>
     /// <returns>Una lista de estados de agencia.</returns>
-    public async Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls, bool isList)
     {
         try
         {
@@ -58,10 +58,42 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("105_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOAgencyStatus>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyStatuses, take, skip, name, alls);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("105_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapAgencyStatusFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("105_GetAllAgencyStatus", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapAgencyStatusFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
+                return new { data, count };
+            }
         }
         catch (Exception ex)
         {
@@ -211,11 +243,26 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     {
         if (agencyStatusId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyStatus, agencyStatusId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyStatuses, 0, 0, "", false));
         }
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.AgencyStatuses);
         _logger.LogInformation("Cache invalidado para AgencyStatus Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a un estado de agencia
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Estado de agencia</returns>
+    private static DTOAgencyStatus MapAgencyStatusFromResult(dynamic result)
+    {
+        return new DTOAgencyStatus
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
     }
 }

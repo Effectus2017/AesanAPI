@@ -1,3 +1,4 @@
+using Api.Models;
 using Api.Models.DTO;
 
 namespace Api.Interfaces;
@@ -19,14 +20,14 @@ public interface IOrganizationTypeRepository
     /// <param name="name">El nombre del tipo de organización a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos de organización.</param>
     /// <returns>Una lista de tipos de organización.</returns>
-    Task<dynamic> GetAllOrganizationTypes(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllOrganizationTypes(int take, int skip, string name, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un nuevo tipo de organización.
     /// </summary>
     /// <param name="organizationType">El tipo de organización a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    Task<bool> InsertOrganizationType(DTOOrganizationType organizationType);
+    Task<bool> InsertOrganizationType(OrganizationTypeRequest organizationType);
 
     /// <summary>
     /// Actualiza un tipo de organización existente.

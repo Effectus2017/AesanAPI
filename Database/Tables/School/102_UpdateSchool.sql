@@ -42,7 +42,10 @@ CREATE OR ALTER PROCEDURE [dbo].[102_UpdateSchool]
     @lunchTo TIME = NULL,
     @snack BIT = NULL,
     @snackFrom TIME = NULL,
-    @snackTo TIME = NULL
+    @snackTo TIME = NULL,
+    @isActive BIT = NULL,
+    @inactiveJustification NVARCHAR(255) = NULL,
+    @inactiveDate DATETIME = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -92,6 +95,9 @@ BEGIN
         Snack = @snack,
         SnackFrom = @snackFrom,
         SnackTo = @snackTo,
+        IsActive = @isActive,
+        InactiveJustification = @inactiveJustification,
+        InactiveDate = @inactiveDate,
         UpdatedAt = GETDATE()
     WHERE Id = @id;
 

@@ -116,7 +116,7 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     /// <returns>La escuela actualizada</returns>
     [HttpPut("update-school")]
     [SwaggerOperation(Summary = "Actualiza una escuela existente", Description = "Actualiza los datos de una escuela existente.")]
-    public async Task<IActionResult> UpdateSchool([FromBody] SchoolRequest request)
+    public async Task<IActionResult> UpdateSchool([FromBody] DTOSchool request)
     {
         try
         {
@@ -168,4 +168,63 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
     }
 
+    /// <summary>
+    /// Verifica si existe una escuela principal en la base de datos
+    /// </summary>
+    /// <returns>True si existe una escuela principal, false en caso contrario</returns>
+    [HttpGet("has-main-school")]
+    [SwaggerOperation(Summary = "Verifica si existe una escuela principal", Description = "Devuelve true si existe una escuela principal, false en caso contrario.")]
+    public async Task<ActionResult<bool>> HasMainSchool()
+    {
+        try
+        {
+            var result = await _unitOfWork.SchoolRepository.HasMainSchool();
+
+            if (result == null)
+            {
+                return NotFound("No se encontró ninguna escuela principal");
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al verificar si existe una escuela principal");
+            return StatusCode(500, "Error interno del servidor al verificar si existe una escuela principal");
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el estado activo/inactivo de una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
+    /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-active-status")]
+    [SwaggerOperation(Summary = "Actualiza el estado activo/inactivo de una escuela", Description = "Permite activar o inactivar una escuela. Requiere justificación al inactivar.")]
+    public async Task<IActionResult> UpdateSchoolActiveStatus([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (queryParameters.IsActive == false && string.IsNullOrWhiteSpace(queryParameters.InactiveJustification))
+            {
+                return BadRequest("Se requiere justificación para inactivar la escuela");
+            }
+
+            var result = await _unitOfWork.SchoolRepository.UpdateSchoolActiveStatus(queryParameters.SchoolId.Value, queryParameters.IsActive.Value, queryParameters.InactiveJustification);
+
+            if (result)
+            {
+                return Ok(result);
+            }
+
+            return NotFound($"Escuela con ID {queryParameters.SchoolId} no encontrada");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}", queryParameters.SchoolId);
+            return StatusCode(500, "Error interno del servidor al actualizar el estado de la escuela");
+        }
+    }
 }

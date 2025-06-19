@@ -69,7 +69,7 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
         {
             if (ModelState.IsValid)
             {
-                var result = await _kitchenTypeRepository.GetAllKitchenTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _kitchenTypeRepository.GetAllKitchenTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {

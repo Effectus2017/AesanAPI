@@ -1,5 +1,6 @@
 using System.Data;
 using Api.Data;
+using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Dapper;
@@ -46,7 +47,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     /// <param name="name">El nombre del tipo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos.</param>
     /// <returns>Una lista de tipos de entrega y el total.</returns>
-    public async Task<dynamic> GetAllDeliveryTypes(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllDeliveryTypes(int take, int skip, string name, bool alls, bool isList)
     {
         try
         {
@@ -56,10 +57,42 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllDeliveryTypes", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTODeliveryType>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.DeliveryTypes, take, skip, name, alls);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetAllDeliveryTypes", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapDeliveryTypeListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetAllDeliveryTypes", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapDeliveryTypeFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
+                return new { data, count };
+            }
         }
         catch (Exception ex)
         {
@@ -152,7 +185,30 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     /// <param name="deliveryTypeId">El ID del tipo de entrega a invalidar.</param>
     private void InvalidateCache(int deliveryTypeId)
     {
-        _cache.Remove(string.Format(_appSettings.Cache.Keys.DeliveryType, deliveryTypeId, "*", "*"));
+        // Invalida el cache para todos los tipos de entrega
+        _cache.Remove(string.Format(_appSettings.Cache.Keys.DeliveryTypes, 0, 0, "", false));
         _logger.LogInformation("Cache invalidado para DeliveryType Repository");
+    }
+
+    private static DTODeliveryType MapDeliveryTypeListFromResult(dynamic result)
+    {
+        return new DTODeliveryType
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
+    }
+
+    private static DTODeliveryType MapDeliveryTypeFromResult(dynamic result)
+    {
+        return new DTODeliveryType
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            IsActive = result.IsActive,
+            DisplayOrder = result.DisplayOrder,
+        };
     }
 }

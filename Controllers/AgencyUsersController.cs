@@ -31,7 +31,8 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
                 var agencies = await _unitOfWork.AgencyUsersRepository.GetUserAssignedAgencies(
                     queryParameters.UserId,
                     queryParameters.Take,
-                    queryParameters.Skip
+                    queryParameters.Skip,
+                    queryParameters.IsList
                 );
 
                 return Ok(agencies);

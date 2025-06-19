@@ -32,7 +32,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
             var school = await result.ReadFirstOrDefaultAsync<dynamic>();
             //var facilities = result.Read<dynamic>().ToList();
-            //var satellites = result.Read<dynamic>().ToList();
+            var satellites = result.Read<dynamic>().ToList();
 
             if (school == null)
             {
@@ -41,7 +41,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
             var data = MapSchoolFromResult(school);
             //data.Facilities = facilities.Select(MapFacilityFromResult).ToList();
-            //data.Satellites = satellites.Select(MapSatelliteFromResult).ToList();
+            data.Satellites = satellites.Select(MapSatelliteFromResult).ToList();
             return data;
         }
         catch (Exception ex)
@@ -93,7 +93,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1) // Cache for 10 minutes
                 );
             }
             else
@@ -105,8 +105,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     return null;
                 }
 
-                var count = result.ReadFirstOrDefault<int>();
                 var schoolsDynamic = result.Read<dynamic>().ToList();
+                var count = result.ReadFirstOrDefault<int>();
                 var data = schoolsDynamic.Select(MapSchoolFromResult).ToList();
                 return new { data, count };
             }
@@ -183,7 +183,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             // Si tenemos un mainSchoolId, insertamos la escuela principal
             if (request.MainSchoolId.HasValue)
             {
-                await InsertSatelliteSchoolAsync(request.MainSchoolId.Value, schoolId);
+                await InsertSatelliteSchool(request.MainSchoolId.Value, schoolId);
             }
 
             // Invalidar caché
@@ -203,7 +203,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// </summary>
     /// <param name="request">La solicitud de la escuela a actualizar.</param>
     /// <returns>True si la escuela se actualizó correctamente, false en caso contrario.</returns>
-    public async Task<bool> UpdateSchool(SchoolRequest request)
+    public async Task<bool> UpdateSchool(DTOSchool request)
     {
         try
         {
@@ -254,30 +254,16 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
             parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@isActive", request.IsActive, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
 
             await dbConnection.ExecuteAsync("102_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
 
             // Si tenemos un mainSchoolId, actualizamos la escuela principal
             if (request.MainSchoolId.HasValue)
             {
-                parameters = new DynamicParameters();
-                parameters.Add("@mainSchoolId", request.MainSchoolId, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@satelliteSchoolId", request.Id, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@status", "Active", DbType.String, ParameterDirection.Input);
-                parameters.Add("@comment", "Escuela actualizada", DbType.String, ParameterDirection.Input);
-                parameters.Add("@isActive", true, DbType.Boolean, ParameterDirection.Input);
-
-                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-                await dbConnection.ExecuteAsync("102_UpdateSchoolSatellite", parameters, commandType: CommandType.StoredProcedure);
-
-                var rowsAffected = parameters.Get<int>("@rowsAffected");
-
-                if (rowsAffected == 0)
-                {
-                    _logger.LogError("Error al actualizar la escuela principal {MainSchoolId} con la escuela satelite {SatelliteSchoolId}", request.MainSchoolId, request.Id);
-                    return false;
-                }
+                await UpdateSatelliteSchool(request.MainSchoolId.Value, request.Id);
             }
 
             // Invalidar caché
@@ -322,11 +308,15 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
+    /// <summary>
+    /// Invalida la caché para la escuela
+    /// </summary>
+    /// <param name="schoolId">El ID de la escuela.</param>
     private void InvalidateCache(int? schoolId = null)
     {
         if (schoolId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.School, schoolId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Schools, 0, 0, "", false));
         }
 
         // Invalidar listas completas
@@ -334,7 +324,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         _logger.LogInformation("Cache invalidado para School Repository");
     }
 
-    public async Task<bool> InsertSatelliteSchoolAsync(int mainSchoolId, int satelliteSchoolId)
+    /// <summary>
+    /// Inserta una escuela satélite
+    /// </summary>
+    /// <param name="mainSchoolId">El ID de la escuela principal.</param>
+    /// <param name="satelliteSchoolId">El ID de la escuela satélite.</param>
+    /// <returns>True si la escuela satélite se insertó correctamente, false en caso contrario.</returns>
+    public async Task<bool> InsertSatelliteSchool(int mainSchoolId, int satelliteSchoolId)
     {
         try
         {
@@ -352,7 +348,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
             if (id == 0)
             {
-                _logger.LogError("Error al insertar la escuela satelite {SatelliteSchoolId}", satelliteSchoolId);
+                _logger.LogError("Error al insertar la escuela satélite {SatelliteSchoolId}", satelliteSchoolId);
                 return false;
             }
 
@@ -367,7 +363,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-    public async Task<bool> UpdateSatelliteSchoolAsync(int mainSchoolId, int satelliteSchoolId)
+    /// <summary>
+    /// Actualiza o inserta una escuela satélite
+    /// </summary>
+    /// <param name="mainSchoolId">El ID de la escuela principal.</param>
+    /// <param name="satelliteSchoolId">El ID de la escuela satélite.</param>
+    /// <returns>True si la escuela satélite se actualizó o insertó correctamente, false en caso contrario.</returns>
+    public async Task<bool> UpdateSatelliteSchool(int mainSchoolId, int satelliteSchoolId)
     {
         try
         {
@@ -375,17 +377,17 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var parameters = new DynamicParameters();
             parameters.Add("@mainSchoolId", mainSchoolId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@satelliteSchoolId", satelliteSchoolId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@comment", "Escuela actualizada", DbType.String, ParameterDirection.Input);
+            parameters.Add("@comment", "Escuela actualizada/creada", DbType.String, ParameterDirection.Input);
             parameters.Add("@isActive", true, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("102_UpdateSatelliteSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("103_UpdateSchoolSatellite", parameters, commandType: CommandType.StoredProcedure);
 
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected == 0)
             {
-                _logger.LogError("Error al actualizar la escuela principal {MainSchoolId} con la escuela satelite {SatelliteSchoolId}", mainSchoolId, satelliteSchoolId);
+                _logger.LogError("Error al actualizar/insertar la escuela principal {MainSchoolId} con la escuela satélite {SatelliteSchoolId}", mainSchoolId, satelliteSchoolId);
                 return false;
             }
 
@@ -394,10 +396,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error al actualizar SatelliteSchool para MainSchoolId={mainSchoolId}, SatelliteSchoolId={satelliteSchoolId}");
+            _logger.LogError(ex, $"Error al actualizar/insertar SatelliteSchool para MainSchoolId={mainSchoolId}, SatelliteSchoolId={satelliteSchoolId}");
             return false;
         }
     }
+
     /// <summary>
     /// Maps a dynamic result to a DTOSchool object
     /// </summary>
@@ -459,9 +462,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 SnackFrom = item.SnackFrom,
                 SnackTo = item.SnackTo,
                 IsActive = item.IsActive ?? true,
-                CreatedAt = item.CreatedAt,
-                UpdatedAt = item.UpdatedAt,
+                InactiveJustification = item.InactiveJustification ?? string.Empty,
+                InactiveDate = item.InactiveDate,
+                CreatedAt = item.CreatedAt ?? DateTime.MinValue,
+                UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
                 IsMainSchool = item.IsMainSchool ?? false,
+                MainSchoolId = item.MainSchoolId ?? 0,
                 // Nested catalogs (if needed, can be mapped here)
                 City = item.CityId != null ? new DTOCity
                 {
@@ -563,6 +569,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 {
                     Id = item.AgencyId,
                     Name = item.AgencyName ?? string.Empty
+                } : null,
+                MainSchool = item.MainSchoolId != null ? new DTOSchool
+                {
+                    Id = item.MainSchoolId,
+                    Name = item.MainSchoolName ?? string.Empty
                 } : null
             };
         }
@@ -595,6 +606,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 Id = item.Id ?? 0,
                 AgencyId = item.AgencyId ?? 0,
                 Name = item.Name ?? string.Empty,
+                IsMainSchool = item.IsMainSchool ?? false,
+                MainSchoolId = item.MainSchoolId ?? 0,
+                MainSchool = item.MainSchoolId != null ? new DTOSchool
+                {
+                    Id = item.MainSchoolId,
+                    Name = item.MainSchoolName ?? string.Empty
+                } : null
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
@@ -607,7 +625,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-
+    /// <summary>
+    /// Maps a dynamic result to a DTOFacility object
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DTOFacility</returns>
     private static DTOFacility MapFacilityFromResult(dynamic item)
     {
         return new DTOFacility
@@ -617,13 +639,81 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         };
     }
 
-    private static DTOFacility MapSatelliteFromResult(dynamic item)
+    /// <summary>
+    /// Maps a dynamic result to a DTOFacility object
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DTOFacility</returns>
+    private static DTOSatelliteSchool MapSatelliteFromResult(dynamic item)
     {
-        return new DTOFacility
+        return new DTOSatelliteSchool
         {
             Id = item.Id,
-            Name = item.Name
+            MainSchoolId = item.MainSchoolId,
+            SatelliteSchoolId = item.SatelliteSchoolId,
+            SatelliteSchoolName = item.SatelliteSchoolName,
+            AssignmentDate = item.AssignmentDate,
+            Comment = item.Comment,
+            IsActive = item.IsActive,
+            CreatedAt = item.CreatedAt,
+            UpdatedAt = item.UpdatedAt
         };
+    }
+
+    /// <summary>
+    /// Verifica si existe una escuela principal en la base de datos
+    /// </summary>
+    /// <returns>True si existe una escuela principal, false en caso contrario</returns>
+    public async Task<bool> HasMainSchool()
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var result = await dbConnection.ExecuteScalarAsync<int>("102_HasMainSchool", commandType: CommandType.StoredProcedure);
+            return result > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al verificar si existe una escuela principal");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el estado activo/inactivo de una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
+    /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
+    /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
+    public async Task<bool> UpdateSchoolActiveStatus(int schoolId, bool isActive, string inactiveJustification = null)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", schoolId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isActive", isActive, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@inactiveJustification", inactiveJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("103_UpdateSchoolActiveStatus", parameters, commandType: CommandType.StoredProcedure);
+
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(schoolId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}", schoolId);
+            throw;
+        }
     }
 }
 

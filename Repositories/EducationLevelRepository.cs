@@ -51,7 +51,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     /// <param name="name">El nombre del nivel educativo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los niveles educativos.</param>
     /// <returns>Una lista de niveles educativos.</returns>
-    public async Task<dynamic> GetAllEducationLevels(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllEducationLevels(int take, int skip, string name, bool alls, bool isList)
     {
         try
         {
@@ -61,10 +61,43 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
-            var data = await result.ReadAsync<DTOEducationLevel>();
-            var count = await result.ReadSingleAsync<int>();
-            return new { data, count };
+
+            if (isList)
+            {
+                string cacheKey = string.Format(_appSettings.Cache.Keys.EducationLevels, take, skip, name, alls);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = await result.ReadAsync<DTOEducationLevel>();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return new { data = Array.Empty<DTOEducationLevel>(), count = 0 };
+                }
+
+                var data = await result.ReadAsync<DTOEducationLevel>();
+                var count = await result.ReadSingleAsync<int>();
+                return new { data, count };
+            }
+
         }
         catch (Exception ex)
         {
@@ -87,11 +120,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
             parameters.Add("@name", educationLevel.Name, DbType.String);
             parameters.Add("@id", educationLevel.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync(
-                "100_InsertEducationLevel",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_InsertEducationLevel", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
 
             if (id > 0)
@@ -186,7 +215,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
     {
         if (educationLevelId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.EducationLevel, educationLevelId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.EducationLevels, 0, 0, "", false));
         }
 
         // Invalidar listas completas

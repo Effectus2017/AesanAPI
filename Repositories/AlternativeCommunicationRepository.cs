@@ -23,7 +23,7 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     /// <returns>La comunicación alternativa encontrada.</returns>
     public async Task<dynamic> GetAlternativeCommunicationById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.AlternativeCommunication, id);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.AlternativeCommunications, 0, 0, "", false);
 
         return await _cache.CacheQuery(
             cacheKey,
@@ -194,7 +194,7 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
     {
         if (alternativeCommunicationId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.AlternativeCommunication, alternativeCommunicationId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.AlternativeCommunications, 0, 0, "", false));
         }
 
         // Invalidar listas completas

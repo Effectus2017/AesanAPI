@@ -22,26 +22,26 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
     /// <returns>El período operativo encontrado.</returns>
     public async Task<dynamic> GetOperatingPeriodById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.OperatingPeriod, id);
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", id, DbType.Int32);
+            var result = await db.QueryMultipleAsync("100_GetOperatingPeriodById", parameters, commandType: CommandType.StoredProcedure);
 
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
+            if (result == null)
             {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", id, DbType.Int32);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetOperatingPeriodById",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-                var data = await result.ReadSingleAsync<DTOOperatingPeriod>();
-                return data;
-            },
-            _logger,
-            _appSettings
-        );
+                return null;
+            }
+
+            var data = await result.ReadSingleAsync<DTOOperatingPeriod>();
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting operating period by id: {Id}", id);
+            throw;
+        }
     }
 
     /// <summary>
@@ -52,32 +52,58 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
     /// <param name="name">El nombre del período operativo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los períodos operativos.</param>
     /// <returns>Una lista de períodos operativos.</returns>
-    public async Task<dynamic> GetAllOperatingPeriods(int take, int skip, string name, bool alls)
+    public async Task<dynamic> GetAllOperatingPeriods(int take, int skip, string name, bool alls, bool isList)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.OperatingPeriods, take, skip, name, alls);
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
 
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
+            if (isList)
             {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@take", take, DbType.Int32);
-                parameters.Add("@skip", skip, DbType.Int32);
-                parameters.Add("@name", name, DbType.String);
-                parameters.Add("@alls", alls, DbType.Boolean);
-                var result = await db.QueryMultipleAsync(
-                    "100_GetAllOperatingPeriods",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
+                string cacheKey = string.Format(_appSettings.Cache.Keys.OperatingPeriods, take, skip, name, alls);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetAllOperatingPeriods", parameters, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapOperatingPeriodListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
                 );
-                var data = await result.ReadAsync<DTOOperatingPeriod>();
-                var count = await result.ReadSingleAsync<int>();
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetAllOperatingPeriods", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapOperatingPeriodFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
-            },
-            _logger,
-            _appSettings
-        );
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all operating periods");
+            throw;
+        }
     }
 
     /// <summary>
@@ -189,15 +215,51 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         }
     }
 
+    /// <summary>
+    /// Invalida el caché de un período operativo
+    /// </summary>
+    /// <param name="operatingPeriodId">El ID del período operativo a invalidar</param>
     private void InvalidateCache(int? operatingPeriodId = null)
     {
         if (operatingPeriodId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.OperatingPeriod, operatingPeriodId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.OperatingPeriods, 0, 0, "", false));
         }
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.OperatingPeriods);
         _logger.LogInformation("Cache invalidado para OperatingPeriod Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una lista de períodos operativos
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Lista de períodos operativos</returns>
+    private static DTOOperatingPeriod MapOperatingPeriodListFromResult(dynamic result)
+    {
+        return new DTOOperatingPeriod
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a un período operativo
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Período operativo</returns>
+    private static DTOOperatingPeriod MapOperatingPeriodFromResult(dynamic result)
+    {
+        return new DTOOperatingPeriod
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            IsActive = result.IsActive,
+            DisplayOrder = result.DisplayOrder,
+        };
     }
 }

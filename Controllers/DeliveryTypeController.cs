@@ -61,7 +61,7 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
         {
             if (ModelState.IsValid)
             {
-                var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {

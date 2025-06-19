@@ -49,24 +49,19 @@ public class CacheKeys
 
     // Claves para Programs
     public string Programs { get; set; } = "Programs_{0}_{1}_{2}_{3}";
-    public string Program { get; set; } = "Program_{0}";
     public string ProgramInscriptions { get; set; } = "ProgramInscriptions_{0}_{1}_{2}_{3}";
-    public string OptionSelections { get; set; } = "OptionSelections";
 
     // Claves para Agency
     public string Agencies { get; set; } = "Agencies_{0}_{1}_{2}_{3}";
     public string Agency { get; set; } = "Agency_{0}";
     public string AgencyStatuses { get; set; } = "AgencyStatuses_{0}_{1}_{2}_{3}";
-    public string AgencyStatus { get; set; } = "AgencyStatus_{0}";
     public string AgencyUsers { get; set; } = "AgencyUsers_{0}_{1}_{2}";
 
     // Claves para School
     public string Schools { get; set; } = "Schools_{0}_{1}_{2}_{3}";
-    public string School { get; set; } = "School_{0}";
 
     // Claves para OrganizationType
     public string OrganizationTypes { get; set; } = "OrganizationTypes_{0}_{1}_{2}_{3}";
-    public string OrganizationType { get; set; } = "OrganizationType_{0}";
 
     // Claves para OperatingPolicy
     public string OperatingPolicies { get; set; } = "OperatingPolicies_{0}_{1}_{2}_{3}";
@@ -74,40 +69,47 @@ public class CacheKeys
 
     // Claves para AlternativeCommunication
     public string AlternativeCommunications { get; set; } = "AlternativeCommunications_{0}_{1}_{2}_{3}";
-    public string AlternativeCommunication { get; set; } = "AlternativeCommunication_{0}";
 
     // Claves para EducationLevel
     public string EducationLevels { get; set; } = "EducationLevels_{0}_{1}_{2}_{3}";
-    public string EducationLevel { get; set; } = "EducationLevel_{0}";
 
     // Claves para Facility
     public string Facilities { get; set; } = "Facilities_{0}_{1}_{2}_{3}";
-    public string Facility { get; set; } = "Facility_{0}";
 
     // Claves para FederalFundingCertification
     public string FederalFundingCertifications { get; set; } = "FederalFundingCertifications_{0}_{1}_{2}_{3}";
-    public string FederalFundingCertification { get; set; } = "FederalFundingCertification_{0}";
 
     // Claves para FoodAuthority
     public string FoodAuthorities { get; set; } = "FoodAuthorities_{0}_{1}_{2}_{3}";
-    public string FoodAuthority { get; set; } = "FoodAuthority_{0}";
 
     // Claves para MealType
     public string MealTypes { get; set; } = "MealTypes_{0}_{1}_{2}_{3}";
-    public string MealType { get; set; } = "MealType_{0}";
 
     // Claves para OperatingPeriod
     public string OperatingPeriods { get; set; } = "OperatingPeriods_{0}_{1}_{2}_{3}";
-    public string OperatingPeriod { get; set; } = "OperatingPeriod_{0}";
+
 
     // Claves para DeliveryType
     public string DeliveryTypes { get; set; } = "DeliveryTypes_{0}_{1}_{2}_{3}";
-    public string DeliveryType { get; set; } = "DeliveryType_{0}";
 
+    // Claves para OptionSelection
+    public string OptionSelections { get; set; } = "OptionSelections_{0}_{1}_{2}_{3}";
+
+    // Claves para OptionSelection
     public string OptionSelectionByKey { get; set; } = "OptionSelection_{0}";
 
     // Claves para CenterType
     public string CenterTypes { get; set; } = "CenterTypes_{0}_{1}_{2}_{3}";
+
+    // Claves para SponsorType
+    public string SponsorTypes { get; set; } = "SponsorTypes_{0}_{1}_{2}_{3}";
+
+    // Claves para KitchenType
+    public string KitchenTypes { get; set; } = "KitchenTypes_{0}_{1}_{2}_{3}";
+
+    // Claves para CenterType
+    public string GroupTypes { get; set; } = "GroupTypes_{0}_{1}_{2}_{3}";
+
 }
 
 public class GmailSettings

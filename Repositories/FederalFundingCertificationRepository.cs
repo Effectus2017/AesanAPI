@@ -23,7 +23,7 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     /// <returns>La certificación encontrada.</returns>
     public async Task<dynamic> GetFederalFundingCertificationById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.FederalFundingCertification, id);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.FederalFundingCertifications, 0, 0, "", false);
 
         return await _cache.CacheQuery(
             cacheKey,
@@ -196,7 +196,7 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
     {
         if (certificationId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.FederalFundingCertification, certificationId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.FederalFundingCertifications, 0, 0, "", false));
         }
 
         // Invalidar listas completas

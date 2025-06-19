@@ -65,4 +65,9 @@ public class SchoolRequest
     // Escuela Principal
     public bool? IsMainSchool { get; set; }
     public int? MainSchoolId { get; set; }
+
+    // Estado de actividad
+    public bool? IsActive { get; set; }
+    public string InactiveJustification { get; set; }
+    public DateTime? InactiveDate { get; set; }
 }

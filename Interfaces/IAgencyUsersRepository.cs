@@ -11,7 +11,7 @@ public interface IAgencyUsersRepository
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
     /// <returns>Lista de agencias asignadas al usuario</returns>
-    Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip);
+    Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip, bool isList);
 
     /// <summary>
     /// Obtiene la agencia asignada a un usuario

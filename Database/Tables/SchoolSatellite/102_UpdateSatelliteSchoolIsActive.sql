@@ -1,5 +1,5 @@
 CREATE PROCEDURE [dbo].[102_UpdateSatelliteSchoolIsActive]
-    @main_school_id INT,
+    @ma INT,
     @is_active BIT
 AS
 BEGIN

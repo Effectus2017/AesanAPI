@@ -70,9 +70,14 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                     async () =>
                     {
                         using var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
-                        var data = await result.ReadAsync<DTOCenterType>();
-                        var count = await result.ReadSingleAsync<int>();
-                        return new { data, count };
+
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapCenterTypeListFromResult).ToList();
+                        return data;
                     },
                     _logger,
                     _appSettings,
@@ -82,8 +87,14 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
             else
             {
                 var result = await db.QueryMultipleAsync("100_GetAllCenterType", parameters, commandType: CommandType.StoredProcedure);
-                var data = await result.ReadAsync<DTOCenterType>();
-                var count = await result.ReadSingleAsync<int>();
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapCenterTypeFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
         }
@@ -176,5 +187,27 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         _cache.Remove("CenterTypes");
         _logger.LogInformation("Cache invalidado para CenterType Repository");
+    }
+
+    private static DTOCenterType MapCenterTypeListFromResult(dynamic result)
+    {
+        return new DTOCenterType
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+        };
+    }
+
+    private static DTOCenterType MapCenterTypeFromResult(dynamic result)
+    {
+        return new DTOCenterType
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            IsActive = result.IsActive,
+            DisplayOrder = result.DisplayOrder,
+        };
     }
 }

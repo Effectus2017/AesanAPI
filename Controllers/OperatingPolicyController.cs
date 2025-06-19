@@ -71,7 +71,12 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
         {
             if (ModelState.IsValid)
             {
-                var result = await _operatingPolicyRepository.GetAllOperatingPolicies(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _operatingPolicyRepository.GetAllOperatingPolicies(
+                    queryParameters.Take,
+                    queryParameters.Skip,
+                    queryParameters.Name,
+                    queryParameters.Alls,
+                    queryParameters.IsList);
 
                 if (result == null)
                 {

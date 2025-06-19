@@ -31,8 +31,14 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@userId", userId, DbType.String);
-            var agency = await db.QueryFirstOrDefaultAsync<dynamic>("103_GetUserAssignedAgency", parameters, commandType: CommandType.StoredProcedure);
-            return agency;
+            var result = await db.QueryFirstOrDefaultAsync<DTOAgencyUser>("103_GetUserAssignedAgency", parameters, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -48,33 +54,57 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
     /// <returns>Lista de agencias asignadas al usuario</returns>
-    public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip)
+    public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip, bool isList)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, take, skip);
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@userId", userId, DbType.String);
 
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
+            if (isList)
             {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@userId", userId, DbType.String);
-                parameters.Add("@take", take, DbType.Int32);
-                parameters.Add("@skip", skip, DbType.Int32);
+                string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, take, skip);
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        using var result = await db.QueryMultipleAsync("100_GetUserAssignedAgencies", parameters, commandType: CommandType.StoredProcedure);
 
-                var result = await db.QueryMultipleAsync(
-                    "100_GetUserAssignedAgencies",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
+                        if (result == null)
+                        {
+                            return [];
+                        }
+
+                        var data = result.Read<dynamic>().Select(MapAgencyUserListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
                 );
+            }
+            else
+            {
+                using var result = await db.QueryMultipleAsync("100_GetUserAssignedAgencies", parameters, commandType: CommandType.StoredProcedure);
 
-                var data = await result.ReadAsync<dynamic>();
-                var count = await result.ReadSingleAsync<int>();
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapAgencyUserFromResult).ToList();
+                var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
-            },
-            _logger,
-            _appSettings
-        );
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener las agencias asignadas al usuario {UserId}", userId);
+            throw;
+        }
     }
 
     /// <summary>
@@ -96,11 +126,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             parameters.Add("@isMonitor", isMonitor, DbType.Boolean);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "101_AssignAgencyToUser",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("101_AssignAgencyToUser", parameters, commandType: CommandType.StoredProcedure);
 
             var id = parameters.Get<int>("@Id");
 
@@ -147,11 +173,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             parameters.Add("@agencyId", agencyId, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "101_UnassignAgencyToUser",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("101_UnassignAgencyToUser", parameters, commandType: CommandType.StoredProcedure);
 
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
@@ -188,11 +210,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             parameters.Add("@assignedBy", assignedBy, DbType.String);
             parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "101_UpdateUserMainAgency", // Necesitaremos crear este SP
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("101_UpdateUserMainAgency", parameters, commandType: CommandType.StoredProcedure);
 
             var id = parameters.Get<int>("@Id");
 
@@ -216,5 +234,41 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         // Invalidar listas completas
         _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, "*", "*"));
         _logger.LogInformation("Cache invalidado para AgencyUsers Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una lista de usuarios de agencia
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Lista de usuarios de agencia</returns>
+    private static DTOAgencyUser MapAgencyUserListFromResult(dynamic result)
+    {
+        return new DTOAgencyUser
+        {
+            Id = result.Id,
+            Name = result.Name
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a un usuario de agencia
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Usuario de agencia</returns>
+    private static DTOAgencyUser MapAgencyUserFromResult(dynamic result)
+    {
+        return new DTOAgencyUser
+        {
+            Id = result.Id,
+            Name = result.Name,
+            Address = result.Address,
+            Phone = result.Phone,
+            Email = result.Email,
+            IsOwner = result.IsOwner,
+            IsMonitor = result.IsMonitor,
+            IsActive = result.IsActive,
+            CreatedAt = result.CreatedAt,
+            UpdatedAt = result.UpdatedAt,
+        };
     }
 }

@@ -23,7 +23,7 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
     /// <returns>La facilidad encontrada.</returns>
     public async Task<dynamic> GetFacilityById(int id)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.Facility, id);
+        string cacheKey = string.Format(_appSettings.Cache.Keys.Facilities, 0, 0, "", false);
 
         return await _cache.CacheQuery(
             cacheKey,
@@ -194,7 +194,7 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
     {
         if (facilityId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.Facility, facilityId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Facilities, 0, 0, "", false));
         }
 
         // Invalidar listas completas

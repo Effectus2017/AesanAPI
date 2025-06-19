@@ -755,7 +755,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al invalidar el caché de Agency Repository", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
+            await _logger.LogError(ex, "Error al invalidar el caché de Agency Repository",
+                new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             // No relanzamos la excepción para evitar que un error de caché afecte la operación principal
         }
     }
@@ -862,10 +863,20 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
+    /// <summary>
+    /// Mapea los programas de una agencia desde un resultado dinámico a un DTOProgram  
+    /// </summary>
+    /// <param name="programs">Resultados dinámicos de los programas</param>
+    /// <returns>Lista de DTOProgram</returns>
     private static List<DTOProgram> MapProgramsFromResult(IEnumerable<dynamic> programs)
     {
         try
         {
+            if (programs == null)
+            {
+                throw new ArgumentNullException(nameof(programs), "El objeto programs no puede ser nulo");
+            }
+
             return programs
                 .Select(
                     ap =>
@@ -873,17 +884,24 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         {
                             Id = ap.Id,
                             Name = ap.Name,
+                            NameEN = ap.NameEN,
                             Description = ap.Description,
-                            AgencyId = ap.AgencyId
+                            DescriptionEN = ap.DescriptionEN,
+                            IsActive = ap.IsActive,
+                            CreatedAt = ap.CreatedAt,
+                            UpdatedAt = ap.UpdatedAt
                         }
                 )
                 .ToList();
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear los programas: Propiedad no encontrada o inválida. {ex.Message}", ex);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Error inesperado al mapear los programas: {ex.Message}", ex);
         }
     }
-
 
 }

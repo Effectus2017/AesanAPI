@@ -78,6 +78,16 @@ public class DTOSchool
     public DTOAgency? Agency { get; set; }
     public bool IsMainSchool { get; set; }
     public bool IsActive { get; set; }
+    public string? InactiveJustification { get; set; }
+    public DateTime? InactiveDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public int? MainSchoolId { get; set; }
+
+
+    // Main School
+    public DTOSchool? MainSchool { get; set; }
+
+    // Satélites
+    public List<DTOSatelliteSchool>? Satellites { get; set; }
 }

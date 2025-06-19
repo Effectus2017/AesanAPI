@@ -29,11 +29,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<DTOProgram>(
-                "100_GetProgramById",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await dbConnection.QueryFirstOrDefaultAsync<DTOProgram>("100_GetProgramById", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -57,7 +53,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// <param name="names">Los nombres de los programas a buscar (separados por coma)</param>
     /// <param name="alls">Si se deben obtener todos los programas</param>
     /// <returns>Los programas</returns>
-    public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls)
+    public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls, bool isList)
     {
         try
         {
@@ -67,32 +63,43 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             param.Add("@skip", skip, DbType.Int32);
             param.Add("@names", names, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
-            var result = await dbConnection.QueryMultipleAsync(
-                "101_GetPrograms",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
 
-            if (result == null)
+            if (isList)
             {
-                return null;
-            }
+                string cacheKey = string.Format(_appSettings.Cache.Keys.Programs, take, skip, names, alls);
 
-            var data = result
-                .Read<dynamic>()
-                .Select(
-                    item =>
-                        new DTOProgram
+                return await _cache.CacheQuery(
+                    cacheKey,
+                    async () =>
+                    {
+                        var result = await dbConnection.QueryMultipleAsync("101_GetPrograms", param, commandType: CommandType.StoredProcedure);
+
+                        if (result == null)
                         {
-                            Id = item.Id,
-                            Name = item.Name,
-                            Description = item.Description
+                            return [];
                         }
-                )
-                .ToList();
 
-            var count = result.Read<int>().Single();
-            return new { data, count };
+                        var data = result.Read<dynamic>().Select(MapProgramListFromResult).ToList();
+                        return data;
+                    },
+                    _logger,
+                    _appSettings,
+                    TimeSpan.FromMinutes(30)
+                );
+            }
+            else
+            {
+                var result = await dbConnection.QueryMultipleAsync("101_GetPrograms", param, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                var data = result.Read<dynamic>().Select(MapProgramFromResult).ToList();
+                var count = result.Read<int>().Single();
+                return new { data, count };
+            }
         }
         catch (Exception ex)
         {
@@ -125,91 +132,16 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             parameters.Add("@agencyId", agencyId, DbType.Int32);
             parameters.Add("@programId", programId, DbType.Int32);
 
-            var result = await dbConnection.QueryMultipleAsync(
-                "101_GetAllProgramInscriptions",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await dbConnection.QueryMultipleAsync("101_GetAllProgramInscriptions", parameters, commandType: CommandType.StoredProcedure);
 
-            var inscriptions = result
-                .Read<dynamic>()
-                .Select(
-                    item =>
-                        new DTOProgramInscription
-                        {
-                            Id = item.Id,
-                            Agency = new DTOAgency
-                            {
-                                Id = item.AgencyId,
-                                Name = item.AgencyName,
-                            },
-                            Program = new DTOProgram
-                            {
-                                Id = item.ProgramId,
-                                Name = item.ProgramName,
-                                Description = item.ProgramDescription
-                            },
-                            ApplicationNumber = item.ApplicationNumber,
-                            IsPublic = item.IsPublic,
-                            TotalNumberSchools = item.TotalNumberSchools,
-                            HasBasicEducationCertification = item.HasBasicEducationCertification,
-                            IsAeaMenuCreated = item.IsAeaMenuCreated,
-                            ExemptionRequirement = item.ExemptionRequirement,
-                            ExemptionStatus = item.ExemptionStatus,
-                            ParticipatingAuthority = new DTOFoodAuthority
-                            {
-                                Id = item.ParticipatingAuthorityId,
-                                Name = item.FoodAuthorityName
-                            },
-                            OperatingPolicy = new DTOOperatingPolicy
-                            {
-                                Id = item.OperatingPolicyId,
-                                Name = item.OperatingPolicyName,
-                                NameEN = item.OperatingPolicyNameEN
-                            },
-                            HasCompletedCivilRightsQuestionnaire = item.HasCompletedCivilRightsQuestionnaire,
-                            NeedsInformationInOtherLanguages = item.NeedsInformationInOtherLanguages,
-                            InformationInOtherLanguages = item.InformationInOtherLanguages,
-                            NeedsInterpreter = item.NeedsInterpreter,
-                            InterpreterLanguages = item.InterpreterLanguages,
-                            NeedsAlternativeCommunication = item.NeedsAlternativeCommunication,
-                            AlternativeCommunication = item.AlternativeCommunicationId != null
-                                ? new DTOAlternativeCommunication
-                                {
-                                    Id = item.AlternativeCommunicationId,
-                                    Name = item.AlternativeCommunicationName
-                                }
-                                : null,
-                            NeedsFederalRelayService = new DTOOptionSelection
-                            {
-                                Id = item.NeedsFederalRelayServiceId,
-                                Name = item.NeedsFederalRelayServiceName
-                            },
-                            ShowEvidence = new DTOOptionSelection
-                            {
-                                Id = item.ShowEvidenceId,
-                                Name = item.ShowEvidenceName
-                            },
-                            ShowEvidenceDescription = item.ShowEvidenceDescription,
-                            SnackPercentage = item.SnackPercentage,
-                            ReducedSnackPercentage = item.ReducedSnackPercentage,
-                            FederalFundingCertification = item.FederalFundingCertificationId != null
-                                ? new DTOFederalFundingCertification
-                                {
-                                    Id = item.FederalFundingCertificationId,
-                                    FundingAmount = item.FundingAmount,
-                                    Description = item.FederalFundingDescription
-                                }
-                                : null,
-                            Date = item.Date,
-                            CreatedAt = item.CreatedAt,
-                            UpdatedAt = item.UpdatedAt
-                        }
-                )
-                .ToList();
+            if (result == null)
+            {
+                return null;
+            }
 
+            var data = result.Read<dynamic>().Select(MapProgramInscriptionFromResult).ToList();
             var count = result.Read<int>().Single();
-            return new { data = inscriptions, count };
+            return new { data, count };
         }
         catch (Exception ex)
         {
@@ -378,36 +310,135 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
     }
 
-    public async Task<List<DTOOptionSelection>> GetAllOptionSelections()
-    {
-        return await _cache.CacheQuery(
-            _appSettings.Cache.Keys.OptionSelections,
-            async () =>
-            {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var result = await dbConnection.QueryAsync<DTOOptionSelection>(
-                    "SELECT * FROM OptionSelection ORDER BY Name"
-                );
-                return result.ToList();
-            },
-            _logger,
-            _appSettings
-        );
-    }
-
-    // Método para invalidar el caché manualmente si es necesario
+    /// <summary>
+    /// Invalida el caché para el programa
+    /// </summary>
+    /// <param name="programId">ID del programa</param>
     private void InvalidateCache(int? programId = null)
     {
         if (programId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.Program, programId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Programs, 0, 0, "", false));
         }
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.Programs);
         _cache.Remove(_appSettings.Cache.Keys.ProgramInscriptions);
-        _cache.Remove(_appSettings.Cache.Keys.OptionSelections);
 
         _logger.LogInformation("Cache invalidado para Program Repository");
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a una lista de programas
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Lista de programas</returns>
+    private static DTOProgram MapProgramListFromResult(dynamic result)
+    {
+        return new DTOProgram
+        {
+            Id = result.Id,
+            Name = result.Name,
+            Description = result.Description
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a un programa
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Programa</returns>
+    private static DTOProgram MapProgramFromResult(dynamic result)
+    {
+        return new DTOProgram
+        {
+            Id = result.Id,
+            Name = result.Name,
+            NameEN = result.NameEN,
+            Description = result.Description,
+            DescriptionEN = result.DescriptionEN,
+            IsActive = result.IsActive,
+            CreatedAt = result.CreatedAt,
+            UpdatedAt = result.UpdatedAt
+        };
+    }
+
+    /// <summary>
+    /// Mapea el resultado de la consulta a un programa
+    /// </summary>
+    /// <param name="result">Resultado de la consulta</param>
+    /// <returns>Programa</returns>
+    private static DTOProgramInscription MapProgramInscriptionFromResult(dynamic result)
+    {
+        return new DTOProgramInscription
+        {
+            Id = result.Id,
+            Agency = new DTOAgency
+            {
+                Id = result.AgencyId,
+                Name = result.AgencyName,
+            },
+            Program = new DTOProgram
+            {
+                Id = result.ProgramId,
+                Name = result.ProgramName,
+                Description = result.ProgramDescription
+            },
+            ApplicationNumber = result.ApplicationNumber,
+            IsPublic = result.IsPublic,
+            TotalNumberSchools = result.TotalNumberSchools,
+            HasBasicEducationCertification = result.HasBasicEducationCertification,
+            IsAeaMenuCreated = result.IsAeaMenuCreated,
+            ExemptionRequirement = result.ExemptionRequirement,
+            ExemptionStatus = result.ExemptionStatus,
+            ParticipatingAuthority = new DTOFoodAuthority
+            {
+                Id = result.ParticipatingAuthorityId,
+                Name = result.FoodAuthorityName
+            },
+            OperatingPolicy = new DTOOperatingPolicy
+            {
+                Id = result.OperatingPolicyId,
+                Name = result.OperatingPolicyName,
+                NameEN = result.OperatingPolicyNameEN
+            },
+            HasCompletedCivilRightsQuestionnaire = result.HasCompletedCivilRightsQuestionnaire,
+            NeedsInformationInOtherLanguages = result.NeedsInformationInOtherLanguages,
+            InformationInOtherLanguages = result.InformationInOtherLanguages,
+            NeedsInterpreter = result.NeedsInterpreter,
+            InterpreterLanguages = result.InterpreterLanguages,
+            NeedsAlternativeCommunication = result.NeedsAlternativeCommunication,
+            AlternativeCommunication = result.AlternativeCommunicationId != null
+                ? new DTOAlternativeCommunication
+                {
+                    Id = result.AlternativeCommunicationId,
+                    Name = result.AlternativeCommunicationName
+                }
+                : null,
+            NeedsFederalRelayService = new DTOOptionSelection
+            {
+                Id = result.NeedsFederalRelayServiceId,
+                Name = result.NeedsFederalRelayServiceName
+            },
+            ShowEvidence = new DTOOptionSelection
+            {
+                Id = result.ShowEvidenceId,
+                Name = result.ShowEvidenceName
+            },
+            ShowEvidenceDescription = result.ShowEvidenceDescription,
+            SnackPercentage = result.SnackPercentage,
+            ReducedSnackPercentage = result.ReducedSnackPercentage,
+            FederalFundingCertification = result.FederalFundingCertificationId != null
+                ? new DTOFederalFundingCertification
+                {
+                    Id = result.FederalFundingCertificationId,
+                    FundingAmount = result.FundingAmount,
+                    Description = result.FederalFundingDescription
+                }
+                : null,
+            Date = result.Date,
+            CreatedAt = result.CreatedAt,
+            UpdatedAt = result.UpdatedAt
+        };
     }
 }

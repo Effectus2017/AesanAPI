@@ -19,7 +19,7 @@ public interface IDeliveryTypeRepository
     /// <param name="name">El nombre del tipo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos.</param>
     /// <returns>Una lista de tipos de entrega y el total.</returns>
-    Task<dynamic> GetAllDeliveryTypes(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllDeliveryTypes(int take, int skip, string name, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un nuevo tipo de entrega.

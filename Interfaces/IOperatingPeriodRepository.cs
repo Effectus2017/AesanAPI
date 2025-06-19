@@ -19,7 +19,7 @@ public interface IOperatingPeriodRepository
     /// <param name="name">El nombre del período operativo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los períodos operativos.</param>
     /// <returns>Una lista de períodos operativos.</returns>
-    Task<dynamic> GetAllOperatingPeriods(int take, int skip, string name, bool alls);
+    Task<dynamic> GetAllOperatingPeriods(int take, int skip, string name, bool alls, bool isList);
 
     /// <summary>
     /// Inserta un nuevo período operativo.

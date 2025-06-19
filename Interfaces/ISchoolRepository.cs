@@ -22,11 +22,25 @@ public interface ISchoolRepository
     /// <summary>
     /// Actualiza una escuela existente
     /// </summary>
-    Task<bool> UpdateSchool(SchoolRequest request);
+    Task<bool> UpdateSchool(DTOSchool request);
 
     /// <summary>
     /// Elimina una escuela
     /// </summary>
     Task<bool> DeleteSchool(int id);
 
+    /// <summary>
+    /// Verifica si existe una escuela principal en la base de datos
+    /// </summary>
+    /// <returns>True si existe una escuela principal, false en caso contrario</returns>
+    Task<bool> HasMainSchool();
+
+    /// <summary>
+    /// Actualiza el estado activo/inactivo de una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
+    /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
+    /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
+    Task<bool> UpdateSchoolActiveStatus(int schoolId, bool isActive, string inactiveJustification = null);
 }

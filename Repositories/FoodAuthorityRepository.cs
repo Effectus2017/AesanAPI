@@ -181,7 +181,7 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
     {
         if (foodAuthorityId.HasValue)
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.FoodAuthority, foodAuthorityId));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.FoodAuthorities, 0, 0, "", false));
         }
 
         // Invalidar listas completas

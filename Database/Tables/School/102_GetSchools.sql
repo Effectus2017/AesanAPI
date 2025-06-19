@@ -71,9 +71,13 @@ BEGIN
         s.SnackFrom,
         s.SnackTo,
         s.IsActive,
+        s.InactiveJustification,
+        s.InactiveDate,
         s.IsMainSchool,
         s.CreatedAt,
-        s.UpdatedAt
+        s.UpdatedAt,
+        ss.MainSchoolId AS MainSchoolId,
+        s2.Name AS MainSchoolName
     FROM School s
         INNER JOIN City c ON s.CityId = c.Id
         INNER JOIN Region r ON s.RegionId = r.Id
@@ -90,6 +94,8 @@ BEGIN
         LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
+        LEFT JOIN SchoolSatellite ss ON s.Id = ss.SatelliteSchoolId
+        LEFT JOIN School s2 ON ss.MainSchoolId = s2.Id
     WHERE s.IsActive = 1
         AND (
             @alls = 1
@@ -99,7 +105,7 @@ BEGIN
         AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             )
         )
-    ORDER BY s.Name
+    ORDER BY s.IsMainSchool DESC, s.Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*)
@@ -113,3 +119,6 @@ BEGIN
             )
         )
 END;
+
+
+--EXEC [102_GetSchools] @take = 10, @skip = 0, @name = NULL, @cityId = NULL, @regionId = NULL, @agencyId = NULL, @alls = 0;

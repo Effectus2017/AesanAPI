@@ -71,7 +71,7 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
         {
             if (ModelState.IsValid)
             {
-                var result = await _operatingPeriodRepository.GetAllOperatingPeriods(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _operatingPeriodRepository.GetAllOperatingPeriods(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
                 if (result == null)
                 {
