@@ -19,7 +19,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
     @nonProfit BIT = NULL,
     @baseYear INT = NULL,
     @renewalYear INT = NULL,
-    @educationLevelId INT,
+    -- @educationLevelId INT, -- Removido - ahora se maneja en SchoolEducationLevel
     @operatingDays INT = NULL,
     @kitchenTypeId INT = NULL,
     @groupTypeId INT = NULL,
@@ -66,7 +66,7 @@ BEGIN
         (
         AgencyId, Name, StartDate, Address, CityId, RegionId, ZipCode, Latitude, Longitude,
         PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
-        OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, EducationLevelId, OperatingDays,
+        OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingDays,
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId,
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         Breakfast, BreakfastFrom, BreakfastTo, Lunch, LunchFrom, LunchTo, Snack, SnackFrom, SnackTo, IsMainSchool,
@@ -76,7 +76,7 @@ BEGIN
         (
             @agencyId, @name, @startDate, @address, @cityId, @regionId, @zipCode, @latitude, @longitude,
             @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
-            @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @educationLevelId, @operatingDays,
+            @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingDays,
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId,
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
             @breakfast, @breakfastFrom, @breakfastTo, @lunch, @lunchFrom, @lunchTo, @snack, @snackFrom, @snackTo, @isMainSchool,

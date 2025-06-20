@@ -26,7 +26,7 @@ CREATE TABLE School
     NonProfit BIT NULL,
     BaseYear INT NULL,
     RenewalYear INT NULL,
-    EducationLevelId INT NOT NULL,
+    --EducationLevelId INT NOT NULL, -- DEPRECATED - Ahora se maneja en SchoolEducationLevel
     OperatingDays INT NULL,
     KitchenTypeId INT NULL,
     GroupTypeId INT NULL,
@@ -68,9 +68,9 @@ ALTER TABLE School
 ALTER TABLE School
     ADD CONSTRAINT FK_School_OrganizationType FOREIGN KEY (OrganizationTypeId) REFERENCES OrganizationType(Id);
 
--- EducationLevel se maneja en su tabla EducationLevel
-ALTER TABLE School
-    ADD CONSTRAINT FK_School_EducationLevel FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id);
+-- EducationLevel se maneja en su tabla SchoolEducationLevel
+-- ALTER TABLE School
+--     ADD CONSTRAINT FK_School_EducationLevel FOREIGN KEY (EducationLevelId) REFERENCES EducationLevel(Id);
 
 -- KitchenType se maneja en su tabla KitchenType
 ALTER TABLE School

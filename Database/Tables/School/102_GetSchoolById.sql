@@ -34,9 +34,7 @@ BEGIN
         s.NonProfit,
         s.BaseYear,
         s.RenewalYear,
-        s.EducationLevelId,
-        el.Name AS EducationLevelName,
-        el.NameEN AS EducationLevelNameEN,
+        -- EducationLevelId removido - ahora se maneja en consulta separada
         s.OperatingDays,
         s.KitchenTypeId,
         kt.Name AS KitchenTypeName,
@@ -80,8 +78,11 @@ BEGIN
         s.IsMainSchool,
         s.CreatedAt,
         s.UpdatedAt,
-        -- Main School
-        ss.MainSchoolId AS MainSchoolId
+        -- Main School (obtenido mediante subconsulta para evitar duplicados)
+        (SELECT TOP 1
+            MainSchoolId
+        FROM SchoolSatellite
+        WHERE SatelliteSchoolId = s.Id AND IsActive = 1) AS MainSchoolId
     FROM School s
         LEFT JOIN City c ON s.CityId = c.Id
         LEFT JOIN Region r ON s.RegionId = r.Id
@@ -89,7 +90,7 @@ BEGIN
         LEFT JOIN Region r2 ON s.PostalRegionId = r2.Id
         LEFT JOIN OrganizationType ot ON s.OrganizationTypeId = ot.Id
         LEFT JOIN CenterType ct ON s.CenterTypeId = ct.Id
-        LEFT JOIN EducationLevel el ON s.EducationLevelId = el.Id
+        -- LEFT JOIN EducationLevel el ON s.EducationLevelId = el.Id -- Removido
         LEFT JOIN KitchenType kt ON s.KitchenTypeId = kt.Id
         LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
         LEFT JOIN DeliveryType dt ON s.DeliveryTypeId = dt.Id
@@ -98,7 +99,6 @@ BEGIN
         LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
-        LEFT JOIN SchoolSatellite ss ON s.Id = ss.SatelliteSchoolId
     WHERE s.Id = @id;
 
     -- Facilidades
@@ -122,6 +122,15 @@ BEGIN
         INNER JOIN School s2 ON ss.SatelliteSchoolId = s2.Id
     WHERE ss.MainSchoolId = @id;
 
+    -- Niveles educativos (nueva consulta para múltiples niveles)
+    SELECT
+        el.Id,
+        el.Name,
+        el.NameEN
+    FROM SchoolEducationLevel sel
+        INNER JOIN EducationLevel el ON sel.EducationLevelId = el.Id
+    WHERE sel.SchoolId = @id AND sel.IsActive = 1
+    ORDER BY el.Name;
 
 END;
 

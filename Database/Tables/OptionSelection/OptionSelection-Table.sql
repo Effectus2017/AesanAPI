@@ -88,3 +88,12 @@ INSERT INTO OptionSelection
 VALUES
     ('Pernoctan', 'Residential', 'typeOfResidential', 0, 1, 190),
     ('No Pernoctan', 'Non-Residential', 'typeOfResidential', 0, 1, 200);
+
+
+
+
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Activo', 'Active', 'isActive', 1, 1, 210),
+    ('Inactivo', 'Inactive', 'isActive', 0, 1, 220);

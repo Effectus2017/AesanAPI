@@ -30,7 +30,7 @@ public class DTOSchool
     public int? RenewalYear { get; set; }
 
     // Información Operacional
-    public int EducationLevelId { get; set; }
+    // EducationLevelId se reemplaza por una lista de DTOEducationLevel
     public int? OperatingDays { get; set; }
     public int? KitchenTypeId { get; set; }
     public int? GroupTypeId { get; set; }
@@ -64,7 +64,8 @@ public class DTOSchool
     public DTORegion? Region { get; set; }
     public DTOCity? PostalCity { get; set; }
     public DTORegion? PostalRegion { get; set; }
-    public DTOEducationLevel? EducationLevel { get; set; }
+
+    public List<int> EducationLevelIds { get; set; } = [];
     public DTOOperatingPeriod? OperatingPeriod { get; set; }
     public DTOOrganizationType? OrganizationType { get; set; }
     public DTOKitchenType? KitchenType { get; set; }
@@ -90,4 +91,7 @@ public class DTOSchool
 
     // Satélites
     public List<DTOSatelliteSchool>? Satellites { get; set; }
+
+    // Niveles educativos
+    public List<DTOEducationLevel>? EducationLevels { get; set; }
 }

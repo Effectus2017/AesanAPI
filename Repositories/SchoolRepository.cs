@@ -33,6 +33,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var school = await result.ReadFirstOrDefaultAsync<dynamic>();
             //var facilities = result.Read<dynamic>().ToList();
             var satellites = result.Read<dynamic>().ToList();
+            var educationLevels = result.Read<dynamic>().ToList();
 
             if (school == null)
             {
@@ -42,6 +43,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var data = MapSchoolFromResult(school);
             //data.Facilities = facilities.Select(MapFacilityFromResult).ToList();
             data.Satellites = satellites.Select(MapSatelliteFromResult).ToList();
+            data.EducationLevels = educationLevels.Select(MapEducationLevelFromResult).ToList();
             return data;
         }
         catch (Exception ex)
@@ -68,9 +70,9 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
-            parameters.Add("@cityId", cityId, DbType.Int32);
-            parameters.Add("@regionId", regionId, DbType.Int32);
-            parameters.Add("@agencyId", agencyId, DbType.Int32);
+            parameters.Add("@cityId", cityId == 0 ? null : cityId, DbType.Int32);
+            parameters.Add("@regionId", regionId == 0 ? null : regionId, DbType.Int32);
+            parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             parameters.Add("@alls", alls, DbType.Boolean);
 
             if (isList)
@@ -150,7 +152,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
+            //parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
@@ -184,6 +186,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             if (request.MainSchoolId.HasValue)
             {
                 await InsertSatelliteSchool(request.MainSchoolId.Value, schoolId);
+            }
+
+            // Insertar niveles educativos
+            if (request.EducationLevelIds != null && request.EducationLevelIds.Count != 0)
+            {
+                await InsertSchoolEducationLevels(schoolId, request.EducationLevelIds);
             }
 
             // Invalidar caché
@@ -230,7 +238,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
+            //parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
@@ -264,6 +272,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             if (request.MainSchoolId.HasValue)
             {
                 await UpdateSatelliteSchool(request.MainSchoolId.Value, request.Id);
+            }
+
+            // Actualizar niveles educativos
+            if (request.EducationLevelIds != null && request.EducationLevelIds.Count != 0)
+            {
+                await UpdateSchoolEducationLevels(request.Id, request.EducationLevelIds);
             }
 
             // Invalidar caché
@@ -437,7 +451,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 NonProfit = item.NonProfit ?? false,
                 BaseYear = item.BaseYear,
                 RenewalYear = item.RenewalYear,
-                EducationLevelId = item.EducationLevelId ?? 0,
+                //EducationLevelId = item.EducationLevelId ?? 0,
                 OperatingDays = item.OperatingDays,
                 KitchenTypeId = item.KitchenTypeId,
                 GroupTypeId = item.GroupTypeId,
@@ -489,12 +503,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     Id = item.PostalRegionId,
                     Name = item.PostalRegionName ?? string.Empty
                 } : null,
-                EducationLevel = item.EducationLevelId != null ? new DTOEducationLevel
-                {
-                    Id = item.EducationLevelId,
-                    Name = item.EducationLevelName ?? string.Empty,
-                    NameEN = item.EducationLevelNameEN ?? string.Empty
-                } : null,
+                //EducationLevel = item.EducationLevelId != null ? new DTOEducationLevel
+                //{
+                //    Id = item.EducationLevelId,
+                //    Name = item.EducationLevelName ?? string.Empty,
+                //    NameEN = item.EducationLevelNameEN ?? string.Empty
+                //} : null,
                 OrganizationType = item.OrganizationTypeId != null
                     ? new DTOOrganizationType
                     {
@@ -640,10 +654,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     }
 
     /// <summary>
-    /// Maps a dynamic result to a DTOFacility object
+    /// Maps a dynamic result to a DTOSatelliteSchool object
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOFacility</returns>
+    /// <returns>DTOSatelliteSchool</returns>
     private static DTOSatelliteSchool MapSatelliteFromResult(dynamic item)
     {
         return new DTOSatelliteSchool
@@ -658,6 +672,71 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt
         };
+    }
+
+    /// <summary>
+    /// Maps a dynamic result to a DTOEducationLevel object
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DTOEducationLevel</returns>
+    private static DTOEducationLevel MapEducationLevelFromResult(dynamic item)
+    {
+        return new DTOEducationLevel
+        {
+            Id = item.Id,
+            Name = item.Name ?? string.Empty,
+            NameEN = item.NameEN ?? string.Empty
+        };
+    }
+
+    /// <summary>
+    /// Inserta múltiples niveles educativos para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="educationLevelIds">Lista de IDs de niveles educativos</param>
+    /// <returns>True si se insertaron correctamente</returns>
+    private async Task<bool> InsertSchoolEducationLevels(int schoolId, List<int> educationLevelIds)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@educationLevelIds", string.Join(",", educationLevelIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_InsertSchoolEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar niveles educativos para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza múltiples niveles educativos para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="educationLevelIds">Lista de IDs de niveles educativos</param>
+    /// <returns>True si se actualizaron correctamente</returns>
+    private async Task<bool> UpdateSchoolEducationLevels(int schoolId, List<int> educationLevelIds)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@educationLevelIds", string.Join(",", educationLevelIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_UpdateSchoolEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar niveles educativos para la escuela {SchoolId}", schoolId);
+            throw;
+        }
     }
 
     /// <summary>

@@ -31,7 +31,7 @@ public class SchoolRequest
     public DateTime? StartDate { get; set; }
     public int? BaseYear { get; set; }
     public int? RenewalYear { get; set; }
-    public int EducationLevelId { get; set; }
+    public List<int> EducationLevelIds { get; set; } = new List<int>();
     public int? OperatingDays { get; set; }
 
     // Información Operacional

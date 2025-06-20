@@ -19,7 +19,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_UpdateSchool]
     @nonProfit BIT = NULL,
     @baseYear INT = NULL,
     @renewalYear INT = NULL,
-    @educationLevelId INT,
+    -- @educationLevelId INT, -- Removido - ahora se maneja en SchoolEducationLevel
     @operatingDays INT = NULL,
     @kitchenTypeId INT = NULL,
     @groupTypeId INT = NULL,
@@ -71,7 +71,7 @@ BEGIN
         NonProfit = @nonProfit,
         BaseYear = @baseYear,
         RenewalYear = @renewalYear,
-        EducationLevelId = @educationLevelId,
+        -- EducationLevelId = @educationLevelId, -- Removido
         OperatingDays = @operatingDays,
         KitchenTypeId = @kitchenTypeId,
         GroupTypeId = @groupTypeId,
