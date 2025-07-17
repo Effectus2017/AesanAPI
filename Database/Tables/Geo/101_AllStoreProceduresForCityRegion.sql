@@ -9,10 +9,10 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT r.Id,
-           r.Name,
-           r.IsActive,
-           r.CreatedAt,
-           r.UpdatedAt
+        r.Name,
+        r.IsActive,
+        r.CreatedAt,
+        r.UpdatedAt
     FROM Region r
     WHERE (@alls = 1 OR r.IsActive = 1)
         AND (@name IS NULL OR r.Name LIKE '%' + @name + '%')
@@ -33,10 +33,10 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT r.Id,
-           r.Name,
-           r.IsActive,
-           r.CreatedAt,
-           r.UpdatedAt
+        r.Name,
+        r.IsActive,
+        r.CreatedAt,
+        r.UpdatedAt
     FROM Region r
     WHERE r.Id = @id AND r.IsActive = 1;
 END;
@@ -49,8 +49,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Region (Name, IsActive, CreatedAt)
-    VALUES (@name, 1, GETDATE());
+    INSERT INTO Region
+        (Name, IsActive, CreatedAt)
+    VALUES
+        (@name, 1, GETDATE());
 
     SET @id = SCOPE_IDENTITY();
     RETURN @id;
@@ -92,31 +94,7 @@ BEGIN
 END;
 GO
 
--- Procedimientos para Ciudades
-CREATE OR ALTER PROCEDURE [100_GetCities]
-    @take INT,
-    @skip INT,
-    @name NVARCHAR(255),
-    @alls BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
 
-    SELECT c.Id,
-           c.Name,
-           c.IsActive,
-           c.CreatedAt,
-           c.UpdatedAt
-    FROM City c
-    WHERE (@alls = 1 OR c.IsActive = 1)
-        AND (@name IS NULL OR c.Name LIKE '%' + @name + '%')
-    ORDER BY c.Name
-    OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
-
-    SELECT COUNT(*) AS TotalCount
-    FROM City c
-    WHERE (@alls = 1 OR c.IsActive = 1)
-        AND (@name IS NULL OR c.Name LIKE '%' + @name + '%');
 END;
 GO
 
@@ -127,10 +105,10 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT c.Id,
-           c.Name,
-           c.IsActive,
-           c.CreatedAt,
-           c.UpdatedAt
+        c.Name,
+        c.IsActive,
+        c.CreatedAt,
+        c.UpdatedAt
     FROM City c
     WHERE c.Id = @id AND c.IsActive = 1;
 END;
@@ -143,8 +121,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO City (Name, IsActive, CreatedAt)
-    VALUES (@name, 1, GETDATE());
+    INSERT INTO City
+        (Name, IsActive, CreatedAt)
+    VALUES
+        (@name, 1, GETDATE());
 
     SET @id = SCOPE_IDENTITY();
     RETURN @id;
@@ -194,21 +174,21 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT c.Id,
-           c.Name,
-           c.IsActive,
-           c.CreatedAt,
-           c.UpdatedAt
+        c.Name,
+        c.IsActive,
+        c.CreatedAt,
+        c.UpdatedAt
     FROM City c
-    INNER JOIN CityRegion cr ON c.Id = cr.CityId
-    WHERE cr.RegionId = @regionId 
+        INNER JOIN CityRegion cr ON c.Id = cr.CityId
+    WHERE cr.RegionId = @regionId
         AND c.IsActive = 1
         AND cr.IsActive = 1
     ORDER BY c.Name;
 
     SELECT COUNT(*) AS TotalCount
     FROM City c
-    INNER JOIN CityRegion cr ON c.Id = cr.CityId
-    WHERE cr.RegionId = @regionId 
+        INNER JOIN CityRegion cr ON c.Id = cr.CityId
+    WHERE cr.RegionId = @regionId
         AND c.IsActive = 1
         AND cr.IsActive = 1;
 END;
@@ -221,21 +201,21 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT r.Id,
-           r.Name,
-           r.IsActive,
-           r.CreatedAt,
-           r.UpdatedAt
+        r.Name,
+        r.IsActive,
+        r.CreatedAt,
+        r.UpdatedAt
     FROM Region r
-    INNER JOIN CityRegion cr ON r.Id = cr.RegionId
-    WHERE cr.CityId = @cityId 
+        INNER JOIN CityRegion cr ON r.Id = cr.RegionId
+    WHERE cr.CityId = @cityId
         AND r.IsActive = 1
         AND cr.IsActive = 1
     ORDER BY r.Name;
 
     SELECT COUNT(*) AS TotalCount
     FROM Region r
-    INNER JOIN CityRegion cr ON r.Id = cr.RegionId
-    WHERE cr.CityId = @cityId 
+        INNER JOIN CityRegion cr ON r.Id = cr.RegionId
+    WHERE cr.CityId = @cityId
         AND r.IsActive = 1
         AND cr.IsActive = 1;
 END;
@@ -250,16 +230,16 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT cr.Id,
-           cr.CityId,
-           cr.RegionId,
-           cr.IsActive,
-           cr.CreatedAt,
-           cr.UpdatedAt,
-           c.Name AS CityName,
-           r.Name AS RegionName
+        cr.CityId,
+        cr.RegionId,
+        cr.IsActive,
+        cr.CreatedAt,
+        cr.UpdatedAt,
+        c.Name AS CityName,
+        r.Name AS RegionName
     FROM CityRegion cr
-    INNER JOIN City c ON cr.CityId = c.Id
-    INNER JOIN Region r ON cr.RegionId = r.Id
+        INNER JOIN City c ON cr.CityId = c.Id
+        INNER JOIN Region r ON cr.RegionId = r.Id
     WHERE (@alls = 1 OR cr.IsActive = 1)
     ORDER BY c.Name, r.Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
@@ -278,8 +258,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO CityRegion (CityId, RegionId, IsActive, CreatedAt)
-    VALUES (@cityId, @regionId, 1, GETDATE());
+    INSERT INTO CityRegion
+        (CityId, RegionId, IsActive, CreatedAt)
+    VALUES
+        (@cityId, @regionId, 1, GETDATE());
 
     SET @id = SCOPE_IDENTITY();
     RETURN @id;
@@ -297,8 +279,8 @@ BEGIN
     UPDATE CityRegion
     SET IsActive = 0,
         UpdatedAt = GETDATE()
-    WHERE CityId = @cityId 
-        AND RegionId = @regionId 
+    WHERE CityId = @cityId
+        AND RegionId = @regionId
         AND IsActive = 1;
 
     SET @rowsAffected = @@ROWCOUNT;

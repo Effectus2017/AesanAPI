@@ -42,6 +42,7 @@ public class SchoolRequest
     public int? ApplicantTypeId { get; set; }
     public int? ResidentialTypeId { get; set; }
     public int? OperatingPolicyId { get; set; }
+    public int? AreaTypeId { get; set; }
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
 

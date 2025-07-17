@@ -64,25 +64,15 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
 
             if (isList)
             {
-                string cacheKey = string.Format(_appSettings.Cache.Keys.EducationLevels, take, skip, name, alls);
-                return await _cache.CacheQuery(
-                    cacheKey,
-                    async () =>
-                    {
-                        using var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+                using var result = await db.QueryMultipleAsync("100_GetAllEducationLevels", parameters, commandType: CommandType.StoredProcedure);
 
-                        if (result == null)
-                        {
-                            return [];
-                        }
+                if (result == null)
+                {
+                    return Array.Empty<DTOEducationLevel>();
+                }
 
-                        var data = await result.ReadAsync<DTOEducationLevel>();
-                        return data;
-                    },
-                    _logger,
-                    _appSettings,
-                    TimeSpan.FromMinutes(30)
-                );
+                var data = await result.ReadAsync<DTOEducationLevel>();
+                return data;
             }
             else
             {

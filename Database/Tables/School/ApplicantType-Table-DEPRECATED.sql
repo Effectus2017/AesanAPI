@@ -16,3 +16,4 @@ INSERT INTO ApplicantType
 VALUES
     ('Laico', 'Laico', 1, GETDATE()),
     ('Base de fe', 'Base de fe', 1, GETDATE());
+

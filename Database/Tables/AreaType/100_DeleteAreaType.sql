@@ -1,0 +1,7 @@
+CREATE OR ALTER PROCEDURE [dbo].[100_DeleteAreaType]
+    @id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM AreaType WHERE Id = @id;
+END 

@@ -26,7 +26,6 @@ CREATE TABLE School
     NonProfit BIT NULL,
     BaseYear INT NULL,
     RenewalYear INT NULL,
-    --EducationLevelId INT NOT NULL, -- DEPRECATED - Ahora se maneja en SchoolEducationLevel
     OperatingDays INT NULL,
     KitchenTypeId INT NULL,
     GroupTypeId INT NULL,
@@ -35,6 +34,7 @@ CREATE TABLE School
     ApplicantTypeId INT NULL,
     ResidentialTypeId INT NULL,
     OperatingPolicyId INT NULL,
+    AreaTypeId INT NULL,
     HasWarehouse BIT NULL,
     HasDiningRoom BIT NULL,
     AdministratorAuthorizedName NVARCHAR(255) NULL,
@@ -114,3 +114,10 @@ ALTER TABLE School
 
 ALTER TABLE School
     ADD CONSTRAINT FK_School_CenterType FOREIGN KEY (CenterTypeId) REFERENCES CenterType(Id);
+
+-- alter table para agregar columna TypeOfAreaId
+ALTER TABLE School
+    ADD AreaTypeId INT NULL;
+
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_AreaType FOREIGN KEY (AreaTypeId) REFERENCES AreaType(Id);

@@ -97,3 +97,12 @@ INSERT INTO OptionSelection
 VALUES
     ('Activo', 'Active', 'isActive', 1, 1, 210),
     ('Inactivo', 'Inactive', 'isActive', 0, 1, 220);
+
+
+-- Tipo de área
+-- Rural (23), Urbana (24)
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Rural', 'Rural', 'typeOfArea', 0, 1, 230),
+    ('Urbana', 'Urban', 'typeOfArea', 0, 1, 240);

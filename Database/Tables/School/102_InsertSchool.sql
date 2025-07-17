@@ -19,7 +19,6 @@ CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
     @nonProfit BIT = NULL,
     @baseYear INT = NULL,
     @renewalYear INT = NULL,
-    -- @educationLevelId INT, -- Removido - ahora se maneja en SchoolEducationLevel
     @operatingDays INT = NULL,
     @kitchenTypeId INT = NULL,
     @groupTypeId INT = NULL,
@@ -28,6 +27,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
     @applicantTypeId INT = NULL,
     @residentialTypeId INT = NULL,
     @operatingPolicyId INT = NULL,
+    @typeOfAreaId INT = NULL,
     @hasWarehouse BIT = NULL,
     @hasDiningRoom BIT = NULL,
     @administratorAuthorizedName NVARCHAR(255) = NULL,
@@ -67,7 +67,7 @@ BEGIN
         AgencyId, Name, StartDate, Address, CityId, RegionId, ZipCode, Latitude, Longitude,
         PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
         OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingDays,
-        KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId,
+        KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, TypeOfAreaId,
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         Breakfast, BreakfastFrom, BreakfastTo, Lunch, LunchFrom, LunchTo, Snack, SnackFrom, SnackTo, IsMainSchool,
         IsActive, CreatedAt
@@ -77,7 +77,7 @@ BEGIN
             @agencyId, @name, @startDate, @address, @cityId, @regionId, @zipCode, @latitude, @longitude,
             @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
             @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingDays,
-            @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId,
+            @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @typeOfAreaId,
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
             @breakfast, @breakfastFrom, @breakfastTo, @lunch, @lunchFrom, @lunchTo, @snack, @snackFrom, @snackTo, @isMainSchool,
             1, GETDATE()

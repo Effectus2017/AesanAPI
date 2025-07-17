@@ -74,6 +74,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@regionId", regionId == 0 ? null : regionId, DbType.Int32);
             parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             parameters.Add("@alls", alls, DbType.Boolean);
+            //parameters.Add("@isList", isList, DbType.Boolean);
 
             if (isList)
             {
@@ -152,7 +153,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            //parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
@@ -161,6 +161,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@applicantTypeId", request.ApplicantTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@residentialTypeId", request.ResidentialTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@areaTypeId", request.AreaTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
@@ -235,10 +236,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@sameAsPhysicalAddress", request.SameAsPhysicalAddress, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@organizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@centerTypeId", request.CenterTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@areaTypeId", request.AreaTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            //parameters.Add("@educationLevelId", request.EducationLevelId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
@@ -460,6 +461,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 ApplicantTypeId = item.ApplicantTypeId,
                 ResidentialTypeId = item.ResidentialTypeId,
                 OperatingPolicyId = item.OperatingPolicyId,
+                AreaTypeId = item.AreaTypeId,
                 HasWarehouse = item.HasWarehouse ?? false,
                 HasDiningRoom = item.HasDiningRoom ?? false,
                 AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
@@ -503,12 +505,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     Id = item.PostalRegionId,
                     Name = item.PostalRegionName ?? string.Empty
                 } : null,
-                //EducationLevel = item.EducationLevelId != null ? new DTOEducationLevel
-                //{
-                //    Id = item.EducationLevelId,
-                //    Name = item.EducationLevelName ?? string.Empty,
-                //    NameEN = item.EducationLevelNameEN ?? string.Empty
-                //} : null,
                 OrganizationType = item.OrganizationTypeId != null
                     ? new DTOOrganizationType
                     {
@@ -578,6 +574,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     Id = item.CenterTypeId,
                     Name = item.CenterName ?? string.Empty,
                     NameEN = item.CenterNameEN ?? string.Empty
+                } : null,
+                AreaType = item.AreaTypeId != null ? new DTOAreaType
+                {
+                    Id = item.AreaTypeId,
+                    Name = item.AreaTypeName ?? string.Empty,
+                    NameEN = item.AreaTypeNameEN ?? string.Empty
                 } : null,
                 Agency = item.AgencyId != null ? new DTOAgency
                 {

@@ -55,6 +55,7 @@ BEGIN
         --rt.Name AS ResidentialTypeName,
         s.OperatingPolicyId,
         --opol.Name AS OperatingPolicyName,
+        s.AreaTypeId,
         s.HasWarehouse,
         s.HasDiningRoom,
         s.AdministratorAuthorizedName,
@@ -93,6 +94,7 @@ BEGIN
         LEFT JOIN ApplicantType at ON s.ApplicantTypeId = at.Id
         LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
+        LEFT JOIN AreaType atype ON s.AreaTypeId = atype.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN SchoolSatellite ss ON s.Id = ss.SatelliteSchoolId
         LEFT JOIN School s2 ON ss.MainSchoolId = s2.Id

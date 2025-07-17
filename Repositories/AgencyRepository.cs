@@ -884,12 +884,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         {
                             Id = ap.Id,
                             Name = ap.Name,
-                            NameEN = ap.NameEN,
-                            Description = ap.Description,
-                            DescriptionEN = ap.DescriptionEN,
-                            IsActive = ap.IsActive,
-                            CreatedAt = ap.CreatedAt,
-                            UpdatedAt = ap.UpdatedAt
+                            // NameEN = ap.NameEN,
+                            // Description = ap.Description,
+                            // DescriptionEN = ap.DescriptionEN,
+                            // IsActive = ap.IsActive,
+                            // CreatedAt = ap.CreatedAt,
+                            // UpdatedAt = ap.UpdatedAt
                         }
                 )
                 .ToList();

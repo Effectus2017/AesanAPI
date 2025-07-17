@@ -59,7 +59,7 @@ public class CacheKeys
 
     // Claves para School
     public string Schools { get; set; } = "Schools_{0}_{1}_{2}_{3}";
-
+    public string AreaTypes { get; set; } = "AreaTypes_{0}_{1}_{2}_{3}";
     // Claves para OrganizationType
     public string OrganizationTypes { get; set; } = "OrganizationTypes_{0}_{1}_{2}_{3}";
 

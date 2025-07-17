@@ -39,6 +39,7 @@ public class DTOSchool
     public int? ApplicantTypeId { get; set; }
     public int? ResidentialTypeId { get; set; }
     public int? OperatingPolicyId { get; set; }
+    public int? AreaTypeId { get; set; }
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
 
@@ -76,6 +77,7 @@ public class DTOSchool
     public DTOResidentialType? ResidentialType { get; set; }
     public DTOOperatingPolicy? OperatingPolicy { get; set; }
     public DTOCenterType? CenterType { get; set; }
+    public DTOAreaType? AreaType { get; set; }
     public DTOAgency? Agency { get; set; }
     public bool IsMainSchool { get; set; }
     public bool IsActive { get; set; }

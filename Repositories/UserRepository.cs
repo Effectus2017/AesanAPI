@@ -86,15 +86,24 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="name">El nombre del usuario</param>
     /// <param name="userId">El ID del usuario</param>
     /// <returns>Una lista de usuarios</returns>
-    public dynamic GetAllUsersFromDb(int take, int skip, string name, string userId)
+    public dynamic GetAllUsersFromDb(int take, int skip, string name, string userId, bool isList)
     {
         try
         {
-            var _result = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).Skip(skip).Take(take).ToList();
-            var _count = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToList().Count;
-            var _currentUser = _mapper.Map<List<User>, List<DTOUser>>(_result);
-            var _complete = new { data = _currentUser, count = _count };
-            return _complete;
+            if (isList)
+            {
+                var _result = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToList();
+                var _currentUser = _mapper.Map<List<User>, List<DTOUser>>(_result);
+                return _currentUser;
+            }
+            else
+            {
+                var _result = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).Skip(skip).Take(take).ToList();
+                var _count = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToList().Count;
+                var _currentUser = _mapper.Map<List<User>, List<DTOUser>>(_result);
+                var _complete = new { data = _currentUser, count = _count };
+                return _complete;
+            }
         }
         catch (Exception ex)
         {
@@ -109,7 +118,7 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<DTOUserResponse> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, List<string> roles = null)
+    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null)
     {
         try
         {
@@ -147,6 +156,12 @@ public class UserRepository(UserManager<User> userManager,
                 EmailConfirmed = u.EmailConfirmed,
                 Roles = [u.RoleName]
             }).ToList();
+
+
+            if (isList)
+            {
+                return users;
+            }
 
             return new DTOUserResponse
             {

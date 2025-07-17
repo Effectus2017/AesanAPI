@@ -34,7 +34,6 @@ BEGIN
         s.NonProfit,
         s.BaseYear,
         s.RenewalYear,
-        -- EducationLevelId removido - ahora se maneja en consulta separada
         s.OperatingDays,
         s.KitchenTypeId,
         kt.Name AS KitchenTypeName,
@@ -57,6 +56,9 @@ BEGIN
         s.OperatingPolicyId,
         opol.Name AS OperatingPolicyName,
         opol.NameEN AS OperatingPolicyNameEN,
+        s.AreaTypeId,
+        atype.Name AS AreaTypeName,
+        atype.NameEN AS AreaTypeNameEN,
         s.HasWarehouse,
         s.HasDiningRoom,
         s.AdministratorAuthorizedName,
@@ -90,7 +92,6 @@ BEGIN
         LEFT JOIN Region r2 ON s.PostalRegionId = r2.Id
         LEFT JOIN OrganizationType ot ON s.OrganizationTypeId = ot.Id
         LEFT JOIN CenterType ct ON s.CenterTypeId = ct.Id
-        -- LEFT JOIN EducationLevel el ON s.EducationLevelId = el.Id -- Removido
         LEFT JOIN KitchenType kt ON s.KitchenTypeId = kt.Id
         LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
         LEFT JOIN DeliveryType dt ON s.DeliveryTypeId = dt.Id
@@ -98,6 +99,7 @@ BEGIN
         LEFT JOIN ApplicantType at ON s.ApplicantTypeId = at.Id
         LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
+        LEFT JOIN AreaType atype ON s.AreaTypeId = atype.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
     WHERE s.Id = @id;
 

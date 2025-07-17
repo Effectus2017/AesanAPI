@@ -89,6 +89,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         parameters.Add("@skip", skip, DbType.Int32);
         parameters.Add("@name", name, DbType.String);
         parameters.Add("@alls", alls, DbType.Boolean);
+        parameters.Add("@isList", isList, DbType.Boolean);
 
         if (isList)
         {

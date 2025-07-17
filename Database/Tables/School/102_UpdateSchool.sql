@@ -16,10 +16,10 @@ CREATE OR ALTER PROCEDURE [dbo].[102_UpdateSchool]
     @sameAsPhysicalAddress BIT = NULL,
     @organizationTypeId INT,
     @centerTypeId INT = NULL,
+    @areaTypeId INT = NULL,
     @nonProfit BIT = NULL,
     @baseYear INT = NULL,
     @renewalYear INT = NULL,
-    -- @educationLevelId INT, -- Removido - ahora se maneja en SchoolEducationLevel
     @operatingDays INT = NULL,
     @kitchenTypeId INT = NULL,
     @groupTypeId INT = NULL,
@@ -68,10 +68,10 @@ BEGIN
         SameAsPhysicalAddress = @sameAsPhysicalAddress,
         OrganizationTypeId = @organizationTypeId,
         CenterTypeId = @centerTypeId,
+        AreaTypeId = @areaTypeId,
         NonProfit = @nonProfit,
         BaseYear = @baseYear,
         RenewalYear = @renewalYear,
-        -- EducationLevelId = @educationLevelId, -- Removido
         OperatingDays = @operatingDays,
         KitchenTypeId = @kitchenTypeId,
         GroupTypeId = @groupTypeId,
