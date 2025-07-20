@@ -110,6 +110,9 @@ public class CacheKeys
     // Claves para CenterType
     public string GroupTypes { get; set; } = "GroupTypes_{0}_{1}_{2}_{3}";
 
+    // Claves para Employee
+    public string Employees { get; set; } = "Employees_{0}_{1}_{2}_{3}";
+
 }
 
 public class GmailSettings

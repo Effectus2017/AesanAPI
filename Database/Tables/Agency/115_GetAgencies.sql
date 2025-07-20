@@ -122,7 +122,7 @@ BEGIN
         AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
         )
     )
-    ORDER BY a.Name
+    ORDER BY a.CreatedAt DESC, a.Name
     OFFSET @skip ROWS
     FETCH NEXT @take ROWS ONLY;
 
