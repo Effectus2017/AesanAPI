@@ -14,4 +14,5 @@ public interface IUnitOfWork
     ICenterTypeRepository CenterTypeRepository { get; }
     IHouseholdRepository HouseholdRepository { get; }
     IHouseholdMemberRepository HouseholdMemberRepository { get; }
+    IEmployeeRepository EmployeeRepository { get; }
 }

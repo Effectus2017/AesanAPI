@@ -22,8 +22,8 @@ CREATE TABLE Employee
     -- Información Laboral
     StatusId INT NOT NULL DEFAULT 1,
     -- Referencia a OptionSelection con optionKey = 'isActive'
-    TitleId INT NOT NULL DEFAULT 0,
-    -- Referencia a OptionSelection con optionKey = 'employeeTitle'
+    PositionId INT NOT NULL DEFAULT 0,
+    -- Referencia a OptionSelection con optionKey = 'employeePosition'
 
     -- Información Personal Adicional
     BirthDate DATETIME NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE Employee
 
     -- Restricciones
     FOREIGN KEY (StatusId) REFERENCES OptionSelection(Id),
-    FOREIGN KEY (TitleId) REFERENCES OptionSelection(Id),
+    FOREIGN KEY (PositionId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (CityId) REFERENCES City(Id),
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
     FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id)
@@ -70,7 +70,7 @@ CREATE INDEX IX_Employee_FirstName ON Employee(FirstName);
 CREATE INDEX IX_Employee_FatherLastName ON Employee(FatherLastName);
 CREATE INDEX IX_Employee_Email ON Employee(Email);
 CREATE INDEX IX_Employee_StatusId ON Employee(StatusId);
-CREATE INDEX IX_Employee_TitleId ON Employee(TitleId);
+CREATE INDEX IX_Employee_PositionId ON Employee(PositionId);
 CREATE INDEX IX_Employee_CityId ON Employee(CityId);
 CREATE INDEX IX_Employee_RegionId ON Employee(RegionId);
 CREATE INDEX IX_Employee_UserId ON Employee(UserId);

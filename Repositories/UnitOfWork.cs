@@ -12,7 +12,8 @@ public class UnitOfWork(ApplicationDbContext context,
     IAgencyFilesRepository agencyFilesRepository,
     ICenterTypeRepository centerTypeRepository,
     IHouseholdRepository householdRepository,
-    IHouseholdMemberRepository householdMemberRepository
+    IHouseholdMemberRepository householdMemberRepository,
+    IEmployeeRepository employeeRepository
     ) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
@@ -26,4 +27,5 @@ public class UnitOfWork(ApplicationDbContext context,
     public ICenterTypeRepository CenterTypeRepository { get; private set; } = centerTypeRepository;
     public IHouseholdRepository HouseholdRepository { get; private set; } = householdRepository;
     public IHouseholdMemberRepository HouseholdMemberRepository { get; private set; } = householdMemberRepository;
+    public IEmployeeRepository EmployeeRepository { get; private set; } = employeeRepository;
 }

@@ -50,5 +50,19 @@ public interface IEmployeeRepository
     /// <param name="employeeId">ID del empleado</param>
     /// <param name="userId">ID del usuario</param>
     /// <returns>True si se convirtió correctamente</returns>
-    Task<bool> ConvertToUser(int employeeId, string userId);
+    Task<bool> ConvertEmployeeToUser(int employeeId, string userId);
+
+    /// <summary>
+    /// Verifica si existe un empleado principal
+    /// </summary>
+    /// <returns>True si existe un empleado principal</returns>
+    Task<bool> HasMainEmployee();
+
+    /// <summary>
+    /// Actualiza el estado activo de un empleado
+    /// </summary>
+    /// <param name="employeeId">ID del empleado</param>
+    /// <param name="isActive">Nuevo estado activo</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    Task<bool> UpdateEmployeeActiveStatus(int employeeId, bool isActive);
 }

@@ -36,4 +36,5 @@ public class QueryParameters
     public string? DocumentType { get; set; } // Tipo de documento
     public string? Description { get; set; } // Descripción del archivo
     public string? OptionType { get; set; } // Tipo de opción
+    public string? OptionKey { get; set; } // Clave de la opción
 }

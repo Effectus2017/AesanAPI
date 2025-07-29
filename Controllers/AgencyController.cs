@@ -118,7 +118,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     queryParameters.ProgramId,
                     queryParameters.StatusId,
                     queryParameters.UserId,
-                    queryParameters.Alls
+                    queryParameters.Alls,
+                    queryParameters.IsList
                 );
 
                 return Ok(agencies);

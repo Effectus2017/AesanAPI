@@ -97,17 +97,17 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     /// <returns>Opción de selección</returns>
     [HttpGet("get-option-selection-by-option-key")]
     [SwaggerOperation(Summary = "Obtiene una opción de selección por su clave de opción", Description = "Devuelve una opción de selección basada en la clave de opción proporcionada.")]
-    public async Task<ActionResult> GetByOptionKey([FromQuery] string optionKey)
+    public async Task<ActionResult> GetByOptionKey([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(optionKey);
+                var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(queryParameters.OptionKey, queryParameters.Names);
 
                 if (result == null)
                 {
-                    return NotFound($"Opción de selección con clave {optionKey} no encontrada");
+                    return NotFound($"Opción de selección con clave {queryParameters.OptionKey} no encontrada");
                 }
 
                 return Ok(result);
@@ -117,7 +117,7 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la opción de selección con clave {OptionKey}", optionKey);
+            _logger.LogError(ex, "Error al obtener la opción de selección con clave {OptionKey}", queryParameters.OptionKey);
             return StatusCode(500, "Error interno del servidor al obtener la opción de selección");
         }
     }

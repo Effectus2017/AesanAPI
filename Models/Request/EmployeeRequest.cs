@@ -8,7 +8,7 @@ public class EmployeeRequest
     public string FatherLastName { get; set; } = "";
     public string MotherLastName { get; set; } = "";
     public int StatusId { get; set; } = 1;
-    public int TitleId { get; set; } = 0;
+    public int PositionId { get; set; } = 0;
     public DateTime BirthDate { get; set; }
     public string Email { get; set; } = "";
     public string PostalAddress { get; set; } = "";

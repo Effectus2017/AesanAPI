@@ -22,6 +22,39 @@ public class EmployeeRepository(
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
+    /// Obtiene un empleado por su ID
+    /// </summary>
+    /// <param name="id">El ID del empleado</param>
+    /// <returns>El empleado</returns>
+    public async Task<dynamic> GetEmployeeById(int id)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@id", id, DbType.Int32);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<DTOEmployee>(
+                "100_GetEmployeeById",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el empleado con ID {EmployeeId}", id);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Obtiene todos los empleados de la base de datos
     /// </summary>
     /// <param name="take">El número de empleados a obtener</param>
@@ -49,11 +82,7 @@ public class EmployeeRepository(
                     cacheKey,
                     async () =>
                     {
-                        var result = await dbConnection.QueryMultipleAsync(
-                            "100_GetEmployees",
-                            param,
-                            commandType: CommandType.StoredProcedure
-                        );
+                        var result = await dbConnection.QueryMultipleAsync("100_GetEmployees", param, commandType: CommandType.StoredProcedure);
 
                         if (result == null)
                         {
@@ -93,38 +122,7 @@ public class EmployeeRepository(
         }
     }
 
-    /// <summary>
-    /// Obtiene un empleado por su ID
-    /// </summary>
-    /// <param name="id">El ID del empleado</param>
-    /// <returns>El empleado</returns>
-    public async Task<dynamic> GetEmployeeById(int id)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var param = new DynamicParameters();
-            param.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<DTOEmployee>(
-                "100_GetEmployeeById",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el empleado con ID {EmployeeId}", id);
-            throw new Exception(ex.Message);
-        }
-    }
 
     /// <summary>
     /// Inserta un nuevo empleado en la base de datos
@@ -144,7 +142,7 @@ public class EmployeeRepository(
             parameters.Add("@fatherLastName", employeeRequest.FatherLastName, DbType.String, ParameterDirection.Input);
             parameters.Add("@motherLastName", employeeRequest.MotherLastName, DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", employeeRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@titleId", employeeRequest.TitleId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@positionId", employeeRequest.PositionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@birthDate", employeeRequest.BirthDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@email", employeeRequest.Email, DbType.String, ParameterDirection.Input);
             parameters.Add("@postalAddress", employeeRequest.PostalAddress, DbType.String, ParameterDirection.Input);
@@ -155,16 +153,13 @@ public class EmployeeRepository(
             parameters.Add("@userId", employeeRequest.UserId, DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync(
-                "100_InsertEmployee",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await dbConnection.ExecuteAsync("100_InsertEmployee", parameters, commandType: CommandType.StoredProcedure);
 
-            var id = parameters.Get<int>("@id");
-            InvalidateCache(id);
+            var employeeId = parameters.Get<int>("@id");
 
-            return true;
+            InvalidateCache(employeeId);
+
+            return employeeId > 0;
         }
         catch (Exception ex)
         {
@@ -192,7 +187,7 @@ public class EmployeeRepository(
             parameters.Add("@fatherLastName", employeeRequest.FatherLastName, DbType.String);
             parameters.Add("@motherLastName", employeeRequest.MotherLastName, DbType.String);
             parameters.Add("@statusId", employeeRequest.StatusId, DbType.Int32);
-            parameters.Add("@titleId", employeeRequest.TitleId, DbType.Int32);
+            parameters.Add("@positionId", employeeRequest.PositionId, DbType.Int32);
             parameters.Add("@birthDate", employeeRequest.BirthDate, DbType.DateTime);
             parameters.Add("@email", employeeRequest.Email, DbType.String);
             parameters.Add("@postalAddress", employeeRequest.PostalAddress, DbType.String);
@@ -203,19 +198,18 @@ public class EmployeeRepository(
             parameters.Add("@userId", employeeRequest.UserId, DbType.String);
             parameters.Add("@isActive", employeeRequest.IsActive, DbType.Boolean);
 
-            var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_UpdateEmployee",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("100_UpdateEmployee", parameters, commandType: CommandType.StoredProcedure);
+
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
             {
                 InvalidateCache(employeeRequest.Id);
-                return true;
             }
 
-            return false;
+            return rowsAffected > 0;
         }
         catch (Exception ex)
         {
@@ -266,7 +260,7 @@ public class EmployeeRepository(
     /// <param name="employeeId">ID del empleado</param>
     /// <param name="userId">ID del usuario</param>
     /// <returns>True si se convirtió correctamente</returns>
-    public async Task<bool> ConvertToUser(int employeeId, string userId)
+    public async Task<bool> ConvertEmployeeToUser(int employeeId, string userId)
     {
         try
         {
@@ -294,6 +288,72 @@ public class EmployeeRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al convertir empleado con ID {EmployeeId} a usuario", employeeId);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Verifica si existe un empleado principal
+    /// </summary>
+    /// <returns>True si existe un empleado principal</returns>
+    public async Task<bool> HasMainEmployee()
+    {
+        try
+        {
+            _logger.LogInformation("Verificando si existe empleado principal");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<int>(
+                "100_HasMainEmployee",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return result > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al verificar si existe empleado principal");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el estado activo de un empleado
+    /// </summary>
+    /// <param name="employeeId">ID del empleado</param>
+    /// <param name="isActive">Nuevo estado activo</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateEmployeeActiveStatus(int employeeId, bool isActive)
+    {
+        try
+        {
+            _logger.LogInformation("Actualizando estado activo del empleado con ID {EmployeeId} a {IsActive}", employeeId, isActive);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@employeeId", employeeId, DbType.Int32);
+            parameters.Add("@isActive", isActive, DbType.Boolean);
+
+            var rowsAffected = await dbConnection.ExecuteAsync(
+                "100_UpdateEmployeeActiveStatus",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(employeeId);
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar estado activo del empleado con ID {EmployeeId}", employeeId);
             throw new Exception(ex.Message);
         }
     }
@@ -331,8 +391,8 @@ public class EmployeeRepository(
             MotherLastName = result.MotherLastName,
             StatusId = result.StatusId,
             StatusName = result.StatusName,
-            TitleId = result.TitleId,
-            TitleName = result.TitleName,
+            PositionId = result.PositionId,
+            PositionName = result.PositionName,
             BirthDate = result.BirthDate,
             Email = result.Email,
             PostalAddress = result.PostalAddress,
@@ -366,8 +426,8 @@ public class EmployeeRepository(
             MotherLastName = result.MotherLastName,
             StatusId = result.StatusId,
             StatusName = result.StatusName,
-            TitleId = result.TitleId,
-            TitleName = result.TitleName,
+            PositionId = result.PositionId,
+            PositionName = result.PositionName,
             BirthDate = result.BirthDate,
             Email = result.Email,
             PostalAddress = result.PostalAddress,

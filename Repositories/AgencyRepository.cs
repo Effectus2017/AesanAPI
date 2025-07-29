@@ -20,7 +20,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
     private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository ?? throw new ArgumentNullException(nameof(agencyUsersRepository));
-    private readonly IMemoryCache _cache = cache;
+    private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
@@ -120,7 +121,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="name">El nombre de la agencia</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList)
     {
         try
         {
@@ -136,47 +137,64 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@userId", userId);
             param.Add("@alls", alls);
 
-            // Variables para almacenar los resultados
-            List<dynamic> agencies = [];
-            List<dynamic> agenciesPrograms = [];
-            int count = 0;
-
-            // Usar un bloque using para garantizar que el GridReader se cierre correctamente
-            using var result = await dbConnection.QueryMultipleAsync("115_GetAgencies", param, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
+            if (isList)
             {
-                return null;
-            }
+                using var result = await dbConnection.QueryMultipleAsync("116_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
-            // Leer todos los conjuntos de resultados de manera segura
-            if (!result.IsConsumed)
-            {
-                agencies = result.Read<dynamic>().ToList();
-            }
-
-            if (!result.IsConsumed)
-            {
-                agenciesPrograms = result.Read<dynamic>().ToList();
-            }
-
-            if (!result.IsConsumed)
-            {
-                count = result.ReadFirstOrDefault<int>();
-            }
-
-            // Procesar los datos después de que el GridReader se haya cerrado
-            var data = agencies.Select(MapAgencyFromResult).ToList();
-
-            if (agenciesPrograms != null && agenciesPrograms.Count != 0)
-            {
-                foreach (var agency in data)
+                if (result == null)
                 {
-                    agency.Programs = MapProgramsFromResult(agenciesPrograms.Where(ap => ap.AgencyId == agency.Id));
+                    return new List<dynamic>();
                 }
+
+                var data = result.Read<dynamic>().Select(MapAgencyFromResult).ToList();
+                return data;
+            }
+            else
+            {
+                // Variables para almacenar los resultados
+                List<dynamic> agencies = [];
+                List<dynamic> agenciesPrograms = [];
+                int count = 0;
+
+                // Usar un bloque using para garantizar que el GridReader se cierre correctamente
+                using var result = await dbConnection.QueryMultipleAsync("116_GetAgencies", param, commandType: CommandType.StoredProcedure);
+
+                if (result == null)
+                {
+                    return null;
+                }
+
+                // Leer todos los conjuntos de resultados de manera segura
+                if (!result.IsConsumed)
+                {
+                    agencies = result.Read<dynamic>().ToList();
+                }
+
+                if (!result.IsConsumed)
+                {
+                    agenciesPrograms = result.Read<dynamic>().ToList();
+                }
+
+                if (!result.IsConsumed)
+                {
+                    count = result.ReadFirstOrDefault<int>();
+                }
+
+                // Procesar los datos después de que el GridReader se haya cerrado
+                var data = agencies.Select(MapAgencyFromResult).ToList();
+
+                if (agenciesPrograms != null && agenciesPrograms.Count != 0)
+                {
+                    foreach (var agency in data)
+                    {
+                        agency.Programs = MapProgramsFromResult(agenciesPrograms.Where(ap => ap.AgencyId == agency.Id));
+                    }
+                }
+
+                return new { data, count };
             }
 
-            return new { data, count };
+
         }
         catch (Exception ex)
         {

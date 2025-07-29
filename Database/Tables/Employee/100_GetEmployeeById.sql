@@ -17,8 +17,8 @@ BEGIN
         e.MotherLastName,
         e.StatusId,
         os_status.Name AS StatusName,
-        e.TitleId,
-        os_title.Name AS TitleName,
+        e.PositionId,
+        os_position.Name AS PositionName,
         e.BirthDate,
         e.Email,
         e.PostalAddress,
@@ -35,7 +35,7 @@ BEGIN
         e.IsActive
     FROM Employee e
         LEFT JOIN OptionSelection os_status ON e.StatusId = os_status.Id
-        LEFT JOIN OptionSelection os_title ON e.TitleId = os_title.Id
+        LEFT JOIN OptionSelection os_position ON e.PositionId = os_position.Id
         LEFT JOIN City c ON e.CityId = c.Id
         LEFT JOIN Region r ON e.RegionId = r.Id
         LEFT JOIN AspNetUsers u ON e.UserId = u.Id

@@ -56,23 +56,30 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// </summary>
     /// <param name="optionKey">The option key to filter by/La clave de opción para filtrar</param>
     /// <returns>List of option selections matching the key/Lista de selecciones de opción que coinciden con la clave</returns>
-    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey)
+    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names)
     {
-        string cacheKey = string.Format(_appSettings.Cache.Keys.OptionSelectionByKey, optionKey);
-        return await _cache.CacheQuery(
-            cacheKey,
-            async () =>
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@optionKey", optionKey, DbType.String);
+            parameters.Add("@names", names, DbType.String);
+            var result = await db.QueryMultipleAsync("100_GetOptionSelectionByOptionKey", parameters, commandType: CommandType.StoredProcedure);
+            var data = await result.ReadAsync<DTOOptionSelection>();
+
+            if (data == null || !data.Any())
             {
-                using IDbConnection db = _context.CreateConnection();
-                var parameters = new DynamicParameters();
-                parameters.Add("@optionKey", optionKey, DbType.String);
-                var result = await db.QueryMultipleAsync("100_GetOptionSelectionByOptionKey", parameters, commandType: CommandType.StoredProcedure);
-                var data = await result.ReadAsync<DTOOptionSelection>();
-                return new { data, count = data.Count() };
-            },
-            _logger,
-            _appSettings
-        );
+                _logger.LogInformation("No se encontraron selecciones de opción para la clave: {OptionKey}", optionKey);
+                return new { data = Enumerable.Empty<DTOOptionSelection>(), count = 0 };
+            }
+
+            return new { data, count = data.Count() };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener selecciones de opción por clave: {OptionKey}", optionKey);
+            throw;
+        }
     }
 
     /// <summary>

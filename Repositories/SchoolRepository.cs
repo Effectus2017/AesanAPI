@@ -74,7 +74,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@regionId", regionId == 0 ? null : regionId, DbType.Int32);
             parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             parameters.Add("@alls", alls, DbType.Boolean);
-            //parameters.Add("@isList", isList, DbType.Boolean);
 
             if (isList)
             {
@@ -267,7 +266,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
 
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
             await dbConnection.ExecuteAsync("102_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
+
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             // Si tenemos un mainSchoolId, actualizamos la escuela principal
             if (request.MainSchoolId.HasValue)
@@ -281,10 +284,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 await UpdateSchoolEducationLevels(request.Id, request.EducationLevelIds);
             }
 
-            // Invalidar caché
-            InvalidateCache(request.Id);
+            if (rowsAffected > 0)
+            {
+                // Invalidar caché
+                InvalidateCache(request.Id);
+            }
 
-            return true;
+            return rowsAffected > 0;
         }
         catch (Exception ex)
         {

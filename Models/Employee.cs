@@ -8,7 +8,7 @@ public class Employee
     public string FatherLastName { get; set; } = "";
     public string MotherLastName { get; set; } = "";
     public int StatusId { get; set; } = 1; // Referencia a OptionSelection con optionKey = 'isActive'
-    public int TitleId { get; set; } = 0; // Referencia a OptionSelection con optionKey = 'employeeTitle'
+    public int PositionId { get; set; } = 0; // Referencia a OptionSelection con optionKey = 'employeePosition'
     public DateTime BirthDate { get; set; }
     public string Email { get; set; } = "";
     public string PostalAddress { get; set; } = "";
