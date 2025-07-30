@@ -15,4 +15,6 @@ public interface IUnitOfWork
     IHouseholdRepository HouseholdRepository { get; }
     IHouseholdMemberRepository HouseholdMemberRepository { get; }
     IEmployeeRepository EmployeeRepository { get; }
+    IStaffRepository StaffRepository { get; }
+    IStaffTypeRepository StaffTypeRepository { get; }
 }

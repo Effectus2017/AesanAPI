@@ -63,7 +63,29 @@ VALUES
     ('EmployeeAssignSchool', 'Asignar escuelas a empleados', 'Assign schools to employees', 1),
     ('EmployeeAssignProgram', 'Asignar programas a empleados', 'Assign programs to employees', 1);
 
--- Actualizar permisos los demas permisos sin descripcion en ingles
+-- Insertar permisos para staff
+INSERT INTO Permission
+    (Name, Description, DescriptionEn, IsActive)
+VALUES
+    ('StaffView', 'Ver staff', 'View staff', 1),
+    ('StaffCreate', 'Crear staff', 'Create staff', 1),
+    ('StaffEdit', 'Editar staff', 'Edit staff', 1),
+    ('StaffDelete', 'Eliminar staff', 'Delete staff', 1),
+    ('StaffAssignAgency', 'Asignar agencias a staff', 'Assign agencies to staff', 1),
+    ('StaffAssignRole', 'Asignar roles a staff', 'Assign roles to staff', 1),
+    ('StaffAssignPermission', 'Asignar permisos a staff', 'Assign permissions to staff', 1),
+    ('StaffAssignSchool', 'Asignar escuelas a staff', 'Assign schools to staff', 1),
+    ('StaffAssignProgram', 'Asignar programas a staff', 'Assign programs to staff', 1);
+
+-- Insertar permisos para tipos de staff
+INSERT INTO Permission
+    (Name, Description, DescriptionEn, IsActive)
+VALUES
+    ('StaffTypeView', 'Ver tipos de staff', 'View staff types', 1),
+    ('StaffTypeCreate', 'Crear tipos de staff', 'Create staff types', 1),
+    ('StaffTypeEdit', 'Editar tipos de staff', 'Edit staff types', 1),
+    ('StaffTypeDelete', 'Eliminar tipos de staff', 'Delete staff types', 1);
+
 -- Actualización de la descripción en inglés (DescriptionEn) para los permisos existentes
 -- Se utiliza WHERE Name = '...' para asegurarse de actualizar únicamente el permiso específico identificado por su nombre único.
 -- Esto evita modificar otros registros accidentalmente y garantiza que solo el permiso deseado reciba la actualización en la columna DescriptionEn.

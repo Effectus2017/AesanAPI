@@ -1,0 +1,16 @@
+
+
+Personal:
+
+Tipo de Personal (Staff):
+
+
+Empleado > Tiene clasificacion:  Administrativo u operacional // Clasificacion (Asociado aunicamente empleado) > los empleados tienen puestos (positions) que es similar a cargos (poner OptionSelection), los empleados no tinen fecha de nacimiento asi que lo ocultamos
+
+Miembro de la junta > Tienen titulo (cargo) unicamente asociado a miembre de la junta
+
+Ambos tienen el campo comentario diferente
+
+Ambos tiene estado (status)
+
+El usuario que se registra es un empleado administrativo con Rol Administrador
