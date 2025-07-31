@@ -7,7 +7,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateStaffType]
     @id INT,
     @name NVARCHAR(100),
     @nameEn NVARCHAR(100),
-    @sortOrder INT,
+    @displayOrder INT,
     @isActive BIT = NULL
 AS
 BEGIN
@@ -18,7 +18,7 @@ BEGIN
     SET
         Name = @name,
         NameEn = @nameEn,
-        SortOrder = @sortOrder,
+        DisplayOrder = @displayOrder,
         IsActive = ISNULL(@isActive, IsActive),
         UpdatedAt = GETDATE()
     WHERE Id = @id;

@@ -1,7 +1,12 @@
 -- =============================================
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
+-- =============================================
 -- Stored Procedure: 100_UpdateEmployee
 -- =============================================
 -- Actualiza un empleado existente en la base de datos
+-- Parámetros: Todos los campos del empleado
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_UpdateEmployee]
     @id INT,

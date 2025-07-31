@@ -50,8 +50,17 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de staff con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el tipo de staff");
+            _logger.LogError(ex, "Error al obtener el tipo de staff con ID {Id}. Detalles: {Message}", queryParameters.Id, ex.Message);
+
+            // Devolver información más detallada del error
+            var errorResponse = new ErrorResponse(
+                "Error al obtener el tipo de staff",
+                ex.Message,
+                ex.StackTrace,
+                ex.InnerException?.Message
+            );
+
+            return StatusCode(500, errorResponse);
         }
     }
 
@@ -68,7 +77,8 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Obteniendo todos los tipos de staff");
+                _logger.LogInformation("Obteniendo todos los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
+                    queryParameters.Take, queryParameters.Skip, queryParameters.Names, queryParameters.Alls, queryParameters.IsList);
 
                 var staffTypes = await _unitOfWork.StaffTypeRepository.GetAllStaffTypesFromDb(
                     queryParameters.Take,
@@ -84,8 +94,17 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de staff");
-            return StatusCode(500, "Error al obtener los tipos de staff");
+            _logger.LogError(ex, "Error al obtener los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}. Detalles: {Message}",
+                queryParameters.Take, queryParameters.Skip, queryParameters.Names, queryParameters.Alls, queryParameters.IsList, ex.Message);
+
+            var errorResponse = new ErrorResponse(
+                "Error al obtener los tipos de staff",
+                ex.Message,
+                ex.StackTrace,
+                ex.InnerException?.Message
+            );
+
+            return StatusCode(500, errorResponse);
         }
     }
 
@@ -107,11 +126,13 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
                     return BadRequest("El tipo de staff es requerido");
                 }
 
+                _logger.LogInformation("Insertando nuevo tipo de staff: {Name}", request.Name);
+
                 var result = await _unitOfWork.StaffTypeRepository.InsertStaffType(request);
 
                 if (result)
                 {
-                    _logger.LogInformation("Tipo de staff insertado con ID: {Id}", request.Id);
+                    _logger.LogInformation("Tipo de staff insertado exitosamente");
                     return Ok(result);
                 }
 
@@ -123,8 +144,15 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de staff");
-            return StatusCode(500, "Error al insertar el tipo de staff");
+            _logger.LogError(ex, "Error al insertar el tipo de staff. Detalles: {Message}", ex.Message);
+            var errorResponse = new ErrorResponse(
+                "Error al insertar el tipo de staff",
+                ex.Message,
+                ex.StackTrace,
+                ex.InnerException?.Message
+            );
+
+            return StatusCode(500, errorResponse);
         }
     }
 
@@ -146,15 +174,20 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
                     return BadRequest("El tipo de staff es requerido");
                 }
 
+                if (request.Id == null || request.Id <= 0)
+                {
+                    return BadRequest("El ID del tipo de staff es requerido y debe ser mayor que cero");
+                }
+
                 var result = await _unitOfWork.StaffTypeRepository.UpdateStaffType(request);
 
                 if (result)
                 {
-                    _logger.LogInformation("Tipo de staff actualizado con ID: {Id}", request.Id);
+                    _logger.LogInformation("Tipo de staff actualizado exitosamente con ID: {Id}", request.Id);
                     return Ok(result);
                 }
 
-                _logger.LogWarning("No se pudo actualizar el tipo de staff");
+                _logger.LogWarning("No se pudo actualizar el tipo de staff con ID: {Id}", request.Id);
                 return BadRequest("No se pudo actualizar el tipo de staff");
             }
 
@@ -162,8 +195,9 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de staff");
-            return StatusCode(500, "Error al actualizar el tipo de staff");
+            _logger.LogError(ex, "Error al actualizar el tipo de staff con ID {Id}. Detalles: {Message}", request.Id, ex.Message);
+            var errorResponse = new ErrorResponse("Error al actualizar el tipo de staff", ex.Message, ex.StackTrace, ex.InnerException?.Message);
+            return StatusCode(500, errorResponse);
         }
     }
 
@@ -186,7 +220,7 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
 
                 if (result)
                 {
-                    _logger.LogInformation("Tipo de staff eliminado con ID: {Id}", queryParameters.Id);
+                    _logger.LogInformation("Tipo de staff eliminado exitosamente con ID: {Id}", queryParameters.Id);
                     return Ok(result);
                 }
 
@@ -198,8 +232,16 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de staff con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error al eliminar el tipo de staff");
+            _logger.LogError(ex, "Error al eliminar el tipo de staff con ID {Id}. Detalles: {Message}", queryParameters.Id, ex.Message);
+
+            var errorResponse = new ErrorResponse(
+                "Error al eliminar el tipo de staff",
+                ex.Message,
+                ex.StackTrace,
+                ex.InnerException?.Message
+            );
+
+            return StatusCode(500, errorResponse);
         }
     }
 }

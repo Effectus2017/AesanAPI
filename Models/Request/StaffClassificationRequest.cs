@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Api.Models.Request;
 
-public class StaffTypeRequest
+public class StaffClassificationRequest
 {
-    public int? Id { get; set; }
+    public int Id { get; set; } = 0;
 
     [Required(ErrorMessage = "El nombre es requerido")]
     [StringLength(100, ErrorMessage = "El nombre no puede exceder 100 caracteres")]
@@ -14,6 +14,6 @@ public class StaffTypeRequest
     [StringLength(100, ErrorMessage = "El nombre en inglés no puede exceder 100 caracteres")]
     public string NameEn { get; set; } = "";
 
-    public int DisplayOrder { get; set; } = 0;
+    public int SortOrder { get; set; } = 0;
     public bool IsActive { get; set; } = true;
 }

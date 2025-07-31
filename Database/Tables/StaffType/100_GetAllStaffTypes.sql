@@ -24,13 +24,13 @@ BEGIN
             Id,
             Name,
             NameEn,
-            SortOrder,
+            DisplayOrder,
             IsActive,
             CreatedAt,
             UpdatedAt
         FROM StaffType
         WHERE IsActive = 1
-        ORDER BY SortOrder, Name;
+        ORDER BY DisplayOrder, Name;
     END
     ELSE
     BEGIN
@@ -39,7 +39,7 @@ BEGIN
             Id,
             Name,
             NameEn,
-            SortOrder,
+            DisplayOrder,
             IsActive,
             CreatedAt,
             UpdatedAt
@@ -51,7 +51,7 @@ BEGIN
             Name LIKE '%' + @name + '%' OR
             NameEn LIKE '%' + @name + '%')
             )
-        ORDER BY SortOrder, Name
+        ORDER BY DisplayOrder, Name
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY;
 

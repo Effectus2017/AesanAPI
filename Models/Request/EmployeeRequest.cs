@@ -1,5 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Api.Models.Request;
 
+/// <summary>
+/// Modelo de solicitud para empleados
+/// </summary>
+[Obsolete("Esta clase está deprecada. Use StaffRequest en su lugar. Será eliminada en una versión futura.")]
 public class EmployeeRequest
 {
     public int? Id { get; set; }

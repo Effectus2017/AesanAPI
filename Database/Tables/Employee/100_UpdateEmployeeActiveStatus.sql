@@ -1,8 +1,14 @@
 -- =============================================
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
+-- =============================================
 -- Stored Procedure: 100_UpdateEmployeeActiveStatus
 -- =============================================
 -- Actualiza el estado activo de un empleado
--- Incluye validación para justificación cuando se inactiva
+-- Parámetros:
+--   @employeeId: ID del empleado
+--   @isActive: Nuevo estado activo
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_UpdateEmployeeActiveStatus]
     @id INT,

@@ -1,8 +1,14 @@
 -- =============================================
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
+-- =============================================
 -- Stored Procedure: 100_ConvertEmployeeToUser
 -- =============================================
 -- Convierte un empleado en usuario del sistema
--- Asocia el UserId al empleado para indicar que ya tiene un usuario
+-- Parámetros:
+--   @employeeId: ID del empleado
+--   @userId: ID del usuario
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_ConvertEmployeeToUser]
     @employeeId INT,

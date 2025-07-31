@@ -16,6 +16,7 @@ namespace Api.Controllers;
 [Route("employee")]
 [ApiController]
 // [Authorize]
+[Obsolete("Esta clase está deprecada. Use StaffController en su lugar. Será eliminada en una versión futura.")]
 public class EmployeeController(ILogger<EmployeeController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<EmployeeController> _logger = logger;

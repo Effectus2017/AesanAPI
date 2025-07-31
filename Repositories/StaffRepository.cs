@@ -295,34 +295,6 @@ public class StaffRepository(
     }
 
     /// <summary>
-    /// Verifica si existe un miembro del staff principal
-    /// </summary>
-    /// <returns>True si existe un miembro del staff principal</returns>
-    public async Task<bool> HasMainStaff()
-    {
-        try
-        {
-            _logger.LogInformation("Verificando si existe miembro del staff principal");
-
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-
-            var result = await dbConnection.QueryFirstOrDefaultAsync<int>(
-                "100_HasMainStaff",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-
-            return result > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar si existe miembro del staff principal");
-            throw new Exception(ex.Message);
-        }
-    }
-
-    /// <summary>
     /// Actualiza el estado activo de un miembro del staff
     /// </summary>
     /// <param name="staffId">ID del miembro del staff</param>

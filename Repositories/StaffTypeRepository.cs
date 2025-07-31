@@ -42,7 +42,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el tipo de staff con ID {StaffTypeId}", id);
-            throw new Exception(ex.Message);
+            throw; // Preservar la excepción original con toda la información
         }
     }
 
@@ -106,8 +106,8 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de staff");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al obtener los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}", take, skip, name, alls, isList);
+            throw; // Preservar la excepción original con toda la información
         }
     }
 
@@ -126,8 +126,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
             var parameters = new DynamicParameters();
             parameters.Add("@name", staffTypeRequest.Name, DbType.String, ParameterDirection.Input);
             parameters.Add("@nameEn", staffTypeRequest.NameEn, DbType.String, ParameterDirection.Input);
-            parameters.Add("@optionKey", staffTypeRequest.OptionKey, DbType.String, ParameterDirection.Input);
-            parameters.Add("@sortOrder", staffTypeRequest.SortOrder, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@displayOrder", staffTypeRequest.DisplayOrder, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_InsertStaffType", parameters, commandType: CommandType.StoredProcedure);
@@ -140,8 +139,9 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de staff");
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al insertar el tipo de staff. Datos: Name={Name}, NameEn={NameEn}, DisplayOrder={DisplayOrder}",
+                staffTypeRequest.Name, staffTypeRequest.NameEn, staffTypeRequest.DisplayOrder);
+            throw; // Preservar la excepción original con toda la información
         }
     }
 
@@ -161,8 +161,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
             parameters.Add("@id", staffTypeRequest.Id, DbType.Int32);
             parameters.Add("@name", staffTypeRequest.Name, DbType.String);
             parameters.Add("@nameEn", staffTypeRequest.NameEn, DbType.String);
-            parameters.Add("@optionKey", staffTypeRequest.OptionKey, DbType.String);
-            parameters.Add("@sortOrder", staffTypeRequest.SortOrder, DbType.Int32);
+            parameters.Add("@displayOrder", staffTypeRequest.DisplayOrder, DbType.Int32);
             parameters.Add("@isActive", staffTypeRequest.IsActive, DbType.Boolean);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
@@ -181,8 +180,9 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de staff con ID {StaffTypeId}", staffTypeRequest.Id);
-            throw new Exception(ex.Message);
+            _logger.LogError(ex, "Error al actualizar el tipo de staff con ID {StaffTypeId}. Datos: Name={Name}, NameEn={NameEn}, DisplayOrder={DisplayOrder}, IsActive={IsActive}",
+            staffTypeRequest.Id, staffTypeRequest.Name, staffTypeRequest.NameEn, staffTypeRequest.DisplayOrder, staffTypeRequest.IsActive);
+            throw; // Preservar la excepción original con toda la información
         }
     }
 
@@ -218,7 +218,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el tipo de staff con ID {StaffTypeId}", id);
-            throw new Exception(ex.Message);
+            throw; // Preservar la excepción original con toda la información
         }
     }
 
@@ -231,14 +231,13 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
     {
         return new
         {
-            Id = result.Id,
-            Name = result.Name,
-            NameEn = result.NameEn,
-            OptionKey = result.OptionKey,
-            SortOrder = result.SortOrder,
-            IsActive = result.IsActive,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt
+            result.Id,
+            result.Name,
+            result.NameEn,
+            result.DisplayOrder,
+            result.IsActive,
+            result.CreatedAt,
+            result.UpdatedAt
         };
     }
 
@@ -251,14 +250,13 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
     {
         return new
         {
-            Id = result.Id,
-            Name = result.Name,
-            NameEn = result.NameEn,
-            OptionKey = result.OptionKey,
-            SortOrder = result.SortOrder,
-            IsActive = result.IsActive,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt
+            result.Id,
+            result.Name,
+            result.NameEn,
+            result.DisplayOrder,
+            result.IsActive,
+            result.CreatedAt,
+            result.UpdatedAt
         };
     }
 

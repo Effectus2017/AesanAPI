@@ -10,6 +10,10 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
+/// <summary>
+/// Repositorio para la gestión de empleados
+/// </summary>
+[Obsolete("Esta clase está deprecada. Use StaffRepository en su lugar. Será eliminada en una versión futura.")]
 public class EmployeeRepository(
     DapperContext context,
     ILogger<EmployeeRepository> logger,

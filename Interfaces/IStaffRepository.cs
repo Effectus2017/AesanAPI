@@ -53,12 +53,6 @@ public interface IStaffRepository
     Task<bool> ConvertStaffToUser(int staffId, string userId);
 
     /// <summary>
-    /// Verifica si existe un miembro del staff principal
-    /// </summary>
-    /// <returns>True si existe un miembro del staff principal</returns>
-    Task<bool> HasMainStaff();
-
-    /// <summary>
     /// Actualiza el estado activo de un miembro del staff
     /// </summary>
     /// <param name="staffId">ID del miembro del staff</param>

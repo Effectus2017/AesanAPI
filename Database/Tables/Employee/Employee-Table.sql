@@ -1,5 +1,9 @@
 -- =============================================
--- Tabla: Employee (Empleados)
+-- DEPRECATED: Esta tabla está deprecada. Use Staff en su lugar.
+-- Será eliminada en una versión futura.
+-- =============================================
+-- Tabla: Employee
+-- Descripción: Tabla para almacenar información de empleados
 -- =============================================
 -- Registra todos los empleados del sistema.
 -- Un empleado puede tener un usuario asociado para convertirse en usuario del sistema.

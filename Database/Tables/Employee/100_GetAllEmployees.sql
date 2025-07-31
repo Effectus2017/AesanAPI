@@ -1,12 +1,17 @@
 -- =============================================
--- Stored Procedure: 100_GetEmployees
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
 -- =============================================
--- Obtiene todos los empleados con paginación y filtros
+-- Stored Procedure: 100_GetAllEmployees
+-- =============================================
+-- Obtiene todos los empleados de la base de datos
 -- Parámetros:
---   @take: Número de registros a tomar
+--   @take: Número de registros a obtener
 --   @skip: Número de registros a saltar
---   @name: Nombre para filtrar (busca en FirstName y FatherLastName)
---   @alls: Si es true, retorna solo lista simple sin paginación
+--   @name: Nombre del empleado a buscar (opcional)
+--   @alls: Si se deben obtener todos los empleados
+--   @isList: Si es para lista
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetEmployees]
     @take INT = 15,
