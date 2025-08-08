@@ -298,29 +298,29 @@ INSERT INTO OperatingPeriod
 VALUES
     ('Ago-Jul');
 
-CREATE TABLE MealType
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(255) NOT NULL
-    -- Nombre del tipo de comida (Almuerzo/Desayuno/Meriendas/Alimentos Federales)
-);
+-- CREATE TABLE MealType
+-- (
+--     Id INT PRIMARY KEY IDENTITY(1,1),
+--     Name NVARCHAR(255) NOT NULL
+--     -- Nombre del tipo de comida (Almuerzo/Desayuno/Meriendas/Alimentos Federales)
+-- );
 
-INSERT INTO MealType
-    (Name)
-VALUES
-    ('Desayuno');
-INSERT INTO MealType
-    (Name)
-VALUES
-    ('Almuerzo');
-INSERT INTO MealType
-    (Name)
-VALUES
-    ('Merienda');
-INSERT INTO MealType
-    (Name)
-VALUES
-    ('Alimentos Federales');
+-- INSERT INTO MealType
+--     (Name)
+-- VALUES
+--     ('Desayuno');
+-- INSERT INTO MealType
+--     (Name)
+-- VALUES
+--     ('Almuerzo');
+-- INSERT INTO MealType
+--     (Name)
+-- VALUES
+--     ('Merienda');
+-- INSERT INTO MealType
+--     (Name)
+-- VALUES
+--     ('Alimentos Federales');
 
 -- Documentos requeridos para solicitar el servicio de merienda:	Lista de Participantes/Plan de Actividades/Menú a Utilizar
 CREATE TABLE DocumentsRequired

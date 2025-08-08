@@ -135,3 +135,63 @@ VALUES
     ('boardMemberTitle', 'Presidente', 'President', 510, 1, GETDATE()),
     ('boardMemberTitle', 'Secretario(a)', 'Secretary', 520, 1, GETDATE()),
     ('boardMemberTitle', 'Tesorero', 'Treasurer', 530, 1, GETDATE());
+
+
+-- Comunidad
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Comunidad especial/bolsillo de pobreza', 'Special Community/Poverty Pocket', 'community', 0, 1, 540),
+    ('Vivienda Pública', 'Public Housing', 'community', 0, 1, 550),
+    ('Desarrollo Rural', 'Rural Development', 'community', 0, 1, 560),
+    ('Housing urban DevelopmentResidencial', 'Housing urban DevelopmentResidential', 'community', 0, 1, 570);
+
+-- Caminantes / Walkers
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Niños caminantes', 'Homeless Children', 'walkers', 0, 1, 580),
+    ('Sin hogar', 'Homeless', 'walkers', 0, 1, 590);
+
+-- Servicios que operara y horario
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Desayuno', 'Breakfast', 'services', 0, 1, 600),
+    ('Almuerzo', 'Lunch', 'services', 0, 1, 610),
+    ('Merienda', 'Snack', 'services', 0, 1, 620),
+    ('Cena', 'Dinner', 'services', 0, 1, 630),
+    ('Merienda Nocturna', 'Night Snack', 'services', 0, 1, 640);
+
+-- Tipo de distribución
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Diario', 'Daily', 'distributionType', 0, 1, 650),
+    ('Agranel', 'Bulk', 'distributionType', 0, 1, 660);
+
+-- Tipo de Sitio
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Abierto', 'Open', 'siteType', 0, 1, 670),
+    ('Campamento Residencial', 'Residential Camp', 'siteType', 0, 1, 680),
+    ('Campamento No Residencial', 'Non-Residential Camp', 'siteType', 0, 1, 690),
+    ('Cerrado', 'Closed', 'siteType', 0, 1, 700),
+    ('Restringido', 'Restricted', 'siteType', 0, 1, 710);
+
+-- Experiencia
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Hallazgo significativo', 'Significant Finding', 'experience', 0, 1, 720),
+    ('No participo año anterior', 'Did not participate last year', 'experience', 0, 1, 730),
+    ('Participó el año anterior', 'Participated last year', 'experience', 0, 1, 740),
+    ('Nuevo', 'New', 'experience', 0, 1, 750);
+
+-- Resultado de Revision
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Aprobado', 'Approved', 'reviewResult', 0, 1, 760),
+    ('Rechazado', 'Rejected', 'reviewResult', 0, 1, 770);

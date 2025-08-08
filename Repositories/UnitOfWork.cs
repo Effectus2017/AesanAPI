@@ -16,7 +16,8 @@ public class UnitOfWork(ApplicationDbContext context,
     IEmployeeRepository employeeRepository,
     IStaffRepository staffRepository,
     IStaffTypeRepository staffTypeRepository,
-    IStaffClassificationRepository staffClassificationRepository
+    IStaffClassificationRepository staffClassificationRepository,
+    IMessageRepository messageRepository
     ) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
@@ -35,4 +36,5 @@ public class UnitOfWork(ApplicationDbContext context,
     public IStaffRepository StaffRepository { get; private set; } = staffRepository;
     public IStaffTypeRepository StaffTypeRepository { get; private set; } = staffTypeRepository;
     public IStaffClassificationRepository StaffClassificationRepository { get; private set; } = staffClassificationRepository;
+    public IMessageRepository MessageRepository { get; private set; } = messageRepository;
 }

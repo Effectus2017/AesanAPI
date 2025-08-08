@@ -59,13 +59,22 @@ CREATE TABLE Staff
     IsActive BIT NOT NULL DEFAULT 1,
     -- Indica si el registro está activo
 
+    -- Campos de revisión (solo para empleados)
+    ReviewResultId INT NULL,
+    -- Referencia a OptionSelection con optionKey = 'reviewResult'
+    ReviewDate DATETIME NULL,
+    -- Fecha de revisión
+    ReviewJustification NVARCHAR(500) NULL,
+    -- Justificación de la revisión
+
     -- Restricciones
     FOREIGN KEY (StatusId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (PositionId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (StaffTypeId) REFERENCES StaffType(Id),
     FOREIGN KEY (CityId) REFERENCES City(Id),
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
-    FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id)
+    FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id),
+    FOREIGN KEY (ReviewResultId) REFERENCES OptionSelection(Id)
 );
 
 -- Índices para mejorar el rendimiento

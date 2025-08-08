@@ -58,6 +58,9 @@ BEGIN
         ai.AppointmentDate,
         ai.Comments,
 
+        -- Deadline to complete the registration of the Sites
+        ai.DeadlineToCompleteRegistration,
+
         -- Datos del usuario de la agencia (owner)
         au.UserId as UserId,
         u2.FirstName AS UserFirstName,
@@ -88,6 +91,7 @@ BEGIN
     SELECT
         p.Id,
         p.Name,
+        p.NameEN,
         p.Description,
         p.IsActive,
         p.CreatedAt,
@@ -99,4 +103,4 @@ END;
 GO
 
 
-exec [111_GetAgencyById] 1;
+-- EXEC [111_GetAgencyById] 1;

@@ -933,9 +933,9 @@ def main():
     }
     
     # Nombres para mostrar
-    db1_name = "Azure DB (NUTRE OLD)"
+    db1_name = "Azure DB (FOR DEVELOPMENT)"
     # db2_name = "Local DB (NUTRE)"
-    db2_name = "Azure DB (NUTRE NEW)"
+    db2_name = "Azure DB (FOR PRODUCTION)"
     
     # Establecer conexiones
     db1_conn = get_connection(**db1_config)

@@ -110,34 +110,35 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
     {
         _logger.LogInformation("Enviando correo de bienvenida a la agencia");
 
-        var subject = "¡Gracias por tu interés en formar parte del programa de AESAN!";
+        var subject = "¡Gracias por su interés en formar parte del programa de AESAN!";
         var fullName = $"{userRequest.User.FirstName} {userRequest.User.FatherLastName}";
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <p>Estimado/a {fullName},</p>
                 
-                <p>Nos complace enormemente saber que estás interesado/a en formar parte de nuestros programas en AESAN. 
-                Tu apoyo y participación son fundamentales para continuar con nuestra misión de [breve descripción de la misión o visión del programa].</p>
+                <p>Nos complace enormemente saber que está interesado/a en formar parte de nuestros programas en AESAN. 
+                Su apoyo y participación son fundamentales para continuar con nuestra misión de ofrecer servicios de alimentos 
+                y educación nutricional a los participantes, cubriendo todas las edades desde la niñez hasta la vejez.</p>
                 
-                <p>Para culminar tu proceso de registro y asegurar tu participación en el programa, te pedimos que sigas los siguientes pasos:</p>
+                <p>Para continuar con su proceso de registro, validación y aprobación final, le pedimos que siga los siguientes pasos:</p>
                 
-                <ol>
-                    <li>Haz clic en el botón <strong>Culminar Registro</strong> en el enlace que te proporcionamos.</li>
-                    <li>Acceder con la contraseña temporera <strong>{temporaryPassword}</strong></li>
-                </ol>
+                <ul>
+                    <li>Haz clic en el botón <strong>""NUTRE""</strong> donde podrá accesar a la plataforma.</li>
+                    <li>Luego coloque la contraseña temporera <strong>{temporaryPassword}</strong></li>
+                    <li>Deberá completar la sección en el menú principal llamada <strong>""Sitios""</strong>. Aquí deberá incluir todos los Sitios asociados a su Organización o Institución que estarán participando del programa de su interés.</li>
+                    <li>Deberá completar la sección en el menú principal llamada <strong>""Personal""</strong> donde listará todos los empleados administrativos y operacionales, así como los miembros de la junta directiva.</li>
+                </ul>
                 
-                <p>Si tienes alguna pregunta o necesitas asistencia adicional, no dudes en contactarnos. 
-                Estamos aquí para ayudarte en cada paso del camino.</p>
+                <p>Si tiene alguna pregunta o necesita asistencia adicional, no dude en contactarnos. 
+                Estamos aquí para ayudarle en cada paso del camino.</p>
                 
-                <p>Una vez más, gracias por su interés y confianza en AESAN. Juntos podemos lograr grandes cosas.</p>
+                <p>Una vez más, gracias por su interés y confianza en AESAN.<br>
+                Juntos podemos lograr grandes cosas.</p>
                 
                 <p>Saludos cordiales,<br>
-                {fullName}<br>
-                {userRequest.User.AdministrationTitle}<br>
-                AESAN<br>
-                {userRequest.User.Email}<br>
-                {userRequest.User.PhoneNumber}</p>
+                <strong>Agencia Estatal Servicios de Alimentos y Nutrición</strong><br>
+                (787) 759-2000 / Exts. 4625751, 4625753</p>
             </div>";
 
         await SendEmailWithGmailAsync(userRequest.User.Email, subject, htmlBody);
@@ -152,34 +153,35 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
     {
         _logger.LogInformation("Enviando correo de confirmación de aprobación de auspiciador");
 
-        var subject = "¡Gracias por tu interés en formar parte del programa de AESAN!";
+        var subject = "¡Gracias por su interés en formar parte del programa de AESAN!";
         var fullName = $"{user.FirstName} {user.FatherLastName}";
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <p>Estimado/a {fullName},</p>
                 
-                <p>Nos complace enormemente saber que estás interesado/a en formar parte de nuestros programas en AESAN. 
-                Tu apoyo y participación son fundamentales para continuar con nuestra misión de [breve descripción de la misión o visión del programa].</p>
+                <p>Nos complace enormemente saber que está interesado/a en formar parte de nuestros programas en AESAN. 
+                Su apoyo y participación son fundamentales para continuar con nuestra misión de ofrecer servicios de alimentos 
+                y educación nutricional a los participantes, cubriendo todas las edades desde la niñez hasta la vejez.</p>
                 
-                <p>Para culminar tu proceso de registro y asegurar tu participación en el programa, te pedimos que sigas los siguientes pasos:</p>
+                <p>Para continuar con su proceso de registro, validación y aprobación final, le pedimos que siga los siguientes pasos:</p>
                 
-                <ol>
-                    <li>Haz clic en el botón <strong>Culminar Registro</strong> en el enlace que te proporcionamos.</li>
-                    <li>Acceder con la contraseña temporera <strong>{temporaryPassword}</strong></li>
-                </ol>
+                <ul>
+                    <li>Haz clic en el botón <strong>""NUTRE""</strong> donde podrá accesar a la plataforma.</li>
+                    <li>Luego coloque la contraseña temporera <strong>{temporaryPassword}</strong></li>
+                    <li>Deberá completar la sección en el menú principal llamada <strong>""Sitios""</strong>. Aquí deberá incluir todos los Sitios asociados a su Organización o Institución que estarán participando del programa de su interés.</li>
+                    <li>Deberá completar la sección en el menú principal llamada <strong>""Personal""</strong> donde listará todos los empleados administrativos y operacionales, así como los miembros de la junta directiva.</li>
+                </ul>
                 
-                <p>Si tienes alguna pregunta o necesitas asistencia adicional, no dudes en contactarnos. 
-                Estamos aquí para ayudarte en cada paso del camino.</p>
+                <p>Si tiene alguna pregunta o necesita asistencia adicional, no dude en contactarnos. 
+                Estamos aquí para ayudarle en cada paso del camino.</p>
                 
-                <p>Una vez más, gracias por su interés y confianza en AESAN. Juntos podemos lograr grandes cosas.</p>
+                <p>Una vez más, gracias por su interés y confianza en AESAN.<br>
+                Juntos podemos lograr grandes cosas.</p>
                 
                 <p>Saludos cordiales,<br>
-                {fullName}<br>
-                {user.AdministrationTitle}<br>
-                AESAN<br>
-                {user.Email}<br>
-                {user.PhoneNumber}</p>
+                <strong>Agencia Estatal Servicios de Alimentos y Nutrición</strong><br>
+                (787) 759-2000 / Exts. 4625751, 4625753</p>
             </div>";
 
 #if !DEBUG

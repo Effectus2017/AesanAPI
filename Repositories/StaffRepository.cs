@@ -136,21 +136,25 @@ public class StaffRepository(
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@firstName", staffRequest.FirstName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@middleName", staffRequest.MiddleName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@fatherLastName", staffRequest.FatherLastName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@motherLastName", staffRequest.MotherLastName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@middleName", staffRequest.MiddleName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@email", staffRequest.Email, DbType.String, ParameterDirection.Input);
-            parameters.Add("@postalAddress", staffRequest.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@areaCode", staffRequest.AreaCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@comments", staffRequest.Comments, DbType.String, ParameterDirection.Input);
+            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@userId", staffRequest.UserId, DbType.String, ParameterDirection.Input);
+            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@reviewDate", staffRequest.ReviewDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
@@ -182,22 +186,26 @@ public class StaffRepository(
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
-            parameters.Add("@firstName", staffRequest.FirstName, DbType.String);
-            parameters.Add("@middleName", staffRequest.MiddleName, DbType.String);
-            parameters.Add("@fatherLastName", staffRequest.FatherLastName, DbType.String);
-            parameters.Add("@motherLastName", staffRequest.MotherLastName, DbType.String);
+            parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String);
+            parameters.Add("@middleName", staffRequest.MiddleName ?? "", DbType.String);
+            parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String);
+            parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32);
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32);
+            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32);
             parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime);
-            parameters.Add("@email", staffRequest.Email, DbType.String);
-            parameters.Add("@postalAddress", staffRequest.PostalAddress, DbType.String);
+            parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
+            parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32);
-            parameters.Add("@areaCode", staffRequest.AreaCode, DbType.String);
-            parameters.Add("@comments", staffRequest.Comments, DbType.String);
+            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String);
+            parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String);
             parameters.Add("@userId", staffRequest.UserId, DbType.String);
             parameters.Add("@isActive", staffRequest.IsActive, DbType.Boolean);
+            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32);
+            parameters.Add("@reviewDate", staffRequest.ReviewDate, DbType.DateTime);
+            parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -392,7 +400,10 @@ public class StaffRepository(
             UserName = result.UserName,
             CreatedAt = result.CreatedAt,
             UpdatedAt = result.UpdatedAt,
-            IsActive = result.IsActive
+            IsActive = result.IsActive,
+            ReviewResultId = result.ReviewResultId,
+            ReviewDate = result.ReviewDate,
+            ReviewJustification = result.ReviewJustification
         };
     }
 

@@ -19,4 +19,5 @@ public interface IUnitOfWork
     IStaffRepository StaffRepository { get; }
     IStaffTypeRepository StaffTypeRepository { get; }
     IStaffClassificationRepository StaffClassificationRepository { get; }
+    IMessageRepository MessageRepository { get; }
 }

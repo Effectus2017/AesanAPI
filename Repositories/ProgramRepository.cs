@@ -116,12 +116,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// <param name="agencyId">El ID de la agencia</param>
     /// <param name="programId">El ID del programa</param>
     /// <returns>Las inscripciones de programas</returns>
-    public async Task<dynamic> GetAllProgramInscriptions(
-        int take,
-        int skip,
-        int? agencyId = null,
-        int? programId = null
-    )
+    public async Task<dynamic> GetAllProgramInscriptions(int take, int skip, int? agencyId = null, int? programId = null)
     {
         try
         {

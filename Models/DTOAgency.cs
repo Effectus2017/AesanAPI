@@ -48,6 +48,9 @@ public class DTOAgency
     // Fecha de la cita
     public DateTime? AppointmentDate { get; set; } = DateTime.Now;
 
+    // Deadline to complete the registration of the Sites
+    public DateTime? DeadlineToCompleteRegistration { get; set; } = DateTime.Now;
+
     // Relaciones
     public DTOCity City { get; set; } = new DTOCity();
     public DTORegion Region { get; set; } = new DTORegion();

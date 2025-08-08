@@ -7,12 +7,12 @@ using ElmahCore;
 
 namespace Api.Controllers;
 
-[Route("agency")]
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con las agencias.
 /// Proporciona endpoints para crear, leer, actualizar y gestionar agencias,
 /// incluyendo sus programas, estados y logos.
 /// </summary>
+[Route("agency")]
 public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyController> _logger = logger;

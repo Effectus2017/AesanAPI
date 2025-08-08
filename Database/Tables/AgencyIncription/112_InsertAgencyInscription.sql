@@ -13,6 +13,7 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @taxExemptionTypeId int,
     @publicAllianceContractId int,
     @nationalYouthProgram bit,
+    @deadlineToCompleteRegistration datetime,
     @id int OUTPUT
 AS
 BEGIN
@@ -25,7 +26,7 @@ BEGIN
         OrganizedAthleticPrograms, AtRiskService,
         BasicEducationRegistryId, ServiceTime,
         TaxExemptionStatusId, TaxExemptionTypeId,
-        PublicAllianceContractId, NationalYouthProgram
+        PublicAllianceContractId, NationalYouthProgram, DeadlineToCompleteRegistration
         )
     VALUES
         (
@@ -33,7 +34,7 @@ BEGIN
             @organizedAthleticPrograms, @atRiskService,
             @basicEducationRegistryId, @serviceTime,
             @taxExemptionStatusId, @taxExemptionTypeId,
-            @publicAllianceContractId, @nationalYouthProgram
+            @publicAllianceContractId, @nationalYouthProgram, @deadlineToCompleteRegistration
         );
         SET @id = SCOPE_IDENTITY();
         COMMIT TRANSACTION;

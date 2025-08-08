@@ -109,6 +109,7 @@ builder.Services.AddScoped<IDeliveryTypeRepository, DeliveryTypeRepository>();
 builder.Services.AddScoped<ICenterTypeRepository, CenterTypeRepository>();
 builder.Services.AddScoped<IHouseholdMemberRepository, HouseholdMemberRepository>();
 builder.Services.AddScoped<IAreaTypeRepository, AreaTypeRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 // TODO: Remove EmployeeRepository when migration to Staff is complete
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
@@ -175,6 +176,19 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod()
                 .AllowCredentials()
                 .SetIsOriginAllowed(_ => true) // Solo para desarrollo
+    );
+    options.AddPolicy(
+        "AllowStagingOrigin",
+        builder =>
+            builder
+                .WithOrigins(
+                    "https://aesanweb-staging.azurewebsites.net",
+                    "https://aesanapi-staging.azurewebsites.net"
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()
+                .SetIsOriginAllowed(origin => origin.EndsWith("azurewebsites.net"))
     );
     options.AddPolicy(
         "AllowProdOrigin",
@@ -328,7 +342,9 @@ else
 }
 
 // CORS debe ir antes de routing y después de los middleware de error
-app.UseCors(app.Environment.IsDevelopment() ? "AllowDevOrigin" : "AllowProdOrigin");
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" : 
+                 app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
+app.UseCors(corsPolicy);
 
 // Habilitar ELMAH
 app.UseElmah();

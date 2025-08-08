@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Api.Models;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Api;
 
@@ -51,22 +52,36 @@ public static class Utilities
     /// Obtiene la URL segun appSettings
     /// </summary>
     /// <param name="appSettings">Configuración de la aplicación</param>
+    /// <param name="environment">Entorno de la aplicación</param>
     /// <returns>URL base de la aplicación</returns>
-    public static string GetUrl(ApplicationSettings appSettings)
+    public static string GetUrl(ApplicationSettings appSettings, IWebHostEnvironment? environment = null)
     {
         string url;
 
+        // Si no se proporciona el entorno, usar directivas de compilación como fallback
+        if (environment == null)
+        {
 #if DEBUG || LOCAL
-        url = appSettings.LocalURL;
+            url = appSettings.LocalURL;
+#elif STAGING
+            url = appSettings.StagingURL;
+#elif RELEASE
+            url = appSettings.ProduccionURL;
+#else
+            url = appSettings.LocalURL;
 #endif
-
-#if STAGING
-        url = appSettings.StagingURL;
-#endif
-
-#if RELEASE
-        url = appSettings.ProduccionURL;
-#endif
+        }
+        else
+        {
+            // Usar el entorno actual
+            url = environment.EnvironmentName.ToLower() switch
+            {
+                "development" => appSettings.LocalURL,
+                "staging" => appSettings.StagingURL,
+                "production" => appSettings.ProduccionURL,
+                _ => appSettings.LocalURL
+            };
+        }
 
         // Asegurar que la URL termina con '/'
         if (!url.EndsWith("/"))

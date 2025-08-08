@@ -152,7 +152,9 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@operatingToDate", request.OperatingToDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
@@ -176,6 +178,19 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
             parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@dinner", request.Dinner, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@dinnerFrom", request.DinnerFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@dinnerTo", request.DinnerTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackNight", request.SnackNight, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@snackNightFrom", request.SnackNightFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackNightTo", request.SnackNightTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@experienceId", request.ExperienceId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("102_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
@@ -239,7 +254,9 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@operatingDays", request.OperatingDays, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@operatingToDate", request.OperatingToDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
@@ -262,6 +279,19 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
             parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@dinner", request.Dinner, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@dinnerFrom", request.DinnerFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@dinnerTo", request.DinnerTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackNight", request.SnackNight, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@snackNightFrom", request.SnackNightFrom, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackNightTo", request.SnackNightTo, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@experienceId", request.ExperienceId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@isActive", request.IsActive, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
@@ -459,7 +489,9 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 BaseYear = item.BaseYear,
                 RenewalYear = item.RenewalYear,
                 //EducationLevelId = item.EducationLevelId ?? 0,
-                OperatingDays = item.OperatingDays,
+                OperatingFromDate = item.OperatingFromDate,
+                OperatingToDate = item.OperatingToDate,
+                OperatingDaysCalculated = item.OperatingDaysCalculated,
                 KitchenTypeId = item.KitchenTypeId,
                 GroupTypeId = item.GroupTypeId,
                 DeliveryTypeId = item.DeliveryTypeId,
@@ -483,13 +515,24 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 Snack = item.Snack ?? false,
                 SnackFrom = item.SnackFrom,
                 SnackTo = item.SnackTo,
+                Dinner = item.Dinner ?? false,
+                DinnerFrom = item.DinnerFrom,
+                DinnerTo = item.DinnerTo,
+                SnackNight = item.SnackNight ?? false,
+                SnackNightFrom = item.SnackNightFrom,
+                SnackNightTo = item.SnackNightTo,
+                CommunityId = item.CommunityId,
+                WalkersId = item.WalkersId,
+                SiteTypeId = item.SiteTypeId,
+                ExperienceId = item.ExperienceId,
+                ReviewResultId = item.ReviewResultId,
+                ReviewDate = item.ReviewDate,
+                ReviewJustification = item.ReviewJustification ?? string.Empty,
                 IsActive = item.IsActive ?? true,
                 InactiveJustification = item.InactiveJustification ?? string.Empty,
                 InactiveDate = item.InactiveDate,
                 CreatedAt = item.CreatedAt ?? DateTime.MinValue,
                 UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
-                IsMainSchool = item.IsMainSchool ?? false,
-                MainSchoolId = item.MainSchoolId ?? 0,
                 // Nested catalogs (if needed, can be mapped here)
                 City = item.CityId != null ? new DTOCity
                 {

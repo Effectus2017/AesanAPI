@@ -24,6 +24,9 @@ public class ApplicationSettings
     // Azure Storage settings
     public string AzureStorageConnectionString { get; set; } = "";
 
+    // Deadline to complete the registration of the Sites
+    public int DeadlineToCompleteRegistration { get; set; } = 10;
+
     // Cache settings
     public CacheSettings Cache { get; set; } = new CacheSettings();
     // Gmail settings

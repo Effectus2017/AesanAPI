@@ -35,7 +35,10 @@ BEGIN
         u.FirstName + ' ' + u.FatherLastName AS UserName,
         s.CreatedAt,
         s.UpdatedAt,
-        s.IsActive
+        s.IsActive,
+        s.ReviewResultId,
+        s.ReviewDate,
+        s.ReviewJustification
     FROM Staff s
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id

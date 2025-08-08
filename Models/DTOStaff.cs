@@ -28,4 +28,9 @@ public class DTOStaff
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;
+    
+    // Campos de revisión (solo para empleados)
+    public int? ReviewResultId { get; set; }
+    public DateTime? ReviewDate { get; set; }
+    public string? ReviewJustification { get; set; }
 }
