@@ -73,7 +73,8 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
                     queryParameters.Skip,
                     queryParameters.Names,
                     queryParameters.Alls,
-                    queryParameters.IsList
+                    queryParameters.IsList,
+                    queryParameters.StaffTypeId
                 );
                 return Ok(staff);
             }

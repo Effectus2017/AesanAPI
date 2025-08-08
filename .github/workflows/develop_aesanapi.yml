@@ -1,6 +1,9 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
+# El branch develop es el que se usa para hacer pruebas en develop que llamamos development
+# pero usamos el build de staging porque el build de develop lo usamos localmente, y stagin para desarrollo en azure
+
 name: Build and deploy ASP.Net Core app to Azure Web App - aesanapi
 
 on:

@@ -86,7 +86,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

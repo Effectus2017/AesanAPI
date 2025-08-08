@@ -14,6 +14,11 @@ public class DTOStaff
     public int StaffTypeId { get; set; } = 1;
     public string StaffTypeName { get; set; } = "";
     public string StaffTypeNameEn { get; set; } = "";
+    public int? StaffClassificationId { get; set; } = null;
+    public string StaffClassificationName { get; set; } = "";
+    public string StaffClassificationNameEn { get; set; } = "";
+    public DateTime? ContractStartDate { get; set; } // Fecha de inicio de contrato
+    public DateTime? ContractEndDate { get; set; } // Fecha de finalización de contrato
     public DateTime BirthDate { get; set; }
     public string Email { get; set; } = "";
     public string PostalAddress { get; set; } = "";
@@ -28,7 +33,7 @@ public class DTOStaff
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;
-    
+
     // Campos de revisión (solo para empleados)
     public int? ReviewResultId { get; set; }
     public DateTime? ReviewDate { get; set; }

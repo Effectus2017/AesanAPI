@@ -82,7 +82,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

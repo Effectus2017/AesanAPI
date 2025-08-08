@@ -22,6 +22,11 @@ BEGIN
         s.StaffTypeId,
         st.Name AS StaffTypeName,
         st.NameEn AS StaffTypeNameEn,
+        s.StaffClassificationId,
+        sc.Name AS StaffClassificationName,
+        sc.NameEn AS StaffClassificationNameEn,
+        s.ContractStartDate,
+        s.ContractEndDate,
         s.BirthDate,
         s.Email,
         s.PostalAddress,
@@ -43,6 +48,7 @@ BEGIN
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
         LEFT JOIN StaffType st ON s.StaffTypeId = st.Id
+        LEFT JOIN StaffClassification sc ON s.StaffClassificationId = sc.Id
         LEFT JOIN City c ON s.CityId = c.Id
         LEFT JOIN Region r ON s.RegionId = r.Id
         LEFT JOIN AspNetUsers u ON s.UserId = u.Id

@@ -872,6 +872,445 @@ def migrate_all_table_data(db1_conn, db2_conn):
             traceback.print_exc()
     print(f"\n{Fore.GREEN}Migración de datos finalizada.{Style.RESET_ALL}")
 
+def generate_development_update_script(db1_conn, db2_conn, dry_run=True, output_file=None):
+    """
+    Genera un script SQL para actualizar la base de datos de Development (db1) 
+    con los procedimientos almacenados de Production (db2).
+    
+    Args:
+        db1_conn: Conexión a la base de datos de Development
+        db2_conn: Conexión a la base de datos de Production  
+        dry_run: Si es True, solo genera el script sin ejecutarlo
+        output_file: Archivo donde guardar el script generado
+    """
+    print(f"\n{Fore.CYAN}=== GENERANDO SCRIPT DE ACTUALIZACIÓN DE DEVELOPMENT DESDE PRODUCTION ==={Style.RESET_ALL}")
+    
+    # Obtener SPs de ambas bases de datos
+    db1_procs = get_stored_procedures(db1_conn)
+    db2_procs = get_stored_procedures(db2_conn)
+    
+    # Crear diccionarios para comparación
+    db1_procs_dict = {f"{proc['schema']}.{proc['name']}": proc for proc in db1_procs}
+    db2_procs_dict = {f"{proc['schema']}.{proc['name']}": proc for proc in db2_procs}
+    
+    db1_proc_names = set(db1_procs_dict.keys())
+    db2_proc_names = set(db2_procs_dict.keys())
+    
+    # Identificar SPs que faltan en Development
+    missing_in_db1 = db2_proc_names - db1_proc_names
+    # Identificar SPs con diferencias
+    common_procs = db1_proc_names.intersection(db2_procs_dict.keys()) # Use db2_procs_dict.keys() for common_procs
+    different_procs = []
+    
+    for proc_name in common_procs:
+        db1_proc = db1_procs_dict[proc_name]
+        db2_proc = db2_procs_dict[proc_name]
+        
+        # Normalizar definiciones para comparación
+        db1_def = normalize_sp_definition(db1_proc['definition'])
+        db2_def = normalize_sp_definition(db2_proc['definition'])
+        
+        if db1_def != db2_def:
+            different_procs.append({
+                'name': proc_name,
+                'db1_date': db1_proc['modify_date'],
+                'db2_date': db2_proc['modify_date'],
+                'db1_def': db1_proc['definition'],
+                'db2_def': db2_proc['definition']
+            })
+    
+    # Generar el script SQL
+    script_lines = []
+    script_lines.append("-- ==============================================")
+    script_lines.append("-- SCRIPT DE ACTUALIZACIÓN DE DEVELOPMENT")
+    script_lines.append("-- Generado automáticamente desde Production")
+    script_lines.append(f"-- Fecha de generación: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    script_lines.append("-- ==============================================")
+    script_lines.append("")
+    script_lines.append("SET NOCOUNT ON;")
+    script_lines.append("SET XACT_ABORT ON;")
+    script_lines.append("")
+    script_lines.append("BEGIN TRANSACTION;")
+    script_lines.append("")
+    script_lines.append("BEGIN TRY")
+    script_lines.append("")
+    
+    # Contadores para el reporte
+    sps_created = 0
+    sps_updated = 0
+    
+    # 1. Crear SPs que faltan en Development
+    if missing_in_db1:
+        script_lines.append("    -- ==============================================")
+        script_lines.append("    -- CREAR SPs FALTANTES EN DEVELOPMENT")
+        script_lines.append("    -- ==============================================")
+        script_lines.append("")
+        
+        for proc_name in sorted(missing_in_db1):
+            proc = db2_procs_dict[proc_name]
+            schema = proc['schema']
+            name = proc['name']
+            definition = proc['definition']
+            
+            script_lines.append(f"    -- Creando SP: {proc_name}")
+            script_lines.append(f"    -- Fecha de modificación en Production: {proc['modify_date']}")
+            script_lines.append("")
+            
+            # Agregar la definición del SP
+            script_lines.append(f"    {definition}")
+            script_lines.append("")
+            script_lines.append(f"    PRINT 'SP {proc_name} creado exitosamente.';")
+            script_lines.append("")
+            
+            sps_created += 1
+    
+    # 2. Actualizar SPs con diferencias
+    if different_procs:
+        script_lines.append("    -- ==============================================")
+        script_lines.append("    -- ACTUALIZAR SPs CON DIFERENCIAS")
+        script_lines.append("    -- ==============================================")
+        script_lines.append("")
+        
+        for diff in different_procs:
+            proc_name = diff['name']
+            db1_date = diff['db1_date']
+            db2_date = diff['db2_date']
+            definition = diff['db2_def']  # Usar la definición de Production
+            
+            script_lines.append(f"    -- Actualizando SP: {proc_name}")
+            script_lines.append(f"    -- Development modificado: {db1_date}")
+            script_lines.append(f"    -- Production modificado: {db2_date}")
+            script_lines.append("")
+            
+            # Agregar la definición actualizada del SP
+            script_lines.append(f"    {definition}")
+            script_lines.append("")
+            script_lines.append(f"    PRINT 'SP {proc_name} actualizado exitosamente.';")
+            script_lines.append("")
+            
+            sps_updated += 1
+    
+    # 3. Cerrar el script
+    script_lines.append("    -- ==============================================")
+    script_lines.append("    -- REPORTE DE ACTUALIZACIÓN")
+    script_lines.append("    -- ==============================================")
+    script_lines.append("")
+    script_lines.append(f"    PRINT 'Actualización completada exitosamente.';")
+    script_lines.append(f"    PRINT 'SPs creados: {sps_created}';")
+    script_lines.append(f"    PRINT 'SPs actualizados: {sps_updated}';")
+    script_lines.append("")
+    script_lines.append("    COMMIT TRANSACTION;")
+    script_lines.append("    PRINT 'Transacción confirmada.';")
+    script_lines.append("")
+    script_lines.append("END TRY")
+    script_lines.append("BEGIN CATCH")
+    script_lines.append("    ROLLBACK TRANSACTION;")
+    script_lines.append("    PRINT 'Error durante la actualización. Transacción revertida.';")
+    script_lines.append("    PRINT ERROR_MESSAGE();")
+    script_lines.append("    THROW;")
+    script_lines.append("END CATCH")
+    script_lines.append("")
+    script_lines.append("-- ==============================================")
+    script_lines.append("-- FIN DEL SCRIPT DE ACTUALIZACIÓN")
+    script_lines.append("-- ==============================================")
+    
+    # Unir todas las líneas del script
+    script_content = '\n'.join(script_lines)
+    
+    # Mostrar resumen
+    print(f"{Fore.GREEN}Resumen de actualización:{Style.RESET_ALL}")
+    print(f"  - SPs que faltan en Development: {len(missing_in_db1)}")
+    print(f"  - SPs con diferencias: {len(different_procs)}")
+    print(f"  - Total de SPs a procesar: {len(missing_in_db1) + len(different_procs)}")
+    
+    if missing_in_db1:
+        print(f"\n{Fore.YELLOW}SPs que se crearán en Development:{Style.RESET_ALL}")
+        for proc_name in sorted(missing_in_db1):
+            print(f"  - {proc_name}")
+    
+    if different_procs:
+        print(f"\n{Fore.YELLOW}SPs que se actualizarán en Development:{Style.RESET_ALL}")
+        for diff in different_procs:
+            print(f"  - {diff['name']} (Production: {diff['db2_date']} vs Development: {diff['db1_date']})")
+    
+    # Guardar el script en archivo si se especifica
+    if output_file:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(script_content)
+        print(f"\n{Fore.GREEN}Script guardado en: {output_file}{Style.RESET_ALL}")
+    
+    # Si no es dry_run, ejecutar el script
+    if not dry_run:
+        print(f"\n{Fore.RED}ADVERTENCIA: Ejecutando actualización en Development...{Style.RESET_ALL}")
+        try:
+            cursor = db1_conn.cursor()
+            cursor.execute(script_content)
+            db1_conn.commit()
+            cursor.close()
+            print(f"{Fore.GREEN}Actualización completada exitosamente.{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}Error durante la ejecución: {e}{Style.RESET_ALL}")
+            return False
+    else:
+        print(f"\n{Fore.CYAN}Modo dry-run: El script no se ejecutará.{Style.RESET_ALL}")
+        print(f"Para ejecutar la actualización, use --no-dry-run")
+    
+    return True
+
+def generate_table_update_script(db1_conn, db2_conn, dry_run=True, output_file=None):
+    """
+    Genera un script SQL para actualizar las estructuras de tablas en Development (db1) 
+    basándose en las estructuras de Production (db2).
+    
+    Args:
+        db1_conn: Conexión a la base de datos de Development
+        db2_conn: Conexión a la base de datos de Production  
+        dry_run: Si es True, solo genera el script sin ejecutarlo
+        output_file: Archivo donde guardar el script generado
+    """
+    print(f"\n{Fore.CYAN}=== GENERANDO SCRIPT DE ACTUALIZACIÓN DE TABLAS DE DEVELOPMENT DESDE PRODUCTION ==={Style.RESET_ALL}")
+    
+    # Obtener tablas de ambas bases de datos
+    db1_tables = get_tables(db1_conn)
+    db2_tables = get_tables(db2_conn)
+    
+    # Crear diccionarios para comparación
+    db1_tables_set = set([(schema, table) for schema, table in db1_tables])
+    db2_tables_set = set([(schema, table) for schema, table in db2_tables])
+    
+    # Identificar tablas que faltan en Development
+    missing_in_db1 = db2_tables_set - db1_tables_set
+    # Identificar tablas que faltan en Production
+    missing_in_db2 = db1_tables_set - db2_tables_set
+    # Tablas comunes
+    common_tables = db1_tables_set.intersection(db2_tables_set)
+    
+    # Analizar diferencias en estructuras de tablas comunes
+    tables_with_differences = []
+    for schema, table in common_tables:
+        structure_comparison = compare_table_structure(db1_conn, db2_conn, schema, table)
+        if (structure_comparison['only_in_db1'] or 
+            structure_comparison['only_in_db2'] or 
+            structure_comparison['different']):
+            tables_with_differences.append({
+                'schema': schema,
+                'table': table,
+                'comparison': structure_comparison
+            })
+    
+    # Generar el script SQL
+    script_lines = []
+    script_lines.append("-- ==============================================")
+    script_lines.append("-- SCRIPT DE ACTUALIZACIÓN DE TABLAS DE DEVELOPMENT")
+    script_lines.append("-- Generado automáticamente desde Production")
+    script_lines.append(f"-- Fecha de generación: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    script_lines.append("-- ==============================================")
+    script_lines.append("")
+    script_lines.append("SET NOCOUNT ON;")
+    script_lines.append("SET XACT_ABORT ON;")
+    script_lines.append("")
+    script_lines.append("BEGIN TRANSACTION;")
+    script_lines.append("")
+    script_lines.append("BEGIN TRY")
+    script_lines.append("")
+    
+    # Contadores para el reporte
+    tables_created = 0
+    tables_updated = 0
+    columns_added = 0
+    columns_modified = 0
+    
+    # 1. Crear tablas que faltan en Development
+    if missing_in_db1:
+        script_lines.append("    -- ==============================================")
+        script_lines.append("    -- CREAR TABLAS FALTANTES EN DEVELOPMENT")
+        script_lines.append("    -- ==============================================")
+        script_lines.append("")
+        
+        for schema, table in sorted(missing_in_db1):
+            script_lines.append(f"    -- Creando tabla: {schema}.{table}")
+            script_lines.append("")
+            
+            # Obtener definición de la tabla desde Production
+            try:
+                # Obtener columnas de la tabla en Production
+                columns = get_table_columns(db2_conn, schema, table)
+                
+                # Generar CREATE TABLE
+                script_lines.append(f"    CREATE TABLE [{schema}].[{table}] (")
+                
+                column_definitions = []
+                for col in columns:
+                    col_def = f"        [{col['name']}] {col['type']}"
+                    
+                    # Agregar NOT NULL si no es nullable
+                    if not col['nullable']:
+                        col_def += " NOT NULL"
+                    
+                    # Agregar IDENTITY si es identity
+                    if col['identity']:
+                        col_def += " IDENTITY(1,1)"
+                    
+                    column_definitions.append(col_def)
+                
+                script_lines.append(",\n".join(column_definitions))
+                script_lines.append("    );")
+                script_lines.append("")
+                script_lines.append(f"    PRINT 'Tabla {schema}.{table} creada exitosamente.';")
+                script_lines.append("")
+                
+                tables_created += 1
+                
+            except Exception as e:
+                script_lines.append(f"    -- ERROR: No se pudo obtener la definición de {schema}.{table}: {str(e)}")
+                script_lines.append("")
+    
+    # 2. Actualizar estructuras de tablas existentes
+    if tables_with_differences:
+        script_lines.append("    -- ==============================================")
+        script_lines.append("    -- ACTUALIZAR ESTRUCTURAS DE TABLAS EXISTENTES")
+        script_lines.append("    -- ==============================================")
+        script_lines.append("")
+        
+        for table_diff in tables_with_differences:
+            schema = table_diff['schema']
+            table = table_diff['table']
+            comparison = table_diff['comparison']
+            
+            script_lines.append(f"    -- Actualizando estructura de tabla: {schema}.{table}")
+            script_lines.append("")
+            
+            # Agregar columnas que faltan en Development
+            if comparison['only_in_db2']:
+                script_lines.append(f"    -- Agregando columnas faltantes a {schema}.{table}")
+                script_lines.append("")
+                
+                for col in comparison['only_in_db2']:
+                    col_def = f"    ALTER TABLE [{schema}].[{table}] ADD [{col['name']}] {col['type']}"
+                    
+                    if not col['nullable']:
+                        col_def += " NOT NULL"
+                    
+                    script_lines.append(col_def + ";")
+                    script_lines.append(f"    PRINT 'Columna {col['name']} agregada a {schema}.{table}';")
+                    script_lines.append("")
+                    
+                    columns_added += 1
+            
+            # Modificar columnas con diferencias
+            if comparison['different']:
+                script_lines.append(f"    -- Modificando columnas con diferencias en {schema}.{table}")
+                script_lines.append("")
+                
+                for diff in comparison['different']:
+                    col_name = diff['name']
+                    db1_col = diff['db1']
+                    db2_col = diff['db2']
+                    
+                    script_lines.append(f"    -- Modificando columna {col_name}:")
+                    for difference in diff['differences']:
+                        script_lines.append(f"    --   {difference}")
+                    
+                    # Generar ALTER TABLE según el tipo de diferencia
+                    if db1_col['type'] != db2_col['type']:
+                        script_lines.append(f"    ALTER TABLE [{schema}].[{table}] ALTER COLUMN [{col_name}] {db2_col['type']};")
+                    
+                    if db1_col['nullable'] != db2_col['nullable']:
+                        null_constraint = "NOT NULL" if not db2_col['nullable'] else "NULL"
+                        script_lines.append(f"    ALTER TABLE [{schema}].[{table}] ALTER COLUMN [{col_name}] {db2_col['type']} {null_constraint};")
+                    
+                    script_lines.append(f"    PRINT 'Columna {col_name} modificada en {schema}.{table}';")
+                    script_lines.append("")
+                    
+                    columns_modified += 1
+            
+            tables_updated += 1
+    
+    # 3. Cerrar el script
+    script_lines.append("    -- ==============================================")
+    script_lines.append("    -- REPORTE DE ACTUALIZACIÓN DE TABLAS")
+    script_lines.append("    -- ==============================================")
+    script_lines.append("")
+    script_lines.append(f"    PRINT 'Actualización de tablas completada exitosamente.';")
+    script_lines.append(f"    PRINT 'Tablas creadas: {tables_created}';")
+    script_lines.append(f"    PRINT 'Tablas actualizadas: {tables_updated}';")
+    script_lines.append(f"    PRINT 'Columnas agregadas: {columns_added}';")
+    script_lines.append(f"    PRINT 'Columnas modificadas: {columns_modified}';")
+    script_lines.append("")
+    script_lines.append("    COMMIT TRANSACTION;")
+    script_lines.append("    PRINT 'Transacción confirmada.';")
+    script_lines.append("")
+    script_lines.append("END TRY")
+    script_lines.append("BEGIN CATCH")
+    script_lines.append("    ROLLBACK TRANSACTION;")
+    script_lines.append("    PRINT 'Error durante la actualización de tablas. Transacción revertida.';")
+    script_lines.append("    PRINT ERROR_MESSAGE();")
+    script_lines.append("    THROW;")
+    script_lines.append("END CATCH")
+    script_lines.append("")
+    script_lines.append("-- ==============================================")
+    script_lines.append("-- FIN DEL SCRIPT DE ACTUALIZACIÓN DE TABLAS")
+    script_lines.append("-- ==============================================")
+    
+    # Unir todas las líneas del script
+    script_content = '\n'.join(script_lines)
+    
+    # Mostrar resumen
+    print(f"{Fore.GREEN}Resumen de actualización de tablas:{Style.RESET_ALL}")
+    print(f"  - Tablas que faltan en Development: {len(missing_in_db1)}")
+    print(f"  - Tablas que faltan en Production: {len(missing_in_db2)}")
+    print(f"  - Tablas con diferencias de estructura: {len(tables_with_differences)}")
+    print(f"  - Total de tablas a procesar: {len(missing_in_db1) + len(tables_with_differences)}")
+    
+    if missing_in_db1:
+        print(f"\n{Fore.YELLOW}Tablas que se crearán en Development:{Style.RESET_ALL}")
+        for schema, table in sorted(missing_in_db1):
+            print(f"  - {schema}.{table}")
+    
+    if tables_with_differences:
+        print(f"\n{Fore.YELLOW}Tablas que se actualizarán en Development:{Style.RESET_ALL}")
+        for table_diff in tables_with_differences:
+            schema = table_diff['schema']
+            table = table_diff['table']
+            comparison = table_diff['comparison']
+            
+            changes = []
+            if comparison['only_in_db2']:
+                changes.append(f"{len(comparison['only_in_db2'])} columnas nuevas")
+            if comparison['different']:
+                changes.append(f"{len(comparison['different'])} columnas modificadas")
+            
+            print(f"  - {schema}.{table} ({', '.join(changes)})")
+    
+    if missing_in_db2:
+        print(f"\n{Fore.RED}Tablas que existen solo en Development (no se tocarán):{Style.RESET_ALL}")
+        for schema, table in sorted(missing_in_db2):
+            print(f"  - {schema}.{table}")
+    
+    # Guardar el script en archivo si se especifica
+    if output_file:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(script_content)
+        print(f"\n{Fore.GREEN}Script guardado en: {output_file}{Style.RESET_ALL}")
+    
+    # Si no es dry_run, ejecutar el script
+    if not dry_run:
+        print(f"\n{Fore.RED}ADVERTENCIA: Ejecutando actualización de tablas en Development...{Style.RESET_ALL}")
+        try:
+            cursor = db1_conn.cursor()
+            cursor.execute(script_content)
+            db1_conn.commit()
+            cursor.close()
+            print(f"{Fore.GREEN}Actualización de tablas completada exitosamente.{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}Error durante la ejecución: {e}{Style.RESET_ALL}")
+            return False
+    else:
+        print(f"\n{Fore.CYAN}Modo dry-run: El script no se ejecutará.{Style.RESET_ALL}")
+        print(f"Para ejecutar la actualización, use --no-dry-run")
+    
+    return True
+
 def main():
     parser = argparse.ArgumentParser(description='Comparar dos bases de datos SQL Server')
     parser.add_argument('--azure', action='store_true', help='Usar configuración de Azure DB')
@@ -892,11 +1331,16 @@ def main():
     parser.add_argument('--sync-missing-sps', action='store_true', help='Sincronizar SPs que existen en la base fuente pero faltan en la base destino (solo DB2)')
     parser.add_argument('--move-old-sp-files-local', action='store_true', help='Mover versiones viejas de SPs locales a carpeta Deprecated y renombrar como -Deprecated.sql')
     parser.add_argument('--migrate-data', action='store_true', help='Migrar datos de todas las tablas comunes de db1 a db2 (borra primero los datos de destino)')
+    parser.add_argument('--generate-update-script', action='store_true', help='Generar un script SQL para actualizar la base de datos de Development con los procedimientos almacenados de Production')
+    parser.add_argument('--update-script-output', type=str, help='Archivo donde guardar el script de actualización generado')
+    parser.add_argument('--execute-update', action='store_true', help='Ejecutar la actualización de Development (sin dry-run)')
+    parser.add_argument('--generate-table-update-script', action='store_true', help='Generar un script SQL para actualizar las estructuras de tablas de Development desde Production')
+    parser.add_argument('--table-update-script-output', type=str, help='Archivo donde guardar el script de actualización de tablas generado')
     
     args = parser.parse_args()
     
     # Si no se especifica ninguna opción, mostrar ayuda
-    if not (args.azure or args.local or args.tables or args.procedures or args.all or args.table_details or args.all_tables or args.show_sp_diff or args.export_sp or args.sp_name or args.clean_old_sp_versions or args.sync_missing_sps or args.move_old_sp_files_local or args.migrate_data):
+    if not (args.azure or args.local or args.tables or args.procedures or args.all or args.table_details or args.all_tables or args.show_sp_diff or args.export_sp or args.sp_name or args.clean_old_sp_versions or args.sync_missing_sps or args.move_old_sp_files_local or args.migrate_data or args.generate_update_script or args.update_script_output or args.execute_update or args.generate_table_update_script or args.table_update_script_output):
         parser.print_help()
         return
     
@@ -965,6 +1409,17 @@ def main():
             migrate_all_table_data(db1_conn, db2_conn)
             return
         
+        if args.generate_update_script:
+            # Si se especifica --execute-update, no usar dry_run
+            dry_run_mode = not args.execute_update
+            generate_development_update_script(db1_conn, db2_conn, dry_run=dry_run_mode, output_file=args.update_script_output)
+            return
+        
+        if args.generate_table_update_script:
+            dry_run_mode = not args.execute_update # Si se ejecuta, no es dry_run
+            generate_table_update_script(db1_conn, db2_conn, dry_run=dry_run_mode, output_file=args.table_update_script_output)
+            return
+
         # Comparar tablas
         if args.tables or args.all:
             db1_tables = get_tables(db1_conn)

@@ -83,7 +83,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

@@ -11,6 +11,8 @@ public class StaffRequest
     public int PositionId { get; set; } = 0;
     public int StaffTypeId { get; set; } = 1;
     public int? StaffClassificationId { get; set; }
+    public DateTime? ContractStartDate { get; set; } // Fecha de inicio de contrato
+    public DateTime? ContractEndDate { get; set; } // Fecha de finalización de contrato
     public DateTime? BirthDate { get; set; }
     public string? Email { get; set; } = "";
     public string? PostalAddress { get; set; } = "";

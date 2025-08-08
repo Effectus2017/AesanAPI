@@ -30,6 +30,9 @@ BEGIN
             UpdatedAt
         FROM StaffType
         WHERE IsActive = 1
+            AND (@alls = 1 OR (@name IS NULL OR
+            Name LIKE '%' + @name + '%' OR
+            NameEn LIKE '%' + @name + '%'))
         ORDER BY DisplayOrder, Name;
     END
     ELSE
@@ -45,12 +48,9 @@ BEGIN
             UpdatedAt
         FROM StaffType
         WHERE IsActive = 1
-            AND (
-                @alls = 1
-            OR (@name IS NULL OR
+            AND (@alls = 1 OR (@name IS NULL OR
             Name LIKE '%' + @name + '%' OR
-            NameEn LIKE '%' + @name + '%')
-            )
+            NameEn LIKE '%' + @name + '%'))
         ORDER BY DisplayOrder, Name
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY;
@@ -59,11 +59,8 @@ BEGIN
         SELECT COUNT(*)
         FROM StaffType
         WHERE IsActive = 1
-            AND (
-                @alls = 1
-            OR (@name IS NULL OR
+            AND (@alls = 1 OR (@name IS NULL OR
             Name LIKE '%' + @name + '%' OR
-            NameEn LIKE '%' + @name + '%')
-            );
+            NameEn LIKE '%' + @name + '%'));
     END
 END

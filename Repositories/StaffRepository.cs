@@ -62,8 +62,9 @@ public class StaffRepository(
     /// <param name="name">El nombre del miembro del staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
     /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null)
     {
         try
         {
@@ -73,16 +74,17 @@ public class StaffRepository(
             param.Add("@skip", skip, DbType.Int32);
             param.Add("@name", name, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
+            param.Add("@staffTypeId", staffTypeId, DbType.Int32);
 
             if (isList)
             {
-                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls);
+                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls, staffTypeId);
 
                 return await _cache.CacheQuery(
                     cacheKey,
                     async () =>
                     {
-                        var result = await dbConnection.QueryMultipleAsync("100_GetStaff", param, commandType: CommandType.StoredProcedure);
+                        var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
                         if (result == null)
                         {
@@ -94,16 +96,12 @@ public class StaffRepository(
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else
             {
-                var result = await dbConnection.QueryMultipleAsync(
-                    "100_GetStaff",
-                    param,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -144,6 +142,8 @@ public class StaffRepository(
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
@@ -194,6 +194,8 @@ public class StaffRepository(
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32);
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate, DbType.DateTime);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate, DbType.DateTime);
             parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime);
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String);
@@ -281,11 +283,7 @@ public class StaffRepository(
             parameters.Add("@staffId", staffId, DbType.Int32);
             parameters.Add("@userId", userId, DbType.String);
 
-            var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_ConvertStaffToUser",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var rowsAffected = await dbConnection.ExecuteAsync("100_ConvertStaffToUser", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -319,11 +317,7 @@ public class StaffRepository(
             parameters.Add("@staffId", staffId, DbType.Int32);
             parameters.Add("@isActive", isActive, DbType.Boolean);
 
-            var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_UpdateStaffActiveStatus",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaffActiveStatus", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -349,20 +343,26 @@ public class StaffRepository(
     {
         return new
         {
-            Id = result.Id,
-            FirstName = result.FirstName,
-            MiddleName = result.MiddleName,
-            FatherLastName = result.FatherLastName,
-            MotherLastName = result.MotherLastName,
-            StatusName = result.StatusName,
-            PositionName = result.PositionName,
-            StaffTypeName = result.StaffTypeName,
-            StaffTypeNameEn = result.StaffTypeNameEn,
-            Email = result.Email,
-            CityName = result.CityName,
-            RegionName = result.RegionName,
-            UserName = result.UserName,
-            IsActive = result.IsActive
+            result.Id,
+            result.FirstName,
+            result.MiddleName,
+            result.FatherLastName,
+            result.MotherLastName,
+            result.StatusName,
+            result.PositionName,
+            result.StaffTypeId,
+            result.StaffTypeName,
+            result.StaffTypeNameEn,
+            result.StaffClassificationId,
+            result.StaffClassificationName,
+            result.StaffClassificationNameEn,
+            result.ContractStartDate,
+            result.ContractEndDate,
+            result.Email,
+            result.CityName,
+            result.RegionName,
+            result.UserName,
+            result.IsActive
         };
     }
 
@@ -375,35 +375,40 @@ public class StaffRepository(
     {
         return new
         {
-            Id = result.Id,
-            FirstName = result.FirstName,
-            MiddleName = result.MiddleName,
-            FatherLastName = result.FatherLastName,
-            MotherLastName = result.MotherLastName,
-            StatusId = result.StatusId,
-            StatusName = result.StatusName,
-            PositionId = result.PositionId,
-            PositionName = result.PositionName,
-            StaffTypeId = result.StaffTypeId,
-            StaffTypeName = result.StaffTypeName,
-            StaffTypeNameEn = result.StaffTypeNameEn,
-            BirthDate = result.BirthDate,
-            Email = result.Email,
-            PostalAddress = result.PostalAddress,
-            CityId = result.CityId,
-            CityName = result.CityName,
-            RegionId = result.RegionId,
-            RegionName = result.RegionName,
-            AreaCode = result.AreaCode,
-            Comments = result.Comments,
-            UserId = result.UserId,
-            UserName = result.UserName,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt,
-            IsActive = result.IsActive,
-            ReviewResultId = result.ReviewResultId,
-            ReviewDate = result.ReviewDate,
-            ReviewJustification = result.ReviewJustification
+            result.Id,
+            result.FirstName,
+            result.MiddleName,
+            result.FatherLastName,
+            result.MotherLastName,
+            result.StatusId,
+            result.StatusName,
+            result.PositionId,
+            result.PositionName,
+            result.StaffTypeId,
+            result.StaffTypeName,
+            result.StaffTypeNameEn,
+            result.StaffClassificationId,
+            result.StaffClassificationName,
+            result.StaffClassificationNameEn,
+            result.ContractStartDate,
+            result.ContractEndDate,
+            result.BirthDate,
+            result.Email,
+            result.PostalAddress,
+            result.CityId,
+            result.CityName,
+            result.RegionId,
+            result.RegionName,
+            result.AreaCode,
+            result.Comments,
+            result.UserId,
+            result.UserName,
+            result.CreatedAt,
+            result.UpdatedAt,
+            result.IsActive,
+            result.ReviewResultId,
+            result.ReviewDate,
+            result.ReviewJustification
         };
     }
 
@@ -415,7 +420,7 @@ public class StaffRepository(
     {
         try
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.Staff, 0, 0, "", false));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Staff, 0, 0, "", false, null));
             _cache.Remove(_appSettings.Cache.Keys.Staff);
         }
         catch (Exception ex)
