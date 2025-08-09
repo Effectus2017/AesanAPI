@@ -23,6 +23,8 @@ public class QueryParameters
     public string? InactiveJustification { get; set; } // Justificación para inactivación
     public DateTime? InactiveDate { get; set; } // Fecha de inactivación
     public int? SchoolId { get; set; } // ID de la escuela
+    public int StaffId { get; set; } // ID del miembro del staff
+    public int? StaffTypeId { get; set; } // ID del tipo de staff
 
     public string? ImageUrl { get; set; } // URL de la imagen
     public string? RejectionJustification { get; set; } // Justification for rejection

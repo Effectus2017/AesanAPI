@@ -4,21 +4,27 @@
 -- Crea un nuevo miembro del staff en la base de datos
 
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertStaff]
-    @firstName NVARCHAR(100),
+    @firstName NVARCHAR(100) = NULL,
     @middleName NVARCHAR(100) = NULL,
-    @fatherLastName NVARCHAR(100),
-    @motherLastName NVARCHAR(100),
+    @fatherLastName NVARCHAR(100) = NULL,
+    @motherLastName NVARCHAR(100) = NULL,
     @statusId INT,
     @positionId INT,
     @staffTypeId INT,
-    @birthDate DATETIME,
-    @email NVARCHAR(255),
-    @postalAddress NVARCHAR(500),
-    @cityId INT,
-    @regionId INT,
-    @areaCode NVARCHAR(10),
+    @staffClassificationId INT = NULL,
+    @contractStartDate DATETIME = NULL,
+    @contractEndDate DATETIME = NULL,
+    @birthDate DATETIME = NULL,
+    @email NVARCHAR(255) = NULL,
+    @postalAddress NVARCHAR(500) = NULL,
+    @cityId INT = NULL,
+    @regionId INT = NULL,
+    @areaCode NVARCHAR(10) = NULL,
     @comments NVARCHAR(1000) = NULL,
     @userId NVARCHAR(450) = NULL,
+    @reviewResultId INT = NULL,
+    @reviewDate DATETIME = NULL,
+    @reviewJustification NVARCHAR(500) = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -33,6 +39,9 @@ BEGIN
         StatusId,
         PositionId,
         StaffTypeId,
+        StaffClassificationId,
+        ContractStartDate,
+        ContractEndDate,
         BirthDate,
         Email,
         PostalAddress,
@@ -41,6 +50,9 @@ BEGIN
         AreaCode,
         Comments,
         UserId,
+        ReviewResultId,
+        ReviewDate,
+        ReviewJustification,
         CreatedAt,
         IsActive
         )
@@ -53,6 +65,9 @@ BEGIN
             @statusId,
             @positionId,
             @staffTypeId,
+            @staffClassificationId,
+            @contractStartDate,
+            @contractEndDate,
             @birthDate,
             @email,
             @postalAddress,
@@ -61,6 +76,9 @@ BEGIN
             @areaCode,
             @comments,
             @userId,
+            @reviewResultId,
+            @reviewDate,
+            @reviewJustification,
             GETDATE(),
             1
     );

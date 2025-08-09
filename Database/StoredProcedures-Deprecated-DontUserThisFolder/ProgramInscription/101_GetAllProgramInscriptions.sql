@@ -45,3 +45,4 @@ BEGIN
         AND (@programId IS NULL OR pi.ProgramId = @programId);
 END;
 
+EXEC [101_GetAllProgramInscriptions] @take = 25, @skip = 0, @agencyId = 1, @programId = null, @alls = 1;

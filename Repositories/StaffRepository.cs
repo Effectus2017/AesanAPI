@@ -34,18 +34,14 @@ public class StaffRepository(
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<DTOStaff>(
-                "100_GetStaffById",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetStaffById", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
                 return null;
             }
 
-            return result;
+            return MapStaffDetailsFromResult(result);
         }
         catch (Exception ex)
         {
@@ -62,8 +58,9 @@ public class StaffRepository(
     /// <param name="name">El nombre del miembro del staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
     /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null)
     {
         try
         {
@@ -73,16 +70,17 @@ public class StaffRepository(
             param.Add("@skip", skip, DbType.Int32);
             param.Add("@name", name, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
+            param.Add("@staffTypeId", staffTypeId, DbType.Int32);
 
             if (isList)
             {
-                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls);
+                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls, staffTypeId);
 
                 return await _cache.CacheQuery(
                     cacheKey,
                     async () =>
                     {
-                        var result = await dbConnection.QueryMultipleAsync("100_GetStaff", param, commandType: CommandType.StoredProcedure);
+                        var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
                         if (result == null)
                         {
@@ -94,16 +92,12 @@ public class StaffRepository(
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else
             {
-                var result = await dbConnection.QueryMultipleAsync(
-                    "100_GetStaff",
-                    param,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -136,21 +130,27 @@ public class StaffRepository(
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@firstName", staffRequest.FirstName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@middleName", staffRequest.MiddleName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@fatherLastName", staffRequest.FatherLastName, DbType.String, ParameterDirection.Input);
-            parameters.Add("@motherLastName", staffRequest.MotherLastName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@middleName", staffRequest.MiddleName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@email", staffRequest.Email, DbType.String, ParameterDirection.Input);
-            parameters.Add("@postalAddress", staffRequest.PostalAddress, DbType.String, ParameterDirection.Input);
+            parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@areaCode", staffRequest.AreaCode, DbType.String, ParameterDirection.Input);
-            parameters.Add("@comments", staffRequest.Comments, DbType.String, ParameterDirection.Input);
+            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@userId", staffRequest.UserId, DbType.String, ParameterDirection.Input);
+            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@reviewDate", staffRequest.ReviewDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
@@ -182,22 +182,28 @@ public class StaffRepository(
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
-            parameters.Add("@firstName", staffRequest.FirstName, DbType.String);
-            parameters.Add("@middleName", staffRequest.MiddleName, DbType.String);
-            parameters.Add("@fatherLastName", staffRequest.FatherLastName, DbType.String);
-            parameters.Add("@motherLastName", staffRequest.MotherLastName, DbType.String);
+            parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String);
+            parameters.Add("@middleName", staffRequest.MiddleName ?? "", DbType.String);
+            parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String);
+            parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32);
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32);
+            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32);
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate, DbType.DateTime);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate, DbType.DateTime);
             parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime);
-            parameters.Add("@email", staffRequest.Email, DbType.String);
-            parameters.Add("@postalAddress", staffRequest.PostalAddress, DbType.String);
+            parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
+            parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32);
-            parameters.Add("@areaCode", staffRequest.AreaCode, DbType.String);
-            parameters.Add("@comments", staffRequest.Comments, DbType.String);
+            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String);
+            parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String);
             parameters.Add("@userId", staffRequest.UserId, DbType.String);
             parameters.Add("@isActive", staffRequest.IsActive, DbType.Boolean);
+            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32);
+            parameters.Add("@reviewDate", staffRequest.ReviewDate, DbType.DateTime);
+            parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -273,11 +279,7 @@ public class StaffRepository(
             parameters.Add("@staffId", staffId, DbType.Int32);
             parameters.Add("@userId", userId, DbType.String);
 
-            var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_ConvertStaffToUser",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var rowsAffected = await dbConnection.ExecuteAsync("100_ConvertStaffToUser", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -290,34 +292,6 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al convertir miembro del staff con ID {StaffId} a usuario", staffId);
-            throw new Exception(ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Verifica si existe un miembro del staff principal
-    /// </summary>
-    /// <returns>True si existe un miembro del staff principal</returns>
-    public async Task<bool> HasMainStaff()
-    {
-        try
-        {
-            _logger.LogInformation("Verificando si existe miembro del staff principal");
-
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-
-            var result = await dbConnection.QueryFirstOrDefaultAsync<int>(
-                "100_HasMainStaff",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-
-            return result > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar si existe miembro del staff principal");
             throw new Exception(ex.Message);
         }
     }
@@ -339,11 +313,7 @@ public class StaffRepository(
             parameters.Add("@staffId", staffId, DbType.Int32);
             parameters.Add("@isActive", isActive, DbType.Boolean);
 
-            var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_UpdateStaffActiveStatus",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaffActiveStatus", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -361,66 +331,165 @@ public class StaffRepository(
     }
 
     /// <summary>
-    /// Mapea el resultado de la consulta a un objeto Staff para lista
+    /// Maps query result to a Staff list item
     /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto Staff mapeado</returns>
+    /// <param name="result">Query result</param>
+    /// <returns>Mapped Staff list item</returns>
     private static dynamic MapStaffListFromResult(dynamic result)
     {
         return new
         {
-            Id = result.Id,
-            FirstName = result.FirstName,
-            MiddleName = result.MiddleName,
-            FatherLastName = result.FatherLastName,
-            MotherLastName = result.MotherLastName,
-            StatusName = result.StatusName,
-            PositionName = result.PositionName,
-            StaffTypeName = result.StaffTypeName,
-            StaffTypeNameEn = result.StaffTypeNameEn,
-            Email = result.Email,
-            CityName = result.CityName,
-            RegionName = result.RegionName,
-            UserName = result.UserName,
-            IsActive = result.IsActive
+            result.Id,
+            result.FirstName,
+            result.MiddleName,
+            result.FatherLastName,
+            result.MotherLastName,
+            result.StatusName,
+            result.StatusNameEN,
+            result.PositionName,
+            result.PositionNameEN,
+            result.StaffTypeId,
+            result.StaffTypeName,
+            result.StaffTypeNameEn,
+            result.StaffClassificationId,
+            result.StaffClassificationName,
+            result.StaffClassificationNameEn,
+            result.ContractStartDate,
+            result.ContractEndDate,
+            result.Email,
+            result.CityName,
+            result.RegionName,
+            result.UserName,
+            result.IsActive
         };
     }
 
     /// <summary>
-    /// Mapea el resultado de la consulta a un objeto Staff
+    /// Maps query result to a Staff object
     /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto Staff mapeado</returns>
+    /// <param name="result">Query result</param>
+    /// <returns>Mapped Staff object</returns>
     private static dynamic MapStaffFromResult(dynamic result)
     {
         return new
         {
-            Id = result.Id,
-            FirstName = result.FirstName,
-            MiddleName = result.MiddleName,
-            FatherLastName = result.FatherLastName,
-            MotherLastName = result.MotherLastName,
-            StatusId = result.StatusId,
-            StatusName = result.StatusName,
-            PositionId = result.PositionId,
-            PositionName = result.PositionName,
-            StaffTypeId = result.StaffTypeId,
-            StaffTypeName = result.StaffTypeName,
-            StaffTypeNameEn = result.StaffTypeNameEn,
-            BirthDate = result.BirthDate,
-            Email = result.Email,
-            PostalAddress = result.PostalAddress,
-            CityId = result.CityId,
-            CityName = result.CityName,
-            RegionId = result.RegionId,
-            RegionName = result.RegionName,
-            AreaCode = result.AreaCode,
-            Comments = result.Comments,
-            UserId = result.UserId,
-            UserName = result.UserName,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt,
-            IsActive = result.IsActive
+            result.Id,
+            result.FirstName,
+            result.MiddleName,
+            result.FatherLastName,
+            result.MotherLastName,
+            result.StatusId,
+            result.StatusName,
+            result.StatusNameEN,
+            result.PositionId,
+            result.PositionName,
+            result.PositionNameEN,
+            result.StaffTypeId,
+            result.StaffTypeName,
+            result.StaffTypeNameEn,
+            result.StaffClassificationId,
+            result.StaffClassificationName,
+            result.StaffClassificationNameEn,
+            result.ContractStartDate,
+            result.ContractEndDate,
+            result.BirthDate,
+            result.Email,
+            result.PostalAddress,
+            result.CityId,
+            result.CityName,
+            result.RegionId,
+            result.RegionName,
+            result.AreaCode,
+            result.Comments,
+            result.UserId,
+            result.UserName,
+            result.CreatedAt,
+            result.UpdatedAt,
+            result.IsActive,
+            result.ReviewResultId,
+            result.ReviewDate,
+            result.ReviewJustification
+        };
+    }
+
+    /// <summary>
+    /// Maps GetById result to a DTOStaff with nested relations
+    /// </summary>
+    /// <param name="item">Dynamic result item</param>
+    /// <returns>DTOStaff</returns>
+    private static DTOStaff MapStaffDetailsFromResult(dynamic item)
+    {
+        return new DTOStaff
+        {
+            Id = item.Id,
+            FirstName = item.FirstName ?? string.Empty,
+            MiddleName = item.MiddleName,
+            FatherLastName = item.FatherLastName ?? string.Empty,
+            MotherLastName = item.MotherLastName ?? string.Empty,
+            StatusId = item.StatusId ?? 0,
+            StatusName = item.StatusName ?? string.Empty,
+            PositionId = item.PositionId ?? 0,
+            PositionName = item.PositionName ?? string.Empty,
+            StaffTypeId = item.StaffTypeId ?? 0,
+            StaffTypeName = item.StaffTypeName ?? string.Empty,
+            StaffTypeNameEn = item.StaffTypeNameEn ?? string.Empty,
+            StaffClassificationId = item.StaffClassificationId,
+            StaffClassificationName = item.StaffClassificationName ?? string.Empty,
+            StaffClassificationNameEn = item.StaffClassificationNameEn ?? string.Empty,
+            ContractStartDate = item.ContractStartDate,
+            ContractEndDate = item.ContractEndDate,
+            BirthDate = item.BirthDate ?? DateTime.MinValue,
+            Email = item.Email ?? string.Empty,
+            PostalAddress = item.PostalAddress ?? string.Empty,
+            CityId = item.CityId ?? 0,
+            CityName = item.CityName ?? string.Empty,
+            RegionId = item.RegionId ?? 0,
+            RegionName = item.RegionName ?? string.Empty,
+            AreaCode = item.AreaCode ?? string.Empty,
+            Comments = item.Comments,
+            UserId = item.UserId,
+            UserName = item.UserName,
+            CreatedAt = item.CreatedAt ?? DateTime.Now,
+            UpdatedAt = item.UpdatedAt,
+            IsActive = item.IsActive ?? true,
+            ReviewResultId = item.ReviewResultId,
+            ReviewDate = item.ReviewDate,
+            ReviewJustification = item.ReviewJustification,
+
+            City = new DTOCity
+            {
+                Id = item.CityId ?? 0,
+                Name = item.CityName ?? string.Empty
+            },
+            Region = new DTORegion
+            {
+                Id = item.RegionId ?? 0,
+                Name = item.RegionName ?? string.Empty
+            },
+            Status = new DTOOptionSelection
+            {
+                Id = item.StatusId ?? 0,
+                Name = item.StatusName ?? string.Empty,
+                NameEN = item.StatusNameEN ?? string.Empty,
+            },
+            Position = new DTOOptionSelection
+            {
+                Id = item.PositionId ?? 0,
+                Name = item.PositionName ?? string.Empty,
+                NameEN = item.PositionNameEN ?? string.Empty,
+            },
+            StaffType = new DTOStaffType
+            {
+                Id = item.StaffTypeId ?? 0,
+                Name = item.StaffTypeName ?? string.Empty,
+                NameEn = item.StaffTypeNameEn ?? string.Empty,
+            },
+            StaffClassification = item.StaffClassificationId != null ? new DTOStaffClassification
+            {
+                Id = item.StaffClassificationId,
+                Name = item.StaffClassificationName ?? string.Empty,
+                NameEn = item.StaffClassificationNameEn ?? string.Empty,
+            } : null
         };
     }
 
@@ -432,7 +501,7 @@ public class StaffRepository(
     {
         try
         {
-            _cache.Remove(string.Format(_appSettings.Cache.Keys.Staff, 0, 0, "", false));
+            _cache.Remove(string.Format(_appSettings.Cache.Keys.Staff, 0, 0, "", false, null));
             _cache.Remove(_appSettings.Cache.Keys.Staff);
         }
         catch (Exception ex)

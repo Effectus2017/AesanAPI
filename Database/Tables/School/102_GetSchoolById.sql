@@ -34,7 +34,9 @@ BEGIN
         s.NonProfit,
         s.BaseYear,
         s.RenewalYear,
-        s.OperatingDays,
+        s.OperatingFromDate,
+        s.OperatingToDate,
+        s.OperatingDaysCalculated,
         s.KitchenTypeId,
         kt.Name AS KitchenTypeName,
         kt.NameEN AS KitchenTypeNameEN,
@@ -74,18 +76,26 @@ BEGIN
         s.Snack,
         s.SnackFrom,
         s.SnackTo,
+        s.Dinner,
+        s.DinnerFrom,
+        s.DinnerTo,
+        s.SnackNight,
+        s.SnackNightFrom,
+        s.SnackNightTo,
+        s.CommunityId,
+        s.WalkersId,
+        s.SiteTypeId,
+        s.ExperienceId,
+        s.ReviewResultId,
+        s.ReviewDate,
+        s.ReviewJustification,
         s.IsActive,
         s.InactiveJustification,
         s.InactiveDate,
-        s.IsMainSchool,
         s.CreatedAt,
-        s.UpdatedAt,
-        -- Main School (obtenido mediante subconsulta para evitar duplicados)
-        (SELECT TOP 1
-            MainSchoolId
-        FROM SchoolSatellite
-        WHERE SatelliteSchoolId = s.Id AND IsActive = 1) AS MainSchoolId
+        s.UpdatedAt
     FROM School s
+        LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN City c ON s.CityId = c.Id
         LEFT JOIN Region r ON s.RegionId = r.Id
         LEFT JOIN City c2 ON s.PostalCityId = c2.Id
@@ -96,45 +106,39 @@ BEGIN
         LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
         LEFT JOIN DeliveryType dt ON s.DeliveryTypeId = dt.Id
         LEFT JOIN SponsorType st ON s.SponsorTypeId = st.Id
-        LEFT JOIN ApplicantType at ON s.ApplicantTypeId = at.Id
-        LEFT JOIN ResidentialType rt ON s.ResidentialTypeId = rt.Id
+        LEFT JOIN OptionSelection at ON s.ApplicantTypeId = at.Id
+        LEFT JOIN OptionSelection rt ON s.ResidentialTypeId = rt.Id
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
         LEFT JOIN AreaType atype ON s.AreaTypeId = atype.Id
-        LEFT JOIN Agency a ON s.AgencyId = a.Id
     WHERE s.Id = @id;
 
-    -- Facilidades
-    -- SELECT sf.FacilityId, f.Name AS FacilityName
-    -- FROM SchoolFacility sf
-    --     INNER JOIN Facility f ON sf.FacilityId = f.Id
-    -- WHERE sf.SchoolId = @Id AND sf.IsActive = 1;
-
-    -- obtener todas las escuelas satélite de la escuela principal
+    -- Obtener satélites de la escuela
     SELECT
         ss.Id,
         ss.MainSchoolId,
         ss.SatelliteSchoolId,
-        s2.Name AS SatelliteSchoolName,
-        ss.AssignmentDate,
-        ss.Comment,
+        s.Name AS SatelliteSchoolName,
         ss.IsActive,
         ss.CreatedAt,
         ss.UpdatedAt
     FROM SchoolSatellite ss
-        INNER JOIN School s2 ON ss.SatelliteSchoolId = s2.Id
-    WHERE ss.MainSchoolId = @id;
+        LEFT JOIN School s ON ss.SatelliteSchoolId = s.Id
+    WHERE ss.MainSchoolId = @id AND ss.IsActive = 1;
 
-    -- Niveles educativos (nueva consulta para múltiples niveles)
+    -- Obtener niveles educativos de la escuela
     SELECT
-        el.Id,
-        el.Name,
-        el.NameEN
+        sel.Id,
+        sel.SchoolId,
+        sel.EducationLevelId,
+        el.Name AS EducationLevelName,
+        el.NameEN AS EducationLevelNameEN,
+        sel.IsActive,
+        sel.CreatedAt,
+        sel.UpdatedAt
     FROM SchoolEducationLevel sel
-        INNER JOIN EducationLevel el ON sel.EducationLevelId = el.Id
-    WHERE sel.SchoolId = @id AND sel.IsActive = 1
-    ORDER BY el.Name;
-
+        LEFT JOIN EducationLevel el ON sel.EducationLevelId = el.Id
+    WHERE sel.SchoolId = @id AND sel.IsActive = 1;
 END;
 
 
-EXEC [102_GetSchoolById] @id = 3;
+-- EXEC [102_GetSchoolById] @id = 3;

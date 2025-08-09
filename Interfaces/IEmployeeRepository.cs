@@ -3,6 +3,10 @@ using Api.Models.Request;
 
 namespace Api.Interfaces;
 
+/// <summary>
+/// Interfaz para el repositorio de empleados
+/// </summary>
+[Obsolete("Esta interfaz está deprecada. Use IStaffRepository en su lugar. Será eliminada en una versión futura.")]
 public interface IEmployeeRepository
 {
     /// <summary>

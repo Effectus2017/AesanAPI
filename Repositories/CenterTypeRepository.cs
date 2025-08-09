@@ -81,7 +81,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

@@ -1,7 +1,13 @@
 -- =============================================
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
+-- =============================================
 -- Stored Procedure: 100_GetEmployeeById
 -- =============================================
--- Obtiene un empleado específico por su ID
+-- Obtiene un empleado por su ID
+-- Parámetros:
+--   @id: ID del empleado
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetEmployeeById]
     @id INT

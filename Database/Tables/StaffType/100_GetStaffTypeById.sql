@@ -13,7 +13,7 @@ BEGIN
         Id,
         Name,
         NameEn,
-        SortOrder,
+        DisplayOrder,
         IsActive,
         CreatedAt,
         UpdatedAt

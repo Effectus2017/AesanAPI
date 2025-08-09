@@ -14,7 +14,10 @@ public interface IUnitOfWork
     ICenterTypeRepository CenterTypeRepository { get; }
     IHouseholdRepository HouseholdRepository { get; }
     IHouseholdMemberRepository HouseholdMemberRepository { get; }
+    [Obsolete("Esta propiedad está deprecada. Use StaffRepository en su lugar. Será eliminada en una versión futura.")]
     IEmployeeRepository EmployeeRepository { get; }
     IStaffRepository StaffRepository { get; }
     IStaffTypeRepository StaffTypeRepository { get; }
+    IStaffClassificationRepository StaffClassificationRepository { get; }
+    IMessageRepository MessageRepository { get; }
 }

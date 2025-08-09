@@ -24,6 +24,9 @@ public class ApplicationSettings
     // Azure Storage settings
     public string AzureStorageConnectionString { get; set; } = "";
 
+    // Deadline to complete the registration of the Sites
+    public int DeadlineToCompleteRegistration { get; set; } = 10;
+
     // Cache settings
     public CacheSettings Cache { get; set; } = new CacheSettings();
     // Gmail settings
@@ -114,7 +117,7 @@ public class CacheKeys
     public string Employees { get; set; } = "Employees_{0}_{1}_{2}_{3}";
 
     // Claves para Staff
-    public string Staff { get; set; } = "Staff_{0}_{1}_{2}_{3}";
+    public string Staff { get; set; } = "Staff_{0}_{1}_{2}_{3}_{4}";
 
     // Claves para StaffType
     public string StaffTypes { get; set; } = "StaffTypes_{0}_{1}_{2}_{3}";

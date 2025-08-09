@@ -80,7 +80,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

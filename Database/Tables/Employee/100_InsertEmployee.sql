@@ -1,7 +1,12 @@
 -- =============================================
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
+-- =============================================
 -- Stored Procedure: 100_InsertEmployee
 -- =============================================
--- Crea un nuevo empleado en la base de datos
+-- Inserta un nuevo empleado en la base de datos
+-- Parámetros: Todos los campos del empleado
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertEmployee]
     @firstName NVARCHAR(100),

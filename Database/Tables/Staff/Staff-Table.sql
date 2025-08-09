@@ -27,6 +27,12 @@ CREATE TABLE Staff
     StaffTypeId INT NOT NULL DEFAULT 1,
     -- Referencia a StaffType
 
+    -- Información de Contrato
+    ContractStartDate DATETIME NULL,
+    -- Fecha de inicio de contrato
+    ContractEndDate DATETIME NULL,
+    -- Fecha de finalización de contrato
+
     -- Información Personal Adicional
     BirthDate DATETIME NOT NULL,
     -- Fecha de nacimiento
@@ -59,13 +65,28 @@ CREATE TABLE Staff
     IsActive BIT NOT NULL DEFAULT 1,
     -- Indica si el registro está activo
 
+    -- Información de Contrato
+    ContractStartDate DATETIME NULL,
+    -- Fecha de inicio de contrato
+    ContractEndDate DATETIME NULL,
+    -- Fecha de finalización de contrato
+
+    -- Campos de revisión (solo para empleados)
+    ReviewResultId INT NULL,
+    -- Referencia a OptionSelection con optionKey = 'reviewResult'
+    ReviewDate DATETIME NULL,
+    -- Fecha de revisión
+    ReviewJustification NVARCHAR(500) NULL,
+    -- Justificación de la revisión
+
     -- Restricciones
     FOREIGN KEY (StatusId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (PositionId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (StaffTypeId) REFERENCES StaffType(Id),
     FOREIGN KEY (CityId) REFERENCES City(Id),
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
-    FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id)
+    FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id),
+    FOREIGN KEY (ReviewResultId) REFERENCES OptionSelection(Id)
 );
 
 -- Índices para mejorar el rendimiento
@@ -80,3 +101,5 @@ CREATE INDEX IX_Staff_RegionId ON Staff(RegionId);
 CREATE INDEX IX_Staff_UserId ON Staff(UserId);
 CREATE INDEX IX_Staff_IsActive ON Staff(IsActive);
 CREATE INDEX IX_Staff_CreatedAt ON Staff(CreatedAt);
+CREATE INDEX IX_Staff_ContractStartDate ON Staff(ContractStartDate);
+CREATE INDEX IX_Staff_ContractEndDate ON Staff(ContractEndDate);x

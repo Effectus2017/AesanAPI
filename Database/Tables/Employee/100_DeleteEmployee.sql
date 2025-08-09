@@ -1,7 +1,13 @@
 -- =============================================
+-- DEPRECATED: Este stored procedure está deprecado. Use Staff en su lugar.
+-- Será eliminado en una versión futura.
+-- =============================================
 -- Stored Procedure: 100_DeleteEmployee
 -- =============================================
 -- Elimina un empleado de la base de datos (baja lógica)
+-- Parámetros:
+--   @id: ID del empleado a eliminar
+-- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_DeleteEmployee]
     @id INT

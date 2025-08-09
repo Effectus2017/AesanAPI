@@ -79,7 +79,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

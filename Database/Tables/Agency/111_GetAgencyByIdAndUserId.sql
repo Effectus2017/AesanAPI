@@ -36,6 +36,9 @@ BEGIN
         -- Fecha de la cita
         ai.AppointmentDate AS AppointmentDate,
 
+        -- Deadline to complete the registration of the Sites
+        ai.DeadlineToCompleteRegistration,
+
         -- Datos de la agencia
         ai.NonProfit,
         ai.FederalFundsDenied,
@@ -56,7 +59,7 @@ BEGIN
         ast.Name as StatusName
 
     FROM Agency a
-        LEFT JOIN AgencyInscription ai ON a.AgencyInscriptionId = ai.Id
+        LEFT JOIN AgencyInscription ai ON a.id = ai.AgencyId
         LEFT JOIN City c ON a.CityId = c.Id
         LEFT JOIN City pc ON a.PostalCityId = pc.Id
         LEFT JOIN Region r ON a.RegionId = r.Id

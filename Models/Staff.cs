@@ -10,6 +10,9 @@ public class Staff
     public int StatusId { get; set; } = 1; // Referencia a OptionSelection con optionKey = 'isActive'
     public int PositionId { get; set; } = 0; // Referencia a OptionSelection con optionKey = 'staffPosition'
     public int StaffTypeId { get; set; } = 1; // Referencia a StaffType
+    public int? StaffClassificationId { get; set; } = null; // Referencia a StaffClassification
+    public DateTime? ContractStartDate { get; set; } // Fecha de inicio de contrato
+    public DateTime? ContractEndDate { get; set; } // Fecha de finalización de contrato
     public DateTime BirthDate { get; set; }
     public string Email { get; set; } = "";
     public string PostalAddress { get; set; } = "";

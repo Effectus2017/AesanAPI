@@ -63,6 +63,10 @@ CREATE TABLE AgencyInscription
     -- Is it a National Youth Program?
     -- Si (1) y No (2)
     NationalYouthProgram bit NULL DEFAULT (0),
+    -- Fecha limite para completar la inscripción de los Sitios
+    -- Deadline to complete the registration of the Sites
+    -- 10 minutos (10), 30 minutos (30), 1 hora (60), 2 horas (120), 3 horas (180), 4 horas (240), 5 horas (300), 6 horas (360), 7 horas (420), 8 horas (480), 9 horas (540), 10 horas (600)
+    DeadlineToCompleteRegistration datetime NULL,
 
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
@@ -92,4 +96,15 @@ GO
 ALTER TABLE AgencyInscription
 ADD CONSTRAINT FK_AgencyInscription_BasicEducationRegistry 
     FOREIGN KEY (BasicEducationRegistryId) REFERENCES OptionSelection(Id);
+GO
+
+-- Agregar columna para la fecha limite para completar la inscripción de los Sitios
+-- Deadline to complete the registration of the Sites
+ALTER TABLE AgencyInscription
+ADD DeadlineToCompleteRegistration datetime NULL;
+GO
+
+-- hacer un update para todos los registros de la tabla AgencyInscription y poner la fecha limite para completar la inscripción de los Sitios
+UPDATE AgencyInscription
+SET DeadlineToCompleteRegistration = DATEADD(DAY, 10, GETDATE());
 GO

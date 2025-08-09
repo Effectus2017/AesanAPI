@@ -26,7 +26,9 @@ CREATE TABLE School
     NonProfit BIT NULL,
     BaseYear INT NULL,
     RenewalYear INT NULL,
-    OperatingDays INT NULL,
+    OperatingFromDate DATE NULL,
+    OperatingToDate DATE NULL,
+    OperatingDaysCalculated INT NULL,
     KitchenTypeId INT NULL,
     GroupTypeId INT NULL,
     DeliveryTypeId INT NULL,
@@ -50,6 +52,19 @@ CREATE TABLE School
     Snack BIT NULL,
     SnackFrom TIME NULL,
     SnackTo TIME NULL,
+    Dinner BIT NULL,
+    DinnerFrom TIME NULL,
+    DinnerTo TIME NULL,
+    SnackNight BIT NULL,
+    SnackNightFrom TIME NULL,
+    SnackNightTo TIME NULL,
+    CommunityId INT NULL,
+    WalkersId INT NULL,
+    SiteTypeId INT NULL,
+    ExperienceId INT NULL,
+    ReviewResultId INT NULL,
+    ReviewDate DATETIME NULL,
+    ReviewJustification NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     InactiveJustification NVARCHAR(500) NULL,
     InactiveDate DATETIME NULL,
@@ -121,3 +136,28 @@ ALTER TABLE School
 
 ALTER TABLE School
     ADD CONSTRAINT FK_School_AreaType FOREIGN KEY (AreaTypeId) REFERENCES AreaType(Id);
+
+
+
+-- Community se maneja en su tabla Community
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_Community FOREIGN KEY (CommunityId) REFERENCES Community(Id);
+
+-- Walkers se maneja en su tabla Walkers
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_Walkers FOREIGN KEY (WalkersId) REFERENCES Walkers(Id);
+
+-- SiteType se maneja en su tabla SiteType
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_SiteType FOREIGN KEY (SiteTypeId) REFERENCES SiteType(Id);
+
+-- Experience se maneja en su tabla Experience
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_Experience FOREIGN KEY (ExperienceId) REFERENCES Experience(Id);
+
+-- ReviewResult se maneja en su tabla ReviewResult
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_ReviewResult FOREIGN KEY (ReviewResultId) REFERENCES ReviewResult(Id);
+
+
+

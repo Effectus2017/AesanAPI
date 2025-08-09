@@ -5,23 +5,29 @@
 
 CREATE OR ALTER PROCEDURE [dbo].[100_UpdateStaff]
     @id INT,
-    @firstName NVARCHAR(100),
+    @firstName NVARCHAR(100) = NULL,
     @middleName NVARCHAR(100) = NULL,
-    @fatherLastName NVARCHAR(100),
-    @motherLastName NVARCHAR(100),
+    @fatherLastName NVARCHAR(100) = NULL,
+    @motherLastName NVARCHAR(100) = NULL,
     @statusId INT,
     @positionId INT,
     @staffTypeId INT,
-    @birthDate DATETIME,
-    @email NVARCHAR(255),
-    @postalAddress NVARCHAR(500),
-    @cityId INT,
-    @regionId INT,
-    @areaCode NVARCHAR(10),
+    @staffClassificationId INT = NULL,
+    @contractStartDate DATETIME = NULL,
+    @contractEndDate DATETIME = NULL,
+    @birthDate DATETIME = NULL,
+    @email NVARCHAR(255) = NULL,
+    @postalAddress NVARCHAR(500) = NULL,
+    @cityId INT = NULL,
+    @regionId INT = NULL,
+    @areaCode NVARCHAR(10) = NULL,
     @comments NVARCHAR(1000) = NULL,
     @userId NVARCHAR(450) = NULL,
     @isActive BIT = NULL,
-    @inactiveJustification NVARCHAR(500) = NULL
+    @inactiveJustification NVARCHAR(500) = NULL,
+    @reviewResultId INT = NULL,
+    @reviewDate DATETIME = NULL,
+    @reviewJustification NVARCHAR(500) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -36,6 +42,9 @@ BEGIN
         StatusId = @statusId,
         PositionId = @positionId,
         StaffTypeId = @staffTypeId,
+        StaffClassificationId = @staffClassificationId,
+        ContractStartDate = @contractStartDate,
+        ContractEndDate = @contractEndDate,
         BirthDate = @birthDate,
         Email = @email,
         PostalAddress = @postalAddress,
@@ -45,6 +54,9 @@ BEGIN
         Comments = @comments,
         UserId = @userId,
         IsActive = ISNULL(@isActive, IsActive),
+        ReviewResultId = @reviewResultId,
+        ReviewDate = @reviewDate,
+        ReviewJustification = @reviewJustification,
         UpdatedAt = GETDATE()
     WHERE Id = @id;
 

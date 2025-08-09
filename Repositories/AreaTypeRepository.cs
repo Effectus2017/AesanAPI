@@ -61,7 +61,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
                     },
                     _logger,
                     _appSettings,
-                    TimeSpan.FromMinutes(30)
+                    TimeSpan.FromMinutes(1)
                 );
             }
             else

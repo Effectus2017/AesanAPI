@@ -1,5 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Api.Models;
 
+/// <summary>
+/// Modelo para representar un empleado
+/// </summary>
+[Obsolete("Esta clase está deprecada. Use Staff en su lugar. Será eliminada en una versión futura.")]
 public class Employee
 {
     public int Id { get; set; }

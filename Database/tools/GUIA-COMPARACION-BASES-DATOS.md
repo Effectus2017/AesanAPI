@@ -40,7 +40,42 @@ Se han incorporado nuevas funcionalidades avanzadas para la gestión y organizac
   - Facilita la navegación y reduce el riesgo de aplicar versiones obsoletas.
   - Las versiones viejas siguen disponibles para consulta histórica.
 
-### 4. Trazabilidad y documentación
+### 4. Generación de scripts de actualización de Development desde Production
+
+- **Opción:** `--generate-update-script` (con `--execute-update` para ejecutar cambios reales)
+- **¿Qué hace?**
+  - Compara la base de datos de Development (db1) con Production (db2).
+  - Genera un script SQL completo para actualizar Development con los SPs de Production.
+  - Identifica SPs que faltan en Development y SPs con diferencias en su código.
+  - Puede ejecutar la actualización directamente o solo generar el script.
+- **Características:**
+  - Modo dry-run por defecto para seguridad.
+  - Genera scripts con transacciones y manejo de errores.
+  - Incluye logging y auditoría de cambios.
+  - Soporte para guardar el script en archivo.
+- **Uso recomendado:**
+  - Ejecutar primero en modo simulación para revisar los cambios.
+  - Usar `--execute-update` solo después de validar el script generado.
+
+### 5. Generación de scripts de actualización de estructuras de tablas
+
+- **Opción:** `--generate-table-update-script` (con `--execute-update` para ejecutar cambios reales)
+- **¿Qué hace?**
+  - Compara las estructuras de tablas entre Development (db1) y Production (db2).
+  - Genera un script SQL completo para actualizar las estructuras de tablas en Development.
+  - Identifica tablas que faltan en Development y diferencias en columnas existentes.
+  - Puede ejecutar la actualización directamente o solo generar el script.
+- **Características:**
+  - Modo dry-run por defecto para seguridad.
+  - Genera scripts con transacciones y manejo de errores.
+  - Incluye logging y auditoría de cambios.
+  - Soporte para guardar el script en archivo.
+  - Maneja creación de tablas nuevas y modificación de columnas existentes.
+- **Uso recomendado:**
+  - Ejecutar primero en modo simulación para revisar los cambios.
+  - Usar `--execute-update` solo después de validar el script generado.
+
+### 6. Trazabilidad y documentación
 
 - Todas las nuevas opciones y mejoras están documentadas en:
   - El propio script (`compare_databases.py`)
@@ -89,6 +124,47 @@ python Database/tools/compare_databases.py --move-old-sp-files-local
 - Solo afecta archivos locales, no la base de datos.
 - Las versiones viejas se mueven a `Deprecated` y se renombran como `{Nombre}-Deprecated.sql`.
 - No elimina archivos, solo los mueve y renombra para mayor orden y trazabilidad.
+
+### Escenario D: Generación de scripts de actualización de Development desde Production
+
+```bash
+# Generar script de actualización (modo dry-run por defecto)
+python Database/tools/compare_databases.py --generate-update-script
+
+# Generar script y guardarlo en archivo
+python Database/tools/compare_databases.py --generate-update-script --update-script-output update_development.sql
+
+# Ejecutar la actualización real (sin dry-run)
+python Database/tools/compare_databases.py --generate-update-script --execute-update
+
+# Ejecutar actualización y guardar script
+python Database/tools/compare_databases.py --generate-update-script --execute-update --update-script-output update_development.sql
+```
+
+- **Modo dry-run (por defecto):** Solo genera el script y muestra qué se actualizaría, sin ejecutar cambios.
+- **Modo ejecución:** Ejecuta la actualización real en la base de datos de Development.
+- **Archivo de salida:** Guarda el script generado en un archivo para revisión posterior.
+
+### Escenario E: Generación de scripts de actualización de estructuras de tablas
+
+```bash
+# Generar script de actualización de tablas (modo dry-run por defecto)
+python Database/tools/compare_databases.py --generate-table-update-script
+
+# Generar script y guardarlo en archivo
+python Database/tools/compare_databases.py --generate-table-update-script --table-update-script-output update_tables_development.sql
+
+# Ejecutar la actualización real (sin dry-run)
+python Database/tools/compare_databases.py --generate-table-update-script --execute-update
+
+# Ejecutar actualización y guardar script
+python Database/tools/compare_databases.py --generate-table-update-script --execute-update --table-update-script-output update_tables_development.sql
+```
+
+- **Modo dry-run (por defecto):** Solo genera el script y muestra qué tablas/columnas se actualizarían, sin ejecutar cambios.
+- **Modo ejecución:** Ejecuta la actualización real de las estructuras de tablas en Development.
+- **Archivo de salida:** Guarda el script generado en un archivo para revisión posterior.
+- **Tipos de cambios:** Crea tablas nuevas, agrega columnas faltantes y modifica columnas existentes.
 
 ---
 

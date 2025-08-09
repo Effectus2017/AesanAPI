@@ -377,6 +377,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@taxExemptionTypeId", taxExemptionTypeId);
             parameters.Add("@publicAllianceContractId", publicAllianceContractId);
             parameters.Add("@nationalYouthProgram", nationalYouthProgram);
+
+            // Deadline to complete the registration of the Sites
+            // Tomar valor desde AppSettings que es un numero de días y convertir a date-time
+            var deadlineToCompleteRegistration = DateTime.Now.AddDays(_appSettings.DeadlineToCompleteRegistration);
+            parameters.Add("@deadlineToCompleteRegistration", deadlineToCompleteRegistration);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
@@ -821,6 +826,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 AppointmentCoordinated = item.AppointmentCoordinated ?? false,
                 // Fecha de la cita
                 AppointmentDate = item.AppointmentDate,
+
+                // Deadline to complete the registration of the Sites
+                DeadlineToCompleteRegistration = item.DeadlineToCompleteRegistration,
 
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
