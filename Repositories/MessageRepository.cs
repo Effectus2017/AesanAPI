@@ -25,11 +25,7 @@ namespace Api.Repositories
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", id, DbType.Int32);
 
-                var result = await dbConnection.QueryFirstOrDefaultAsync<Message>(
-                    "100_GetMessageById",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await dbConnection.QueryFirstOrDefaultAsync<Message>("100_GetMessageById", parameters, commandType: CommandType.StoredProcedure);
 
                 return result;
             }
@@ -48,11 +44,7 @@ namespace Api.Repositories
                 var parameters = new DynamicParameters();
                 parameters.Add("@userId", userId, DbType.String);
 
-                var result = await dbConnection.QueryAsync<Message>(
-                    "100_GetAllMessages",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await dbConnection.QueryAsync<Message>("100_GetAllMessages", parameters, commandType: CommandType.StoredProcedure);
 
                 return result ?? Enumerable.Empty<Message>();
             }
@@ -117,10 +109,11 @@ namespace Api.Repositories
                 parameters.Add("@link", messageRequest.Link, DbType.String);
                 parameters.Add("@useRouter", messageRequest.UseRouter, DbType.Boolean);
                 parameters.Add("@userId", messageRequest.UserId, DbType.String);
+                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
                 await dbConnection.ExecuteAsync("100_UpdateMessage", parameters, commandType: CommandType.StoredProcedure);
 
-                var rowsAffected = parameters.Get<int>("@RowsAffected");
+                var rowsAffected = parameters.Get<int>("@rowsAffected");
 
                 return rowsAffected > 0;
             }
@@ -140,9 +133,10 @@ namespace Api.Repositories
                 using IDbConnection dbConnection = _context.CreateConnection();
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", id, DbType.Int32);
+                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
                 await dbConnection.ExecuteAsync("100_DeleteMessage", parameters, commandType: CommandType.StoredProcedure);
 
-                var rowsAffected = parameters.Get<int>("@RowsAffected");
+                var rowsAffected = parameters.Get<int>("@rowsAffected");
 
                 return rowsAffected > 0;
             }
@@ -162,9 +156,10 @@ namespace Api.Repositories
                 using IDbConnection dbConnection = _context.CreateConnection();
                 var parameters = new DynamicParameters();
                 parameters.Add("@userId", userId, DbType.String);
+                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
                 await dbConnection.ExecuteAsync("100_MarkAllMessagesAsRead", parameters, commandType: CommandType.StoredProcedure);
 
-                var rowsAffected = parameters.Get<int>("@RowsAffected");
+                var rowsAffected = parameters.Get<int>("@rowsAffected");
 
                 return rowsAffected > 0;
             }
@@ -184,9 +179,10 @@ namespace Api.Repositories
                 using IDbConnection dbConnection = _context.CreateConnection();
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", id, DbType.Int32);
+                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
                 await dbConnection.ExecuteAsync("100_MarkMessageAsRead", parameters, commandType: CommandType.StoredProcedure);
 
-                var rowsAffected = parameters.Get<int>("@RowsAffected");
+                var rowsAffected = parameters.Get<int>("@rowsAffected");
 
                 return rowsAffected > 0;
             }
@@ -205,11 +201,7 @@ namespace Api.Repositories
                 var parameters = new DynamicParameters();
                 parameters.Add("@userId", userId, DbType.String);
 
-                var result = await dbConnection.ExecuteScalarAsync<int>(
-                    "100_GetUnreadMessageCount",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                var result = await dbConnection.ExecuteScalarAsync<int>("100_GetUnreadMessageCount", parameters, commandType: CommandType.StoredProcedure);
 
                 return result;
             }

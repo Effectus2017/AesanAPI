@@ -34,18 +34,14 @@ public class StaffRepository(
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<DTOStaff>(
-                "100_GetStaffById",
-                param,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetStaffById", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
                 return null;
             }
 
-            return result;
+            return MapStaffDetailsFromResult(result);
         }
         catch (Exception ex)
         {
@@ -335,10 +331,10 @@ public class StaffRepository(
     }
 
     /// <summary>
-    /// Mapea el resultado de la consulta a un objeto Staff para lista
+    /// Maps query result to a Staff list item
     /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto Staff mapeado</returns>
+    /// <param name="result">Query result</param>
+    /// <returns>Mapped Staff list item</returns>
     private static dynamic MapStaffListFromResult(dynamic result)
     {
         return new
@@ -349,7 +345,9 @@ public class StaffRepository(
             result.FatherLastName,
             result.MotherLastName,
             result.StatusName,
+            result.StatusNameEN,
             result.PositionName,
+            result.PositionNameEN,
             result.StaffTypeId,
             result.StaffTypeName,
             result.StaffTypeNameEn,
@@ -367,10 +365,10 @@ public class StaffRepository(
     }
 
     /// <summary>
-    /// Mapea el resultado de la consulta a un objeto Staff
+    /// Maps query result to a Staff object
     /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto Staff mapeado</returns>
+    /// <param name="result">Query result</param>
+    /// <returns>Mapped Staff object</returns>
     private static dynamic MapStaffFromResult(dynamic result)
     {
         return new
@@ -382,8 +380,10 @@ public class StaffRepository(
             result.MotherLastName,
             result.StatusId,
             result.StatusName,
+            result.StatusNameEN,
             result.PositionId,
             result.PositionName,
+            result.PositionNameEN,
             result.StaffTypeId,
             result.StaffTypeName,
             result.StaffTypeNameEn,
@@ -409,6 +409,87 @@ public class StaffRepository(
             result.ReviewResultId,
             result.ReviewDate,
             result.ReviewJustification
+        };
+    }
+
+    /// <summary>
+    /// Maps GetById result to a DTOStaff with nested relations
+    /// </summary>
+    /// <param name="item">Dynamic result item</param>
+    /// <returns>DTOStaff</returns>
+    private static DTOStaff MapStaffDetailsFromResult(dynamic item)
+    {
+        return new DTOStaff
+        {
+            Id = item.Id,
+            FirstName = item.FirstName ?? string.Empty,
+            MiddleName = item.MiddleName,
+            FatherLastName = item.FatherLastName ?? string.Empty,
+            MotherLastName = item.MotherLastName ?? string.Empty,
+            StatusId = item.StatusId ?? 0,
+            StatusName = item.StatusName ?? string.Empty,
+            PositionId = item.PositionId ?? 0,
+            PositionName = item.PositionName ?? string.Empty,
+            StaffTypeId = item.StaffTypeId ?? 0,
+            StaffTypeName = item.StaffTypeName ?? string.Empty,
+            StaffTypeNameEn = item.StaffTypeNameEn ?? string.Empty,
+            StaffClassificationId = item.StaffClassificationId,
+            StaffClassificationName = item.StaffClassificationName ?? string.Empty,
+            StaffClassificationNameEn = item.StaffClassificationNameEn ?? string.Empty,
+            ContractStartDate = item.ContractStartDate,
+            ContractEndDate = item.ContractEndDate,
+            BirthDate = item.BirthDate ?? DateTime.MinValue,
+            Email = item.Email ?? string.Empty,
+            PostalAddress = item.PostalAddress ?? string.Empty,
+            CityId = item.CityId ?? 0,
+            CityName = item.CityName ?? string.Empty,
+            RegionId = item.RegionId ?? 0,
+            RegionName = item.RegionName ?? string.Empty,
+            AreaCode = item.AreaCode ?? string.Empty,
+            Comments = item.Comments,
+            UserId = item.UserId,
+            UserName = item.UserName,
+            CreatedAt = item.CreatedAt ?? DateTime.Now,
+            UpdatedAt = item.UpdatedAt,
+            IsActive = item.IsActive ?? true,
+            ReviewResultId = item.ReviewResultId,
+            ReviewDate = item.ReviewDate,
+            ReviewJustification = item.ReviewJustification,
+
+            City = new DTOCity
+            {
+                Id = item.CityId ?? 0,
+                Name = item.CityName ?? string.Empty
+            },
+            Region = new DTORegion
+            {
+                Id = item.RegionId ?? 0,
+                Name = item.RegionName ?? string.Empty
+            },
+            Status = new DTOOptionSelection
+            {
+                Id = item.StatusId ?? 0,
+                Name = item.StatusName ?? string.Empty,
+                NameEN = item.StatusNameEN ?? string.Empty,
+            },
+            Position = new DTOOptionSelection
+            {
+                Id = item.PositionId ?? 0,
+                Name = item.PositionName ?? string.Empty,
+                NameEN = item.PositionNameEN ?? string.Empty,
+            },
+            StaffType = new DTOStaffType
+            {
+                Id = item.StaffTypeId ?? 0,
+                Name = item.StaffTypeName ?? string.Empty,
+                NameEn = item.StaffTypeNameEn ?? string.Empty,
+            },
+            StaffClassification = item.StaffClassificationId != null ? new DTOStaffClassification
+            {
+                Id = item.StaffClassificationId,
+                Name = item.StaffClassificationName ?? string.Empty,
+                NameEn = item.StaffClassificationNameEn ?? string.Empty,
+            } : null
         };
     }
 

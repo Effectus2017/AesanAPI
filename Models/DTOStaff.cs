@@ -38,4 +38,12 @@ public class DTOStaff
     public int? ReviewResultId { get; set; }
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
+
+    // Relaciones anidadas (para GetById)
+    public DTOCity? City { get; set; }
+    public DTORegion? Region { get; set; }
+    public DTOOptionSelection? Status { get; set; }
+    public DTOOptionSelection? Position { get; set; }
+    public DTOStaffType? StaffType { get; set; }
+    public DTOStaffClassification? StaffClassification { get; set; }
 }
