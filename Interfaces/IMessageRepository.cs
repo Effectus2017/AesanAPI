@@ -23,8 +23,8 @@ public interface IMessageRepository
     /// Inserta un nuevo mensaje en la base de datos
     /// </summary>
     /// <param name="messageRequest">Datos del mensaje a insertar</param>
-    /// <returns>True si se insertó correctamente</returns>
-    Task<bool> InsertMessage(MessageRequest messageRequest);
+    /// <returns>El mensaje creado si se insertó correctamente</returns>
+    Task<Message> InsertMessage(MessageRequest messageRequest);
 
     /// <summary>
     /// Actualiza un mensaje existente en la base de datos

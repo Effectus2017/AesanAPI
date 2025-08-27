@@ -533,6 +533,9 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 InactiveDate = item.InactiveDate,
                 CreatedAt = item.CreatedAt ?? DateTime.MinValue,
                 UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
+                IsMainSchool = item.IsMainSchool ?? false,
+                MainSchoolId = item.MainSchoolId ?? 0,
+                MainSchoolName = item.MainSchoolName ?? string.Empty,
                 // Nested catalogs (if needed, can be mapped here)
                 City = item.CityId != null ? new DTOCity
                 {

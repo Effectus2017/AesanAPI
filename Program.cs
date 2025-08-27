@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
@@ -19,6 +20,8 @@ using Api.Telemetry;
 using ElmahCore.Mvc;
 using ElmahCore.Sql;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
+using Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,7 +71,33 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            //IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+
+        // Configuración específica para SignalR - SIN AUTENTICACIÓN
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var path = context.HttpContext.Request.Path;
+
+                // Permitir conexiones SignalR sin autenticación
+                if (path.StartsWithSegments("/hubs"))
+                {
+                    // No validar token para SignalR
+                    context.Token = null;
+                    return Task.CompletedTask;
+                }
+
+                // Para otras rutas, mantener la autenticación normal
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -115,6 +144,7 @@ builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffTypeRepository, StaffTypeRepository>();
 builder.Services.AddScoped<IStaffClassificationRepository, StaffClassificationRepository>();
+builder.Services.AddScoped<IStaffRelationshipRepository, StaffRelationshipRepository>();
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
 builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));
@@ -122,6 +152,7 @@ builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyReposi
 // Registrar AgencyUsersRepository después de los servicios Lazy
 builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
+builder.Services.AddScoped<ISchoolStaffRepository, SchoolStaffRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
@@ -154,6 +185,9 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile(new MappingProfile());
 });
+
+// SignalR
+builder.Services.AddSignalR();
 
 // Configuración de CORS
 var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
@@ -342,7 +376,7 @@ else
 }
 
 // CORS debe ir antes de routing y después de los middleware de error
-var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" : 
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" :
                  app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
 app.UseCors(corsPolicy);
 
@@ -368,6 +402,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
+// Restaurando autenticación y autorización para el resto de la API
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -426,5 +461,8 @@ app.Use(async (context, next) =>
 });
 
 app.MapControllers();
+
+// Mapear el hub de SignalR
+app.MapHub<MessageHub>("/hubs/messages");
 
 app.Run();

@@ -4,6 +4,8 @@ using Api.Models;
 using Api.Models.Request;
 using Dapper;
 using System.Security.Claims;
+using Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Api.Controllers;
 
@@ -15,10 +17,11 @@ namespace Api.Controllers;
 [Route("messages")]
 [ApiController]
 // [Authorize]
-public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork unitOfWork) : Controller
+public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork unitOfWork, IHubContext<MessageHub, IMessagesClient> hub) : Controller
 {
     private readonly ILogger<MessagesController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly IHubContext<MessageHub, IMessagesClient> _hub = hub;
 
     /// <summary>
     /// Obtiene un mensaje por su ID
@@ -100,16 +103,21 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
                     return BadRequest("El mensaje es requerido");
                 }
 
-                var result = await _unitOfWork.MessageRepository.InsertMessage(request);
+                var created = await _unitOfWork.MessageRepository.InsertMessage(request);
 
-                if (result)
+                if (!string.IsNullOrEmpty(created.UserId))
                 {
-                    _logger.LogInformation("Mensaje insertado correctamente");
-                    return Ok(result);
+                    await _hub.Clients.Group($"user:{created.UserId}").MessageCreated(created);
+                    var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(created.UserId);
+                    await _hub.Clients.Group($"user:{created.UserId}").UnreadCountChanged(unread);
+                }
+                else
+                {
+                    await _hub.Clients.Group("broadcast").MessageCreated(created);
                 }
 
-                _logger.LogWarning("No se pudo insertar el mensaje");
-                return BadRequest("No se pudo insertar el mensaje");
+                _logger.LogInformation("Mensaje insertado correctamente");
+                return Ok(created);
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -144,16 +152,23 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
                     return BadRequest("El ID del mensaje es requerido para actualizar");
                 }
 
-                var result = await _unitOfWork.MessageRepository.UpdateMessage(request);
+                var success = await _unitOfWork.MessageRepository.UpdateMessage(request);
+                if (!success) return BadRequest("No se pudo actualizar el mensaje");
 
-                if (result)
+                if (request.Id is int id)
                 {
-                    _logger.LogInformation("Mensaje actualizado con ID: {Id}", request.Id.Value);
-                    return Ok(result);
+                    var updated = await _unitOfWork.MessageRepository.GetMessageById(id);
+                    if (updated is Message msg)
+                    {
+                        if (!string.IsNullOrEmpty(msg.UserId))
+                            await _hub.Clients.Group($"user:{msg.UserId}").MessageUpdated(msg);
+                        else
+                            await _hub.Clients.Group("broadcast").MessageUpdated(msg);
+                    }
                 }
 
-                _logger.LogWarning("No se pudo actualizar el mensaje");
-                return BadRequest("No se pudo actualizar el mensaje");
+                _logger.LogInformation("Mensaje actualizado con ID: {Id}", request.Id.Value);
+                return Ok(true);
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -180,16 +195,21 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
             {
                 _logger.LogInformation("Eliminando mensaje con ID: {Id}", queryParameters.Id);
 
-                var result = await _unitOfWork.MessageRepository.DeleteMessage(queryParameters.Id);
+                var id = queryParameters.Id;
+                var existing = await _unitOfWork.MessageRepository.GetMessageById(id);
+                var success = await _unitOfWork.MessageRepository.DeleteMessage(id);
+                if (!success) return BadRequest("No se pudo eliminar el mensaje");
 
-                if (result)
+                if (existing is Message msg)
                 {
-                    _logger.LogInformation("Mensaje eliminado con ID: {Id}", queryParameters.Id);
-                    return Ok(result);
+                    if (!string.IsNullOrEmpty(msg.UserId))
+                        await _hub.Clients.Group($"user:{msg.UserId}").MessageDeleted(msg.Id);
+                    else
+                        await _hub.Clients.Group("broadcast").MessageDeleted(msg.Id);
                 }
 
-                _logger.LogWarning("No se pudo eliminar el mensaje con ID: {Id}", queryParameters.Id);
-                return BadRequest("No se pudo eliminar el mensaje");
+                _logger.LogInformation("Mensaje eliminado con ID: {Id}", queryParameters.Id);
+                return Ok(true);
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -216,16 +236,17 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
             {
                 _logger.LogInformation("Marcando todos los mensajes como leídos para usuario: {UserId}", queryParameters.UserId);
 
-                var result = await _unitOfWork.MessageRepository.MarkAllMessagesAsRead(queryParameters.UserId);
+                var userId = queryParameters.UserId;
+                var success = await _unitOfWork.MessageRepository.MarkAllMessagesAsRead(userId);
+                if (!success) return BadRequest("No se pudieron marcar todos los mensajes como leídos");
 
-                if (result)
+                if (!string.IsNullOrEmpty(userId))
                 {
-                    _logger.LogInformation("Todos los mensajes marcados como leídos para usuario: {UserId}", queryParameters.UserId);
-                    return Ok(new { message = "Todos los mensajes han sido marcados como leídos" });
+                    await _hub.Clients.Group($"user:{userId}").UnreadCountChanged(0);
                 }
 
-                _logger.LogWarning("No se pudieron marcar todos los mensajes como leídos");
-                return BadRequest("No se pudieron marcar todos los mensajes como leídos");
+                _logger.LogInformation("Todos los mensajes marcados como leídos para usuario: {UserId}", queryParameters.UserId);
+                return Ok(new { message = "Todos los mensajes han sido marcados como leídos" });
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
@@ -252,16 +273,27 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
             {
                 _logger.LogInformation("Marcando mensaje como leído con ID: {Id}", queryParameters.Id);
 
-                var result = await _unitOfWork.MessageRepository.MarkMessageAsRead(queryParameters.Id);
+                var id = queryParameters.Id;
+                var existing = await _unitOfWork.MessageRepository.GetMessageById(id);
+                var success = await _unitOfWork.MessageRepository.MarkMessageAsRead(id);
+                if (!success) return BadRequest("No se pudo marcar como leído");
 
-                if (result)
+                if (existing is Message msg)
                 {
-                    _logger.LogInformation("Mensaje marcado como leído con ID: {Id}", queryParameters.Id);
-                    return Ok(new { message = "Mensaje marcado como leído" });
+                    if (!string.IsNullOrEmpty(msg.UserId))
+                    {
+                        await _hub.Clients.Group($"user:{msg.UserId}").MessageRead(msg.Id);
+                        var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(msg.UserId);
+                        await _hub.Clients.Group($"user:{msg.UserId}").UnreadCountChanged(unread);
+                    }
+                    else
+                    {
+                        await _hub.Clients.Group("broadcast").MessageRead(msg.Id);
+                    }
                 }
 
-                _logger.LogWarning("No se pudo marcar el mensaje como leído con ID: {Id}", queryParameters.Id);
-                return BadRequest("No se pudo marcar el mensaje como leído");
+                _logger.LogInformation("Mensaje marcado como leído con ID: {Id}", queryParameters.Id);
+                return Ok(new { message = "Mensaje marcado como leído" });
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));

@@ -49,6 +49,10 @@ CREATE TABLE Staff
     AreaCode NVARCHAR(10) NOT NULL,
     -- Código de área
 
+    -- Relación con Agencia
+    AgencyId INT NULL,
+    -- Referencia a la agencia a la que pertenece el personal
+
     -- Información Adicional
     Comments NVARCHAR(1000) NULL,
     -- Comentarios adicionales
@@ -85,6 +89,7 @@ CREATE TABLE Staff
     FOREIGN KEY (StaffTypeId) REFERENCES StaffType(Id),
     FOREIGN KEY (CityId) REFERENCES City(Id),
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
+    FOREIGN KEY (AgencyId) REFERENCES Agency(Id),
     FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id),
     FOREIGN KEY (ReviewResultId) REFERENCES OptionSelection(Id)
 );
@@ -98,8 +103,9 @@ CREATE INDEX IX_Staff_PositionId ON Staff(PositionId);
 CREATE INDEX IX_Staff_StaffTypeId ON Staff(StaffTypeId);
 CREATE INDEX IX_Staff_CityId ON Staff(CityId);
 CREATE INDEX IX_Staff_RegionId ON Staff(RegionId);
+CREATE INDEX IX_Staff_AgencyId ON Staff(AgencyId);
 CREATE INDEX IX_Staff_UserId ON Staff(UserId);
 CREATE INDEX IX_Staff_IsActive ON Staff(IsActive);
 CREATE INDEX IX_Staff_CreatedAt ON Staff(CreatedAt);
 CREATE INDEX IX_Staff_ContractStartDate ON Staff(ContractStartDate);
-CREATE INDEX IX_Staff_ContractEndDate ON Staff(ContractEndDate);x
+CREATE INDEX IX_Staff_ContractEndDate ON Staff(ContractEndDate);

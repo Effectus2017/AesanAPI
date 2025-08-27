@@ -8,13 +8,15 @@
 --   @name: Nombre para filtrar (busca en FirstName y FatherLastName)
 --   @alls: Si es true, retorna solo lista simple sin paginación
 --   @staffTypeId: ID del tipo de staff para filtrar
+--   @agencyId: ID de la agencia para filtrar
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetAllStaff]
     @take INT = 15,
     @skip INT = 0,
     @name NVARCHAR(255) = NULL,
     @alls BIT = 0,
-    @staffTypeId INT = NULL
+    @staffTypeId INT = NULL,
+    @agencyId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -50,6 +52,8 @@ BEGIN
             s.RegionId,
             r.Name AS RegionName,
             s.AreaCode,
+            s.AgencyId,
+            a.Name AS AgencyName,
             s.Comments,
             s.UserId,
             u.FirstName + ' ' + u.FatherLastName AS UserName,
@@ -63,6 +67,7 @@ BEGIN
             LEFT JOIN StaffClassification sc ON s.StaffClassificationId = sc.Id
             LEFT JOIN City c ON s.CityId = c.Id
             LEFT JOIN Region r ON s.RegionId = r.Id
+            LEFT JOIN Agency a ON s.AgencyId = a.Id
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
         WHERE s.IsActive = 1
             AND (@alls = 1 OR (@name IS NULL OR
@@ -71,6 +76,7 @@ BEGIN
             s.MiddleName LIKE '%' + @name + '%' OR
             s.MotherLastName LIKE '%' + @name + '%'))
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
+            AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
         ORDER BY s.FirstName, s.FatherLastName;
     END
     ELSE
@@ -104,6 +110,8 @@ BEGIN
             s.RegionId,
             r.Name AS RegionName,
             s.AreaCode,
+            s.AgencyId,
+            a.Name AS AgencyName,
             s.Comments,
             s.UserId,
             u.FirstName + ' ' + u.FatherLastName AS UserName,
@@ -118,6 +126,7 @@ BEGIN
             LEFT JOIN City c ON s.CityId = c.Id
             LEFT JOIN Region r ON s.RegionId = r.Id
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
+            LEFT JOIN Agency a ON s.AgencyId = a.Id
         WHERE s.IsActive = 1
             AND (@alls = 1 OR (@name IS NULL OR
             s.FirstName LIKE '%' + @name + '%' OR
@@ -125,6 +134,7 @@ BEGIN
             s.MiddleName LIKE '%' + @name + '%' OR
             s.MotherLastName LIKE '%' + @name + '%'))
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
+            AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
         ORDER BY s.FirstName, s.FatherLastName
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY;
@@ -138,6 +148,7 @@ BEGIN
             s.FatherLastName LIKE '%' + @name + '%' OR
             s.MiddleName LIKE '%' + @name + '%' OR
             s.MotherLastName LIKE '%' + @name + '%'))
-            AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId);
+            AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
+            AND (@agencyId IS NULL OR s.AgencyId = @agencyId);
     END
 END

@@ -475,6 +475,23 @@ public class UserRepository(UserManager<User> userManager,
 
             _loggingService.LogInformation("Insertando la agencia en la base de datos");
 
+            // Generar código único de agencia automáticamente
+            var existingCodes = await GetExistingAgencyCodes();
+            var generatedAgencyCode = Utilities.GenerateAgencyCode(
+                model.Agency.Name,
+                model.Agency.Programs ?? [],
+                existingCodes
+            );
+
+            // Asignar el código generado a la agencia
+            model.Agency.AgencyCode = generatedAgencyCode;
+
+            _loggingService.LogInformation($"Código de agencia generado: {generatedAgencyCode}", new Dictionary<string, string>
+            {
+                { "AgencyName", model.Agency.Name },
+                { "GeneratedCode", generatedAgencyCode }
+            });
+
             // Insertar la agencia
             int agencyId = await _agencyRepository.InsertAgency(model.Agency);
 
@@ -1354,6 +1371,25 @@ public class UserRepository(UserManager<User> userManager,
         var parameters = new DynamicParameters();
         parameters.Add("@userId", userId);
         await db.ExecuteAsync("100_AssignSchoolCrudPermissionsToUser", parameters, commandType: CommandType.StoredProcedure);
+    }
+
+    /// <summary>
+    /// Obtiene todos los códigos de agencias existentes
+    /// </summary>
+    /// <returns>Lista de códigos de agencias</returns>
+    private async Task<List<string>> GetExistingAgencyCodes()
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            var codes = await connection.QueryAsync<string>("112_GetExistingAgencyCodes", commandType: CommandType.StoredProcedure);
+            return codes.ToList();
+        }
+        catch (Exception ex)
+        {
+            _loggingService.LogError(ex, "Error al obtener códigos de agencias existentes");
+            throw;
+        }
     }
 
 }

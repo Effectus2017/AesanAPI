@@ -74,7 +74,8 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
                     queryParameters.Names,
                     queryParameters.Alls,
                     queryParameters.IsList,
-                    queryParameters.StaffTypeId
+                    queryParameters.StaffTypeId,
+                    queryParameters.AgencyId
                 );
                 return Ok(staff);
             }
@@ -269,6 +270,46 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         {
             _logger.LogError(ex, "Error al actualizar el estado activo del miembro del staff");
             return StatusCode(500, "Error al actualizar el estado activo");
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los miembros del staff de una agencia específica
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta</param>
+    /// <returns>La lista de miembros del staff de la agencia</returns>
+    [HttpGet("get-staff-by-agency")]
+    [SwaggerOperation(Summary = "Obtiene todos los miembros del staff de una agencia específica", Description = "Devuelve una lista de todos los miembros del staff de una agencia específica con paginación y filtros.")]
+    public async Task<IActionResult> GetStaffByAgency([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo miembros del staff de la agencia: {AgencyId}", queryParameters.AgencyId);
+
+                var staff = await _unitOfWork.StaffRepository.GetStaffByAgency(
+                    queryParameters.AgencyId,
+                    queryParameters.Take,
+                    queryParameters.Skip,
+                    queryParameters.Names,
+                    queryParameters.StaffTypeId
+                );
+
+                if (staff == null)
+                {
+                    return NotFound("No se encontraron miembros del staff para la agencia especificada");
+                }
+
+                return Ok(staff);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", queryParameters.AgencyId);
+            return StatusCode(500, "Error interno del servidor al obtener los miembros del staff de la agencia");
         }
     }
 }

@@ -103,7 +103,7 @@ public class DTOSchool
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int? MainSchoolId { get; set; }
-
+    public string? MainSchoolName { get; set; }
 
     // Main School
     public DTOSchool? MainSchool { get; set; }

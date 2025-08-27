@@ -19,6 +19,7 @@ public class StaffRequest
     public int? CityId { get; set; } = 0;
     public int? RegionId { get; set; } = 0;
     public string? AreaCode { get; set; } = "";
+    public int? AgencyId { get; set; } = null;
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null;
     public bool IsActive { get; set; } = true;

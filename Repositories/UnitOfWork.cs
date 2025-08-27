@@ -17,7 +17,8 @@ public class UnitOfWork(ApplicationDbContext context,
     IStaffRepository staffRepository,
     IStaffTypeRepository staffTypeRepository,
     IStaffClassificationRepository staffClassificationRepository,
-    IMessageRepository messageRepository
+    IMessageRepository messageRepository,
+    ISchoolStaffRepository schoolStaffRepository
     ) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
@@ -31,10 +32,12 @@ public class UnitOfWork(ApplicationDbContext context,
     public ICenterTypeRepository CenterTypeRepository { get; private set; } = centerTypeRepository;
     public IHouseholdRepository HouseholdRepository { get; private set; } = householdRepository;
     public IHouseholdMemberRepository HouseholdMemberRepository { get; private set; } = householdMemberRepository;
+
     [Obsolete("Esta propiedad está deprecada. Use StaffRepository en su lugar. Será eliminada en una versión futura.")]
     public IEmployeeRepository EmployeeRepository { get; private set; } = employeeRepository;
     public IStaffRepository StaffRepository { get; private set; } = staffRepository;
     public IStaffTypeRepository StaffTypeRepository { get; private set; } = staffTypeRepository;
     public IStaffClassificationRepository StaffClassificationRepository { get; private set; } = staffClassificationRepository;
     public IMessageRepository MessageRepository { get; private set; } = messageRepository;
+    public ISchoolStaffRepository SchoolStaffRepository { get; private set; } = schoolStaffRepository;
 }

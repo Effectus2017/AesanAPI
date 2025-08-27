@@ -21,8 +21,9 @@ public interface IStaffRepository
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
     /// <param name="isList">Si es para lista simple (dropdown)</param>
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
+    /// <param name="agencyId">ID de la agencia para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null);
+    Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null, int? agencyId = null);
 
     /// <summary>
     /// Inserta un nuevo miembro del staff en la base de datos
@@ -60,4 +61,15 @@ public interface IStaffRepository
     /// <param name="isActive">Nuevo estado activo</param>
     /// <returns>True si se actualizó correctamente</returns>
     Task<bool> UpdateStaffActiveStatus(int staffId, bool isActive);
+
+    /// <summary>
+    /// Obtiene todos los miembros del staff de una agencia específica
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <param name="take">El número de miembros del staff a obtener</param>
+    /// <param name="skip">El número de miembros del staff a saltar</param>
+    /// <param name="name">El nombre del miembro del staff a buscar</param>
+    /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
+    /// <returns>Los miembros del staff de la agencia</returns>
+    Task<dynamic> GetStaffByAgency(int agencyId, int take, int skip, string name, int? staffTypeId = null);
 }

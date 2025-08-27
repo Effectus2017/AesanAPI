@@ -119,13 +119,17 @@ VALUES
 
 -- Puestos para Empleados Operacionales (optionKey = 'operationalPosition')
 INSERT INTO OptionSelection
-    (OptionKey, Name, NameEn, DisplayOrder, IsActive, CreatedAt)
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
 VALUES
-    ('operationalPosition', 'Ayudante de Cocina', 'Kitchen Assistant', 400, 1, GETDATE()),
-    ('operationalPosition', 'Cocinero(a)', 'Cook', 410, 1, GETDATE()),
-    ('operationalPosition', 'Chef', 'Chef', 420, 1, GETDATE()),
-    ('operationalPosition', 'Chofer', 'Driver', 430, 1, GETDATE()),
-    ('operationalPosition', 'Encargado(a) de Cocina', 'Kitchen Manager', 440, 1, GETDATE());
+    ('Asistente de Cocina', 'Kitchen Assistant', 'operationalPosition', 0, 1, 400),
+    ('Ayudante de Cocina', 'Kitchen Assistant', 'operationalPosition', 0, 1, 410),
+    ('Cocinero(a)', 'Cook', 'operationalPosition', 0, 1, 420),
+    ('Chef', 'Chef', 'operationalPosition', 0, 1, 430),
+    ('Chofer', 'Driver', 'operationalPosition', 0, 1, 440),
+    ('Empacador(a)', 'Packer', 'operationalPosition', 0, 1, 450),
+    ('Encargado(a) de Cocina', 'Kitchen Manager', 'operationalPosition', 0, 1, 460),
+    ('Limpieza', 'Cleaning', 'operationalPosition', 0, 1, 470);
+
 
 -- Títulos para Miembros de Junta (optionKey = 'boardMemberTitle')
 INSERT INTO OptionSelection

@@ -27,6 +27,8 @@ public class DTOStaff
     public int RegionId { get; set; } = 0;
     public string RegionName { get; set; } = "";
     public string AreaCode { get; set; } = "";
+    public int? AgencyId { get; set; } = null;
+    public string AgencyName { get; set; } = "";
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null;
     public string? UserName { get; set; } = null; // Nombre del usuario si existe

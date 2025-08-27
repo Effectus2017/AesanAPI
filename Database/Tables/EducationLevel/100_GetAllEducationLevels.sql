@@ -17,7 +17,7 @@ BEGIN
     WHERE (@alls = 1)
         OR
         (@name IS NULL OR Name LIKE '%' + @name + '%')
-    ORDER BY Name, NameEN
+    ORDER BY Id
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*)

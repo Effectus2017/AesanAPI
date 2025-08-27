@@ -19,6 +19,7 @@ public class Staff
     public int CityId { get; set; } = 0;
     public int RegionId { get; set; } = 0;
     public string AreaCode { get; set; } = "";
+    public int? AgencyId { get; set; } = null; // Referencia a la agencia a la que pertenece el personal
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null; // Para convertir staff en usuario
     public DateTime CreatedAt { get; set; }

@@ -22,6 +22,37 @@ public class StaffRepository(
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
+    /// Agrega un parámetro de fecha de forma segura, convirtiendo fechas inválidas a NULL
+    /// </summary>
+    private void AddSafeDateParameter(DynamicParameters parameters, string parameterName, DateTime? dateValue, ParameterDirection direction = ParameterDirection.Input)
+    {
+        if (!dateValue.HasValue)
+        {
+            parameters.Add(parameterName, DBNull.Value, DbType.DateTime, direction);
+            return;
+        }
+
+        var date = dateValue.Value;
+
+        // SQL Server acepta fechas desde 1753-01-01 hasta 9999-12-31
+        if (date >= new DateTime(1753, 1, 1) && date <= new DateTime(9999, 12, 31))
+        {
+            parameters.Add(parameterName, date, DbType.DateTime, direction);
+        }
+        else
+        {
+            // Si la fecha está fuera del rango válido, usar NULL
+            parameters.Add(parameterName, DBNull.Value, DbType.DateTime, direction);
+
+            // Solo loguear si es una fecha realmente problemática (no DateTime.MinValue/MaxValue)
+            if (date != DateTime.MinValue && date != DateTime.MaxValue)
+            {
+                _logger.LogWarning("Fecha fuera del rango SQL Server en {ParameterName}: {DateValue}", parameterName, date);
+            }
+        }
+    }
+
+    /// <summary>
     /// Obtiene un miembro del staff por su ID
     /// </summary>
     /// <param name="id">El ID del miembro del staff</param>
@@ -60,7 +91,7 @@ public class StaffRepository(
     /// <param name="isList">Si es para lista simple (dropdown)</param>
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null)
+    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null, int? agencyId = null)
     {
         try
         {
@@ -71,10 +102,11 @@ public class StaffRepository(
             param.Add("@name", name, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
             param.Add("@staffTypeId", staffTypeId, DbType.Int32);
+            param.Add("@agencyId", agencyId, DbType.Int32);
 
             if (isList)
             {
-                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls, staffTypeId);
+                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls, staffTypeId, agencyId);
 
                 return await _cache.CacheQuery(
                     cacheKey,
@@ -138,18 +170,21 @@ public class StaffRepository(
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@contractStartDate", staffRequest.ContractStartDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@contractEndDate", staffRequest.ContractEndDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime, ParameterDirection.Input);
+            // Fechas seguras para SQL Server
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@agencyId", staffRequest.AgencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@userId", staffRequest.UserId, DbType.String, ParameterDirection.Input);
             parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@reviewDate", staffRequest.ReviewDate, DbType.DateTime, ParameterDirection.Input);
+            // Fecha de revisión segura
+            parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
@@ -167,6 +202,8 @@ public class StaffRepository(
             throw new Exception(ex.Message);
         }
     }
+
+
 
     /// <summary>
     /// Actualiza un miembro del staff existente en la base de datos
@@ -190,19 +227,26 @@ public class StaffRepository(
             parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32);
-            parameters.Add("@contractStartDate", staffRequest.ContractStartDate, DbType.DateTime);
-            parameters.Add("@contractEndDate", staffRequest.ContractEndDate, DbType.DateTime);
-            parameters.Add("@birthDate", staffRequest.BirthDate, DbType.DateTime);
+
+            // Fechas seguras para SQL Server
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime);
+            parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime);
+
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32);
             parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String);
+            parameters.Add("@agencyId", staffRequest.AgencyId, DbType.Int32);
             parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String);
             parameters.Add("@userId", staffRequest.UserId, DbType.String);
             parameters.Add("@isActive", staffRequest.IsActive, DbType.Boolean);
-            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32);
-            parameters.Add("@reviewDate", staffRequest.ReviewDate, DbType.DateTime);
+            parameters.Add("@reviewResultId", staffRequest.ReviewResultId);
+
+            // Fecha de revisión segura
+            parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime);
+
             parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
@@ -359,6 +403,8 @@ public class StaffRepository(
             result.Email,
             result.CityName,
             result.RegionName,
+            result.AgencyId,
+            result.AgencyName,
             result.UserName,
             result.IsActive
         };
@@ -400,6 +446,8 @@ public class StaffRepository(
             result.RegionId,
             result.RegionName,
             result.AreaCode,
+            result.AgencyId,
+            result.AgencyName,
             result.Comments,
             result.UserId,
             result.UserName,
@@ -446,6 +494,8 @@ public class StaffRepository(
             RegionId = item.RegionId ?? 0,
             RegionName = item.RegionName ?? string.Empty,
             AreaCode = item.AreaCode ?? string.Empty,
+            AgencyId = item.AgencyId,
+            AgencyName = item.AgencyName ?? string.Empty,
             Comments = item.Comments,
             UserId = item.UserId,
             UserName = item.UserName,
@@ -491,6 +541,46 @@ public class StaffRepository(
                 NameEn = item.StaffClassificationNameEn ?? string.Empty,
             } : null
         };
+    }
+
+    /// <summary>
+    /// Obtiene todos los miembros del staff de una agencia específica
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <param name="take">El número de miembros del staff a obtener</param>
+    /// <param name="skip">El número de miembros del staff a saltar</param>
+    /// <param name="name">El nombre del miembro del staff a buscar</param>
+    /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
+    /// <returns>Los miembros del staff de la agencia</returns>
+    public async Task<dynamic> GetStaffByAgency(int agencyId, int take, int skip, string name, int? staffTypeId = null)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@agencyId", agencyId, DbType.Int32);
+            param.Add("@take", take, DbType.Int32);
+            param.Add("@skip", skip, DbType.Int32);
+            param.Add("@name", name, DbType.String);
+            param.Add("@staffTypeId", staffTypeId, DbType.Int32);
+
+            var result = await dbConnection.QueryMultipleAsync("100_GetStaffByAgency", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            var data = result.Read<dynamic>().Select(MapStaffFromResult).ToList();
+            var count = result.Read<int>().FirstOrDefault();
+
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", agencyId);
+            throw new Exception(ex.Message);
+        }
     }
 
     /// <summary>

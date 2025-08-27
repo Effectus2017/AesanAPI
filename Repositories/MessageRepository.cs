@@ -55,7 +55,7 @@ namespace Api.Repositories
             }
         }
 
-        public async Task<bool> InsertMessage(MessageRequest messageRequest)
+        public async Task<Message> InsertMessage(MessageRequest messageRequest)
         {
             try
             {
@@ -76,14 +76,24 @@ namespace Api.Repositories
 
                 await dbConnection.ExecuteAsync("100_InsertMessage", parameters, commandType: CommandType.StoredProcedure);
 
-                var messageId = parameters.Get<int>("@id");
+                var newId = parameters.Get<int>("@id");
 
-                return messageId > 0;
+                var getParams = new DynamicParameters();
+                getParams.Add("@id", newId, DbType.Int32);
+                var created = await dbConnection.QueryFirstOrDefaultAsync<Message>(
+                    "100_GetMessageById", getParams, commandType: CommandType.StoredProcedure);
+
+                if (created == null)
+                {
+                    throw new InvalidOperationException("No fue posible recuperar el mensaje insertado.");
+                }
+
+                return created;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al insertar el mensaje");
-                throw new Exception(ex.Message);
+                _logger.LogError(ex, "Error al insertar mensaje");
+                throw;
             }
         }
 

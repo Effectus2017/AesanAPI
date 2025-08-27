@@ -37,6 +37,8 @@ BEGIN
         s.RegionId,
         r.Name AS RegionName,
         s.AreaCode,
+        s.AgencyId,
+        a.Name AS AgencyName,
         s.Comments,
         s.UserId,
         u.FirstName + ' ' + u.FatherLastName AS UserName,
@@ -53,6 +55,7 @@ BEGIN
         LEFT JOIN StaffClassification sc ON s.StaffClassificationId = sc.Id
         LEFT JOIN City c ON s.CityId = c.Id
         LEFT JOIN Region r ON s.RegionId = r.Id
+        LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN AspNetUsers u ON s.UserId = u.Id
     WHERE s.Id = @id;
 END
