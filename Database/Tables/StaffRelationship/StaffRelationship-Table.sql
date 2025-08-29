@@ -24,6 +24,8 @@ CREATE TABLE StaffRelationship
     -- Fecha y hora de creación
     UpdatedAt DATETIME NULL,
     -- Fecha y hora de última actualización
+    Comment NVARCHAR(500) NULL,
+    -- Comentario sobre el cambio de estado o la relación
 
     -- Restricciones
     FOREIGN KEY (StaffId) REFERENCES Staff(Id),

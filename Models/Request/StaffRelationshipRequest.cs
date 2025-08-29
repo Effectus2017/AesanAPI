@@ -47,4 +47,15 @@ public class UpdateStaffRelationshipRequest
     [Required(ErrorMessage = "El tipo de parentesco es requerido")]
     [Range(1, int.MaxValue, ErrorMessage = "El tipo de parentesco debe ser mayor a 0")]
     public int RelationshipTypeId { get; set; }
+
+    /// <summary>
+    /// Estado activo de la relación
+    /// </summary>
+    [Required(ErrorMessage = "El estado activo es requerido")]
+    public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Comentario sobre el cambio realizado
+    /// </summary>
+    public string? Comment { get; set; }
 }

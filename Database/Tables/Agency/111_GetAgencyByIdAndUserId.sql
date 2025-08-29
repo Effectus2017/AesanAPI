@@ -51,6 +51,7 @@ BEGIN
         ai.TaxExemptionTypeId,
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
+        ai.IsDayCareHome,
         a.IsPropietary,
         c.Name as CityName,
         pc.Name as PostalCityName,

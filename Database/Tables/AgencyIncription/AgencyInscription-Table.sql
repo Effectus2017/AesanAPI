@@ -63,6 +63,10 @@ CREATE TABLE AgencyInscription
     -- Is it a National Youth Program?
     -- Si (1) y No (2)
     NationalYouthProgram bit NULL DEFAULT (0),
+    -- ¿Es usted una Agencia Auspiciadora de Hogares? (Solo para programa PACNA)
+    -- Are you a Day Care Homes? (Only for PACNA program)
+    -- Si (1) y No (2)
+    IsDayCareHome bit NULL DEFAULT (0),
     -- Fecha limite para completar la inscripción de los Sitios
     -- Deadline to complete the registration of the Sites
     -- 10 minutos (10), 30 minutos (30), 1 hora (60), 2 horas (120), 3 horas (180), 4 horas (240), 5 horas (300), 6 horas (360), 7 horas (420), 8 horas (480), 9 horas (540), 10 horas (600)
@@ -77,7 +81,8 @@ ADD TaxExemptionStatusId int NULL,
     TypeOfEntityId int NULL,
     TypeOfApplicantId int NULL,
     PublicAllianceContractId int NULL,
-    NationalYouthProgram bit NULL DEFAULT (0);
+    NationalYouthProgram bit NULL DEFAULT (0),
+    IsDayCareHome bit NULL DEFAULT (0);
 GO
 
 ALTER TABLE AgencyInscription

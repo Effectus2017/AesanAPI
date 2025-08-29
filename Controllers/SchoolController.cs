@@ -212,7 +212,7 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
                 return BadRequest("Se requiere justificación para inactivar la escuela");
             }
 
-            var result = await _unitOfWork.SchoolRepository.UpdateSchoolActiveStatus(queryParameters.SchoolId.Value, queryParameters.IsActive.Value, queryParameters.InactiveJustification);
+            var result = await _unitOfWork.SchoolRepository.UpdateSchoolActiveStatus(queryParameters.SchoolId.Value, queryParameters.IsActive, queryParameters.InactiveJustification);
 
             if (result)
             {

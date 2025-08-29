@@ -89,6 +89,7 @@ BEGIN
             ai.TypeOfApplicantId,
             ai.PublicAllianceContractId,
             ai.NationalYouthProgram,
+            ai.IsDayCareHome,
             a.IsActive,
             a.IsListable,
             a.CreatedAt,

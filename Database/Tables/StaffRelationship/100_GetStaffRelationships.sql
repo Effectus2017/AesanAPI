@@ -5,28 +5,29 @@
 -- Incluye información completa de ambos empleados y el tipo de relación
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetStaffRelationships]
-    @staffId INT
+    @staffId INT,
+    @isActive BIT = 1
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    BEGIN TRY
-        -- Validar que el empleado exista
-        IF NOT EXISTS (SELECT 1
+    -- Validar que el empleado exista
+    IF NOT EXISTS (SELECT 1
     FROM Staff
     WHERE Id = @staffId)
         BEGIN
         RAISERROR ('El empleado no existe', 16, 1);
         RETURN;
     END
-        
-        -- Obtener las relaciones donde el empleado es el principal
-                                                                SELECT
+
+    -- Obtener las relaciones donde el empleado es el principal
+            SELECT
             sr.Id,
             sr.StaffId,
             sr.RelatedStaffId,
             sr.RelationshipTypeId,
             sr.IsActive,
+            sr.Comment,
             sr.CreatedAt,
             sr.UpdatedAt,
             -- Información del empleado principal
@@ -54,7 +55,7 @@ BEGIN
             INNER JOIN StaffType st1 ON s1.StaffTypeId = st1.Id
             INNER JOIN StaffType st2 ON s2.StaffTypeId = st2.Id
             INNER JOIN OptionSelection rt ON sr.RelationshipTypeId = rt.Id
-        WHERE sr.StaffId = @staffId AND sr.IsActive = 1
+        WHERE sr.StaffId = @staffId
 
     UNION ALL
 
@@ -65,6 +66,7 @@ BEGIN
             sr.StaffId AS RelatedStaffId,
             sr.RelationshipTypeId,
             sr.IsActive,
+            sr.Comment,
             sr.CreatedAt,
             sr.UpdatedAt,
             -- Información del empleado principal (ahora es el relacionado)
@@ -110,16 +112,8 @@ BEGIN
             INNER JOIN StaffType st1 ON s1.StaffTypeId = st1.Id
             INNER JOIN StaffType st2 ON s2.StaffTypeId = st2.Id
             INNER JOIN OptionSelection rt ON sr.RelationshipTypeId = rt.Id
-        WHERE sr.RelatedStaffId = @staffId AND sr.IsActive = 1
+        WHERE sr.RelatedStaffId = @staffId
 
     ORDER BY RelationshipDirection, RelationshipTypeDisplayOrder, RelatedStaffFullName;
-        
-    END TRY
-    BEGIN CATCH
-        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
-        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
-        DECLARE @ErrorState INT = ERROR_STATE();
-        
-        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
-    END CATCH
 END
+EXEC [dbo].[100_GetStaffRelationships] 1;

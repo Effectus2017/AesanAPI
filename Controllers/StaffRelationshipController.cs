@@ -36,7 +36,7 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
 
                 _logger.LogInformation("Obteniendo relaciones del empleado con ID: {Id}", queryParameters.Id);
 
-                var relationships = await _staffRelationshipRepository.GetRelationshipsByStaffId(queryParameters.Id);
+                var relationships = await _staffRelationshipRepository.GetRelationshipsByStaffId(queryParameters.Id, queryParameters.IsActive);
                 return Ok(relationships);
             }
 
@@ -236,7 +236,8 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
                 }
 
                 // Verificar si el empleado puede tener este tipo de relación
-                var canHaveRelationship = await _staffRelationshipRepository.CanHaveRelationshipType(existingRelationship.Staff!.Id, request.RelationshipTypeId);
+                // Excluimos la relación actual para permitir ediciones
+                var canHaveRelationship = await _staffRelationshipRepository.CanHaveRelationshipType(existingRelationship.Staff!.Id, request.RelationshipTypeId, request.Id);
                 if (!canHaveRelationship)
                 {
                     return BadRequest("El empleado no puede tener este tipo de relación");
@@ -258,7 +259,7 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la relación {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar la relación");
+            return StatusCode(500, ex.Message);
         }
     }
 

@@ -40,6 +40,11 @@ public class StaffRelationship
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>
+    /// Comentario sobre el cambio de estado o la relación
+    /// </summary>
+    public string? Comment { get; set; }
+
     // Propiedades de navegación
     /// <summary>
     /// Empleado principal

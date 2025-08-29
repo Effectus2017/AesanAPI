@@ -13,7 +13,7 @@ public interface IStaffRelationshipRepository
     /// </summary>
     /// <param name="staffId">ID del empleado</param>
     /// <returns>Lista de relaciones del empleado</returns>
-    Task<dynamic> GetRelationshipsByStaffId(int staffId);
+    Task<dynamic> GetRelationshipsByStaffId(int staffId, bool isActive);
 
     /// <summary>
     /// Obtiene una relación específica por su ID
@@ -73,6 +73,7 @@ public interface IStaffRelationshipRepository
     /// </summary>
     /// <param name="staffId">ID del empleado</param>
     /// <param name="relationshipTypeId">ID del tipo de parentesco</param>
+    /// <param name="excludeRelationshipId">ID de la relación a excluir (útil para ediciones)</param>
     /// <returns>True si puede tener ese tipo de relación</returns>
-    Task<bool> CanHaveRelationshipType(int staffId, int relationshipTypeId);
+    Task<bool> CanHaveRelationshipType(int staffId, int relationshipTypeId, int? excludeRelationshipId = null);
 }

@@ -28,7 +28,7 @@ public class AgencyRequest
     public int PostalRegionId { get; set; } = 0;
     public string PostalZipCode { get; set; } = "";
 
-    // Imágen - Logo
+    // Imagen - Logo
     public string? ImageUrl { get; set; }
     public string? Email { get; set; }
     public string Phone { get; set; } = "";
@@ -41,7 +41,7 @@ public class AgencyRequest
 
     // Programas
     public List<int> Programs { get; set; } = [];
-    // Codigo de Agencia
+    // Código de Agencia
     public string? AgencyCode { get; set; }
     // Monitor
     public string? MonitorId { get; set; }
@@ -70,7 +70,7 @@ public class AgencyRequest
     // Have you been denied or disqualified from federal funds in the last seven years?
     // Si (1) y No (2)
     public bool FederalFundsDenied { get; set; } = false;
-    // ¿El Auspiciador ofrece programas atléticos organizados que participan en deportes competitivos interescolares o a nivel comunitario?
+    // ¿El Auspiciador ofrece programas atléticos organizados que participan en deportes competitivos interestelares o a nivel comunitario?
     // Does the Sponsor offer any organized athletic programs engaged in interscholastic or community level competitive sports?
     // Si (1) y No (2)
     public bool OrganizedAthleticPrograms { get; set; } = false;
@@ -102,6 +102,10 @@ public class AgencyRequest
     // Is your institution a National Youth Program?
     // Si (1) y No (2)
     public bool NationalYouthProgram { get; set; } = false;
+    // ¿Es usted una Agencia Auspiciadora de Hogares? (Solo para programa PACNA)
+    // Are you a Day Care Homes? (Only for PACNA program)
+    // Si (1) y No (2)
+    public bool IsDayCareHome { get; set; } = false;
 
     // Nombres
     public string FirstName { get; set; } = "";

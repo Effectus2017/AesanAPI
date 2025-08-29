@@ -44,7 +44,6 @@ public class StaffRepository(
             // Si la fecha está fuera del rango válido, usar NULL
             parameters.Add(parameterName, DBNull.Value, DbType.DateTime, direction);
 
-            // Solo loguear si es una fecha realmente problemática (no DateTime.MinValue/MaxValue)
             if (date != DateTime.MinValue && date != DateTime.MaxValue)
             {
                 _logger.LogWarning("Fecha fuera del rango SQL Server en {ParameterName}: {DateValue}", parameterName, date);
@@ -88,10 +87,11 @@ public class StaffRepository(
     /// <param name="skip">El número de miembros del staff a saltar</param>
     /// <param name="name">El nombre del miembro del staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
-    /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="excludeRelated">Si es true, excluye staff ya relacionado en StaffRelationship (usado en modal Add)</param>
+    /// <param name="isList">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool isList, int? staffTypeId = null, int? agencyId = null)
+    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool isList, int? staffTypeId = null, int? agencyId = null)
     {
         try
         {
@@ -103,29 +103,19 @@ public class StaffRepository(
             param.Add("@alls", alls, DbType.Boolean);
             param.Add("@staffTypeId", staffTypeId, DbType.Int32);
             param.Add("@agencyId", agencyId, DbType.Int32);
+            param.Add("@excludeRelated", excludeRelated, DbType.Boolean);
 
             if (isList)
             {
-                string cacheKey = string.Format(_appSettings.Cache.Keys.Staff, take, skip, name, alls, staffTypeId, agencyId);
+                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
-                return await _cache.CacheQuery(
-                    cacheKey,
-                    async () =>
-                    {
-                        var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
+                if (result == null)
+                {
+                    return null;
+                }
 
-                        if (result == null)
-                        {
-                            return [];
-                        }
-
-                        var data = result.Read<dynamic>().Select(MapStaffListFromResult).ToList();
-                        return data;
-                    },
-                    _logger,
-                    _appSettings,
-                    TimeSpan.FromMinutes(1)
-                );
+                var data = result.Read<dynamic>().Select(MapStaffListFromResult).ToList();
+                return data;
             }
             else
             {

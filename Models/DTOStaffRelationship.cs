@@ -49,6 +49,11 @@ public class DTOStaffRelationship
     /// Fecha de última actualización de la relación
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Comentario sobre el cambio de estado o la relación
+    /// </summary>
+    public string? Comment { get; set; }
 }
 
 /// <summary>

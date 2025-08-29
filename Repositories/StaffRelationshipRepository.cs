@@ -29,7 +29,7 @@ public class StaffRelationshipRepository(
     /// </summary>
     /// <param name="staffId">ID del empleado</param>
     /// <returns>Lista de relaciones del empleado</returns>
-    public async Task<dynamic> GetRelationshipsByStaffId(int staffId)
+    public async Task<dynamic> GetRelationshipsByStaffId(int staffId, bool isActive)
     {
         try
         {
@@ -38,6 +38,7 @@ public class StaffRelationshipRepository(
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@staffId", staffId, DbType.Int32);
+            param.Add("@isActive", isActive, DbType.Boolean); // 1 = activo, 0 = inactivo
 
             var result = await dbConnection.QueryAsync<dynamic>("100_GetStaffRelationships", param, commandType: CommandType.StoredProcedure);
 
@@ -209,6 +210,8 @@ public class StaffRelationshipRepository(
             var param = new DynamicParameters();
             param.Add("@id", request.Id, DbType.Int32);
             param.Add("@relationshipTypeId", request.RelationshipTypeId, DbType.Int32);
+            param.Add("@isActive", request.IsActive, DbType.Boolean);
+            param.Add("@comment", request.Comment, DbType.String);
             param.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_UpdateStaffRelationship", param, commandType: CommandType.StoredProcedure);
@@ -345,8 +348,9 @@ public class StaffRelationshipRepository(
     /// </summary>
     /// <param name="staffId">ID del empleado</param>
     /// <param name="relationshipTypeId">ID del tipo de parentesco</param>
+    /// <param name="excludeRelationshipId">ID de la relación a excluir (útil para ediciones)</param>
     /// <returns>True si puede tener ese tipo de relación</returns>
-    public async Task<bool> CanHaveRelationshipType(int staffId, int relationshipTypeId)
+    public async Task<bool> CanHaveRelationshipType(int staffId, int relationshipTypeId, int? excludeRelationshipId = null)
     {
         try
         {
@@ -356,6 +360,7 @@ public class StaffRelationshipRepository(
             var param = new DynamicParameters();
             param.Add("@staffId", staffId, DbType.Int32);
             param.Add("@relationshipTypeId", relationshipTypeId, DbType.Int32);
+            param.Add("@excludeRelationshipId", excludeRelationshipId, DbType.Int32);
             param.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_CanHaveRelationshipType", param, commandType: CommandType.StoredProcedure);
@@ -403,7 +408,8 @@ public class StaffRelationshipRepository(
             RelationshipTypeEn = r.RelationshipTypeEn,
             IsActive = r.IsActive,
             CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt
+            UpdatedAt = r.UpdatedAt,
+            Comment = r.Comment
         };
     }
 

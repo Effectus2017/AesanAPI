@@ -13,16 +13,16 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    BEGIN TRY
-        -- Si es para lista simple (dropdown), retornar solo los datos
-        IF @isList = 1
-        BEGIN
+    -- Si es para lista simple (dropdown), retornar solo los datos
+    IF @isList = 1
+    BEGIN
         SELECT
             sr.Id,
             sr.StaffId,
             sr.RelatedStaffId,
             sr.RelationshipTypeId,
             sr.IsActive,
+            sr.Comment,
             sr.CreatedAt,
             sr.UpdatedAt,
             -- Información del empleado principal
@@ -53,8 +53,8 @@ BEGIN
             AND (@alls = 1 OR (sr.Id > @skip AND sr.Id <= @skip + @take))
         ORDER BY sr.CreatedAt DESC;
     END
-        ELSE
-        BEGIN
+    ELSE
+    BEGIN
         -- Para tablas con paginación, retornar datos + conteo total
         -- Primero obtener el conteo total
         SELECT COUNT(*) AS TotalCount
@@ -68,6 +68,7 @@ BEGIN
             sr.RelatedStaffId,
             sr.RelationshipTypeId,
             sr.IsActive,
+            sr.Comment,
             sr.CreatedAt,
             sr.UpdatedAt,
             -- Información del empleado principal
@@ -98,13 +99,4 @@ BEGIN
             AND (@alls = 1 OR (sr.Id > @skip AND sr.Id <= @skip + @take))
         ORDER BY sr.CreatedAt DESC;
     END
-        
-    END TRY
-    BEGIN CATCH
-        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
-        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
-        DECLARE @ErrorState INT = ERROR_STATE();
-        
-        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
-    END CATCH
 END

@@ -25,3 +25,12 @@ CREATE TABLE AgencyStatus
 -- Modificación de la tabla AgencyStatus para agregar la columna NameEN
 ALTER TABLE AgencyStatus
 ADD NameEN NVARCHAR(255) NULL;
+
+UPDATE dbo.AgencyStatus SET NameEN = 'Pending Validation' WHERE Id = 1;
+UPDATE dbo.AgencyStatus SET NameEN = 'Orientation' WHERE Id = 2;
+UPDATE dbo.AgencyStatus SET NameEN = 'Pre-operational Visit' WHERE Id = 3;
+UPDATE dbo.AgencyStatus SET NameEN = 'Does not meet requirements' WHERE Id = 4;
+UPDATE dbo.AgencyStatus SET NameEN = 'Meets requirements' WHERE Id = 5;
+UPDATE dbo.AgencyStatus SET NameEN = 'Rejected' WHERE Id = 6;
+UPDATE dbo.AgencyStatus SET NameEN = 'Approved' WHERE Id = 7;
+UPDATE dbo.AgencyStatus SET NameEN = 'Initial Visit' WHERE Id = 8;

@@ -9,6 +9,7 @@
 --   @alls: Si es true, retorna solo lista simple sin paginación
 --   @staffTypeId: ID del tipo de staff para filtrar
 --   @agencyId: ID de la agencia para filtrar
+--   @excludeRelated: Si es true, excluye staff ya relacionados en StaffRelationship (usado en modal Add)
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetAllStaff]
     @take INT = 15,
@@ -16,7 +17,8 @@ CREATE OR ALTER PROCEDURE [dbo].[100_GetAllStaff]
     @name NVARCHAR(255) = NULL,
     @alls BIT = 0,
     @staffTypeId INT = NULL,
-    @agencyId INT = NULL
+    @agencyId INT = NULL,
+    @excludeRelated BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -70,13 +72,27 @@ BEGIN
             LEFT JOIN Agency a ON s.AgencyId = a.Id
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
         WHERE s.IsActive = 1
-            AND (@alls = 1 OR (@name IS NULL OR
+            AND (
+                @alls = 1
+            OR (
+                    (@name IS NULL OR
             s.FirstName LIKE '%' + @name + '%' OR
             s.FatherLastName LIKE '%' + @name + '%' OR
             s.MiddleName LIKE '%' + @name + '%' OR
-            s.MotherLastName LIKE '%' + @name + '%'))
+            s.MotherLastName LIKE '%' + @name + '%')
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+            AND (@excludeRelated = 0 OR s.Id NOT IN (
+                                                                                                                                        SELECT DISTINCT sr.StaffId
+                FROM StaffRelationship sr
+                WHERE sr.IsActive = 1
+            UNION
+                SELECT DISTINCT sr.RelatedStaffId
+                FROM StaffRelationship sr
+                WHERE sr.IsActive = 1
+                    ))
+                )
+            )
         ORDER BY s.FirstName, s.FatherLastName;
     END
     ELSE
@@ -128,13 +144,27 @@ BEGIN
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
             LEFT JOIN Agency a ON s.AgencyId = a.Id
         WHERE s.IsActive = 1
-            AND (@alls = 1 OR (@name IS NULL OR
+            AND (
+                @alls = 1
+            OR (
+                    (@name IS NULL OR
             s.FirstName LIKE '%' + @name + '%' OR
             s.FatherLastName LIKE '%' + @name + '%' OR
             s.MiddleName LIKE '%' + @name + '%' OR
-            s.MotherLastName LIKE '%' + @name + '%'))
+            s.MotherLastName LIKE '%' + @name + '%')
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+            AND (@excludeRelated = 0 OR s.Id NOT IN (
+                                                                                                                                        SELECT DISTINCT sr.StaffId
+                FROM StaffRelationship sr
+                WHERE sr.IsActive = 1
+            UNION
+                SELECT DISTINCT sr.RelatedStaffId
+                FROM StaffRelationship sr
+                WHERE sr.IsActive = 1
+                    ))
+                )
+            )
         ORDER BY s.FirstName, s.FatherLastName
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY;
@@ -143,12 +173,29 @@ BEGIN
         SELECT COUNT(*)
         FROM Staff s
         WHERE s.IsActive = 1
-            AND (@alls = 1 OR (@name IS NULL OR
+            AND (
+                @alls = 1
+            OR (
+                    (@name IS NULL OR
             s.FirstName LIKE '%' + @name + '%' OR
             s.FatherLastName LIKE '%' + @name + '%' OR
             s.MiddleName LIKE '%' + @name + '%' OR
-            s.MotherLastName LIKE '%' + @name + '%'))
+            s.MotherLastName LIKE '%' + @name + '%')
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
-            AND (@agencyId IS NULL OR s.AgencyId = @agencyId);
+            AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+            AND (@excludeRelated = 0 OR s.Id NOT IN (
+                                                                                                                                        SELECT DISTINCT sr.StaffId
+                FROM StaffRelationship sr
+                WHERE sr.IsActive = 1
+            UNION
+                SELECT DISTINCT sr.RelatedStaffId
+                FROM StaffRelationship sr
+                WHERE sr.IsActive = 1
+                    ))
+                )
+            );
     END
 END
+
+
+EXEC [dbo].[100_GetAllStaff] @excludeRelated = 1, @alls = 1, @name = 'Juan', @staffTypeId = 2, @agencyId = 3, @take = 10, @skip = 0;

@@ -73,6 +73,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
                     queryParameters.Skip,
                     queryParameters.Names,
                     queryParameters.Alls,
+                    queryParameters.ExcludeRelated,
                     queryParameters.IsList,
                     queryParameters.StaffTypeId,
                     queryParameters.AgencyId
@@ -84,8 +85,8 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los miembros del staff");
-            return StatusCode(500, "Error al obtener los miembros del staff");
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -254,7 +255,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
             {
                 _logger.LogInformation("Actualizando estado activo del miembro del staff: {StaffId}, isActive: {IsActive}", queryParameters.StaffId, queryParameters.IsActive);
 
-                var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(queryParameters.StaffId, queryParameters.IsActive ?? false);
+                var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(queryParameters.StaffId, queryParameters.IsActive);
 
                 if (result)
                 {

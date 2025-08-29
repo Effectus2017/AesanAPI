@@ -53,6 +53,7 @@ BEGIN
         ai.TypeOfApplicantId,
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
+        ai.IsDayCareHome,
         ai.RejectionJustification,
         ai.AppointmentCoordinated,
         ai.AppointmentDate,
