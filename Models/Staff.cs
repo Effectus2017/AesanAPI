@@ -22,6 +22,12 @@ public class Staff
     public int? AgencyId { get; set; } = null; // Referencia a la agencia a la que pertenece el personal
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null; // Para convertir staff en usuario
+
+    // Campos agregados para el sign-up
+    public string? PhoneNumber { get; set; } = ""; // Número de teléfono del contacto
+    public string? ImageURL { get; set; } = ""; // URL de la imagen/avatar del staff
+                                                // AdministrationTitle removido - ahora se maneja a través de PositionId
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;

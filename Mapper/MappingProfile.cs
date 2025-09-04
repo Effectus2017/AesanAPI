@@ -7,7 +7,7 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<User, DTOUser>().ForMember(_destiny => _destiny.Roles, _source => _source.MapFrom(_mapped => _mapped.UserRoles.Select(x => x.Role.Name).ToList()));
+        CreateMap<User, DTOUser>().ForMember(_destiny => _destiny.Role, _source => _source.MapFrom(_mapped => _mapped.UserRoles.Any() ? _mapped.UserRoles.First().Role : null));
         CreateMap<Role, DTORole>();
     }
 }

@@ -53,8 +53,9 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     /// <param name="userId">ID del usuario</param>
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
+    /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Lista de agencias asignadas al usuario</returns>
-    public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip, bool isList)
+    public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip, bool alls, bool isList)
     {
         try
         {
@@ -63,6 +64,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@userId", userId, DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
 
             if (isList)
             {

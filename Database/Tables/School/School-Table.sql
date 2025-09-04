@@ -68,6 +68,7 @@ CREATE TABLE School
     IsActive BIT NOT NULL DEFAULT 1,
     InactiveJustification NVARCHAR(500) NULL,
     InactiveDate DATETIME NULL,
+    SiteCode NVARCHAR(255) NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
 );

@@ -83,6 +83,11 @@ CREATE TABLE Staff
     ReviewJustification NVARCHAR(500) NULL,
     -- Justificación de la revisión
 
+    ImageURL NVARCHAR(MAX) NULL,
+    -- URL de la imagen del personal
+    PhoneNumber NVARCHAR(50) NULL,
+    -- Número de teléfono del personal
+
     -- Restricciones
     FOREIGN KEY (StatusId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (PositionId) REFERENCES OptionSelection(Id),
@@ -109,3 +114,10 @@ CREATE INDEX IX_Staff_IsActive ON Staff(IsActive);
 CREATE INDEX IX_Staff_CreatedAt ON Staff(CreatedAt);
 CREATE INDEX IX_Staff_ContractStartDate ON Staff(ContractStartDate);
 CREATE INDEX IX_Staff_ContractEndDate ON Staff(ContractEndDate);
+
+
+ALTER TABLE Staff ADD PhoneNumber NVARCHAR(50) NULL;
+ALTER TABLE Staff ADD ImageURL NVARCHAR(MAX) NULL;
+
+CREATE INDEX IX_Staff_PhoneNumber ON Staff(PhoneNumber);
+CREATE INDEX IX_Staff_ImageURL ON Staff(ImageURL);

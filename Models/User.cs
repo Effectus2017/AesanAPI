@@ -4,15 +4,23 @@ namespace Api.Models;
 
 public class User : IdentityUser
 {
-    public string? FirstName { get; set; } = "";
-    public string? MiddleName { get; set; } = "";
-    public string? FatherLastName { get; set; } = "";
-    public string? MotherLastName { get; set; } = "";
-    public string? AdministrationTitle { get; set; } = "";
-    public string? ImageURL { get; set; } = "";
+    // Solo campos esenciales para Identity y autenticación
     public bool IsActive { get; set; } = true;
     public bool IsTemporalPasswordActived { get; set; } = true;
     public DateTime? UpdatedAt { get; set; } = null;
+
+    // Relación con Staff (opcional, para consultas)
+    public virtual Staff? Staff { get; set; }
+
+    // Relación con roles
     public virtual ICollection<UserRole> UserRoles { get; set; } = [];
+
+    // Campos removidos (ahora van en Staff):
+    // - FirstName
+    // - MiddleName  
+    // - FatherLastName
+    // - MotherLastName
+    // - AdministrationTitle
+    // - ImageURL
 }
 

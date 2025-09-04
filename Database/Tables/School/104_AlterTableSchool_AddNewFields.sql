@@ -43,3 +43,14 @@ ADD ReviewDate DATETIME NULL;
 
 ALTER TABLE School
 ADD ReviewJustification NVARCHAR(500) NULL;
+
+-- Agregar campo SiteCode a la tabla School
+ALTER TABLE School
+ADD SiteCode NVARCHAR(20) NULL;
+
+-- Crear índice para mejorar el rendimiento de búsquedas por SiteCode
+CREATE INDEX IX_School_SiteCode ON School(SiteCode);
+
+-- Agregar constraint para asegurar que SiteCode sea único
+ALTER TABLE School
+ADD CONSTRAINT UQ_School_SiteCode UNIQUE (SiteCode);

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Request;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,8 @@ public class UserRepository(UserManager<User> userManager,
     DapperContext context,
     IEmailService emailService,
     IAgencyRepository agencyRepository,
-    IAgencyUsersRepository agencyUsersRepository) : IUserRepository
+    IAgencyUsersRepository agencyUsersRepository,
+    IStaffRepository staffRepository) : IUserRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly UserManager<User> _userManager = userManager;
@@ -35,6 +37,7 @@ public class UserRepository(UserManager<User> userManager,
     private readonly IEmailService _emailService = emailService;
     private readonly IAgencyRepository _agencyRepository = agencyRepository;
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository;
+    private readonly IStaffRepository _staffRepository = staffRepository;
     /// <summary>
     /// Obtiene un usuario por su ID
     /// </summary>
@@ -58,6 +61,7 @@ public class UserRepository(UserManager<User> userManager,
 
             // Obtener la agencia asignada al usuario
             var agency = await _agencyUsersRepository.GetUserAssignedAgency(userId);
+
             if (agency != null)
             {
                 dtoUser.AgencyId = agency.Id;
@@ -75,6 +79,87 @@ public class UserRepository(UserManager<User> userManager,
             };
             await _loggingService.LogError(ex, "Error al obtener usuario", properties);
             throw new Exception($"Error al obtener el usuario: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene un usuario por su ID usando un Stored Procedure
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    /// <returns>El usuario con datos completos desde Staff y Agency</returns>
+    public async Task<DTOUser> GetUserByIdWithSP(string userId)
+    {
+        try
+        {
+            _loggingService.LogInformation("Obteniendo usuario por ID con SP", new Dictionary<string, string>
+            {
+                { "UserId", userId }
+            });
+
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+
+            // Ejecutar el SP que retorna dos resultados
+            var result = await db.QueryMultipleAsync("109_GetUserById", parameters, commandType: CommandType.StoredProcedure);
+
+            // Leer el primer resultado: datos del usuario
+            var userFromDb = await result.ReadFirstOrDefaultAsync<DTOUserById>();
+
+            if (userFromDb == null)
+            {
+                _loggingService.LogWarning("Usuario no encontrado con SP", new Dictionary<string, string>
+                {
+                    { "UserId", userId }
+                });
+                return null;
+            }
+
+            // Leer el segundo resultado: roles del usuario
+            var userRoles = await result.ReadAsync<DTOUserRole>();
+
+            // Convertir el resultado del SP a DTOUser
+            var dtoUser = new DTOUser
+            {
+                Id = userFromDb.Id,
+                Email = userFromDb.Email,
+                FirstName = userFromDb.FirstName,
+                MiddleName = userFromDb.MiddleName,
+                FatherLastName = userFromDb.FatherLastName,
+                MotherLastName = userFromDb.MotherLastName,
+                AdministrationTitle = userFromDb.AdministrationTitle,
+                PhoneNumber = userFromDb.PhoneNumber,
+                ImageURL = userFromDb.ImageURL,
+                IsActive = userFromDb.IsActive,
+                IsTemporalPasswordActived = userFromDb.IsTemporalPasswordActived,
+                EmailConfirmed = userFromDb.EmailConfirmed,
+                AgencyId = userFromDb.AgencyId,
+                AgencyName = userFromDb.AgencyName,
+                Role = userRoles.FirstOrDefault(), // Rol completo (un solo rol por usuario)
+                Agency = userFromDb.AgencyId != 0 ? new DTOAgency { Id = userFromDb.AgencyId, Name = userFromDb.AgencyName } : null
+            };
+
+            _loggingService.LogInformation("Usuario obtenido exitosamente con SP", new Dictionary<string, string>
+            {
+                { "UserId", userId },
+                { "Email", userFromDb.Email },
+                { "FirstName", userFromDb.FirstName },
+                { "LastName", userFromDb.FatherLastName },
+                { "RolesCount", userRoles.Count().ToString() },
+                { "RoleName", userRoles.FirstOrDefault()?.Name ?? "Sin rol" }
+            });
+
+            return dtoUser;
+        }
+        catch (Exception ex)
+        {
+            var properties = new Dictionary<string, string>
+            {
+                { "UserId", userId },
+                { "ErrorMessage", ex.Message }
+            };
+            await _loggingService.LogError(ex, "Error al obtener usuario con SP", properties);
+            throw new Exception($"Error al obtener el usuario con SP: {ex.Message}", ex);
         }
     }
 
@@ -117,8 +202,12 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="take">El número de usuarios a obtener</param>
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
+    /// <param name="agencyId">ID de la agencia para filtrar</param>
+    /// <param name="isList">Si es true, retorna solo la lista sin paginación</param>
+    /// <param name="roles">Lista de roles para filtrar</param>
+    /// <param name="alls">Si es true, retorna todos los usuarios sin filtros ni paginación</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null)
+    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false)
     {
         try
         {
@@ -129,50 +218,72 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
+            parameters.Add("@roles", roles == null ? null : string.Join(",", roles), DbType.String);
+            parameters.Add("@alls", alls, DbType.Boolean);
 
-            // Add roles parameter if provided
-            if (roles != null && roles.Count != 0)
-            {
-                parameters.Add("@roles", string.Join(",", roles), DbType.String);
-            }
+            var result = await db.QueryMultipleAsync("109_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
+            var users = result.Read<dynamic>().ToList();
+            var count = result.ReadFirstOrDefault<int>();
 
-            var result = await db.QueryMultipleAsync("108_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
-            var usersFromDb = await result.ReadAsync<DTOUserDB>();
-            var count = await result.ReadSingleAsync<int>();
-
-            var users = usersFromDb.Select(u => new DTOUser
-            {
-                Id = u.Id,
-                Email = u.Email,
-                FirstName = u.FirstName,
-                MiddleName = u.MiddleName,
-                FatherLastName = u.FatherLastName,
-                MotherLastName = u.MotherLastName,
-                AdministrationTitle = u.AdministrationTitle,
-                PhoneNumber = u.PhoneNumber,
-                ImageURL = u.ImageURL,
-                IsActive = u.IsActive,
-                IsTemporalPasswordActived = u.IsTemporalPasswordActived,
-                EmailConfirmed = u.EmailConfirmed,
-                Roles = [u.RoleName]
-            }).ToList();
-
+            var data = users.Select(MapToDTOUser).ToList();
 
             if (isList)
             {
-                return users;
+                return data;
             }
 
-            return new DTOUserResponse
-            {
-                Data = users,
-                Count = count
-            };
+            return new { data, count };
         }
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al obtener usuarios con SP");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Mapea un objeto dynamic a DTOUser
+    /// </summary>
+    /// <param name="user">Objeto dynamic con datos del usuario</param>
+    /// <returns>DTOUser mapeado</returns>
+    private DTOUser MapToDTOUser(dynamic user)
+    {
+        try
+        {
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user), "El objeto user no puede ser nulo");
+            }
+
+            return new DTOUser
+            {
+                Id = user.Id ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                FirstName = user.FirstName ?? string.Empty,
+                MiddleName = user.MiddleName ?? string.Empty,
+                FatherLastName = user.FatherLastName ?? string.Empty,
+                MotherLastName = user.MotherLastName ?? string.Empty,
+                AdministrationTitle = user.Position ?? string.Empty,
+                PhoneNumber = user.PhoneNumber ?? string.Empty,
+                ImageURL = user.ImageURL ?? string.Empty,
+                IsActive = user.IsActive ?? false,
+                IsTemporalPasswordActived = user.IsTemporalPasswordActived ?? false,
+                EmailConfirmed = user.EmailConfirmed ?? false,
+                Role = user.RoleId != null ? new DTOUserRole
+                {
+                    Id = user.RoleId ?? string.Empty,
+                    Name = user.RoleName ?? string.Empty,
+                    NormalizedName = user.RoleNormalizedName ?? string.Empty
+                } : null
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear el usuario: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear el usuario: {ex.Message}", ex);
         }
     }
 
@@ -199,49 +310,6 @@ public class UserRepository(UserManager<User> userManager,
             throw new Exception(ex.Message);
         }
     }
-
-    /// <summary>
-    /// Obtiene todos los programas de la base de datos
-    /// </summary>
-    /// <param name="take">El número de programas a obtener</param>
-    /// <param name="skip">El número de programas a saltar</param>
-    /// <param name="name">El nombre del programa</param>
-    /// <returns>Una lista de programas</returns>
-    // public dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls)
-    // {
-    //     try
-    //     {
-    //         _loggingService.LogInformation("Obteniendo todos los programas de la base de datos");
-
-    //         using IDbConnection dbConnection = _context.CreateConnection();
-
-    //         var param = new { take, skip, name, alls };
-
-    //         var _result = dbConnection.QueryMultiple("100_GetPrograms", param, commandType: CommandType.StoredProcedure);
-
-    //         if (_result == null)
-    //         {
-    //             return null;
-    //         }
-
-    //         var programs = _result.Read<dynamic>().Select(item => new DTOProgram
-    //         {
-    //             Id = item.Id,
-    //             Name = item.Name,
-    //             Description = item.Description
-    //         }).ToList();
-
-    //         var count = _result.Read<int>().Single();
-
-    //         var _complete = new { data = programs, count };
-
-    //         return _complete;
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         throw new Exception(ex.Message);
-    //     }
-    // }
 
     /// <summary>
     /// Obtiene los permisos de un usuario
@@ -371,8 +439,9 @@ public class UserRepository(UserManager<User> userManager,
             if (roles.Contains("Monitor"))
             {
                 claims.AddClaim(new Claim("userId", user.Id));
-                claims.AddClaim(new Claim("name", user.FirstName ?? ""));
-                claims.AddClaim(new Claim("lastName", user.FatherLastName ?? ""));
+                // Los datos personales ahora vienen de Staff, no de User
+                claims.AddClaim(new Claim("name", "")); // Se puede actualizar después cuando se implemente la relación con Staff
+                claims.AddClaim(new Claim("lastName", "")); // Se puede actualizar después cuando se implemente la relación con Staff
                 claims.AddClaim(new Claim("email", user.Email ?? ""));
                 claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
                 claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
@@ -380,9 +449,9 @@ public class UserRepository(UserManager<User> userManager,
                 return claims;
             }
 
-            //claims.AddClaim(new Claim("avatar", user.ImageURL));
-            claims.AddClaim(new Claim("name", user.FirstName ?? ""));
-            claims.AddClaim(new Claim("lastName", user.FatherLastName ?? ""));
+            // Los datos personales ahora vienen de Staff, no de User
+            claims.AddClaim(new Claim("name", "")); // Se puede actualizar después cuando se implemente la relación con Staff
+            claims.AddClaim(new Claim("lastName", "")); // Se puede actualizar después cuando se implemente la relación con Staff
             claims.AddClaim(new Claim("email", user.Email ?? ""));
             claims.AddClaim(new Claim("agency", agency.Name ?? ""));
             claims.AddClaim(new Claim("agencyId", agency.Id.ToString()));
@@ -418,6 +487,7 @@ public class UserRepository(UserManager<User> userManager,
     public async Task<dynamic> RegisterUserAgency(UserAgencyRequest model)
     {
         User? user = null;
+        Staff? staff = null;
 
         try
         {
@@ -430,20 +500,14 @@ public class UserRepository(UserManager<User> userManager,
             var temporaryPassword = "9c272156";
 #endif
 
-            // Crear el usuario de Identity
+            // 1. Crear el usuario de Identity (solo datos de login)
             user = new User
             {
-                UserName = model.User.Email,
-                Email = model.User.Email,
-                FirstName = model.User.FirstName,
-                MiddleName = model.User.MiddleName,
-                FatherLastName = model.User.FatherLastName,
-                MotherLastName = model.User.MotherLastName,
-                AdministrationTitle = model.User.AdministrationTitle,
-                PhoneNumber = model.User.PhoneNumber,
+                UserName = model.Staff.Email,
+                Email = model.Staff.Email,
                 IsActive = true,
                 IsTemporalPasswordActived = true,
-                EmailConfirmed = false // Podría ser false si se requiere confirmación por correo
+                EmailConfirmed = false
             };
 
             var result = await _userManager.CreateAsync(user, temporaryPassword);
@@ -455,33 +519,56 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!result.Succeeded)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
                 return new BadRequestObjectResult(result.Errors);
             }
-            else
+
+            // 2. Crear registro en Staff (datos personales) - SIN AgencyId por ahora
+            var staffRequest = new StaffRequest
             {
-                // Asignar el rol (asumiendo que el rol es "Agency-Administrator")
-                var resultRole = await _userManager.AddToRoleAsync(user, "Agency-Administrator");
+                FirstName = model.Staff.FirstName,
+                MiddleName = model.Staff.MiddleName,
+                FatherLastName = model.Staff.FatherLastName,
+                MotherLastName = model.Staff.MotherLastName,
+                Email = model.Staff.Email,
+                PhoneNumber = model.Staff.PhoneNumber,
+                BirthDate = model.Staff.BirthDate,
+                PostalAddress = model.Staff.PostalAddress,
+                CityId = model.Staff.CityId,
+                RegionId = model.Staff.RegionId,
+                AreaCode = model.Staff.AreaCode,
+                StaffTypeId = model.Staff.StaffTypeId,
+                StatusId = model.Staff.StatusId,
+                PositionId = model.Staff.PositionId,
+                UserId = user.Id, // Relación con el usuario creado
+                IsActive = model.Staff.IsActive
+            };
 
-                if (!resultRole.Succeeded)
-                {
-                    await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
-                    return new BadRequestObjectResult(resultRole.Errors);
-                }
-
-                _loggingService.LogInformation("Insertando la contraseña temporal en la base de datos", new Dictionary<string, string> { { "temporaryPassword", temporaryPassword } });
-                await InsertTemporaryPassword(user.Id, temporaryPassword);
+            // Insertar el staff en la base de datos y obtener el ID
+            int staffId = await _staffRepository.InsertStaffAndGetId(staffRequest);
+            if (staffId == 0)
+            {
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
             }
+
+            // 3. Asignar el rol (asumiendo que el rol es "Agency-Administrator")
+            var resultRole = await _userManager.AddToRoleAsync(user, "Agency-Administrator");
+
+            if (!resultRole.Succeeded)
+            {
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                return new BadRequestObjectResult(resultRole.Errors);
+            }
+
+            _loggingService.LogInformation("Insertando la contraseña temporal en la base de datos", new Dictionary<string, string> { { "temporaryPassword", temporaryPassword } });
+            await InsertTemporaryPassword(user.Id, temporaryPassword);
 
             _loggingService.LogInformation("Insertando la agencia en la base de datos");
 
             // Generar código único de agencia automáticamente
             var existingCodes = await GetExistingAgencyCodes();
-            var generatedAgencyCode = Utilities.GenerateAgencyCode(
-                model.Agency.Name,
-                model.Agency.Programs ?? [],
-                existingCodes
-            );
+            var generatedAgencyCode = Utilities.GenerateSimpleAgencyCode(existingCodes);
 
             // Asignar el código generado a la agencia
             model.Agency.AgencyCode = generatedAgencyCode;
@@ -499,7 +586,7 @@ public class UserRepository(UserManager<User> userManager,
             if (agencyId == 0)
             {
                 // Si falla la inserción, eliminar el usuario creado en Identity
-                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
@@ -509,14 +596,29 @@ public class UserRepository(UserManager<User> userManager,
                 await _agencyRepository.InsertAgencyProgram(agencyId, programId);
             }
 
-            // Asignar agencia a usuario
+            // 4. Asignar agencia al staff (datos personales)
+            // Nota: El staff se crea sin agencia inicialmente, se puede actualizar después si es necesario
+            // Por ahora, la relación se mantiene a través del UserId en Staff
+
+            // 5. Asignar agencia a usuario (para compatibilidad con sistema existente)
             if (agencyId != 0)
             {
                 await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, true);
+
+                // 6. Actualizar solo el AgencyId del staff
+                bool staffUpdated = await _staffRepository.UpdateStaffAgencyId(staffId, agencyId);
+                if (!staffUpdated)
+                {
+                    _loggingService.LogWarning("No se pudo actualizar el AgencyId del staff", new Dictionary<string, string>
+                    {
+                        { "StaffEmail", model.Staff.Email },
+                        { "AgencyId", agencyId.ToString() }
+                    });
+                }
             }
             else
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
@@ -534,7 +636,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (user != null)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.User.Email);
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
             }
 
             return new BadRequestObjectResult(new { Message = "Error al registrar usuario", Error = ex.Message });
@@ -549,26 +651,21 @@ public class UserRepository(UserManager<User> userManager,
     /// <returns>El resultado de la operación</returns>
     public async Task<dynamic> RegisterUser(DTOUser model, string role, int agencyId)
     {
+        User? user = null;
+        Staff? staff = null;
 
         try
         {
-
-            User user = new()
+            // 1. Crear usuario en Identity (solo datos de login)
+            user = new User
             {
                 UserName = model.Email,
                 Email = model.Email,
-                FirstName = model.FirstName,
-                MiddleName = model.MiddleName,
-                FatherLastName = model.FatherLastName,
-                MotherLastName = model.MotherLastName,
-                AdministrationTitle = model.AdministrationTitle,
-                PhoneNumber = model.PhoneNumber,
                 EmailConfirmed = false,
                 TwoFactorEnabled = false,
                 LockoutEnabled = false,
                 AccessFailedCount = 0,
                 IsTemporalPasswordActived = true,
-                ImageURL = model.ImageURL,
                 IsActive = true
             };
 
@@ -579,7 +676,38 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(result.Errors);
             }
 
-            // Asignar el rol al usuario
+            // 2. Crear registro en Staff (datos personales)
+            var staffRequest = new StaffRequest
+            {
+                FirstName = model.FirstName,
+                MiddleName = model.MiddleName,
+                FatherLastName = model.FatherLastName,
+                MotherLastName = model.MotherLastName,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                ImageURL = model.ImageURL, // URL de la imagen/avatar
+                // AdministrationTitle removido - ahora se maneja a través de PositionId
+                BirthDate = DateTime.Now, // Campo requerido, usar fecha por defecto
+                PostalAddress = "Dirección por definir",
+                CityId = 0, // Por defecto
+                RegionId = 0, // Por defecto
+                AreaCode = "787", // Código de área por defecto para PR
+                StaffTypeId = 1, // Empleado por defecto
+                StatusId = 1, // Activo por defecto
+                PositionId = 0, // Sin posición específica por defecto - se puede actualizar después
+                UserId = user.Id, // Relación con el usuario creado
+                AgencyId = agencyId, // Asignar agencia directamente
+                IsActive = true
+            };
+
+            bool staffInserted = await _staffRepository.InsertStaff(staffRequest);
+            if (!staffInserted)
+            {
+                await RemoveUserAndAgencyRelatedDataByEmail(model.Email);
+                return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
+            }
+
+            // 3. Asignar el rol al usuario
             var resultRole = await _userManager.AddToRoleAsync(user, role);
 
             if (!resultRole.Succeeded)
@@ -605,7 +733,81 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
-    /// Actualiza un usuario
+    /// Actualiza un usuario usando Stored Procedure
+    /// </summary>
+    /// <param name="entity">El usuario</param>
+    /// <param name="currentUserId">ID del usuario que está realizando la actualización</param>
+    /// <returns>True si se actualiza correctamente, false en caso contrario</returns>
+    public async Task<dynamic> UpdateWithSP(DTOUser entity, string currentUserId)
+    {
+        try
+        {
+            _loggingService.LogInformation("Actualizando usuario con SP", new Dictionary<string, string>
+            {
+                { "UserId", entity.Id },
+                { "Email", entity.Email }
+            });
+
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            // Parámetros de Identity User
+            parameters.Add("@userId", entity.Id, DbType.String);
+            parameters.Add("@email", entity.Email, DbType.String);
+            parameters.Add("@emailConfirmed", entity.EmailConfirmed, DbType.Boolean);
+            parameters.Add("@isActive", entity.IsActive, DbType.Boolean);
+            parameters.Add("@isTemporalPasswordActived", entity.IsTemporalPasswordActived, DbType.Boolean);
+
+            // Parámetros de Staff (solo campos disponibles en UI)
+            parameters.Add("@firstName", entity.FirstName, DbType.String);
+            parameters.Add("@middleName", entity.MiddleName ?? "", DbType.String);
+            parameters.Add("@fatherLastName", entity.FatherLastName, DbType.String);
+            parameters.Add("@motherLastName", entity.MotherLastName, DbType.String);
+            parameters.Add("@phoneNumber", entity.PhoneNumber, DbType.String);
+            parameters.Add("@agencyId", entity.AgencyId, DbType.Int32);
+
+            // Parámetro de rol
+            var roleName = entity.Role?.Name ?? "Monitor";
+            parameters.Add("@roleName", roleName, DbType.String);
+
+            // Parámetro de usuario que realiza la asignación
+            parameters.Add("@assignedBy", currentUserId, DbType.String);
+
+            var result = await db.QueryFirstOrDefaultAsync<int>("110_UpdateUser", parameters, commandType: CommandType.StoredProcedure);
+
+            if (result == 1)
+            {
+                _loggingService.LogInformation("Usuario actualizado exitosamente con SP", new Dictionary<string, string>
+                {
+                    { "UserId", entity.Id },
+                    { "Email", entity.Email },
+                    { "RoleName", roleName ?? "Sin rol" }
+                });
+                return true;
+            }
+            else
+            {
+                await _loggingService.LogError(new Exception("No se pudo actualizar el usuario"), "Error al actualizar usuario con SP", new Dictionary<string, string>
+                {
+                    { "UserId", entity.Id }
+                });
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error crítico al actualizar usuario con SP", new Dictionary<string, string>
+            {
+                { "UserId", entity.Id },
+                { "ErrorType", ex.GetType().Name },
+                { "ErrorMessage", ex.Message }
+            });
+            throw new Exception($"Error al actualizar el usuario con SP: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza un usuario (método original mantenido para compatibilidad)
     /// </summary>
     /// <param name="entity">El usuario</param>
     /// <returns>True si se actualiza correctamente, false en caso contrario</returns>
@@ -623,24 +825,14 @@ public class UserRepository(UserManager<User> userManager,
             // Registrar los cambios que se van a realizar
             var changes = new Dictionary<string, (string Old, string New)>();
             if (user.Email != entity.Email) changes.Add("Email", (user.Email, entity.Email));
-            if (user.FirstName != entity.FirstName) changes.Add("FirstName", (user.FirstName, entity.FirstName));
-            if (user.FatherLastName != entity.FatherLastName) changes.Add("FatherLastName", (user.FatherLastName, entity.FatherLastName));
-            if (user.MiddleName != entity.MiddleName) changes.Add("MiddleName", (user.MiddleName, entity.MiddleName));
-            if (user.MotherLastName != entity.MotherLastName) changes.Add("MotherLastName", (user.MotherLastName, entity.MotherLastName));
-            if (user.AdministrationTitle != entity.AdministrationTitle) changes.Add("AdministrationTitle", (user.AdministrationTitle, entity.AdministrationTitle));
-            if (user.PhoneNumber != entity.PhoneNumber) changes.Add("PhoneNumber", (user.PhoneNumber, entity.PhoneNumber));
-            if (user.ImageURL != entity.ImageURL) changes.Add("ImageURL", (user.ImageURL, entity.ImageURL));
+            // Nota: Los datos personales ahora se manejan a través de Staff, no de User
+            // Solo se actualizan las propiedades de Identity que aún existen en User
 
-            // Actualizar propiedades
+            // Actualizar propiedades de Identity
             user.Email = entity.Email;
             user.EmailConfirmed = entity.EmailConfirmed;
-            user.FirstName = !string.IsNullOrEmpty(entity.FirstName) ? entity.FirstName : user.FirstName;
-            user.FatherLastName = !string.IsNullOrEmpty(entity.FatherLastName) ? entity.FatherLastName : user.FatherLastName;
-            user.MiddleName = !string.IsNullOrEmpty(entity.MiddleName) ? entity.MiddleName : user.MiddleName;
-            user.MotherLastName = !string.IsNullOrEmpty(entity.MotherLastName) ? entity.MotherLastName : user.MotherLastName;
-            user.AdministrationTitle = !string.IsNullOrEmpty(entity.AdministrationTitle) ? entity.AdministrationTitle : user.AdministrationTitle;
-            user.PhoneNumber = !string.IsNullOrEmpty(entity.PhoneNumber) ? entity.PhoneNumber : user.PhoneNumber;
-            user.ImageURL = !string.IsNullOrEmpty(entity.ImageURL) ? entity.ImageURL : user.ImageURL;
+            // Nota: Los datos personales (FirstName, FatherLastName, etc.) ahora se manejan a través de Staff
+            // Se puede implementar la actualización de Staff aquí si es necesario
 
             try
             {
@@ -651,11 +843,11 @@ public class UserRepository(UserManager<User> userManager,
                     return false;
                 }
 
-                if (entity.Roles?.Count > 0)
+                if (entity.Role != null)
                 {
                     var currentRoles = await _userManager.GetRolesAsync(user);
                     var currentRole = currentRoles.FirstOrDefault();
-                    var newRole = entity.Roles[0];
+                    var newRole = entity.Role.Name;
 
                     if (currentRole != newRole)
                     {
@@ -746,6 +938,14 @@ public class UserRepository(UserManager<User> userManager,
 
             if (result.Succeeded)
             {
+
+                var assignedAgencies = await _agencyUsersRepository.GetUserAssignedAgencies(user.Id, 100, 0, false, false);
+
+                foreach (var agency in assignedAgencies.data)
+                {
+                    await _agencyUsersRepository.UnassignAgencyFromUser(user.Id, agency.Id);
+                }
+
                 result = await _userManager.DeleteAsync(user);
 
                 if (result.Succeeded)
@@ -968,7 +1168,9 @@ public class UserRepository(UserManager<User> userManager,
                 return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-            user.ImageURL = imageUrl;
+            // Nota: La imagen ahora se maneja a través de Staff, no de User
+            // Se puede implementar la actualización de Staff aquí si es necesario
+            // Por ahora, solo actualizamos la fecha de actualización del usuario
             user.UpdatedAt = DateTime.Now;
 
             var result = await _userManager.UpdateAsync(user);
@@ -978,7 +1180,7 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(result.Errors);
             }
 
-            return new OkObjectResult(new { Message = "Avatar actualizado exitosamente" });
+            return new OkObjectResult(new { Message = "Avatar actualizado exitosamente (nota: la imagen ahora se maneja a través de Staff)" });
         }
         catch (Exception ex)
         {

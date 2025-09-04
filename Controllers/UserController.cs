@@ -53,6 +53,34 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     }
 
     /// <summary>
+    /// Obtiene un usuario por su ID usando Stored Procedure
+    /// </summary>
+    /// <param name="id">El ID del usuario</param>
+    /// <returns>El usuario con datos completos desde Staff y Agency</returns>
+    // [AuthorizePermission("UserView")] // Ejemplo: proteger por permiso granular
+    [HttpGet("get-user-by-id-with-sp")]
+    [SwaggerOperation(Summary = "Obtiene un usuario por su ID usando SP", Description = "Devuelve un usuario completo con datos desde Staff y Agency usando Stored Procedure.")]
+    public async Task<IActionResult> GetUserByIdWithSP([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _loggingService.LogInformation("Obteniendo usuario con SP, ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+                DTOUser _result = await _unitOfWork.UserRepository.GetUserByIdWithSP(queryParameters.UserId);
+                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            }
+
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al obtener usuario con SP", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
     /// Obtiene todos los usuarios de la base de datos
     /// </summary>
     /// <returns>Lista de usuarios</returns>
@@ -124,7 +152,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         {
             if (ModelState.IsValid)
             {
-                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles);
+                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 
@@ -154,13 +182,13 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
             if (ModelState.IsValid)
             {
                 _loggingService.LogInformation("Registrando usuario en la agencia", new Dictionary<string, string> {
-                    { "Email", model.User?.Email ?? "null" },
+                    { "Email", model.Staff?.Email ?? "null" },
                     { "AgencyName", model.Agency?.Name ?? "null" }
                 });
 
-                if (model.Agency == null || model.User == null)
+                if (model.Agency == null || model.Staff == null)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Los campos 'Agency' y 'User' son requeridos." });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Los campos 'Agency' y 'Staff' son requeridos." });
                 }
 
                 var result = await _unitOfWork.UserRepository.RegisterUserAgency(model);
@@ -172,7 +200,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al registrar usuario en agencia", new Dictionary<string, string> {
-                { "Email", model.User?.Email ?? "null" },
+                { "Email", model.Staff?.Email ?? "null" },
                 { "AgencyName", model.Agency?.Name ?? "null" }
             });
             return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
@@ -199,9 +227,9 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
                     return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
                 }
 
-                if (entity.Roles == null || entity.Roles.Count == 0)
+                if (entity.Roles == null)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Roles' es requerido." });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Role' es requerido." });
                 }
 
                 var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles.FirstOrDefault() ?? "Monitor", queryParameters.AgencyId);
@@ -218,7 +246,72 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     }
 
     /// <summary>
-    /// Actualiza modelo de usuario
+    /// Actualiza modelo de usuario usando Stored Procedure
+    /// </summary>
+    /// <param name="entity">Modelo a actualizar</param>
+    /// <response code="200">Modelo no actualizado</response>
+    /// <response code="202">Modelo actualizado correctamente</response>
+    /// <response code="400">Incapaz actualizar el modelo</response>
+    // [AuthorizePermission("UserEdit")] // Ejemplo: proteger por permiso granular
+    [HttpPut("update-user-from-db-with-sp")]
+    public async Task<IActionResult> PutWithSP([FromBody] DTOUser entity, [FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            }
+
+            if (entity == null)
+            {
+                return BadRequest(new { Message = "La entidad no puede ser nula" });
+            }
+
+            _loggingService.LogInformation("Iniciando actualización de usuario con SP", new Dictionary<string, string>
+            {
+                { "User", JsonSerializer.Serialize(entity) },
+                { "UserId", entity.Id },
+                { "Email", entity.Email },
+                { "AgencyId", entity.AgencyId?.ToString() ?? "N/A" }
+            });
+
+            // Obtener el ID del usuario logueado
+            var currentUserId = queryParameters.CurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                _loggingService.LogError(new Exception("No se pudo obtener el ID del usuario logueado"), "Error al obtener usuario logueado");
+                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo identificar al usuario" });
+            }
+
+            bool result = await _unitOfWork.UserRepository.UpdateWithSP(entity, currentUserId);
+
+            if (result)
+            {
+                _loggingService.LogInformation("Usuario actualizado exitosamente con SP", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
+                return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
+            }
+            else
+            {
+                _loggingService.LogError(new Exception("UpdateWithSP retornó false"), "Fallo en actualización de usuario con SP", new Dictionary<string, string>
+                {
+                    { "User", JsonSerializer.Serialize(entity) },
+                    { "UserId", entity.Id }
+                });
+                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar el usuario" });
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { Valid = false, Message = "Error interno al actualizar el usuario", Detail = ex.Message });
+        }
+    }
+
+
+
+    /// <summary>
+    /// Actualiza modelo de usuario (método original mantenido para compatibilidad)
     /// </summary>
     /// <param name="entity">Modelo a actualizar</param>
     /// <response code="200">Modelo no actualizado</response>

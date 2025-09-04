@@ -111,7 +111,7 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
         _logger.LogInformation("Enviando correo de bienvenida a la agencia");
 
         var subject = "¡Gracias por su interés en formar parte del programa de AESAN!";
-        var fullName = $"{userRequest.User.FirstName} {userRequest.User.FatherLastName}";
+        var fullName = $"{userRequest.Staff.FirstName} {userRequest.Staff.FatherLastName}";
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
@@ -125,6 +125,7 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
                 
                 <ul>
                     <li>Haz clic en el botón <strong>""NUTRE""</strong> donde podrá accesar a la plataforma.</li>
+                    <li>Ingrese su correo electrónico como nombre de usuario: <strong>{userRequest.Staff.Email}</strong></li>
                     <li>Luego coloque la contraseña temporera <strong>{temporaryPassword}</strong></li>
                     <li>Deberá completar la sección en el menú principal llamada <strong>""Sitios""</strong>. Aquí deberá incluir todos los Sitios asociados a su Organización o Institución que estarán participando del programa de su interés.</li>
                     <li>Deberá completar la sección en el menú principal llamada <strong>""Personal""</strong> donde listará todos los empleados administrativos y operacionales, así como los miembros de la junta directiva.</li>
@@ -141,7 +142,7 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
                 (787) 759-2000 / Exts. 4625751, 4625753</p>
             </div>";
 
-        await SendEmailWithGmailAsync(userRequest.User.Email, subject, htmlBody);
+        await SendEmailWithGmailAsync(userRequest.Staff.Email, subject, htmlBody);
     }
 
     /// <summary>
@@ -154,7 +155,9 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
         _logger.LogInformation("Enviando correo de confirmación de aprobación de auspiciador");
 
         var subject = "¡Gracias por su interés en formar parte del programa de AESAN!";
-        var fullName = $"{user.FirstName} {user.FatherLastName}";
+        // Nota: Los datos personales ahora vienen de Staff, no de User
+        // Por ahora, usar solo el email del usuario
+        var fullName = "Usuario"; // Se puede actualizar cuando se implemente la relación con Staff
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
@@ -193,13 +196,14 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
     /// <summary>
     /// Envía un correo de confirmación de denegación de auspiciador
     /// </summary>
-    /// <param name="userRequest">Datos del usuario y la agencia</param>
-    public async Task SendDenialSponsorEmail(User user, string rejectionReason)
+    /// <param name="email">Email del usuario</param>
+    /// <param name="fullName">Nombre completo del usuario</param>
+    /// <param name="rejectionReason">Razón del rechazo</param>
+    public async Task SendDenialSponsorEmail(string email, string fullName, string rejectionReason)
     {
         _logger.LogInformation("Enviando correo de confirmación de denegación de auspiciador");
 
         var subject = "Actualización sobre tu aplicación al programa de AESAN";
-        var fullName = $"{user.FirstName} {user.FatherLastName}";
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
@@ -213,15 +217,13 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ISendGridCl
                 <p>Agradecemos sinceramente tu interés en AESAN y te deseamos éxito en tus futuros proyectos.</p>
                 
                 <p>Atentamente,<br>
-                {fullName}<br>
-                {user.AdministrationTitle}<br>
                 Equipo de AESAN<br>
-                {user.Email}<br>
-                {user.PhoneNumber}</p>
+                {email}<br>
+                </p>
             </div>";
 
 #if !DEBUG
-        await SendEmailWithGmailAsync(user.Email, subject, htmlBody);
+        await SendEmailWithGmailAsync(email, subject, htmlBody);
 #endif
 
     }

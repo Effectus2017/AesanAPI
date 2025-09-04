@@ -41,15 +41,15 @@ public static class Utilities
     /// <returns>URL base de la aplicación</returns>
     public static string GetUrl(HttpRequest request)
     {
-        string scheame = request.Scheme;
+        string scheme = request.Scheme;
         string host = request.Host.Value;
-        string fullURL = string.Format($"{scheame}://{host}");
+        string fullURL = string.Format($"{scheme}://{host}");
 
         return fullURL;
     }
 
     /// <summary>
-    /// Obtiene la URL segun appSettings
+    /// Obtiene la URL según appSettings
     /// </summary>
     /// <param name="appSettings">Configuración de la aplicación</param>
     /// <param name="environment">Entorno de la aplicación</param>
@@ -155,6 +155,56 @@ public static class Utilities
     }
 
     /// <summary>
+    /// Genera un código identificador único para un sitio (escuela)
+    /// </summary>
+    /// <param name="agencySequenceNumber">Número de secuencia de la agencia (ejemplo: 001)</param>
+    /// <param name="existingSiteCodes">Códigos de sitios existentes para validar unicidad</param>
+    /// <returns>Código identificador único del sitio</returns>
+    public static string GenerateSiteCode(string agencySequenceNumber, List<string> existingSiteCodes)
+    {
+        // Obtener el siguiente número consecutivo para el sitio
+        int nextSiteNumber = GetNextSiteNumber(existingSiteCodes, agencySequenceNumber);
+
+        // Construir el código final: {secuenciaAgencia}-{numeroSitio}
+        return $"{agencySequenceNumber}-{nextSiteNumber}";
+    }
+
+    /// <summary>
+    /// Genera un código identificador simple para una agencia con formato T-{año}-{secuencia}
+    /// </summary>
+    /// <param name="existingCodes">Códigos existentes para validar unicidad</param>
+    /// <returns>Código identificador único en formato T-{año}-{secuencia}</returns>
+    public static string GenerateSimpleAgencyCode(List<string> existingCodes)
+    {
+        // Obtener el año actual
+        string year = DateTime.Now.Year.ToString();
+
+        // Obtener el siguiente número de secuencia para el año actual
+        string sequence = GetNextSimpleSequenceNumber(existingCodes, year);
+
+        // Construir el código final: T-{año}-{secuencia}
+        return $"T-{year}-{sequence}";
+    }
+
+    /// <summary>
+    /// Obtiene el siguiente número de secuencia para un código simple en formato T-{año}-{secuencia}
+    /// </summary>
+    /// <param name="existingCodes"></param>
+    /// <param name="year"></param>
+    /// <returns></returns>
+    private static string GetNextSimpleSequenceNumber(List<string> existingCodes, string year)
+    {
+        // Filtrar códigos del año actual que siguen el formato T-{año}-{secuencia}
+        var yearCodes = existingCodes.Where(c => c.StartsWith($"T-{year}-"))
+                                   .Select(c => int.Parse(c.Split('-').Last()))
+                                   .DefaultIfEmpty(0)
+                                   .Max();
+
+        // Incrementar el número de secuencia y formatear con ceros a la izquierda
+        return (yearCodes + 1).ToString("D3");
+    }
+
+    /// <summary>
     /// Genera un código único basado en un número aleatorio
     /// </summary>
     /// <returns>Código único en formato T-{numero}</returns>
@@ -218,5 +268,17 @@ public static class Utilities
 
         // Incrementar el número de secuencia y formatear con ceros a la izquierda
         return (yearCodes + 1).ToString("D3");
+    }
+
+    private static int GetNextSiteNumber(List<string> existingSiteCodes, string agencySequenceNumber)
+    {
+        // Filtrar códigos de sitios que pertenecen a la agencia específica
+        var agencySiteCodes = existingSiteCodes.Where(c => c.StartsWith($"{agencySequenceNumber}-"))
+                                              .Select(c => int.Parse(c.Split('-').Last()))
+                                              .DefaultIfEmpty(0)
+                                              .Max();
+
+        // Incrementar el número del sitio
+        return agencySiteCodes + 1;
     }
 }

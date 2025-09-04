@@ -38,7 +38,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32, ParameterDirection.Input);
 
-            var result = await dbConnection.QueryMultipleAsync("111_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("112_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -63,6 +63,30 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             if (_agenciesPrograms.Any())
             {
                 agency.Programs = MapProgramsFromResult(_agenciesPrograms);
+            }
+
+            // Leer el tercer result set: Usuario monitor asociado
+            var _agenciesMonitors = await result.ReadAsync<DTOStaff>();
+
+            if (_agenciesMonitors.Any())
+            {
+                var monitorData = _agenciesMonitors.FirstOrDefault();
+                if (monitorData != null)
+                {
+                    agency.Monitor = monitorData;
+                }
+            }
+
+            // Leer el cuarto result set: Usuario owner (que creó la agencia)
+            var _agenciesOwners = await result.ReadAsync<DTOStaff>();
+
+            if (_agenciesOwners.Any())
+            {
+                var ownerData = _agenciesOwners.FirstOrDefault();
+                if (ownerData != null)
+                {
+                    agency.User = ownerData;
+                }
             }
 
             return agency;
@@ -121,7 +145,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="name">El nombre de la agencia</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary)
     {
         try
         {
@@ -136,32 +160,35 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@statusId", statusId);
             param.Add("@userId", userId);
             param.Add("@alls", alls);
+            param.Add("@isPropietary", isPropietary);
 
             if (isList)
             {
-                using var result = await dbConnection.QueryMultipleAsync("116_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("117_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
                     return new List<dynamic>();
                 }
 
-                var data = result.Read<dynamic>().Select(MapAgencyFromResult).ToList();
+                var agencies = result.Read<dynamic>().ToList();
+                var data = agencies.Select(MapAgencyListFromResult).ToList();
                 return data;
             }
             else
             {
                 // Variables para almacenar los resultados
                 List<dynamic> agencies = [];
-                List<dynamic> agenciesPrograms = [];
+                List<DTOProgram> agenciesPrograms = [];
+                List<DTOStaff> agenciesMonitors = [];
+                List<DTOStaff> agenciesOwners = [];
                 int count = 0;
 
-                // Usar un bloque using para garantizar que el GridReader se cierre correctamente
-                using var result = await dbConnection.QueryMultipleAsync("116_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("117_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
-                    return null;
+                    return new { data = Array.Empty<dynamic>(), count = 0 };
                 }
 
                 // Leer todos los conjuntos de resultados de manera segura
@@ -172,7 +199,17 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
                 if (!result.IsConsumed)
                 {
-                    agenciesPrograms = result.Read<dynamic>().ToList();
+                    agenciesPrograms = result.Read<DTOProgram>().ToList();
+                }
+
+                if (!result.IsConsumed)
+                {
+                    agenciesMonitors = result.Read<DTOStaff>().ToList();
+                }
+
+                if (!result.IsConsumed)
+                {
+                    agenciesOwners = result.Read<DTOStaff>().ToList();
                 }
 
                 if (!result.IsConsumed)
@@ -183,11 +220,38 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 // Procesar los datos después de que el GridReader se haya cerrado
                 var data = agencies.Select(MapAgencyFromResult).ToList();
 
+                // Asignar programas a cada agencia
                 if (agenciesPrograms != null && agenciesPrograms.Count != 0)
                 {
                     foreach (var agency in data)
                     {
-                        agency.Programs = MapProgramsFromResult(agenciesPrograms.Where(ap => ap.AgencyId == agency.Id));
+                        agency.Programs = agenciesPrograms.ToList();
+                    }
+                }
+
+                // Asignar monitors a cada agencia
+                if (agenciesMonitors != null && agenciesMonitors.Count != 0)
+                {
+                    foreach (var agency in data)
+                    {
+                        var monitorData = agenciesMonitors.Where(am => am.AgencyId == agency.Id).FirstOrDefault();
+                        if (monitorData != null)
+                        {
+                            agency.Monitor = monitorData;
+                        }
+                    }
+                }
+
+                // Asignar owners a cada agencia
+                if (agenciesOwners != null && agenciesOwners.Count != 0)
+                {
+                    foreach (var agency in data)
+                    {
+                        var ownerData = agenciesOwners.Where(ao => ao.AgencyId == agency.Id).FirstOrDefault();
+                        if (ownerData != null)
+                        {
+                            agency.User = ownerData;
+                        }
                     }
                 }
 
@@ -199,46 +263,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         catch (Exception ex)
         {
             await _logger.LogError(ex, "Error al obtener las agencias de la base de datos", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Obtiene todas las agencias de la base de datos
-    /// </summary>
-    /// <param name="id">El ID de la agencia</param>
-    /// <param name="name">El nombre de la agencia</param>
-    /// <param name="alls">Si se deben obtener todas las agencias</param>
-    /// <returns>Las agencias</returns>
-    public async Task<dynamic> GetAllAgenciesList(int? id, string name, bool alls)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id);
-            parameters.Add("@name", name);
-            parameters.Add("@alls", alls);
-
-            var result = await dbConnection.QueryMultipleAsync("101_GetAgenciesList", parameters, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            var _agenciesDynamic = await result.ReadAsync<dynamic>();
-
-            if (_agenciesDynamic == null)
-            {
-                return null;
-            }
-
-            return _agenciesDynamic;
-        }
-        catch (Exception ex)
-        {
-            await _logger.LogError(ex, "Error al obtener las agencias", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
             throw;
         }
     }
@@ -444,7 +468,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
             }
 
-            string currentMonitorId = currentAgency.Monitor.Id;
+            string currentMonitorId = currentAgency.Monitor.Id.ToString();
 
             var parameters = new DynamicParameters();
             parameters.Add("@id", agencyId);
@@ -577,35 +601,43 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             if (rowsAffected > 0)
             {
                 DTOAgency agency = await GetAgencyById(agencyId);
+
                 if (agency != null)
                 {
-                    var User = new User
-                    {
-                        Id = agency.User.Id,
-                        FirstName = agency.User.FirstName,
-                        FatherLastName = agency.User.FatherLastName,
-                        Email = agency.Email
-                    };
-
                     if (statusId == 6) // Rechazo
                     {
-                        await _emailService.SendDenialSponsorEmail(User, rejectionJustification ?? "No se proporcionó una justificación");
+                        // Construir el nombre completo del staff
+                        var fullName = $"{agency.User?.FirstName} {agency.User?.FatherLastName}".Trim();
+
+                        if (string.IsNullOrEmpty(fullName))
+                        {
+                            fullName = "Usuario";
+                        }
+
+                        await _emailService.SendDenialSponsorEmail(agency.Email, fullName, rejectionJustification ?? "No se proporcionó una justificación");
                         _logger.LogInformation($"Correo de rechazo enviado a la agencia {agencyId}");
                     }
                     else if (statusId == 7) // Aprobado
                     {
-                        // Obtener el password temporal
-                        var password = await _passwordService.GetTemporaryPassword(User.Id); // Obtain the temporary password
+                        // Obtener el password temporal usando el UserId del staff
+                        var password = await _passwordService.GetTemporaryPassword(agency.User?.UserId); // Use UserId instead of Id
 
                         // Add a null check before sending the email
                         if (!string.IsNullOrEmpty(password))
                         {
+                            // Crear un User temporal para SendApprovalSponsorEmail
+                            var User = new User
+                            {
+                                Id = agency.User?.UserId, // Use UserId (string) instead of Id (int)
+                                Email = agency.Email
+                            };
+
                             await _emailService.SendApprovalSponsorEmail(User, password);
                             _logger.LogInformation($"Correo de aprobación enviado a la agencia {agencyId}");
                         }
                         else
                         {
-                            _logger.LogWarning($"No se pudo obtener la contraseña temporal para la usuario {User.Id}");
+                            _logger.LogWarning($"No se pudo obtener la contraseña temporal para la usuario {agency.User?.UserId}");
                             // Optionally, you might want to handle this scenario differently
                         }
                     }
@@ -804,7 +836,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             {
                 Id = item.Id ?? 0,
                 Name = item.Name ?? string.Empty,
-                StatusId = item.AgencyStatusId ?? 0,
+                StatusId = item.StatusId ?? 0,
                 SdrNumber = item.SdrNumber,
                 UieNumber = item.UieNumber,
                 EinNumber = item.EinNumber,
@@ -836,48 +868,51 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 UpdatedAt = item.UpdatedAt,
                 AgencyCode = item.AgencyCode,
 
-                City = new DTOCity
+                City = item.CityId != null ? new DTOCity
                 {
                     Id = item.CityId ?? 0,
                     Name = item.CityName ?? string.Empty
-                },
-                Region = new DTORegion
+                } : null,
+                Region = item.RegionId != null ? new DTORegion
                 {
                     Id = item.RegionId ?? 0,
                     Name = item.RegionName ?? string.Empty
-                },
-                PostalCity = new DTOCity
+                } : null,
+                PostalCity = item.PostalCityId != null ? new DTOCity
                 {
                     Id = item.PostalCityId ?? 0,
                     Name = item.PostalCityName ?? string.Empty
-                },
-                PostalRegion = new DTORegion
+                } : null,
+                PostalRegion = item.PostalRegionId != null ? new DTORegion
                 {
                     Id = item.PostalRegionId ?? 0,
                     Name = item.PostalRegionName ?? string.Empty
-                },
-                Status = new DTOAgencyStatus
+                } : null,
+                Status = item.StatusId != null ? new DTOAgencyStatus
                 {
-                    Id = item.AgencyStatusId ?? 0,
+                    Id = item.StatusId ?? 0,
                     Name = item.AgencyStatusName ?? string.Empty
-                },
-                User = item.UserId != null ? new DTOUser
+                } : null,
+                User = item.UserId != null ? new DTOStaff
                 {
-                    Id = item.UserId,
+                    Id = item.UserId ?? 0,
                     FirstName = item.UserFirstName ?? string.Empty,
                     MiddleName = item.UserMiddleName ?? string.Empty,
                     FatherLastName = item.UserFatherLastName ?? string.Empty,
                     MotherLastName = item.UserMotherLastName ?? string.Empty,
-                    AdministrationTitle = item.UserAdministrationTitle ?? string.Empty,
+                    PositionId = item.UserPositionId ?? 0,
+                    PositionName = item.UserPositionName ?? string.Empty,
                     Email = item.UserEmail ?? string.Empty,
-                    Phone = item.UserPhone ?? string.Empty,
-                    ImageURL = item.UserImageURL ?? string.Empty,
-                } : null,
-                Monitor = item.MonitorId != null ? new DTOUser
-                {
-                    Id = item.MonitorId,
-                    FirstName = item.MonitorFirstName ?? string.Empty,
-                    FatherLastName = item.MonitorFatherLastName ?? string.Empty,
+                    UserId = item.UserGuid,
+                    ContractStartDate = item.UserContractStartDate,
+                    ContractEndDate = item.UserContractEndDate,
+                    Position = item.UserPositionId != null ? new DTOOptionSelection
+                    {
+                        Id = item.UserPositionId,
+                        Name = item.UserPositionName ?? string.Empty,
+                        NameEN = item.UserPositionNameEN ?? string.Empty,
+                        OptionKey = item.UserPositionOptionKey ?? string.Empty
+                    } : null,
                 } : null
             };
         }
@@ -890,6 +925,35 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             throw new InvalidOperationException($"Error inesperado al mapear la agencia: {ex.Message}", ex);
         }
     }
+
+    /// <summary>
+    /// Mapea una agencia desde un resultado dinámico a un objeto simple con solo Id y Name (para listas)
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>Objeto con Id y Name</returns>
+    private static dynamic MapAgencyListFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            return new
+            {
+                Id = item.Id ?? 0,
+                Name = item.Name ?? string.Empty
+            };
+        }
+        catch (Exception ex)
+        {
+            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+
 
     /// <summary>
     /// Mapea los programas de una agencia desde un resultado dinámico a un DTOProgram  
@@ -912,12 +976,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         {
                             Id = ap.Id,
                             Name = ap.Name,
-                            // NameEN = ap.NameEN,
-                            // Description = ap.Description,
-                            // DescriptionEN = ap.DescriptionEN,
-                            // IsActive = ap.IsActive,
-                            // CreatedAt = ap.CreatedAt,
-                            // UpdatedAt = ap.UpdatedAt
+                            Description = ap.Description ?? string.Empty
                         }
                 )
                 .ToList();
@@ -931,5 +990,4 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             throw new InvalidOperationException($"Error inesperado al mapear los programas: {ex.Message}", ex);
         }
     }
-
 }

@@ -6,10 +6,10 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @rowsAffected INT;
-    
+
     DELETE FROM AgencyUsers
-    WHERE UserId = @userId AND AgencyId = @agencyId AND IsMonitor = 1;
-    
+    WHERE UserId = @userId AND AgencyId = @agencyId;
+
     SET @rowsAffected = @@ROWCOUNT;
     RETURN @rowsAffected;
 END; 

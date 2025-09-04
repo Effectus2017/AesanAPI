@@ -52,17 +52,17 @@ public class DTOAgency
     public DateTime? DeadlineToCompleteRegistration { get; set; } = DateTime.Now;
 
     // Relaciones
-    public DTOCity City { get; set; } = new DTOCity();
-    public DTORegion Region { get; set; } = new DTORegion();
+    public DTOCity? City { get; set; } = new DTOCity();
+    public DTORegion? Region { get; set; } = new DTORegion();
     // Dirección Postal
     public DTOCity? PostalCity { get; set; } = new DTOCity();
     public DTORegion? PostalRegion { get; set; } = new DTORegion();
     // Estatus
-    public DTOAgencyStatus Status { get; set; } = new DTOAgencyStatus();
+    public DTOAgencyStatus? Status { get; set; } = new DTOAgencyStatus();
     // Usuario
-    public DTOUser? User { get; set; } = new DTOUser();
+    public DTOStaff? User { get; set; } = new DTOStaff();
     // Usuario Monitor
-    public DTOUser? Monitor { get; set; } = new DTOUser();
+    public DTOStaff? Monitor { get; set; } = new DTOStaff();
     // Programas
     public List<DTOProgram> Programs { get; set; } = [];
 

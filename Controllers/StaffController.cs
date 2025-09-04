@@ -205,6 +205,55 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     }
 
     /// <summary>
+    /// Actualiza solo la imagen del staff
+    /// </summary>
+    /// <param name="request">Request con el ID del staff y la nueva imagen</param>
+    /// <returns>El resultado de la actualización</returns>
+    [HttpPut("update-image")]
+    [SwaggerOperation(Summary = "Actualiza la imagen del staff", Description = "Actualiza solo la imagen del staff sin modificar otros campos.")]
+    public async Task<IActionResult> UpdateStaffImage([FromBody] StaffImageRequest request)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (request == null)
+                {
+                    return BadRequest("La información de la imagen es requerida");
+                }
+
+                var result = await _unitOfWork.StaffRepository.UpdateStaffImage(request.StaffId, request.ImageUrl);
+
+                if (result)
+                {
+                    _logger.LogInformation("Imagen del staff con ID {StaffId} actualizada exitosamente", request.StaffId);
+
+                    var response = new
+                    {
+                        Success = true,
+                        Message = "Imagen del staff actualizada exitosamente",
+                        StaffId = request.StaffId,
+                        ImageUrl = request.ImageUrl,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    return Ok(response);
+                }
+
+                _logger.LogWarning("No se pudo actualizar la imagen del staff con ID {StaffId}", request.StaffId);
+                return BadRequest("No se pudo actualizar la imagen del staff");
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", request?.StaffId);
+            return StatusCode(500, "Error al actualizar la imagen del staff");
+        }
+    }
+
+    /// <summary>
     /// Convierte un miembro del staff en usuario del sistema
     /// </summary>
     /// <param name="queryParameters">Parámetros que incluyen staffId y userId</param>

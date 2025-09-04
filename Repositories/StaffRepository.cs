@@ -165,6 +165,7 @@ public class StaffRepository(
             parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@phoneNumber", staffRequest.PhoneNumber ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
@@ -185,6 +186,61 @@ public class StaffRepository(
             InvalidateCache(staffId);
 
             return staffId > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar el miembro del staff");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Inserta un nuevo miembro del staff en la base de datos y devuelve el ID creado
+    /// </summary>
+    /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
+    /// <returns>El ID del staff creado, o 0 si falló</returns>
+    public async Task<int> InsertStaffAndGetId(StaffRequest staffRequest)
+    {
+        try
+        {
+            _logger.LogInformation("Insertando nuevo miembro del staff y obteniendo ID");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@middleName", staffRequest.MiddleName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
+            // Fechas seguras para SQL Server
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@phoneNumber", staffRequest.PhoneNumber ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@agencyId", staffRequest.AgencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@userId", staffRequest.UserId, DbType.String, ParameterDirection.Input);
+            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32, ParameterDirection.Input);
+            // Fecha de revisión segura
+            parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
+
+            var staffId = parameters.Get<int>("@id");
+
+            InvalidateCache(staffId);
+
+            return staffId;
         }
         catch (Exception ex)
         {
@@ -224,6 +280,7 @@ public class StaffRepository(
             parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime);
 
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
+            parameters.Add("@phoneNumber", staffRequest.PhoneNumber ?? "", DbType.String);
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32);
@@ -297,6 +354,47 @@ public class StaffRepository(
     }
 
     /// <summary>
+    /// Actualiza solo la imagen del staff
+    /// </summary>
+    /// <param name="staffId">El ID del staff</param>
+    /// <param name="imageUrl">La nueva URL de la imagen</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateStaffImage(int staffId, string? imageUrl)
+    {
+        try
+        {
+            _logger.LogInformation("Actualizando imagen del staff con ID {StaffId}", staffId);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffId", staffId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@imageURL", imageUrl ?? "", DbType.String, ParameterDirection.Input);
+
+            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaffImage", parameters, commandType: CommandType.StoredProcedure);
+
+            if (rowsAffected > 0)
+            {
+                _logger.LogInformation("Imagen del staff con ID {StaffId} actualizada exitosamente", staffId);
+
+                // Invalidar cache para este staff
+                InvalidateCache(staffId);
+
+                return true;
+            }
+            else
+            {
+                _logger.LogWarning("No se pudo actualizar la imagen del staff con ID {StaffId}", staffId);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", staffId);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Convierte un miembro del staff en usuario del sistema
     /// </summary>
     /// <param name="staffId">ID del miembro del staff</param>
@@ -360,6 +458,40 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar estado activo del miembro del staff con ID {StaffId}", staffId);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza solo el AgencyId de un miembro del staff
+    /// </summary>
+    /// <param name="staffId">ID del miembro del staff</param>
+    /// <param name="agencyId">Nuevo ID de agencia</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateStaffAgencyId(int staffId, int agencyId)
+    {
+        try
+        {
+            _logger.LogInformation("Actualizando AgencyId del staff con ID {StaffId} a {AgencyId}", staffId, agencyId);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffId", staffId, DbType.Int32);
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
+
+            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaffAgencyId", parameters, commandType: CommandType.StoredProcedure);
+
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(staffId);
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el AgencyId del staff con ID {StaffId}", staffId);
             throw new Exception(ex.Message);
         }
     }

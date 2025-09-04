@@ -130,6 +130,14 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     {
         try
         {
+            // Generar código único de sitio automáticamente si no se proporciona
+            if (string.IsNullOrEmpty(request.SiteCode) && request.AgencyId.HasValue)
+            {
+                var existingSiteCodes = await GetExistingSiteCodes();
+                var agencySequenceNumber = await GetAgencySequenceNumber(request.AgencyId.Value);
+                request.SiteCode = Utilities.GenerateSiteCode(agencySequenceNumber, existingSiteCodes);
+            }
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
@@ -191,6 +199,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("102_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
@@ -471,6 +480,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 Id = item.Id ?? 0,
                 AgencyId = item.AgencyId ?? 0,
                 Name = item.Name ?? string.Empty,
+                SiteCode = item.SiteCode ?? string.Empty,
                 StartDate = item.StartDate,
                 Address = item.Address ?? string.Empty,
                 CityId = item.CityId ?? 0,
@@ -846,6 +856,54 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}", schoolId);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los códigos de sitios existentes
+    /// </summary>
+    /// <returns>Lista de códigos de sitios existentes</returns>
+    public async Task<List<string>> GetExistingSiteCodes()
+    {
+        try
+        {
+            using IDbConnection connection = _context.CreateConnection();
+            var codes = await connection.QueryAsync<string>("112_GetExistingSiteCodes", commandType: CommandType.StoredProcedure);
+            return codes?.ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener códigos de sitios existentes");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Obtiene el código de secuencia de la agencia para generar códigos de sitios
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>Código de secuencia de la agencia</returns>
+    public async Task<string> GetAgencySequenceNumber(int agencyId)
+    {
+        try
+        {
+            using IDbConnection connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
+
+            var agencyCode = await connection.QueryFirstOrDefaultAsync<string>("112_GetAgencyCodeById", parameters, commandType: CommandType.StoredProcedure);
+
+            if (string.IsNullOrEmpty(agencyCode))
+                return "001"; // Valor por defecto si no se encuentra la agencia
+
+            // Extraer el número de secuencia del código de agencia (última parte después del último guión)
+            var parts = agencyCode.Split('-');
+            return parts.Length > 0 ? parts[^1] : "001";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener código de secuencia de agencia {AgencyId}", agencyId);
+            return "001";
         }
     }
 }

@@ -9,6 +9,7 @@ public class DTOSchool
     public int Id { get; set; }
     public int AgencyId { get; set; }
     public string Name { get; set; }
+    public string? SiteCode { get; set; }
     public DateTime? StartDate { get; set; }
     public string Address { get; set; }
     public int CityId { get; set; }

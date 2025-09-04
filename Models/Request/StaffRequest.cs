@@ -23,7 +23,12 @@ public class StaffRequest
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null;
     public bool IsActive { get; set; } = true;
-    
+
+    // Campos agregados para el sign-up
+    public string? PhoneNumber { get; set; } = ""; // Número de teléfono del contacto
+    public string? ImageURL { get; set; } = ""; // URL de la imagen/avatar del staff
+                                                // AdministrationTitle removido - ahora se maneja a través de PositionId
+
     // Campos de revisión (solo para empleados)
     public int? ReviewResultId { get; set; }
     public DateTime? ReviewDate { get; set; }

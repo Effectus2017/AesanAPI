@@ -32,6 +32,7 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
                     queryParameters.UserId,
                     queryParameters.Take,
                     queryParameters.Skip,
+                    queryParameters.Alls,
                     queryParameters.IsList
                 );
 

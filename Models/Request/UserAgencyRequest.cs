@@ -1,4 +1,5 @@
 namespace Api.Models;
+using Api.Models.Request;
 
 /// ------------------------------------------------------------------------------------------------
 /// Modelo de registro de usuario
@@ -7,5 +8,5 @@ namespace Api.Models;
 public class UserAgencyRequest
 {
     public AgencyRequest Agency { get; set; } = new AgencyRequest();
-    public User User { get; set; } = new User();
+    public StaffRequest Staff { get; set; } = new StaffRequest();  // Cambiado de User a StaffRequest
 }

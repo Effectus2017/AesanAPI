@@ -34,6 +34,13 @@ public interface IStaffRepository
     Task<bool> InsertStaff(StaffRequest staffRequest);
 
     /// <summary>
+    /// Inserta un nuevo miembro del staff en la base de datos y devuelve el ID creado
+    /// </summary>
+    /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
+    /// <returns>El ID del staff creado, o 0 si falló</returns>
+    Task<int> InsertStaffAndGetId(StaffRequest staffRequest);
+
+    /// <summary>
     /// Actualiza un miembro del staff existente en la base de datos
     /// </summary>
     /// <param name="staffRequest">Datos del miembro del staff a actualizar</param>
@@ -46,6 +53,14 @@ public interface IStaffRepository
     /// <param name="id">El ID del miembro del staff a eliminar</param>
     /// <returns>True si se eliminó correctamente</returns>
     Task<bool> DeleteStaff(int id);
+
+    /// <summary>
+    /// Actualiza solo la imagen del staff
+    /// </summary>
+    /// <param name="staffId">El ID del staff</param>
+    /// <param name="imageUrl">La nueva URL de la imagen</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    Task<bool> UpdateStaffImage(int staffId, string? imageUrl);
 
     /// <summary>
     /// Convierte un miembro del staff en usuario del sistema
@@ -62,6 +77,14 @@ public interface IStaffRepository
     /// <param name="isActive">Nuevo estado activo</param>
     /// <returns>True si se actualizó correctamente</returns>
     Task<bool> UpdateStaffActiveStatus(int staffId, bool isActive);
+
+    /// <summary>
+    /// Actualiza solo el AgencyId de un miembro del staff
+    /// </summary>
+    /// <param name="staffId">ID del miembro del staff</param>
+    /// <param name="agencyId">Nuevo ID de agencia</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    Task<bool> UpdateStaffAgencyId(int staffId, int agencyId);
 
     /// <summary>
     /// Obtiene todos los miembros del staff de una agencia específica

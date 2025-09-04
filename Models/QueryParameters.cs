@@ -40,4 +40,6 @@ public class QueryParameters
     public string? Description { get; set; } // Descripción del archivo
     public string? OptionType { get; set; } // Tipo de opción
     public string? OptionKey { get; set; } // Clave de la opción
+    public string? CurrentUserId { get; set; } // ID del usuario actual logueado
+    public bool? IsPropietary { get; set; } // Si es agencia propietaria (NUTRE)
 }
