@@ -30,18 +30,18 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Obteniendo permiso por ID: {Id}", queryParameters.Id);
+                _logger.LogInformation("Obteniendo permiso por ID: {Id}", queryParameters.PermissionId);
 
-                if (queryParameters.Id == 0)
+                if (string.IsNullOrEmpty(queryParameters.PermissionId))
                 {
                     return BadRequest("El ID del permiso es requerido");
                 }
 
-                var result = await _permissionRepository.GetPermissionById(queryParameters.Id);
+                var result = await _permissionRepository.GetPermissionById(queryParameters.PermissionId);
 
                 if (result == null)
                 {
-                    return NotFound($"Permiso con ID {queryParameters.Id} no encontrado");
+                    return NotFound($"Permiso con ID {queryParameters.PermissionId} no encontrado");
                 }
 
                 return Ok(result);
@@ -51,7 +51,46 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el permiso con ID {Id}", queryParameters.Id);
+            _logger.LogError(ex, "Error al obtener el permiso con ID {Id}", queryParameters.PermissionId);
+            return StatusCode(500, "Error interno del servidor al obtener el permiso");
+        }
+    }
+
+    /// <summary>
+    /// Retrieves a specific permission by its ValueKey
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ValueKey</param>
+    /// <returns>El permiso encontrado o NotFound si no se encuentra</returns>
+    [HttpGet("get-permission-by-value-key")]
+    [SwaggerOperation(Summary = "Obtiene un permiso por su ValueKey", Description = "Devuelve un permiso basado en el ValueKey proporcionado.")]
+    public async Task<ActionResult> GetByValueKey([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo permiso por ValueKey: {ValueKey}", queryParameters.ValueKey);
+
+                if (string.IsNullOrEmpty(queryParameters.ValueKey))
+                {
+                    return BadRequest("El ValueKey del permiso es requerido");
+                }
+
+                var result = await _permissionRepository.GetPermissionByValueKey(queryParameters.ValueKey);
+
+                if (result == null)
+                {
+                    return NotFound($"Permiso con ValueKey {queryParameters.ValueKey} no encontrado");
+                }
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el permiso con ValueKey {ValueKey}", queryParameters.ValueKey);
             return StatusCode(500, "Error interno del servidor al obtener el permiso");
         }
     }
@@ -69,7 +108,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                var result = await _permissionRepository.GetAllPermissions(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                var result = await _permissionRepository.GetAllPermissions(queryParameters.Take, queryParameters.Skip, queryParameters.ValueKey, queryParameters.Name, queryParameters.Alls);
 
                 if (result == null)
                 {
@@ -244,21 +283,21 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                var result = await _permissionRepository.DeletePermission(queryParameters.Id);
+                var result = await _permissionRepository.DeletePermission(queryParameters.PermissionId);
                 if (!result)
                 {
-                    _logger.LogWarning("Permiso con ID {Id} no encontrado", queryParameters.Id);
-                    return NotFound($"Permiso con ID {queryParameters.Id} no encontrado");
+                    _logger.LogWarning("Permiso con ID {Id} no encontrado", queryParameters.PermissionId);
+                    return NotFound($"Permiso con ID {queryParameters.PermissionId} no encontrado");
                 }
 
-                _logger.LogInformation("Permiso eliminado con ID: {Id}", queryParameters.Id);
+                _logger.LogInformation("Permiso eliminado con ID: {Id}", queryParameters.PermissionId);
                 return Ok(result);
             }
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el permiso con ID {Id}", queryParameters.Id);
+            _logger.LogError(ex, "Error al eliminar el permiso con ID {Id}", queryParameters.PermissionId);
             return StatusCode(500, "Error interno del servidor al eliminar el permiso");
         }
     }
@@ -276,7 +315,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                if (queryParameters.PermissionId == null)
+                if (string.IsNullOrEmpty(queryParameters.PermissionId))
                 {
                     return BadRequest("PermissionId is required");
                 }
@@ -286,7 +325,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
                     return BadRequest("UserId is required");
                 }
 
-                var result = await _permissionRepository.AssignPermissionToUser(queryParameters.UserId, queryParameters.PermissionId.Value);
+                var result = await _permissionRepository.AssignPermissionToUser(queryParameters.UserId, queryParameters.PermissionId);
 
                 if (result)
                 {
@@ -319,7 +358,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                if (queryParameters.PermissionId == null)
+                if (string.IsNullOrEmpty(queryParameters.PermissionId))
                 {
                     return BadRequest("PermissionId is required");
                 }
@@ -328,7 +367,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
                     return BadRequest("UserId is required");
                 }
 
-                var result = await _permissionRepository.RemovePermissionFromUser(queryParameters.UserId, queryParameters.PermissionId.Value);
+                var result = await _permissionRepository.RemovePermissionFromUser(queryParameters.UserId, queryParameters.PermissionId);
 
                 if (result)
                 {
@@ -361,7 +400,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                if (queryParameters.PermissionId == null)
+                if (string.IsNullOrEmpty(queryParameters.PermissionId))
                 {
                     return BadRequest("PermissionId is required");
                 }
@@ -370,7 +409,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
                     return BadRequest("RoleId is required");
                 }
 
-                var result = await _permissionRepository.AssignPermissionToRole(queryParameters.RoleId, queryParameters.PermissionId.Value);
+                var result = await _permissionRepository.AssignPermissionToRole(queryParameters.RoleId, queryParameters.PermissionId);
 
                 if (result)
                 {
@@ -403,7 +442,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
         {
             if (ModelState.IsValid)
             {
-                if (queryParameters.PermissionId == null)
+                if (string.IsNullOrEmpty(queryParameters.PermissionId))
                 {
                     return BadRequest("PermissionId is required");
                 }
@@ -411,7 +450,7 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
                 {
                     return BadRequest("RoleId is required");
                 }
-                var result = await _permissionRepository.RemovePermissionFromRole(queryParameters.RoleId, queryParameters.PermissionId.Value);
+                var result = await _permissionRepository.RemovePermissionFromRole(queryParameters.RoleId, queryParameters.PermissionId);
 
                 if (result)
                 {

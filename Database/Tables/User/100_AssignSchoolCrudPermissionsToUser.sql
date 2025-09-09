@@ -7,20 +7,20 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Obtener los IDs de los permisos CRUD de escuelas
-    DECLARE @SchoolViewId INT, @SchoolCreateId INT, @SchoolEditId INT, @SchoolDeleteId INT;
+    DECLARE @SchoolViewId VARCHAR(36), @SchoolCreateId VARCHAR(36), @SchoolEditId VARCHAR(36), @SchoolDeleteId VARCHAR(36);
 
     SELECT @SchoolViewId = Id
     FROM Permission
-    WHERE Name = 'SchoolView';
+    WHERE ValueKey = 'school.view';
     SELECT @SchoolCreateId = Id
     FROM Permission
-    WHERE Name = 'SchoolCreate';
+    WHERE ValueKey = 'school.create';
     SELECT @SchoolEditId = Id
     FROM Permission
-    WHERE Name = 'SchoolEdit';
+    WHERE ValueKey = 'school.edit';
     SELECT @SchoolDeleteId = Id
     FROM Permission
-    WHERE Name = 'SchoolDelete';
+    WHERE ValueKey = 'school.delete';
 
     -- Insertar los permisos si no existen ya para el usuario
     IF NOT EXISTS (SELECT 1

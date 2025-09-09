@@ -1,18 +1,21 @@
 -- 100_InsertPermission.sql
 -- Inserta un nuevo permiso
 CREATE OR ALTER PROCEDURE [100_InsertPermission]
+    @valueKey NVARCHAR(50),
     @name NVARCHAR(100),
-    @description NVARCHAR(255) = NULL,
-    @id INT OUTPUT
+    @nameEn NVARCHAR(100) = NULL,
+    @isActive BIT = 1,
+    @id VARCHAR(36) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Permission
-        (Name, Description)
-    VALUES
-        (@name, @description);
+    SET @id = NEWID();
 
-    SET @id = SCOPE_IDENTITY();
+    INSERT INTO Permission
+        (Id, ValueKey, Name, NameEn, IsActive, CreatedAt, UpdatedAt)
+    VALUES
+        (@id, @valueKey, @name, @nameEn, @isActive, GETDATE(), GETDATE());
+
     RETURN @id;
 END; 

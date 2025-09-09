@@ -2,7 +2,7 @@
 -- Remueve un permiso de un rol
 CREATE OR ALTER PROCEDURE [100_RemovePermissionFromRole]
     @roleId NVARCHAR(450),
-    @permissionId INT
+    @permissionId VARCHAR(36)
 AS
 BEGIN
     SET NOCOUNT ON;

@@ -5,8 +5,9 @@ CREATE OR ALTER PROCEDURE [100_GetUserPermissions]
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT p.Id, p.Name, p.Description
+    SELECT p.Id, p.ValueKey, p.Name, p.NameEn, p.IsActive
     FROM Permission p
         INNER JOIN UserPermission up ON p.Id = up.PermissionId
-    WHERE up.UserId = @userId;
+    WHERE up.UserId = @userId
+    ORDER BY p.ValueKey ASC;
 END; 

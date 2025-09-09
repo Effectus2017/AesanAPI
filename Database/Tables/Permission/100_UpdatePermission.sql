@@ -1,18 +1,22 @@
 -- 100_UpdatePermission.sql
 -- Actualiza un permiso existente
 CREATE OR ALTER PROCEDURE [100_UpdatePermission]
-    @id INT,
+    @id VARCHAR(36),
+    @valueKey NVARCHAR(50),
     @name NVARCHAR(100),
-    @description NVARCHAR(255) = NULL
+    @nameEn NVARCHAR(100) = NULL,
+    @isActive BIT = 1
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @rowsaffected INT;
 
     UPDATE Permission
-    SET Description = @description
+    SET ValueKey = @valueKey,
+        Name = @name,
+        NameEn = @nameEn,
+        IsActive = @isActive,
+        UpdatedAt = GETDATE()
     WHERE Id = @id;
 
-    SET @rowsaffected = @@ROWCOUNT;
-    RETURN @rowsaffected;
-END; 
+    SELECT @@ROWCOUNT;
+END;

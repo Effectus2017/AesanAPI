@@ -10,6 +10,8 @@ public class QueryParameters
     public bool IsList { get; set; } = false;
     public bool ExcludeRelated { get; set; } = false;
     public int Id { get; set; }
+    public string? StringId { get; set; } // Para IDs de tipo string (como Permission)
+    public string? ValueKey { get; set; } // Para filtrar por ValueKey en permisos
     public int AgencyId { get; set; }
     public string? AssignedBy { get; set; }
     public int? ProgramId { get; set; }
@@ -18,7 +20,7 @@ public class QueryParameters
     public int? StatusId { get; set; } // ID del estado
     public int? MemberId { get; set; } // ID del miembro
     public int OptionSelectionId { get; set; } // ID de la opción de selección
-    public int? PermissionId { get; set; } // ID del permiso
+    public string? PermissionId { get; set; } // ID del permiso (cambiado a string)
     public string? RoleId { get; set; } // ID del rol
     public bool IsActive { get; set; } = true; // Estado activo
     public string? InactiveJustification { get; set; } // Justificación para inactivación

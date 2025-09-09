@@ -2,10 +2,9 @@
 -- Asigna un permiso a un usuario
 CREATE OR ALTER PROCEDURE [100_AssignPermissionToUser]
     @userId NVARCHAR(450),
-    @permissionId INT
+    @permissionId VARCHAR(36)
 AS
 BEGIN
-    DECLARE @id INT;
     SET NOCOUNT ON;
     IF NOT EXISTS (
         SELECT 1
@@ -17,12 +16,10 @@ BEGIN
             (UserId, PermissionId)
         VALUES
             (@userId, @permissionId);
-        SET @id = SCOPE_IDENTITY();
-        RETURN @id;
+        RETURN @@ROWCOUNT;
     END
     ELSE
     BEGIN
-        SET @id = 0;
-        RETURN @id;
+        RETURN 0;
     END
 END; 

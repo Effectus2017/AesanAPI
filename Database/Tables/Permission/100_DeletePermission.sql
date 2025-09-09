@@ -1,14 +1,15 @@
 -- 100_DeletePermission.sql
--- Elimina un permiso por id
+-- Elimina un permiso (soft delete)
 CREATE OR ALTER PROCEDURE [100_DeletePermission]
-    @id INT
+    @id VARCHAR(36)
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @rowsaffected INT;
 
-    DELETE FROM Permission WHERE Id = @id;
+    UPDATE Permission
+    SET IsActive = 0,
+        UpdatedAt = GETDATE()
+    WHERE Id = @id;
 
-    SET @rowsaffected = @@ROWCOUNT;
-    RETURN @rowsaffected;
-END; 
+    SELECT @@ROWCOUNT;
+END;

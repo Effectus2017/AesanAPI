@@ -257,7 +257,8 @@ public class UserRepository(UserManager<User> userManager,
 
             return new DTOUser
             {
-                Id = user.Id ?? string.Empty,
+                Id = user.Id ?? string.Empty, // Mantener Id original (UserId)
+                StaffId = user.StaffId ?? 0, // Agregar StaffId como campo adicional
                 Email = user.Email ?? string.Empty,
                 FirstName = user.FirstName ?? string.Empty,
                 MiddleName = user.MiddleName ?? string.Empty,
@@ -463,7 +464,7 @@ public class UserRepository(UserManager<User> userManager,
             {
                 foreach (var permission in permissions)
                 {
-                    claims.AddClaim(new Claim("permissions", permission.Name));
+                    claims.AddClaim(new Claim("permissions", permission.ValueKey));
                 }
             }
 
@@ -625,8 +626,9 @@ public class UserRepository(UserManager<User> userManager,
             // Enviar correo con la contraseña temporal y bienvenida
             await _emailService.SendWelcomeAgencyEmail(model, temporaryPassword);
 
-            // Asignar permisos CRUD de escuelas al usuario
+            // Asignar permisos CRUD de escuelas y staff al usuario
             await AssignSchoolCrudPermissionsToUserAsync(user.Id);
+            await AssignStaffCrudPermissionsToUserAsync(user.Id);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }
@@ -1571,8 +1573,21 @@ public class UserRepository(UserManager<User> userManager,
         using var db = _context.CreateConnection();
         // Llama al SP que asigna los permisos CRUD de escuelas
         var parameters = new DynamicParameters();
-        parameters.Add("@userId", userId);
+        parameters.Add("@userId", userId, DbType.String, size: 450);
         await db.ExecuteAsync("100_AssignSchoolCrudPermissionsToUser", parameters, commandType: CommandType.StoredProcedure);
+    }
+
+    /// <summary>
+    /// Asigna permisos CRUD de staff a un usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    private async Task AssignStaffCrudPermissionsToUserAsync(string userId)
+    {
+        using var db = _context.CreateConnection();
+        // Llama al SP que asigna los permisos CRUD de staff
+        var parameters = new DynamicParameters();
+        parameters.Add("@userId", userId, DbType.String, size: 450);
+        await db.ExecuteAsync("100_AssignStaffCrudPermissionsToUser", parameters, commandType: CommandType.StoredProcedure);
     }
 
     /// <summary>

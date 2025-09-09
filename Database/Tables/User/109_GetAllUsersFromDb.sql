@@ -24,7 +24,8 @@ BEGIN
     -- Obtener usuarios con sus roles y datos personales
     SELECT DISTINCT
         u.Id,
-        u.Email,
+        s.Id AS StaffId,
+        s.Email,
         u.UserName,
         s.FirstName,
         s.MiddleName,

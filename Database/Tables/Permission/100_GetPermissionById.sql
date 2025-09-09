@@ -1,12 +1,12 @@
 -- 100_GetPermissionById.sql
 -- Obtiene un permiso por id
 CREATE OR ALTER PROCEDURE [100_GetPermissionById]
-    @id INT
+    @id VARCHAR(36)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT Id, Name, Description
+    SELECT Id, ValueKey, Name, NameEn, IsActive
     FROM Permission
     WHERE Id = @id;
 END; 

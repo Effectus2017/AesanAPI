@@ -3,6 +3,7 @@ namespace Api.Models;
 public class DTOUser
 {
     public string Id { get; set; } = "";
+    public int StaffId { get; set; } = 0; // StaffId para comparación con DTOStaff
     public string Email { get; set; } = "";
     public string FirstName { get; set; } = "";
     public string? MiddleName { get; set; } = "";

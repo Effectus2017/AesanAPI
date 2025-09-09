@@ -5,7 +5,7 @@ CREATE OR ALTER PROCEDURE [100_GetRolePermissions]
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT p.Id, p.Name, p.Description
+    SELECT p.Id, p.ValueKey, p.Name, p.NameEn, p.IsActive
     FROM Permission p
         INNER JOIN RolePermission rp ON p.Id = rp.PermissionId
     WHERE rp.RoleId = @roleId;

@@ -2,10 +2,9 @@
 -- Asigna un permiso a un rol
 CREATE OR ALTER PROCEDURE [100_AssignPermissionToRole]
     @roleId NVARCHAR(450),
-    @permissionId INT
+    @permissionId VARCHAR(36)
 AS
 BEGIN
-    DECLARE @id INT;
     SET NOCOUNT ON;
     IF NOT EXISTS ( SELECT 1
     FROM RolePermission
@@ -16,12 +15,10 @@ BEGIN
             (RoleId, PermissionId)
         VALUES
             (@roleId, @permissionId);
-        SET @id = SCOPE_IDENTITY();
-        RETURN @id;
+        RETURN @@ROWCOUNT;
     END
     ELSE
     BEGIN
-        SET @id = 0;
-        RETURN @id;
+        RETURN 0;
     END
 END; 

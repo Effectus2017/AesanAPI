@@ -78,14 +78,16 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             }
 
             // Leer el cuarto result set: Usuario owner (que creó la agencia)
-            var _agenciesOwners = await result.ReadAsync<DTOStaff>();
+            var _agenciesUser = await result.ReadAsync<dynamic>();
 
-            if (_agenciesOwners.Any())
+            if (_agenciesUser.Any())
             {
-                var ownerData = _agenciesOwners.FirstOrDefault();
-                if (ownerData != null)
+                var user = _agenciesUser.FirstOrDefault();
+
+                if (user != null)
                 {
-                    agency.User = ownerData;
+                    // Mapear correctamente los datos del owner con la información de Position
+                    agency.User = MapStaffFromResult(user);
                 }
             }
 
@@ -988,6 +990,64 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Error inesperado al mapear los programas: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Mapea un Staff desde un resultado dinámico con información completa de Position
+    /// </summary>
+    /// <param name="staffData">Datos del staff desde el stored procedure</param>
+    /// <returns>DTOStaff con información completa de Position</returns>
+    private static DTOStaff MapStaffFromResult(dynamic staffData)
+    {
+        try
+        {
+            if (staffData == null)
+            {
+                throw new ArgumentNullException(nameof(staffData), "El objeto staffData no puede ser nulo");
+            }
+
+            return new DTOStaff
+            {
+                Id = staffData.Id ?? 0,
+                FirstName = staffData.FirstName ?? string.Empty,
+                MiddleName = staffData.MiddleName ?? string.Empty,
+                FatherLastName = staffData.FatherLastName ?? string.Empty,
+                MotherLastName = staffData.MotherLastName ?? string.Empty,
+                PositionId = staffData.PositionId ?? 0,
+                PositionName = staffData.PositionName ?? string.Empty,
+                ContractStartDate = staffData.ContractStartDate,
+                ContractEndDate = staffData.ContractEndDate,
+                Email = staffData.Email ?? string.Empty,
+                BirthDate = staffData.BirthDate ?? DateTime.MinValue,
+                StatusId = staffData.StatusId ?? 0,
+                StatusName = staffData.StatusName ?? string.Empty,
+                UserId = staffData.UserId,
+                // Mapear la información completa de Position
+                Position = staffData.PositionId != null && staffData.PositionId > 0 ? new DTOOptionSelection
+                {
+                    Id = staffData.PositionId,
+                    Name = staffData.PositionName ?? string.Empty,
+                    NameEN = staffData.PositionNameEN ?? string.Empty,
+                    OptionKey = staffData.PositionOptionKey ?? string.Empty
+                } : null,
+                // Mapear la información de Status (sin OptionKey ya que no viene del SP)
+                Status = staffData.StatusId != null && staffData.StatusId > 0 ? new DTOOptionSelection
+                {
+                    Id = staffData.StatusId,
+                    Name = staffData.StatusName ?? string.Empty,
+                    NameEN = staffData.StatusNameEN ?? string.Empty,
+                    OptionKey = string.Empty // No viene del stored procedure
+                } : null
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear el staff: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear el staff: {ex.Message}", ex);
         }
     }
 }
