@@ -3,17 +3,19 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : ISchoolRepository
+public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISchoolRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SchoolRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene una escuela por su ID
@@ -40,10 +42,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 return null;
             }
 
-            var data = MapSchoolFromResult(school);
-            //data.Facilities = facilities.Select(MapFacilityFromResult).ToList();
-            data.Satellites = satellites.Select(MapSatelliteFromResult).ToList();
-            data.EducationLevels = educationLevels.Select(MapEducationLevelFromResult).ToList();
+            var data = _mappingService.MapSchool(school);
+            //data.Facilities = facilities.Select(_mappingService.MapFacility).ToList();
+            data.Satellites = satellites.Select(_mappingService.MapSatelliteSchool).ToList();
+            data.EducationLevels = educationLevels.Select(_mappingService.MapEducationLevel).ToList();
             return data;
         }
         catch (Exception ex)
@@ -90,7 +92,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapSchoolListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapSchoolList).ToList();
                         return data;
                     },
                     _logger,
@@ -109,7 +111,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
                 var schoolsDynamic = result.Read<dynamic>().ToList();
                 var count = result.ReadFirstOrDefault<int>();
-                var data = schoolsDynamic.Select(MapSchoolFromResult).ToList();
+                var data = schoolsDynamic.Select(_mappingService.MapSchool).ToList();
                 return new { data, count };
             }
         }
@@ -461,297 +463,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
     }
 
-    /// <summary>
-    /// Maps a dynamic result to a DTOSchool object
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSchool</returns>
-    private static DTOSchool MapSchoolFromResult(dynamic item)
-    {
-        try
-        {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
-            }
-
-            return new DTOSchool
-            {
-                Id = item.Id ?? 0,
-                AgencyId = item.AgencyId ?? 0,
-                Name = item.Name ?? string.Empty,
-                SiteCode = item.SiteCode ?? string.Empty,
-                StartDate = item.StartDate,
-                Address = item.Address ?? string.Empty,
-                CityId = item.CityId ?? 0,
-                RegionId = item.RegionId ?? 0,
-                ZipCode = item.ZipCode ?? string.Empty,
-                Latitude = item.Latitude,
-                Longitude = item.Longitude,
-                PostalAddress = item.PostalAddress ?? string.Empty,
-                PostalCityId = item.PostalCityId,
-                PostalRegionId = item.PostalRegionId,
-                PostalZipCode = item.PostalZipCode ?? string.Empty,
-                SameAsPhysicalAddress = item.SameAsPhysicalAddress ?? false,
-                OrganizationTypeId = item.OrganizationTypeId ?? 0,
-                CenterTypeId = item.CenterTypeId,
-                NonProfit = item.NonProfit ?? false,
-                BaseYear = item.BaseYear,
-                RenewalYear = item.RenewalYear,
-                //EducationLevelId = item.EducationLevelId ?? 0,
-                OperatingFromDate = item.OperatingFromDate,
-                OperatingToDate = item.OperatingToDate,
-                OperatingDaysCalculated = item.OperatingDaysCalculated,
-                KitchenTypeId = item.KitchenTypeId,
-                GroupTypeId = item.GroupTypeId,
-                DeliveryTypeId = item.DeliveryTypeId,
-                SponsorTypeId = item.SponsorTypeId,
-                ApplicantTypeId = item.ApplicantTypeId,
-                ResidentialTypeId = item.ResidentialTypeId,
-                OperatingPolicyId = item.OperatingPolicyId,
-                AreaTypeId = item.AreaTypeId,
-                HasWarehouse = item.HasWarehouse ?? false,
-                HasDiningRoom = item.HasDiningRoom ?? false,
-                AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
-                SitePhone = item.SitePhone ?? string.Empty,
-                Extension = item.Extension ?? string.Empty,
-                MobilePhone = item.MobilePhone ?? string.Empty,
-                Breakfast = item.Breakfast ?? false,
-                BreakfastFrom = item.BreakfastFrom,
-                BreakfastTo = item.BreakfastTo,
-                Lunch = item.Lunch ?? false,
-                LunchFrom = item.LunchFrom,
-                LunchTo = item.LunchTo,
-                Snack = item.Snack ?? false,
-                SnackFrom = item.SnackFrom,
-                SnackTo = item.SnackTo,
-                Dinner = item.Dinner ?? false,
-                DinnerFrom = item.DinnerFrom,
-                DinnerTo = item.DinnerTo,
-                SnackNight = item.SnackNight ?? false,
-                SnackNightFrom = item.SnackNightFrom,
-                SnackNightTo = item.SnackNightTo,
-                CommunityId = item.CommunityId,
-                WalkersId = item.WalkersId,
-                SiteTypeId = item.SiteTypeId,
-                ExperienceId = item.ExperienceId,
-                ReviewResultId = item.ReviewResultId,
-                ReviewDate = item.ReviewDate,
-                ReviewJustification = item.ReviewJustification ?? string.Empty,
-                IsActive = item.IsActive ?? true,
-                InactiveJustification = item.InactiveJustification ?? string.Empty,
-                InactiveDate = item.InactiveDate,
-                CreatedAt = item.CreatedAt ?? DateTime.MinValue,
-                UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
-                IsMainSchool = item.IsMainSchool ?? false,
-                MainSchoolId = item.MainSchoolId ?? 0,
-                MainSchoolName = item.MainSchoolName ?? string.Empty,
-                // Nested catalogs (if needed, can be mapped here)
-                City = item.CityId != null ? new DTOCity
-                {
-                    Id = item.CityId,
-                    Name = item.CityName ?? string.Empty
-                } : null,
-                Region = item.RegionId != null ? new DTORegion
-                {
-                    Id = item.RegionId,
-                    Name = item.RegionName ?? string.Empty
-                } : null,
-                PostalCity = item.PostalCityId != null ? new DTOCity
-                {
-                    Id = item.PostalCityId,
-                    Name = item.PostalCityName ?? string.Empty
-                } : null,
-                PostalRegion = item.PostalRegionId != null ? new DTORegion
-                {
-                    Id = item.PostalRegionId,
-                    Name = item.PostalRegionName ?? string.Empty
-                } : null,
-                OrganizationType = item.OrganizationTypeId != null
-                    ? new DTOOrganizationType
-                    {
-                        Id = item.OrganizationTypeId,
-                        Name = item.OrganizationTypeName ?? string.Empty,
-                        NameEN = item.OrganizationTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                KitchenType = item.KitchenTypeId != null
-                    ? new DTOKitchenType
-                    {
-                        Id = item.KitchenTypeId,
-                        Name = item.KitchenTypeName ?? string.Empty,
-                        NameEN = item.KitchenTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                GroupType = item.GroupTypeId != null
-                    ? new DTOGroupType
-                    {
-                        Id = item.GroupTypeId,
-                        Name = item.GroupTypeName ?? string.Empty,
-                        NameEN = item.GroupTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                DeliveryType = item.DeliveryTypeId != null
-                    ? new DTODeliveryType
-                    {
-                        Id = item.DeliveryTypeId,
-                        Name = item.DeliveryTypeName ?? string.Empty,
-                        NameEN = item.DeliveryTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                SponsorType = item.SponsorTypeId != null
-                    ? new DTOSponsorType
-                    {
-                        Id = item.SponsorTypeId,
-                        Name = item.SponsorTypeName ?? string.Empty,
-                        NameEN = item.SponsorTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                ApplicantType = item.ApplicantTypeId != null
-                    ? new DTOApplicantType
-                    {
-                        Id = item.ApplicantTypeId,
-                        Name = item.ApplicantTypeName ?? string.Empty,
-                        NameEN = item.ApplicantTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                ResidentialType = item.ResidentialTypeId != null
-                    ? new DTOResidentialType
-                    {
-                        Id = item.ResidentialTypeId,
-                        Name = item.ResidentialTypeName ?? string.Empty,
-                        NameEN = item.ResidentialTypeNameEN ?? string.Empty
-                    }
-                    : null,
-                OperatingPolicy = item.OperatingPolicyId != null
-                    ? new DTOOperatingPolicy
-                    {
-                        Id = item.OperatingPolicyId,
-                        Name = item.OperatingPolicyName ?? string.Empty,
-                        NameEN = item.OperatingPolicyNameEN ?? string.Empty
-                    }
-                    : null,
-                CenterType = item.CenterTypeId != null ? new DTOCenterType
-                {
-                    Id = item.CenterTypeId,
-                    Name = item.CenterName ?? string.Empty,
-                    NameEN = item.CenterNameEN ?? string.Empty
-                } : null,
-                AreaType = item.AreaTypeId != null ? new DTOAreaType
-                {
-                    Id = item.AreaTypeId,
-                    Name = item.AreaTypeName ?? string.Empty,
-                    NameEN = item.AreaTypeNameEN ?? string.Empty
-                } : null,
-                Agency = item.AgencyId != null ? new DTOAgency
-                {
-                    Id = item.AgencyId,
-                    Name = item.AgencyName ?? string.Empty
-                } : null,
-                MainSchool = item.MainSchoolId != null ? new DTOSchool
-                {
-                    Id = item.MainSchoolId,
-                    Name = item.MainSchoolName ?? string.Empty
-                } : null
-            };
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-        {
-            throw new InvalidOperationException($"Error mapping school: Property not found or invalid. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Unexpected error mapping school: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Maps a dynamic result to a DTOSchool object
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSchool</returns>
-    private static DTOSchool MapSchoolListFromResult(dynamic item)
-    {
-        try
-        {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
-            }
-
-            return new DTOSchool
-            {
-                Id = item.Id ?? 0,
-                AgencyId = item.AgencyId ?? 0,
-                Name = item.Name ?? string.Empty,
-                IsMainSchool = item.IsMainSchool ?? false,
-                MainSchoolId = item.MainSchoolId ?? 0,
-                MainSchool = item.MainSchoolId != null ? new DTOSchool
-                {
-                    Id = item.MainSchoolId,
-                    Name = item.MainSchoolName ?? string.Empty
-                } : null
-            };
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-        {
-            throw new InvalidOperationException($"Error mapping school: Property not found or invalid. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Unexpected error mapping school: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Maps a dynamic result to a DTOFacility object
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOFacility</returns>
-    private static DTOFacility MapFacilityFromResult(dynamic item)
-    {
-        return new DTOFacility
-        {
-            Id = item.Id,
-            Name = item.Name
-        };
-    }
-
-    /// <summary>
-    /// Maps a dynamic result to a DTOSatelliteSchool object
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSatelliteSchool</returns>
-    private static DTOSatelliteSchool MapSatelliteFromResult(dynamic item)
-    {
-        return new DTOSatelliteSchool
-        {
-            Id = item.Id,
-            MainSchoolId = item.MainSchoolId,
-            SatelliteSchoolId = item.SatelliteSchoolId,
-            SatelliteSchoolName = item.SatelliteSchoolName,
-            AssignmentDate = item.AssignmentDate,
-            Comment = item.Comment,
-            IsActive = item.IsActive,
-            CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt
-        };
-    }
-
-    /// <summary>
-    /// Maps a dynamic result to a DTOEducationLevel object
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOEducationLevel</returns>
-    private static DTOEducationLevel MapEducationLevelFromResult(dynamic item)
-    {
-        return new DTOEducationLevel
-        {
-            Id = item.Id,
-            Name = item.Name ?? string.Empty,
-            NameEN = item.NameEN ?? string.Empty
-        };
-    }
 
     /// <summary>
     /// Inserta múltiples niveles educativos para una escuela

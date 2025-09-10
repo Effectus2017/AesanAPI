@@ -3,13 +3,14 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, IEmailService emailService, Lazy<IUserRepository> userRepository, Lazy<IAgencyRepository> agencyRepository) : IAgencyUsersRepository
+public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, IEmailService emailService, Lazy<IUserRepository> userRepository, Lazy<IAgencyRepository> agencyRepository, MappingService mappingService) : IAgencyUsersRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyUsersRepository> _logger = logger;
@@ -18,6 +19,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
     private readonly Lazy<IUserRepository> _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene la agencia asignada a un usuario
@@ -80,7 +82,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapAgencyUserListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapAgencyUserList).ToList();
                         return data;
                     },
                     _logger,
@@ -97,7 +99,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapAgencyUserFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapAgencyUser).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -238,39 +240,4 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         _logger.LogInformation("Cache invalidado para AgencyUsers Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de usuarios de agencia
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de usuarios de agencia</returns>
-    private static DTOAgencyUser MapAgencyUserListFromResult(dynamic result)
-    {
-        return new DTOAgencyUser
-        {
-            Id = result.Id,
-            Name = result.Name
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un usuario de agencia
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Usuario de agencia</returns>
-    private static DTOAgencyUser MapAgencyUserFromResult(dynamic result)
-    {
-        return new DTOAgencyUser
-        {
-            Id = result.Id,
-            Name = result.Name,
-            Address = result.Address,
-            Phone = result.Phone,
-            Email = result.Email,
-            IsOwner = result.IsOwner,
-            IsMonitor = result.IsMonitor,
-            IsActive = result.IsActive,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt,
-        };
-    }
 }

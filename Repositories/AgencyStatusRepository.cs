@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,12 +11,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyStatusRepository
+public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAgencyStatusRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<AgencyStatusRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un estado de agencia por su ID.
@@ -73,7 +75,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapAgencyStatusFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapAgencyStatus).ToList();
                         return data;
                     },
                     _logger,
@@ -90,7 +92,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapAgencyStatusFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapAgencyStatus).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -251,18 +253,4 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         _logger.LogInformation("Cache invalidado para AgencyStatus Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a un estado de agencia
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Estado de agencia</returns>
-    private static DTOAgencyStatus MapAgencyStatusFromResult(dynamic result)
-    {
-        return new DTOAgencyStatus
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
 }

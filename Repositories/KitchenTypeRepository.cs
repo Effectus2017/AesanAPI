@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,12 +11,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IKitchenTypeRepository
+public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IKitchenTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<KitchenTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de cocina por su ID
@@ -74,7 +76,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapKitchenTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapKitchenTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -91,7 +93,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapKitchenTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapKitchenType).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -246,35 +248,4 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         _logger.LogInformation("Cache invalidado para KitchenType Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de tipos de cocina
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de tipos de cocina</returns> 
-    private static DTOKitchenType MapKitchenTypeListFromResult(dynamic result)
-    {
-        return new DTOKitchenType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un tipo de cocina
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Tipo de cocina</returns>
-    private static DTOKitchenType MapKitchenTypeFromResult(dynamic result)
-    {
-        return new DTOKitchenType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder,
-        };
-    }
 }

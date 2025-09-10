@@ -7,6 +7,7 @@ using Api.Mapper;
 using Api.Models;
 using Api.Repositories;
 using Api.Services;
+using Api.Services.Mappers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -155,6 +156,19 @@ builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
 builder.Services.AddScoped<ISchoolStaffRepository, SchoolStaffRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Registrar mappers
+builder.Services.AddScoped<AgencyMapper>();
+builder.Services.AddScoped<SchoolMapper>();
+builder.Services.AddScoped<StaffClassificationMapper>();
+builder.Services.AddScoped<KitchenTypeMapper>();
+builder.Services.AddScoped<GroupTypeMapper>();
+builder.Services.AddScoped<OperatingPeriodMapper>();
+builder.Services.AddScoped<OperatingPolicyMapper>();
+builder.Services.AddScoped<StaffRelationshipMapper>();
+builder.Services.AddScoped<SponsorTypeMapper>();
+
+builder.Services.AddScoped<MappingService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();

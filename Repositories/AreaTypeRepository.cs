@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.DTO;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -11,12 +12,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAreaTypeRepository
+public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAreaTypeRepository
 {
     private readonly DapperContext _context = context;
     private readonly ILogger<AreaTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     public async Task<dynamic> GetAreaTypeById(int id)
     {
@@ -56,7 +58,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
                     {
                         using var result = await db.QueryMultipleAsync("100_GetAllAreaTypes", parameters, commandType: CommandType.StoredProcedure);
                         if (result == null) { return []; }
-                        var data = result.Read<dynamic>().Select(MapAreaTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapAreaTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -68,7 +70,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
             {
                 using var result = await db.QueryMultipleAsync("100_GetAllAreaTypes", parameters, commandType: CommandType.StoredProcedure);
                 if (result == null) { return null; }
-                var data = result.Read<dynamic>().Select(MapAreaTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapAreaType).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -140,25 +142,4 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
     }
 
-    private static DTOAreaType MapAreaTypeListFromResult(dynamic result)
-    {
-        return new DTOAreaType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN
-        };
-    }
-
-    private static DTOAreaType MapAreaTypeFromResult(dynamic result)
-    {
-        return new DTOAreaType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder
-        };
-    }
 }

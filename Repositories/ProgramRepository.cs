@@ -3,18 +3,20 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, ISchoolRepository schoolRepository, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IProgramRepository
+public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, ISchoolRepository schoolRepository, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<ProgramRepository> _logger = logger;
     private readonly ISchoolRepository _schoolRepository = schoolRepository ?? throw new ArgumentNullException(nameof(schoolRepository));
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un programa por su ID
@@ -79,7 +81,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapProgramListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapProgramList).ToList();
                         return data;
                     },
                     _logger,
@@ -96,7 +98,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapProgramFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapProgramFromResult).ToList();
                 var count = result.Read<int>().Single();
                 return new { data, count };
             }
@@ -134,7 +136,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                 return null;
             }
 
-            var data = result.Read<dynamic>().Select(MapProgramInscriptionFromResult).ToList();
+            var data = result.Read<dynamic>().Select(_mappingService.MapProgramInscription).ToList();
             var count = result.Read<int>().Single();
             return new { data, count };
         }
@@ -323,117 +325,4 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         _logger.LogInformation("Cache invalidado para Program Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de programas
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de programas</returns>
-    private static DTOProgram MapProgramListFromResult(dynamic result)
-    {
-        return new DTOProgram
-        {
-            Id = result.Id,
-            Name = result.Name,
-            Description = result.Description
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un programa
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Programa</returns>
-    private static DTOProgram MapProgramFromResult(dynamic result)
-    {
-        return new DTOProgram
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            Description = result.Description,
-            DescriptionEN = result.DescriptionEN,
-            IsActive = result.IsActive,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un programa
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Programa</returns>
-    private static DTOProgramInscription MapProgramInscriptionFromResult(dynamic result)
-    {
-        return new DTOProgramInscription
-        {
-            Id = result.Id,
-            Agency = new DTOAgency
-            {
-                Id = result.AgencyId,
-                Name = result.AgencyName,
-            },
-            Program = new DTOProgram
-            {
-                Id = result.ProgramId,
-                Name = result.ProgramName,
-                Description = result.ProgramDescription
-            },
-            ApplicationNumber = result.ApplicationNumber,
-            IsPublic = result.IsPublic,
-            TotalNumberSchools = result.TotalNumberSchools,
-            HasBasicEducationCertification = result.HasBasicEducationCertification,
-            IsAeaMenuCreated = result.IsAeaMenuCreated,
-            ExemptionRequirement = result.ExemptionRequirement,
-            ExemptionStatus = result.ExemptionStatus,
-            ParticipatingAuthority = new DTOFoodAuthority
-            {
-                Id = result.ParticipatingAuthorityId,
-                Name = result.FoodAuthorityName
-            },
-            OperatingPolicy = new DTOOperatingPolicy
-            {
-                Id = result.OperatingPolicyId,
-                Name = result.OperatingPolicyName,
-                NameEN = result.OperatingPolicyNameEN
-            },
-            HasCompletedCivilRightsQuestionnaire = result.HasCompletedCivilRightsQuestionnaire,
-            NeedsInformationInOtherLanguages = result.NeedsInformationInOtherLanguages,
-            InformationInOtherLanguages = result.InformationInOtherLanguages,
-            NeedsInterpreter = result.NeedsInterpreter,
-            InterpreterLanguages = result.InterpreterLanguages,
-            NeedsAlternativeCommunication = result.NeedsAlternativeCommunication,
-            AlternativeCommunication = result.AlternativeCommunicationId != null
-                ? new DTOAlternativeCommunication
-                {
-                    Id = result.AlternativeCommunicationId,
-                    Name = result.AlternativeCommunicationName
-                }
-                : null,
-            NeedsFederalRelayService = new DTOOptionSelection
-            {
-                Id = result.NeedsFederalRelayServiceId,
-                Name = result.NeedsFederalRelayServiceName
-            },
-            ShowEvidence = new DTOOptionSelection
-            {
-                Id = result.ShowEvidenceId,
-                Name = result.ShowEvidenceName
-            },
-            ShowEvidenceDescription = result.ShowEvidenceDescription,
-            SnackPercentage = result.SnackPercentage,
-            ReducedSnackPercentage = result.ReducedSnackPercentage,
-            FederalFundingCertification = result.FederalFundingCertificationId != null
-                ? new DTOFederalFundingCertification
-                {
-                    Id = result.FederalFundingCertificationId,
-                    FundingAmount = result.FundingAmount,
-                    Description = result.FederalFundingDescription
-                }
-                : null,
-            Date = result.Date,
-            CreatedAt = result.CreatedAt,
-            UpdatedAt = result.UpdatedAt
-        };
-    }
 }

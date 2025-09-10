@@ -3,18 +3,20 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IGeoRepository
+public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGeoRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<GeoRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene una ciudad por su ID
@@ -100,7 +102,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
             async () =>
             {
                 var result = await db.QueryMultipleAsync("100_GetCities", parameters, commandType: CommandType.StoredProcedure);
-                var data = result.Read<DTOCity>().Select(MapCityListFromResult).ToList();
+                var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                 return data;
             },
             _logger,
@@ -117,7 +119,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 return new { data = Array.Empty<DTOCity>(), count = 0 };
             }
 
-            var data = result.Read<DTOCity>().Select(MapCityListFromResult).ToList();
+            var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
             var count = await result.ReadSingleAsync<int>();
             return new { data, count };
         }
@@ -150,7 +152,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
             async () =>
             {
                 var result = await db.QueryMultipleAsync("100_GetRegions", parameters, commandType: CommandType.StoredProcedure);
-                var data = result.Read<DTORegion>().Select(MapRegionListFromResult).ToList();
+                var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                 return data;
             },
             _logger,
@@ -167,7 +169,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 return new { data = Array.Empty<DTORegion>(), count = 0 };
             }
 
-            var data = result.Read<DTORegion>().Select(MapRegionListFromResult).ToList();
+            var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
             var count = await result.ReadSingleAsync<int>();
             return new { data, count };
         }
@@ -195,7 +197,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                     async () =>
                     {
                         var result = await db.QueryMultipleAsync("100_GetRegionsByCityId", parameters, commandType: CommandType.StoredProcedure);
-                        var data = result.Read<DTORegion>().Select(MapRegionListFromResult).ToList();
+                        var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                         return data;
                     },
                     _logger,
@@ -212,7 +214,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                     return new { data = Array.Empty<DTORegion>(), count = 0 };
                 }
 
-                var data = result.Read<DTORegion>().Select(MapRegionListFromResult).ToList();
+                var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             }
@@ -247,7 +249,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                     async () =>
                     {
                         var result = await db.QueryMultipleAsync("100_GetCitiesByRegionId", parameters, commandType: CommandType.StoredProcedure);
-                        var data = result.Read<DTOCity>().Select(MapCityListFromResult).ToList();
+                        var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                         return data;
                     },
                     _logger,
@@ -264,7 +266,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                     return new { data = Array.Empty<DTOCity>(), count = 0 };
                 }
 
-                var data = result.Read<DTOCity>().Select(MapCityListFromResult).ToList();
+                var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             }
@@ -303,31 +305,4 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     }
 
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de ciudades
-    /// </summary>
-    /// <param name="result">El resultado de la consulta</param>
-    /// <returns>La lista de ciudades</returns>
-    private static DTOCity MapCityListFromResult(dynamic result)
-    {
-        return new DTOCity
-        {
-            Id = result.Id,
-            Name = result.Name
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de regiones
-    /// </summary>
-    /// <param name="result">El resultado de la consulta</param>
-    /// <returns>La lista de regiones</returns>
-    private static DTORegion MapRegionListFromResult(dynamic result)
-    {
-        return new DTORegion
-        {
-            Id = result.Id,
-            Name = result.Name
-        };
-    }
 }

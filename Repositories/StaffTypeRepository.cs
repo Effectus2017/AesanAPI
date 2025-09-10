@@ -4,18 +4,20 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IStaffTypeRepository
+public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IStaffTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de staff por su ID
@@ -81,7 +83,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapStaffTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapStaffTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -98,7 +100,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapStaffTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffType).ToList();
                 var count = result.Read<int>().FirstOrDefault();
 
                 return new { data, count };
@@ -222,43 +224,6 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         }
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a un objeto StaffType para lista
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto StaffType mapeado</returns>
-    private static dynamic MapStaffTypeListFromResult(dynamic result)
-    {
-        return new
-        {
-            result.Id,
-            result.Name,
-            result.NameEn,
-            result.DisplayOrder,
-            result.IsActive,
-            result.CreatedAt,
-            result.UpdatedAt
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un objeto StaffType
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto StaffType mapeado</returns>
-    private static dynamic MapStaffTypeFromResult(dynamic result)
-    {
-        return new
-        {
-            result.Id,
-            result.Name,
-            result.NameEn,
-            result.DisplayOrder,
-            result.IsActive,
-            result.CreatedAt,
-            result.UpdatedAt
-        };
-    }
 
     /// <summary>
     /// Invalida el caché para un tipo de staff específico

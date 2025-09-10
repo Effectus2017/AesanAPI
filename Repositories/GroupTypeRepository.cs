@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,12 +11,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IGroupTypeRepository
+public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGroupTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<GroupTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de grupo por su ID
@@ -75,7 +77,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapGroupTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapGroupTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -92,7 +94,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapGroupTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapGroupType).ToList();
                 var count = result.Read<int>().Single();
                 return new { data, count };
             }
@@ -253,35 +255,4 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         _logger.LogInformation("Cache invalidado para GroupType Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de tipos de grupo
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de tipos de grupo</returns>
-    private static DTOGroupType MapGroupTypeListFromResult(dynamic result)
-    {
-        return new DTOGroupType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un tipo de grupo
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Tipo de grupo</returns>
-    private static DTOGroupType MapGroupTypeFromResult(dynamic result)
-    {
-        return new DTOGroupType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder
-        };
-    }
 }

@@ -3,18 +3,20 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingPolicyRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOperatingPolicyRepository
+public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingPolicyRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOperatingPolicyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OperatingPolicyRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene una política operativa por su ID.
@@ -72,7 +74,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapOperatingPolicyListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapOperatingPolicyList).ToList();
                         return data;
                     },
                     _logger,
@@ -89,7 +91,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapOperatingPolicyFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapOperatingPolicy).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -219,35 +221,4 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         _logger.LogInformation("Cache invalidado para OperatingPolicy Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de políticas operativas
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de políticas operativas</returns>
-    private static DTOOperatingPolicy MapOperatingPolicyListFromResult(dynamic result)
-    {
-        return new DTOOperatingPolicy
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a una política operativa
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Política operativa</returns>
-    private static DTOOperatingPolicy MapOperatingPolicyFromResult(dynamic result)
-    {
-        return new DTOOperatingPolicy
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder,
-        };
-    }
 }

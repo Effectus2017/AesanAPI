@@ -4,18 +4,20 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class StaffClassificationRepository(DapperContext context, ILogger<StaffClassificationRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IStaffClassificationRepository
+public class StaffClassificationRepository(DapperContext context, ILogger<StaffClassificationRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IStaffClassificationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffClassificationRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene una clasificación de staff por su ID
@@ -75,7 +77,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
                     return new List<dynamic>();
                 }
 
-                var data = result.Read<dynamic>().Select(MapStaffClassificationListFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassificationList).ToList();
                 return data;
             }
             else
@@ -87,7 +89,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapStaffClassificationFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassification).ToList();
                 var count = result.Read<int>().FirstOrDefault();
 
                 return new { data, count };
@@ -180,41 +182,4 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         }
     }
 
-    /// <summary>
-    /// Maps the query result for simple list
-    /// </summary>
-    /// <param name="result">Query result</param>
-    /// <returns>Mapped object</returns>
-    private static dynamic MapStaffClassificationListFromResult(dynamic result)
-    {
-        return new
-        {
-            result.Id,
-            result.Name,
-            result.NameEn,
-            result.SortOrder,
-            result.IsActive,
-            result.CreatedAt,
-            result.UpdatedAt
-        };
-    }
-
-    /// <summary>
-    /// Maps the query result for paginated list
-    /// </summary>
-    /// <param name="result">Query result</param>
-    /// <returns>Mapped object</returns>
-    private static dynamic MapStaffClassificationFromResult(dynamic result)
-    {
-        return new
-        {
-            result.Id,
-            result.Name,
-            result.NameEn,
-            result.SortOrder,
-            result.IsActive,
-            result.CreatedAt,
-            result.UpdatedAt
-        };
-    }
 }

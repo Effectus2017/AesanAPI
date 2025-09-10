@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -14,12 +15,13 @@ namespace Api.Repositories;
 /// Repository for managing option selections in the database
 /// Repositorio para gestionar selecciones de opciones en la base de datos
 /// </summary>
-public class OptionSelectionRepository(DapperContext context, ILogger<OptionSelectionRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOptionSelectionRepository
+public class OptionSelectionRepository(DapperContext context, ILogger<OptionSelectionRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOptionSelectionRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OptionSelectionRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Gets a single option selection by its ID
@@ -117,7 +119,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapOptionSelectionListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapOptionSelectionList).ToList();
                         return data;
                     },
                     _logger,
@@ -134,7 +136,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapOptionSelectionFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapOptionSelection).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -300,36 +302,4 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         _logger.LogInformation("Cache invalidado para OptionSelection Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de selecciones de opción
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de selecciones de opción</returns>
-    private static DTOOptionSelection MapOptionSelectionListFromResult(dynamic result)
-    {
-        return new DTOOptionSelection
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a una selección de opción
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Selección de opción</returns>
-    private static DTOOptionSelection MapOptionSelectionFromResult(dynamic result)
-    {
-        return new DTOOptionSelection
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            OptionKey = result.OptionKey,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder,
-        };
-    }
 }

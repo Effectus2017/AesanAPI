@@ -32,24 +32,8 @@ public class DTOAgency
     public DateTime? CreatedAt { get; set; } = DateTime.Now;
     public DateTime? UpdatedAt { get; set; } = DateTime.Now;
 
-    // Registro de Educación Básica
-    public int BasicEducationRegistry { get; set; } = 0;
-
     // Imágen - Logo
     public string ImageURL { get; set; } = "";
-
-    // Comentarios
-    public string Comments { get; set; } = "";
-
-    // Justificación de Rechazo
-    public string RejectionJustification { get; set; } = "";
-    // Cita coordinada
-    public bool? AppointmentCoordinated { get; set; }
-    // Fecha de la cita
-    public DateTime? AppointmentDate { get; set; } = DateTime.Now;
-
-    // Deadline to complete the registration of the Sites
-    public DateTime? DeadlineToCompleteRegistration { get; set; } = DateTime.Now;
 
     // Relaciones
     public DTOCity? City { get; set; } = new DTOCity();
@@ -65,7 +49,9 @@ public class DTOAgency
     public DTOStaff? Monitor { get; set; } = new DTOStaff();
     // Programas
     public List<DTOProgram> Programs { get; set; } = [];
-
     // Código de la Agencia
     public string AgencyCode { get; set; } = "";
+
+    // Datos de inscripción de la agencia
+    public DTOAgencyInscription? Inscription { get; set; }
 }

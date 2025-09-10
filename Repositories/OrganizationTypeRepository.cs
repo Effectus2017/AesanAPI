@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.DTO;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -11,12 +12,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class OrganizationTypeRepository(DapperContext context, ILogger<OrganizationTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOrganizationTypeRepository
+public class OrganizationTypeRepository(DapperContext context, ILogger<OrganizationTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOrganizationTypeRepository
 {
     private readonly DapperContext _context = context;
     private readonly ILogger<OrganizationTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de organización por su ID.
@@ -80,7 +82,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapOrganizationTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapOrganizationTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -97,7 +99,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapOrganizationTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapOrganizationType).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -185,35 +187,4 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         }
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a un tipo de organización
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Tipo de organización</returns>
-    private static DTOOrganizationType MapOrganizationTypeListFromResult(dynamic result)
-    {
-        return new DTOOrganizationType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un tipo de organización
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Tipo de organización</returns>
-    private static DTOOrganizationType MapOrganizationTypeFromResult(dynamic result)
-    {
-        return new DTOOrganizationType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder
-        };
-    }
 }

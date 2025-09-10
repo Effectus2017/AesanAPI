@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -14,42 +15,14 @@ public class StaffRepository(
     DapperContext context,
     ILogger<StaffRepository> logger,
     IMemoryCache cache,
-    IOptions<ApplicationSettings> appSettings) : IStaffRepository
+    IOptions<ApplicationSettings> appSettings,
+    MappingService mappingService) : IStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
-
-    /// <summary>
-    /// Agrega un parámetro de fecha de forma segura, convirtiendo fechas inválidas a NULL
-    /// </summary>
-    private void AddSafeDateParameter(DynamicParameters parameters, string parameterName, DateTime? dateValue, ParameterDirection direction = ParameterDirection.Input)
-    {
-        if (!dateValue.HasValue)
-        {
-            parameters.Add(parameterName, DBNull.Value, DbType.DateTime, direction);
-            return;
-        }
-
-        var date = dateValue.Value;
-
-        // SQL Server acepta fechas desde 1753-01-01 hasta 9999-12-31
-        if (date >= new DateTime(1753, 1, 1) && date <= new DateTime(9999, 12, 31))
-        {
-            parameters.Add(parameterName, date, DbType.DateTime, direction);
-        }
-        else
-        {
-            // Si la fecha está fuera del rango válido, usar NULL
-            parameters.Add(parameterName, DBNull.Value, DbType.DateTime, direction);
-
-            if (date != DateTime.MinValue && date != DateTime.MaxValue)
-            {
-                _logger.LogWarning("Fecha fuera del rango SQL Server en {ParameterName}: {DateValue}", parameterName, date);
-            }
-        }
-    }
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un miembro del staff por su ID
@@ -71,7 +44,7 @@ public class StaffRepository(
                 return null;
             }
 
-            return MapStaffDetailsFromResult(result);
+            return _mappingService.MapStaffDetails(result);
         }
         catch (Exception ex)
         {
@@ -102,7 +75,7 @@ public class StaffRepository(
             param.Add("@name", name, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
             param.Add("@staffTypeId", staffTypeId, DbType.Int32);
-            param.Add("@agencyId", agencyId, DbType.Int32);
+            param.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             param.Add("@excludeRelated", excludeRelated, DbType.Boolean);
 
             if (isList)
@@ -114,7 +87,7 @@ public class StaffRepository(
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapStaffListFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffList).ToList();
                 return data;
             }
             else
@@ -126,7 +99,7 @@ public class StaffRepository(
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapStaffFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaff).ToList();
                 var count = result.Read<int>().FirstOrDefault();
 
                 return new { data, count };
@@ -496,174 +469,6 @@ public class StaffRepository(
         }
     }
 
-    /// <summary>
-    /// Maps query result to a Staff list item
-    /// </summary>
-    /// <param name="result">Query result</param>
-    /// <returns>Mapped Staff list item</returns>
-    private static dynamic MapStaffListFromResult(dynamic result)
-    {
-        return new
-        {
-            result.Id,
-            result.FirstName,
-            result.MiddleName,
-            result.FatherLastName,
-            result.MotherLastName,
-            result.StatusName,
-            result.StatusNameEN,
-            result.PositionName,
-            result.PositionNameEN,
-            result.StaffTypeId,
-            result.StaffTypeName,
-            result.StaffTypeNameEn,
-            result.StaffClassificationId,
-            result.StaffClassificationName,
-            result.StaffClassificationNameEn,
-            result.ContractStartDate,
-            result.ContractEndDate,
-            result.Email,
-            result.CityName,
-            result.RegionName,
-            result.AgencyId,
-            result.AgencyName,
-            result.UserName,
-            result.IsActive
-        };
-    }
-
-    /// <summary>
-    /// Maps query result to a Staff object
-    /// </summary>
-    /// <param name="result">Query result</param>
-    /// <returns>Mapped Staff object</returns>
-    private static dynamic MapStaffFromResult(dynamic result)
-    {
-        return new
-        {
-            result.Id,
-            result.FirstName,
-            result.MiddleName,
-            result.FatherLastName,
-            result.MotherLastName,
-            result.StatusId,
-            result.StatusName,
-            result.StatusNameEN,
-            result.PositionId,
-            result.PositionName,
-            result.PositionNameEN,
-            result.StaffTypeId,
-            result.StaffTypeName,
-            result.StaffTypeNameEn,
-            result.StaffClassificationId,
-            result.StaffClassificationName,
-            result.StaffClassificationNameEn,
-            result.ContractStartDate,
-            result.ContractEndDate,
-            result.BirthDate,
-            result.Email,
-            result.PostalAddress,
-            result.CityId,
-            result.CityName,
-            result.RegionId,
-            result.RegionName,
-            result.AreaCode,
-            result.AgencyId,
-            result.AgencyName,
-            result.Comments,
-            result.UserId,
-            result.UserName,
-            result.CreatedAt,
-            result.UpdatedAt,
-            result.IsActive,
-            result.ReviewResultId,
-            result.ReviewDate,
-            result.ReviewJustification
-        };
-    }
-
-    /// <summary>
-    /// Maps GetById result to a DTOStaff with nested relations
-    /// </summary>
-    /// <param name="item">Dynamic result item</param>
-    /// <returns>DTOStaff</returns>
-    private static DTOStaff MapStaffDetailsFromResult(dynamic item)
-    {
-        return new DTOStaff
-        {
-            Id = item.Id,
-            FirstName = item.FirstName ?? string.Empty,
-            MiddleName = item.MiddleName,
-            FatherLastName = item.FatherLastName ?? string.Empty,
-            MotherLastName = item.MotherLastName ?? string.Empty,
-            StatusId = item.StatusId ?? 0,
-            StatusName = item.StatusName ?? string.Empty,
-            PositionId = item.PositionId ?? 0,
-            PositionName = item.PositionName ?? string.Empty,
-            StaffTypeId = item.StaffTypeId ?? 0,
-            StaffTypeName = item.StaffTypeName ?? string.Empty,
-            StaffTypeNameEn = item.StaffTypeNameEn ?? string.Empty,
-            StaffClassificationId = item.StaffClassificationId,
-            StaffClassificationName = item.StaffClassificationName ?? string.Empty,
-            StaffClassificationNameEn = item.StaffClassificationNameEn ?? string.Empty,
-            ContractStartDate = item.ContractStartDate,
-            ContractEndDate = item.ContractEndDate,
-            BirthDate = item.BirthDate ?? DateTime.MinValue,
-            Email = item.Email ?? string.Empty,
-            PostalAddress = item.PostalAddress ?? string.Empty,
-            CityId = item.CityId ?? 0,
-            CityName = item.CityName ?? string.Empty,
-            RegionId = item.RegionId ?? 0,
-            RegionName = item.RegionName ?? string.Empty,
-            AreaCode = item.AreaCode ?? string.Empty,
-            AgencyId = item.AgencyId,
-            AgencyName = item.AgencyName ?? string.Empty,
-            Comments = item.Comments,
-            UserId = item.UserId,
-            UserName = item.UserName,
-            CreatedAt = item.CreatedAt ?? DateTime.Now,
-            UpdatedAt = item.UpdatedAt,
-            IsActive = item.IsActive ?? true,
-            ReviewResultId = item.ReviewResultId,
-            ReviewDate = item.ReviewDate,
-            ReviewJustification = item.ReviewJustification,
-
-            City = new DTOCity
-            {
-                Id = item.CityId ?? 0,
-                Name = item.CityName ?? string.Empty
-            },
-            Region = new DTORegion
-            {
-                Id = item.RegionId ?? 0,
-                Name = item.RegionName ?? string.Empty
-            },
-            Status = new DTOOptionSelection
-            {
-                Id = item.StatusId ?? 0,
-                Name = item.StatusName ?? string.Empty,
-                NameEN = item.StatusNameEN ?? string.Empty,
-            },
-            Position = new DTOOptionSelection
-            {
-                Id = item.PositionId ?? 0,
-                Name = item.PositionName ?? string.Empty,
-                NameEN = item.PositionNameEN ?? string.Empty,
-            },
-            StaffType = new DTOStaffType
-            {
-                Id = item.StaffTypeId ?? 0,
-                Name = item.StaffTypeName ?? string.Empty,
-                NameEn = item.StaffTypeNameEn ?? string.Empty,
-            },
-            StaffClassification = item.StaffClassificationId != null ? new DTOStaffClassification
-            {
-                Id = item.StaffClassificationId,
-                Name = item.StaffClassificationName ?? string.Empty,
-                NameEn = item.StaffClassificationNameEn ?? string.Empty,
-            } : null
-        };
-    }
 
     /// <summary>
     /// Obtiene todos los miembros del staff de una agencia específica
@@ -693,7 +498,7 @@ public class StaffRepository(
                 return null;
             }
 
-            var data = result.Read<dynamic>().Select(MapStaffFromResult).ToList();
+            var data = result.Read<dynamic>().Select(_mappingService.MapStaff).ToList();
             var count = result.Read<int>().FirstOrDefault();
 
             return new { data, count };

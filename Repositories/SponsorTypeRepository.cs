@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,12 +11,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : ISponsorTypeRepository
+public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISponsorTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SponsorTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de auspiciador por su ID
@@ -73,7 +75,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapSponsorTypeFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapSponsorType).ToList();
                         return data;
                     },
                     _logger,
@@ -92,7 +94,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
 
                 var sponsorTypesDynamic = result.Read<dynamic>().ToList();
                 var count = result.ReadFirstOrDefault<int>();
-                var data = sponsorTypesDynamic.Select(MapSponsorTypeFromResult).ToList();
+                var data = sponsorTypesDynamic.Select(_mappingService.MapSponsorType).ToList();
                 return new { data, count };
             }
 
@@ -218,20 +220,4 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         _logger.LogInformation("Cache invalidado para SponsorType Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a un tipo de auspiciador
-    /// </summary>
-    /// <param name="item">Resultado de la consulta</param>
-    /// <returns>Tipo de auspiciador</returns>
-    private static DTOSponsorType MapSponsorTypeFromResult(dynamic item)
-    {
-        return new DTOSponsorType
-        {
-            Id = item.Id,
-            Name = item.Name,
-            NameEN = item.NameEN,
-            IsActive = item.IsActive,
-            DisplayOrder = item.DisplayOrder,
-        };
-    }
 }

@@ -5,18 +5,20 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : ICenterTypeRepository
+public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ICenterTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<CenterTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de centro por su ID
@@ -76,7 +78,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapCenterTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapCenterTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -93,7 +95,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapCenterTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapCenterType).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -189,25 +191,4 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         _logger.LogInformation("Cache invalidado para CenterType Repository");
     }
 
-    private static DTOCenterType MapCenterTypeListFromResult(dynamic result)
-    {
-        return new DTOCenterType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
-
-    private static DTOCenterType MapCenterTypeFromResult(dynamic result)
-    {
-        return new DTOCenterType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder,
-        };
-    }
 }

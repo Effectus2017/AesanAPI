@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,12 +11,13 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IDeliveryTypeRepository
+public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IDeliveryTypeRepository
 {
     private readonly DapperContext _context = context;
     private readonly ILogger<DeliveryTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un tipo de entrega por su ID.
@@ -72,7 +74,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapDeliveryTypeListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapDeliveryTypeList).ToList();
                         return data;
                     },
                     _logger,
@@ -89,7 +91,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapDeliveryTypeFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapDeliveryType).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -190,25 +192,4 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         _logger.LogInformation("Cache invalidado para DeliveryType Repository");
     }
 
-    private static DTODeliveryType MapDeliveryTypeListFromResult(dynamic result)
-    {
-        return new DTODeliveryType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
-
-    private static DTODeliveryType MapDeliveryTypeFromResult(dynamic result)
-    {
-        return new DTODeliveryType
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder,
-        };
-    }
 }

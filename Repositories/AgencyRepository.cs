@@ -13,7 +13,7 @@ namespace Api.Repositories;
 /// <summary>
 /// Repositorio de agencias
 /// </summary>
-public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, IAgencyUsersRepository agencyUsersRepository, DapperContext context, ILoggingService loggingService, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyRepository
+public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, IAgencyUsersRepository agencyUsersRepository, DapperContext context, ILoggingService loggingService, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
@@ -21,6 +21,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     private readonly IPasswordService _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository ?? throw new ArgumentNullException(nameof(agencyUsersRepository));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -38,7 +39,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32, ParameterDirection.Input);
 
-            var result = await dbConnection.QueryMultipleAsync("112_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("113_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -56,13 +57,13 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 return null;
             }
 
-            var agency = MapAgencyFromResult(_agencyDynamic);
+            var agency = _mappingService.MapAgency(_agencyDynamic);
 
             var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
             if (_agenciesPrograms.Any())
             {
-                agency.Programs = MapProgramsFromResult(_agenciesPrograms);
+                agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
             }
 
             // Leer el tercer result set: Usuario monitor asociado
@@ -87,7 +88,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 if (user != null)
                 {
                     // Mapear correctamente los datos del owner con la información de Position
-                    agency.User = MapStaffFromResult(user);
+                    agency.User = user;
                 }
             }
 
@@ -112,7 +113,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         var parameters = new DynamicParameters();
         parameters.Add("@agencyId", agencyId);
         parameters.Add("@userId", userId);
-        var result = await dbConnection.QueryMultipleAsync("111_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
+        var result = await dbConnection.QueryMultipleAsync("112_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
 
         if (result == null)
         {
@@ -126,13 +127,13 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             return null;
         }
 
-        var agency = MapAgencyFromResult(_agencyDynamic);
+        var agency = _mappingService.MapAgency(_agencyDynamic);
 
         var _agenciesPrograms = await result.ReadAsync<dynamic>();
 
         if (_agenciesPrograms != null && _agenciesPrograms.Any())
         {
-            agency.Programs = MapProgramsFromResult(_agenciesPrograms);
+            agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
         }
 
         _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
@@ -174,7 +175,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 }
 
                 var agencies = result.Read<dynamic>().ToList();
-                var data = agencies.Select(MapAgencyListFromResult).ToList();
+                var data = _mappingService.MapAgencyList(agencies).ToList();
                 return data;
             }
             else
@@ -220,7 +221,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 }
 
                 // Procesar los datos después de que el GridReader se haya cerrado
-                var data = agencies.Select(MapAgencyFromResult).ToList();
+                var data = agencies.Select(_mappingService.MapAgency).ToList();
 
                 // Asignar programas a cada agencia
                 if (agenciesPrograms != null && agenciesPrograms.Count != 0)
@@ -820,234 +821,5 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
-    /// <summary>
-    /// Mapea una agencia desde un resultado dinámico a un DTOAgency
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOAgency</returns>
-    private static DTOAgency MapAgencyFromResult(dynamic item)
-    {
-        try
-        {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
-            }
 
-            return new DTOAgency
-            {
-                Id = item.Id ?? 0,
-                Name = item.Name ?? string.Empty,
-                StatusId = item.StatusId ?? 0,
-                SdrNumber = item.SdrNumber,
-                UieNumber = item.UieNumber,
-                EinNumber = item.EinNumber,
-                Address = item.Address,
-                ZipCode = item.ZipCode,
-                PostalAddress = item.PostalAddress,
-                PostalZipCode = item.PostalZipCode,
-                Latitude = item.Latitude != null ? (float)item.Latitude : null,
-                Longitude = item.Longitude != null ? (float)item.Longitude : null,
-                Phone = item.Phone,
-                Email = item.Email,
-                ImageURL = item.ImageURL,
-
-                BasicEducationRegistry = item.BasicEducationRegistry ?? 0,
-
-                // Justificación de rechazo
-                RejectionJustification = item.RejectionJustification,
-                // Comentarios
-                Comments = item.Comments,
-                // Cita coordinada
-                AppointmentCoordinated = item.AppointmentCoordinated ?? false,
-                // Fecha de la cita
-                AppointmentDate = item.AppointmentDate,
-
-                // Deadline to complete the registration of the Sites
-                DeadlineToCompleteRegistration = item.DeadlineToCompleteRegistration,
-
-                CreatedAt = item.CreatedAt,
-                UpdatedAt = item.UpdatedAt,
-                AgencyCode = item.AgencyCode,
-
-                City = item.CityId != null ? new DTOCity
-                {
-                    Id = item.CityId ?? 0,
-                    Name = item.CityName ?? string.Empty
-                } : null,
-                Region = item.RegionId != null ? new DTORegion
-                {
-                    Id = item.RegionId ?? 0,
-                    Name = item.RegionName ?? string.Empty
-                } : null,
-                PostalCity = item.PostalCityId != null ? new DTOCity
-                {
-                    Id = item.PostalCityId ?? 0,
-                    Name = item.PostalCityName ?? string.Empty
-                } : null,
-                PostalRegion = item.PostalRegionId != null ? new DTORegion
-                {
-                    Id = item.PostalRegionId ?? 0,
-                    Name = item.PostalRegionName ?? string.Empty
-                } : null,
-                Status = item.StatusId != null ? new DTOAgencyStatus
-                {
-                    Id = item.StatusId ?? 0,
-                    Name = item.AgencyStatusName ?? string.Empty
-                } : null,
-                User = item.UserId != null ? new DTOStaff
-                {
-                    Id = item.UserId ?? 0,
-                    FirstName = item.UserFirstName ?? string.Empty,
-                    MiddleName = item.UserMiddleName ?? string.Empty,
-                    FatherLastName = item.UserFatherLastName ?? string.Empty,
-                    MotherLastName = item.UserMotherLastName ?? string.Empty,
-                    PositionId = item.UserPositionId ?? 0,
-                    PositionName = item.UserPositionName ?? string.Empty,
-                    Email = item.UserEmail ?? string.Empty,
-                    UserId = item.UserGuid,
-                    ContractStartDate = item.UserContractStartDate,
-                    ContractEndDate = item.UserContractEndDate,
-                    Position = item.UserPositionId != null ? new DTOOptionSelection
-                    {
-                        Id = item.UserPositionId,
-                        Name = item.UserPositionName ?? string.Empty,
-                        NameEN = item.UserPositionNameEN ?? string.Empty,
-                        OptionKey = item.UserPositionOptionKey ?? string.Empty
-                    } : null,
-                } : null
-            };
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-        {
-            throw new InvalidOperationException($"Error al mapear la agencia: Propiedad no encontrada o inválida. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error inesperado al mapear la agencia: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Mapea una agencia desde un resultado dinámico a un objeto simple con solo Id y Name (para listas)
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto con Id y Name</returns>
-    private static dynamic MapAgencyListFromResult(dynamic item)
-    {
-        try
-        {
-            if (item == null)
-            {
-                return null;
-            }
-
-            return new
-            {
-                Id = item.Id ?? 0,
-                Name = item.Name ?? string.Empty
-            };
-        }
-        catch (Exception ex)
-        {
-            // Log the error but return null to avoid breaking the application
-            return null;
-        }
-    }
-
-
-
-    /// <summary>
-    /// Mapea los programas de una agencia desde un resultado dinámico a un DTOProgram  
-    /// </summary>
-    /// <param name="programs">Resultados dinámicos de los programas</param>
-    /// <returns>Lista de DTOProgram</returns>
-    private static List<DTOProgram> MapProgramsFromResult(IEnumerable<dynamic> programs)
-    {
-        try
-        {
-            if (programs == null)
-            {
-                throw new ArgumentNullException(nameof(programs), "El objeto programs no puede ser nulo");
-            }
-
-            return programs
-                .Select(
-                    ap =>
-                        new DTOProgram
-                        {
-                            Id = ap.Id,
-                            Name = ap.Name,
-                            Description = ap.Description ?? string.Empty
-                        }
-                )
-                .ToList();
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-        {
-            throw new InvalidOperationException($"Error al mapear los programas: Propiedad no encontrada o inválida. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error inesperado al mapear los programas: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Mapea un Staff desde un resultado dinámico con información completa de Position
-    /// </summary>
-    /// <param name="staffData">Datos del staff desde el stored procedure</param>
-    /// <returns>DTOStaff con información completa de Position</returns>
-    private static DTOStaff MapStaffFromResult(dynamic staffData)
-    {
-        try
-        {
-            if (staffData == null)
-            {
-                throw new ArgumentNullException(nameof(staffData), "El objeto staffData no puede ser nulo");
-            }
-
-            return new DTOStaff
-            {
-                Id = staffData.Id ?? 0,
-                FirstName = staffData.FirstName ?? string.Empty,
-                MiddleName = staffData.MiddleName ?? string.Empty,
-                FatherLastName = staffData.FatherLastName ?? string.Empty,
-                MotherLastName = staffData.MotherLastName ?? string.Empty,
-                PositionId = staffData.PositionId ?? 0,
-                PositionName = staffData.PositionName ?? string.Empty,
-                ContractStartDate = staffData.ContractStartDate,
-                ContractEndDate = staffData.ContractEndDate,
-                Email = staffData.Email ?? string.Empty,
-                BirthDate = staffData.BirthDate ?? DateTime.MinValue,
-                StatusId = staffData.StatusId ?? 0,
-                StatusName = staffData.StatusName ?? string.Empty,
-                UserId = staffData.UserId,
-                // Mapear la información completa de Position
-                Position = staffData.PositionId != null && staffData.PositionId > 0 ? new DTOOptionSelection
-                {
-                    Id = staffData.PositionId,
-                    Name = staffData.PositionName ?? string.Empty,
-                    NameEN = staffData.PositionNameEN ?? string.Empty,
-                    OptionKey = staffData.PositionOptionKey ?? string.Empty
-                } : null,
-                // Mapear la información de Status (sin OptionKey ya que no viene del SP)
-                Status = staffData.StatusId != null && staffData.StatusId > 0 ? new DTOOptionSelection
-                {
-                    Id = staffData.StatusId,
-                    Name = staffData.StatusName ?? string.Empty,
-                    NameEN = staffData.StatusNameEN ?? string.Empty,
-                    OptionKey = string.Empty // No viene del stored procedure
-                } : null
-            };
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-        {
-            throw new InvalidOperationException($"Error al mapear el staff: Propiedad no encontrada o inválida. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error inesperado al mapear el staff: {ex.Message}", ex);
-        }
-    }
 }

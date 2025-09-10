@@ -3,17 +3,19 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingPeriodRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IOperatingPeriodRepository
+public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingPeriodRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOperatingPeriodRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OperatingPeriodRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene un período operativo por su ID.
@@ -77,7 +79,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(MapOperatingPeriodListFromResult).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapOperatingPeriodList).ToList();
                         return data;
                     },
                     _logger,
@@ -94,7 +96,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapOperatingPeriodFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapOperatingPeriod).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -231,35 +233,4 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         _logger.LogInformation("Cache invalidado para OperatingPeriod Repository");
     }
 
-    /// <summary>
-    /// Mapea el resultado de la consulta a una lista de períodos operativos
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Lista de períodos operativos</returns>
-    private static DTOOperatingPeriod MapOperatingPeriodListFromResult(dynamic result)
-    {
-        return new DTOOperatingPeriod
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-        };
-    }
-
-    /// <summary>
-    /// Mapea el resultado de la consulta a un período operativo
-    /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Período operativo</returns>
-    private static DTOOperatingPeriod MapOperatingPeriodFromResult(dynamic result)
-    {
-        return new DTOOperatingPeriod
-        {
-            Id = result.Id,
-            Name = result.Name,
-            NameEN = result.NameEN,
-            IsActive = result.IsActive,
-            DisplayOrder = result.DisplayOrder,
-        };
-    }
 }

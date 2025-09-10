@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -17,12 +18,14 @@ public class StaffRelationshipRepository(
     DapperContext context,
     ILogger<StaffRelationshipRepository> logger,
     IMemoryCache cache,
-    IOptions<ApplicationSettings> appSettings) : IStaffRelationshipRepository
+    IOptions<ApplicationSettings> appSettings,
+    MappingService mappingService) : IStaffRelationshipRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffRelationshipRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
+    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Obtiene todas las relaciones de un empleado específico
@@ -47,7 +50,7 @@ public class StaffRelationshipRepository(
                 return new List<dynamic>();
             }
 
-            var data = result.Select(MapStaffRelationshipFromResult).ToList();
+            var data = result.Select(_mappingService.MapStaffRelationship).ToList();
             return data;
         }
         catch (Exception ex)
@@ -93,7 +96,7 @@ public class StaffRelationshipRepository(
                             return new List<dynamic>();
                         }
 
-                        var data = result.Select(MapStaffRelationshipFromResult).ToList();
+                        var data = result.Select(_mappingService.MapStaffRelationship).ToList();
                         return data;
                     },
                     _logger,
@@ -117,7 +120,7 @@ public class StaffRelationshipRepository(
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(MapStaffRelationshipFromResult).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                 var count = result.ReadFirstOrDefault<int>();
                 return new { data, count };
             }
@@ -149,7 +152,7 @@ public class StaffRelationshipRepository(
 
             if (result == null) return null;
 
-            return MapStaffRelationshipFromResult(result);
+            return _mappingService.MapStaffRelationship(result);
         }
         catch (Exception ex)
         {
@@ -333,7 +336,7 @@ public class StaffRelationshipRepository(
                 return new List<dynamic>();
             }
 
-            var data = result.Select(MapStaffRelationshipFromResult).ToList();
+            var data = result.Select(_mappingService.MapStaffRelationship).ToList();
             return data;
         }
         catch (Exception ex)
@@ -375,43 +378,6 @@ public class StaffRelationshipRepository(
         }
     }
 
-    /// <summary>
-    /// Maps the dynamic result to DTOStaffRelationship
-    /// </summary>
-    /// <param name="r">Dynamic query result</param>
-    /// <returns>Mapped DTOStaffRelationship</returns>
-    private static DTOStaffRelationship MapStaffRelationshipFromResult(dynamic r)
-    {
-        return new DTOStaffRelationship
-        {
-            Id = r.Id,
-            Staff = new DTOStaffForRelationship
-            {
-                Id = r.StaffId,
-                FullName = r.StaffFullName,
-                Position = r.StaffPosition,
-                StaffType = r.StaffType,
-                Email = r.StaffEmail,
-                IsActive = r.StaffIsActive
-            },
-            RelatedStaff = new DTOStaffForRelationship
-            {
-                Id = r.RelatedStaffId,
-                FullName = r.RelatedStaffFullName,
-                Position = r.RelatedStaffPosition,
-                StaffType = r.RelatedStaffType,
-                Email = r.RelatedStaffEmail,
-                IsActive = r.RelatedStaffIsActive
-            },
-            RelationshipTypeId = r.RelationshipTypeId,
-            RelationshipType = r.RelationshipType,
-            RelationshipTypeEn = r.RelationshipTypeEn,
-            IsActive = r.IsActive,
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            Comment = r.Comment
-        };
-    }
 
     /// <summary>
     /// Invalida el caché para las relaciones de staff

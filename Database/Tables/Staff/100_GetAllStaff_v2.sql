@@ -82,7 +82,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                SELECT DISTINCT sr.StaffId
+                                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -92,7 +92,7 @@ BEGIN
                     ))
                 )
             )
-        ORDER BY s.FirstName, s.FatherLastName;
+        ORDER BY a.Id, s.FirstName, s.FatherLastName;
     END
     ELSE
     BEGIN
@@ -142,6 +142,8 @@ BEGIN
             LEFT JOIN Region r ON s.RegionId = r.Id
             LEFT JOIN Agency a ON s.AgencyId = a.Id
         WHERE s.IsActive = 1
+            AND a.IsPropietary = 0
+
             AND (
                 @alls = 1
             OR (
@@ -153,7 +155,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                SELECT DISTINCT sr.StaffId
+                                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -163,7 +165,7 @@ BEGIN
                     ))
                 )
             )
-        ORDER BY s.FirstName, s.FatherLastName
+        ORDER BY a.Id, s.FirstName, s.FatherLastName
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY;
 
@@ -182,7 +184,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                SELECT DISTINCT sr.StaffId
+                                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
