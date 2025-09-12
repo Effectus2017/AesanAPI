@@ -67,14 +67,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             }
 
             // Leer el tercer result set: Usuario monitor asociado
-            var _agenciesMonitors = await result.ReadAsync<DTOStaff>();
+            var _agenciesMonitors = await result.ReadAsync<dynamic>();
 
             if (_agenciesMonitors.Any())
             {
                 var monitorData = _agenciesMonitors.FirstOrDefault();
                 if (monitorData != null)
                 {
-                    agency.Monitor = monitorData;
+                    agency.Monitor = _mappingService.MapStaffDetails(monitorData);
                 }
             }
 
@@ -88,7 +88,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 if (user != null)
                 {
                     // Mapear correctamente los datos del owner con la información de Position
-                    agency.User = user;
+                    agency.User = _mappingService.MapStaffDetails(user);
                 }
             }
 
@@ -96,8 +96,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error getting agency by id {id}: {ex.Message}");
+            throw new Exception($"Error al obtener la agencia con ID {id}: {ex.Message}", ex);
         }
     }
 
@@ -108,36 +108,44 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <returns>La agencia</returns>
     public async Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId)
     {
-        _logger.LogInformation($"Obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
-        using IDbConnection dbConnection = _context.CreateConnection();
-        var parameters = new DynamicParameters();
-        parameters.Add("@agencyId", agencyId);
-        parameters.Add("@userId", userId);
-        var result = await dbConnection.QueryMultipleAsync("112_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
-
-        if (result == null)
+        try
         {
-            return null;
+            _logger.LogInformation($"Obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@userId", userId);
+            var result = await dbConnection.QueryMultipleAsync("112_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            var _agencyDynamic = await result.ReadFirstOrDefaultAsync<dynamic>();
+
+            if (_agencyDynamic == null)
+            {
+                return null;
+            }
+
+            var agency = _mappingService.MapAgency(_agencyDynamic);
+
+            var _agenciesPrograms = await result.ReadAsync<dynamic>();
+
+            if (_agenciesPrograms != null && _agenciesPrograms.Any())
+            {
+                agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
+            }
+
+            _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
+            return agency!;
         }
-
-        var _agencyDynamic = await result.ReadFirstOrDefaultAsync<dynamic>();
-
-        if (_agencyDynamic == null)
+        catch (Exception ex)
         {
-            return null;
+            await _logger.LogError(ex, $"Error getting agency by id {agencyId} and user id {userId}: {ex.Message}");
+            throw new Exception($"Error al obtener la agencia con ID {agencyId} y usuario {userId}: {ex.Message}", ex);
         }
-
-        var agency = _mappingService.MapAgency(_agencyDynamic);
-
-        var _agenciesPrograms = await result.ReadAsync<dynamic>();
-
-        if (_agenciesPrograms != null && _agenciesPrograms.Any())
-        {
-            agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
-        }
-
-        _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
-        return agency!;
     }
 
     /// <summary>
@@ -265,8 +273,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener las agencias de la base de datos", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error getting all agencies from database: {ex.Message}");
+            throw new Exception($"Error al obtener las agencias de la base de datos: {ex.Message}", ex);
         }
     }
 
@@ -287,8 +295,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener los programas de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error getting agency programs by user id {userId}: {ex.Message}");
+            throw new Exception($"Error al obtener los programas de la agencia para el usuario {userId}: {ex.Message}", ex);
         }
     }
 
@@ -369,8 +377,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al insertar la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error inserting agency: {ex.Message}");
+            throw new Exception($"Error al insertar la agencia: {ex.Message}", ex);
         }
     }
 
@@ -420,8 +428,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al insertar la inscripción de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error inserting agency inscription for agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al insertar la inscripción de la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -446,8 +454,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al insertar el programa de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw new Exception(ex.Message);
+            await _logger.LogError(ex, $"Error inserting agency program for agency {agencyId} and program {programId}: {ex.Message}");
+            throw new Exception($"Error al insertar el programa {programId} para la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -535,8 +543,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al actualizar la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error updating agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al actualizar la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -562,8 +570,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al actualizar el logo de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw new Exception(ex.Message);
+            await _logger.LogError(ex, $"Error updating agency logo for agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al actualizar el logo de la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -657,8 +665,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al actualizar el estado de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error updating agency status for agency {agencyId} to status {statusId}: {ex.Message}");
+            throw new Exception($"Error al actualizar el estado de la agencia {agencyId} al estado {statusId}: {ex.Message}", ex);
         }
     }
 
@@ -694,8 +702,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al actualizar el programa de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error updating agency program for agency {agencyId} and program {programId}: {ex.Message}");
+            throw new Exception($"Error al actualizar el programa {programId} de la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -737,8 +745,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al actualizar la inscripción de la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw;
+            await _logger.LogError(ex, $"Error updating agency inscription for agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al actualizar la inscripción de la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -769,8 +777,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al eliminar la agencia", new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
-            throw new Exception(ex.Message);
+            await _logger.LogError(ex, $"Error deleting agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al eliminar la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -815,8 +823,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al invalidar el caché de Agency Repository",
-                new Dictionary<string, string> { { "ErrorType", ex.GetType().Name }, { "ErrorMessage", ex.Message }, { "StackTrace", ex.StackTrace } });
+            await _logger.LogError(ex, $"Error invalidating cache for Agency Repository: {ex.Message}");
             // No relanzamos la excepción para evitar que un error de caché afecte la operación principal
         }
     }

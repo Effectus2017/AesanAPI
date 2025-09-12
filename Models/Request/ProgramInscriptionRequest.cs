@@ -1,3 +1,5 @@
+using Api.Models.Request;
+
 namespace Api.Models;
 
 public class ProgramInscriptionRequest

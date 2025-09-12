@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
+using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
@@ -40,8 +41,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la escuela");
-            return StatusCode(500, "Error al obtener la escuela");
+            _logger.LogError(ex, "Error al obtener la escuela: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -72,8 +73,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las escuelas");
-            return StatusCode(500, "Error al obtener las escuelas");
+            _logger.LogError(ex, "Error al obtener las escuelas: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -104,8 +105,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la escuela");
-            return StatusCode(500, "Error al insertar la escuela");
+            _logger.LogError(ex, "Error al insertar la escuela: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -116,7 +117,7 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     /// <returns>La escuela actualizada</returns>
     [HttpPut("update-school")]
     [SwaggerOperation(Summary = "Actualiza una escuela existente", Description = "Actualiza los datos de una escuela existente.")]
-    public async Task<IActionResult> UpdateSchool([FromBody] DTOSchool request)
+    public async Task<IActionResult> UpdateSchool([FromBody] SchoolRequest request)
     {
         try
         {
@@ -136,8 +137,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la escuela");
-            return StatusCode(500, "Error al actualizar la escuela");
+            _logger.LogError(ex, "Error al actualizar la escuela: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -163,8 +164,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la escuela");
-            return StatusCode(500, "Error al eliminar la escuela");
+            _logger.LogError(ex, "Error al eliminar la escuela: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -189,8 +190,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar si existe una escuela principal");
-            return StatusCode(500, "Error interno del servidor al verificar si existe una escuela principal");
+            _logger.LogError(ex, "Error al verificar si existe una escuela principal: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -223,8 +224,8 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}", queryParameters.SchoolId);
-            return StatusCode(500, "Error interno del servidor al actualizar el estado de la escuela");
+            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}: {Message}", queryParameters.SchoolId, ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 }

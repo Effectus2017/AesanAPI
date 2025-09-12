@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 using Api.Services.Mappers;
 
 namespace Api.Services;
@@ -156,25 +157,6 @@ public class MappingService
 
     #region School Mappings
 
-    /// <summary>
-    /// Mapea una escuela desde un resultado dinámico a un DTOSchool
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSchool</returns>
-    public DTOSchool MapSchool(dynamic item)
-    {
-        return _schoolMapper.MapFromResult(item);
-    }
-
-    /// <summary>
-    /// Mapea una escuela desde un resultado dinámico para listas
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSchool para listas</returns>
-    public DTOSchool MapSchoolList(dynamic item)
-    {
-        return SchoolMapper.MapListFromResult(item);
-    }
 
     /// <summary>
     /// Mapea una facilidad desde un resultado dinámico a un DTOFacility
@@ -204,6 +186,66 @@ public class MappingService
     public DTOEducationLevel MapEducationLevel(dynamic item)
     {
         return SchoolMapper.MapEducationLevelFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea un servicio de escuela desde un resultado dinámico a un SchoolServiceResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolServiceResponse</returns>
+    public SchoolServiceResponse MapSchoolService(dynamic item)
+    {
+        return SchoolMapper.MapSchoolServiceFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea información de Day Care Home desde un resultado dinámico a un SchoolDayCareHomeResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolDayCareHomeResponse</returns>
+    public SchoolDayCareHomeResponse MapSchoolDayCareHome(dynamic item)
+    {
+        return SchoolMapper.MapSchoolDayCareHomeFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea un participante de escuela desde un resultado dinámico a un SchoolParticipantResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolParticipantResponse</returns>
+    public SchoolParticipantResponse MapSchoolParticipant(dynamic item)
+    {
+        return SchoolMapper.MapSchoolParticipantFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea una escuela desde un resultado dinámico a un SchoolResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolResponse</returns>
+    public SchoolResponse MapSchool(dynamic item)
+    {
+        return _schoolMapper.MapResponseFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea una escuela desde un resultado dinámico para listas
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolResponse para listas</returns>
+    public SchoolResponse MapSchoolList(dynamic item)
+    {
+        return SchoolMapper.MapResponseListFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea una escuela desde un resultado dinámico para tablas optimizadas
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolTableResponse para tablas</returns>
+    public SchoolTableResponse MapSchoolTable(dynamic item)
+    {
+        return SchoolMapper.MapTableResponseFromResult(item);
     }
 
     #endregion

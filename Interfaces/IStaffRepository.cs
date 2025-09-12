@@ -96,4 +96,12 @@ public interface IStaffRepository
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff de la agencia</returns>
     Task<dynamic> GetStaffByAgency(int agencyId, int take, int skip, string name, int? staffTypeId = null);
+
+    /// <summary>
+    /// Obtiene el historial de auditoría de un miembro del staff
+    /// </summary>
+    /// <param name="staffId">ID del miembro del staff</param>
+    /// <param name="limit">Límite de registros a retornar</param>
+    /// <returns>Lista de registros de auditoría</returns>
+    Task<List<AuditTrailDto>> GetStaffAuditHistory(int staffId, int limit = 100);
 }

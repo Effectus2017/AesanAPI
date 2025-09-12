@@ -7,9 +7,9 @@ namespace Api.Services.Mappers;
 /// Mapper para entidades relacionadas con Agency
 /// Contiene todos los métodos de mapeo para DTOAgency y DTOAgencyInscription
 /// </summary>
-public class AgencyMapper(MappingService mappingService)
+public class AgencyMapper(Lazy<MappingService> mappingService)
 {
-    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+    private readonly Lazy<MappingService> _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Mapea una agencia desde un resultado dinámico a un DTOAgency
@@ -47,11 +47,11 @@ public class AgencyMapper(MappingService mappingService)
                 UpdatedAt = item.UpdatedAt,
                 AgencyCode = item.AgencyCode,
 
-                City = item.CityId != null ? _mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }) : null,
-                Region = item.RegionId != null ? _mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
-                PostalCity = item.PostalCityId != null ? _mappingService.MapCity(new { Id = item.PostalCityId ?? 0, Name = item.PostalCityName ?? string.Empty }) : null,
-                PostalRegion = item.PostalRegionId != null ? _mappingService.MapRegion(new { Id = item.PostalRegionId ?? 0, Name = item.PostalRegionName ?? string.Empty }) : null,
-                Status = _mappingService.MapAgencyStatus(item.StatusId, item.AgencyStatusName),
+                City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }) : null,
+                Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
+                PostalCity = item.PostalCityId != null ? _mappingService.Value.MapCity(new { Id = item.PostalCityId ?? 0, Name = item.PostalCityName ?? string.Empty }) : null,
+                PostalRegion = item.PostalRegionId != null ? _mappingService.Value.MapRegion(new { Id = item.PostalRegionId ?? 0, Name = item.PostalRegionName ?? string.Empty }) : null,
+                Status = _mappingService.Value.MapAgencyStatus(item.StatusId, item.AgencyStatusName),
                 User = item.UserId != null ? new DTOStaff
                 {
                     Id = item.UserId ?? 0,
@@ -235,8 +235,8 @@ public class AgencyMapper(MappingService mappingService)
                 AgencyCode = item.AgencyCode ?? string.Empty,
 
                 // Datos de ubicación
-                City = item.CityId != null ? _mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }) : null,
-                Region = item.RegionId != null ? _mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
+                City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }) : null,
+                Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
 
                 // Estado de la agencia
                 Status = item.StatusId != null ? new

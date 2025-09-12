@@ -16,13 +16,15 @@ public class StaffRepository(
     ILogger<StaffRepository> logger,
     IMemoryCache cache,
     IOptions<ApplicationSettings> appSettings,
-    MappingService mappingService) : IStaffRepository
+    MappingService mappingService,
+    IAuditLogger auditLogger) : IStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+    private readonly IAuditLogger _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
 
     /// <summary>
     /// Obtiene un miembro del staff por su ID
@@ -156,7 +158,22 @@ public class StaffRepository(
 
             var staffId = parameters.Get<int>("@id");
 
-            InvalidateCache(staffId);
+            if (staffId > 0)
+            {
+                // Registrar en auditoría
+                await _auditLogger.LogChangeAsync(
+                    "Staff",
+                    staffId.ToString(),
+                    "INSERT",
+                    staffRequest.UserId ?? "SYSTEM",
+                    null, // oldEntity (no hay para INSERT)
+                    staffRequest, // newEntity
+                    "Nuevo miembro del staff creado",
+                    "StaffCreation"
+                );
+
+                InvalidateCache(staffId);
+            }
 
             return staffId > 0;
         }
@@ -235,6 +252,9 @@ public class StaffRepository(
         {
             _logger.LogInformation("Actualizando miembro del staff con ID {StaffId}", staffRequest.Id);
 
+            // Obtener el registro actual para auditoría
+            var currentStaff = await GetStaffById(staffRequest.Id.Value);
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
@@ -277,6 +297,18 @@ public class StaffRepository(
 
             if (rowsAffected > 0)
             {
+                // Registrar en auditoría
+                await _auditLogger.LogChangeAsync(
+                    "Staff",
+                    staffRequest.Id.Value.ToString(),
+                    "UPDATE",
+                    staffRequest.UserId ?? "SYSTEM",
+                    currentStaff, // oldEntity
+                    staffRequest, // newEntity
+                    "Miembro del staff actualizado",
+                    "StaffUpdate"
+                );
+
                 InvalidateCache(staffRequest.Id.Value);
                 return true;
             }
@@ -301,6 +333,9 @@ public class StaffRepository(
         {
             _logger.LogInformation("Eliminando miembro del staff con ID {StaffId}", id);
 
+            // Obtener el registro actual para auditoría
+            var currentStaff = await GetStaffById(id);
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
@@ -313,6 +348,18 @@ public class StaffRepository(
 
             if (rowsAffected > 0)
             {
+                // Registrar en auditoría
+                await _auditLogger.LogChangeAsync(
+                    "Staff",
+                    id.ToString(),
+                    "DELETE",
+                    "SYSTEM", // No tenemos userId en DeleteStaff, usar SYSTEM
+                    currentStaff, // oldEntity
+                    null, // newEntity (no hay para DELETE)
+                    "Miembro del staff eliminado",
+                    "StaffDeletion"
+                );
+
                 InvalidateCache(id);
                 return true;
             }
@@ -506,6 +553,31 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", agencyId);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene el historial de auditoría de un miembro del staff
+    /// </summary>
+    /// <param name="staffId">ID del miembro del staff</param>
+    /// <param name="limit">Límite de registros a retornar</param>
+    /// <returns>Lista de registros de auditoría</returns>
+    public async Task<List<AuditTrailDto>> GetStaffAuditHistory(int staffId, int limit = 100)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@StaffId", staffId, DbType.Int32);
+            parameters.Add("@Limit", limit, DbType.Int32);
+
+            var result = await dbConnection.QueryAsync<AuditTrailDto>("103_GetStaffAuditHistory", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", staffId);
             throw new Exception(ex.Message);
         }
     }

@@ -199,3 +199,35 @@ INSERT INTO OptionSelection
 VALUES
     ('Aprobado', 'Approved', 'reviewResult', 0, 1, 760),
     ('Rechazado', 'Rejected', 'reviewResult', 0, 1, 770);
+
+
+--- Tenemos que crear un nuevo OptionSelection para Parentesco (optionKey = 'relationshipType')
+INSERT INTO OptionSelection
+    (Name, NameEn, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Abuela(o)', 'Grandparent', 'relationshipType', 0, 1, 780),
+    ('Madre', 'Mother', 'relationshipType', 0, 1, 790),
+    ('Padre', 'Father', 'relationshipType', 0, 1, 800),
+    ('Tía(o)', 'Aunt/Uncle', 'relationshipType', 0, 1, 800),
+    ('Encargada(o) Legal', 'Legal Guardian', 'relationshipType', 0, 1, 810);
+
+
+-- Tenemos que crear un nuevo OptionSelection para Tipo de Hogar (optionKey = 'homeType')
+INSERT INTO OptionSelection
+    (Name, NameEn, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Hogar Tier I', 'Tier I Home', 'homeType', 0, 1, 820),
+    ('Hogar Tier II', 'Tier II Home', 'homeType', 0, 1, 830),
+    ('Hogar Mixto', 'Mixed Home', 'homeType', 0, 1, 840);
+
+-- Tenemos que crear un nuevo OptionSelection para Participante (optionKey = 'participantType')
+INSERT INTO OptionSelection
+    (Name, NameEn, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('0-2 años', '0-2 years', 'participantType', 0, 1, 850),
+    ('3-5 años', '3-5 years', 'participantType', 0, 1, 860),
+    ('6-12 años', '6-12 years', 'participantType', 0, 1, 870),
+    ('12-18 años', '12-18 years', 'participantType', 0, 1, 880),
+    ('18 años o más con discapacidad', '18 or more years with disability', 'participantType', 0, 1, 890),
+    ('60 años o más', '60 or more years', 'participantType', 0, 1, 900);
+

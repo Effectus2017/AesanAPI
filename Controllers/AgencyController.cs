@@ -52,8 +52,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la agencia");
-            return StatusCode(500, "Error al obtener la agencia");
+            _logger.LogError(ex, "Error al obtener la agencia: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -91,8 +91,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la agencia para visita preoperacional");
-            return StatusCode(500, "Error al obtener la agencia para visita preoperacional");
+            _logger.LogError(ex, "Error al obtener la agencia para visita preoperacional: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -130,8 +130,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las agencias");
-            return StatusCode(500, "Error al obtener las agencias");
+            _logger.LogError(ex, "Error al obtener las agencias: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -161,8 +161,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los programas de la agencia por el ID del usuario");
-            return StatusCode(500, "Error al obtener los programas de la agencia");
+            _logger.LogError(ex, "Error al obtener los programas de la agencia por el ID del usuario: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -198,9 +198,9 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la agencia {AgencyId}", queryParameters.AgencyId);
+            _logger.LogError(ex, "Error al actualizar la agencia {AgencyId}: {Message}", queryParameters.AgencyId, ex.Message);
             await HttpContext.RaiseError(ex);
-            return StatusCode(500, "Error al actualizar la agencia");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -224,8 +224,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el logo de la agencia");
-            return StatusCode(500, "Error al actualizar el logo de la agencia");
+            _logger.LogError(ex, "Error al actualizar el logo de la agencia: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -255,8 +255,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado de la agencia");
-            return StatusCode(500, "Error al actualizar el estado de la agencia");
+            _logger.LogError(ex, "Error al actualizar el estado de la agencia: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -287,8 +287,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el programa de la agencia");
-            return StatusCode(500, "Error al actualizar el programa de la agencia");
+            _logger.LogError(ex, "Error al actualizar el programa de la agencia: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -322,8 +322,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la inscripción de la agencia");
-            return StatusCode(500, "Error al actualizar la inscripción de la agencia");
+            _logger.LogError(ex, "Error al actualizar la inscripción de la agencia: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
         }
     }
 }

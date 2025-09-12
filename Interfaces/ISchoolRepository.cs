@@ -1,4 +1,6 @@
 using Api.Models;
+using Api.Models.Request;
+using Api.Models.Response;
 
 namespace Api.Interfaces;
 
@@ -7,7 +9,7 @@ public interface ISchoolRepository
     /// <summary>
     /// Obtiene una escuela por su ID
     /// </summary>
-    Task<DTOSchool> GetSchoolById(int id);
+    Task<SchoolResponse> GetSchoolById(int id);
 
     /// <summary>
     /// Obtiene todas las escuelas
@@ -22,7 +24,7 @@ public interface ISchoolRepository
     /// <summary>
     /// Actualiza una escuela existente
     /// </summary>
-    Task<bool> UpdateSchool(DTOSchool request);
+    Task<bool> UpdateSchool(SchoolRequest request);
 
     /// <summary>
     /// Elimina una escuela

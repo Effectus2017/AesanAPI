@@ -113,8 +113,6 @@ public class CacheKeys
     // Claves para GroupType
     public string GroupTypes { get; set; } = "GroupTypes_{0}_{1}_{2}_{3}";
 
-    // Claves para Employee
-    public string Employees { get; set; } = "Employees_{0}_{1}_{2}_{3}";
 
     // Claves para Staff
     public string Staff { get; set; } = "Staff_{0}_{1}_{2}_{3}_{4}";

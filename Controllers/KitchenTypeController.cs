@@ -218,4 +218,38 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de cocina");
         }
     }
+
+    /// <summary>
+    /// Obtiene los tipos de cocina válidos para un tipo de grupo específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del tipo de grupo</param>
+    /// <returns>Lista de tipos de cocina válidos para el tipo de grupo, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-kitchen-types-by-group-type")]
+    [SwaggerOperation(Summary = "Obtiene tipos de cocina por tipo de grupo", Description = "Devuelve los tipos de cocina válidos para un tipo de grupo específico.")]
+    public async Task<ActionResult> GetKitchenTypesByGroupType([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de cocina para el tipo de grupo: {GroupTypeId}", queryParameters.GroupTypeId);
+
+                if (queryParameters.GroupTypeId == 0)
+                {
+                    return BadRequest("El ID del tipo de grupo es requerido");
+                }
+
+                var result = await _kitchenTypeRepository.GetKitchenTypesByGroupType(queryParameters.GroupTypeId);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de cocina para el tipo de grupo {GroupTypeId}", queryParameters.GroupTypeId);
+            return StatusCode(500, "Error interno del servidor al obtener los tipos de cocina");
+        }
+    }
 }

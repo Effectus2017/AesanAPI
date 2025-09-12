@@ -362,4 +362,36 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
             return StatusCode(500, "Error interno del servidor al obtener los miembros del staff de la agencia");
         }
     }
+
+    /// <summary>
+    /// Obtiene el historial de auditoría de un miembro del staff
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el StaffId</param>
+    /// <returns>Lista de registros de auditoría del staff</returns>
+    [HttpGet("get-staff-audit-history")]
+    [SwaggerOperation(Summary = "Obtiene el historial de auditoría de un miembro del staff", Description = "Devuelve el historial completo de cambios realizados en un miembro del staff.")]
+    public async Task<IActionResult> GetStaffAuditHistory([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (queryParameters.StaffId <= 0)
+            {
+                return BadRequest("El ID del staff es requerido y debe ser mayor a 0.");
+            }
+
+            var auditHistory = await _unitOfWork.StaffRepository.GetStaffAuditHistory(queryParameters.StaffId, queryParameters.Take);
+
+            if (auditHistory == null || !auditHistory.Any())
+            {
+                return NotFound("No se encontró historial de auditoría para el staff especificado.");
+            }
+
+            return Ok(auditHistory);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", queryParameters.StaffId);
+            return StatusCode(500, "Error interno del servidor al obtener el historial de auditoría");
+        }
+    }
 }

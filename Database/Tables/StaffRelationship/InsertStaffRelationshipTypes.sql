@@ -16,12 +16,5 @@ VALUES
     ('Hermano(a)', 'Sibling', 'staffRelationshipType', 0, 1, 850),
     ('Cuñado(a)', 'Brother/Sister-in-law', 'staffRelationshipType', 0, 1, 860);
 
--- Verificar que se insertaron correctamente
-SELECT
-    OptionKey,
-    Name,
-    NameEn,
-    DisplayOrder
-FROM OptionSelection
-WHERE OptionKey = 'staffRelationshipType'
-ORDER BY DisplayOrder;
+
+

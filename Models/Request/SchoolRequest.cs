@@ -1,10 +1,11 @@
-namespace Api.Models;
-
 using System;
 using System.Collections.Generic;
 
+namespace Api.Models.Request;
+
 public class SchoolRequest
 {
+    // ===== CAMPOS PRINCIPALES DE SCHOOL =====
     public int? Id { get; set; }
     public int? AgencyId { get; set; }
     public string Name { get; set; }
@@ -32,7 +33,7 @@ public class SchoolRequest
     public DateTime? StartDate { get; set; }
     public int? BaseYear { get; set; }
     public int? RenewalYear { get; set; }
-    public List<int> EducationLevelIds { get; set; } = new List<int>();
+    public List<SchoolEducationLevelRequest> EducationLevels { get; set; } = new();
     public DateTime? OperatingFromDate { get; set; }
     public DateTime? OperatingToDate { get; set; }
     public int? OperatingDaysCalculated { get; set; }
@@ -55,22 +56,10 @@ public class SchoolRequest
     public string Extension { get; set; }
     public string MobilePhone { get; set; }
 
-    // Servicios y Horarios
-    public bool? Breakfast { get; set; }
-    public TimeSpan? BreakfastFrom { get; set; }
-    public TimeSpan? BreakfastTo { get; set; }
-    public bool? Lunch { get; set; }
-    public TimeSpan? LunchFrom { get; set; }
-    public TimeSpan? LunchTo { get; set; }
-    public bool? Snack { get; set; }
-    public TimeSpan? SnackFrom { get; set; }
-    public TimeSpan? SnackTo { get; set; }
-    public bool? Dinner { get; set; }
-    public TimeSpan? DinnerFrom { get; set; }
-    public TimeSpan? DinnerTo { get; set; }
-    public bool? SnackNight { get; set; }
-    public TimeSpan? SnackNightFrom { get; set; }
-    public TimeSpan? SnackNightTo { get; set; }
+    // ===== RELACIONES CON MODELOS REQUEST =====
+    public List<SchoolServiceRequest> Services { get; set; } = new();
+    public SchoolDayCareHomeRequest? DayCareHome { get; set; }
+    public List<SchoolParticipantRequest> Participants { get; set; } = new();
 
     // Campos adicionales
     public int? CommunityId { get; set; }

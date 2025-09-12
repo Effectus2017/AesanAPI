@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 using Api.Services;
 
 namespace Api.Services.Mappers;
@@ -7,9 +8,9 @@ namespace Api.Services.Mappers;
 /// Mapper para entidades relacionadas con School
 /// Contiene todos los métodos de mapeo para DTOSchool y objetos relacionados
 /// </summary>
-public class SchoolMapper(MappingService mappingService)
+public class SchoolMapper(Lazy<MappingService> mappingService)
 {
-    private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+    private readonly Lazy<MappingService> _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
     /// Mapea un resultado dinámico a un DTOSchool completo con todas las relaciones
@@ -71,9 +72,6 @@ public class SchoolMapper(MappingService mappingService)
                 Lunch = item.Lunch ?? false,
                 LunchFrom = item.LunchFrom,
                 LunchTo = item.LunchTo,
-                Snack = item.Snack ?? false,
-                SnackFrom = item.SnackFrom,
-                SnackTo = item.SnackTo,
                 Dinner = item.Dinner ?? false,
                 DinnerFrom = item.DinnerFrom,
                 DinnerTo = item.DinnerTo,
@@ -97,20 +95,20 @@ public class SchoolMapper(MappingService mappingService)
                 MainSchoolName = item.MainSchoolName ?? string.Empty,
 
                 // Nested catalogs
-                City = item.CityId != null ? _mappingService.MapCity(new { Id = item.CityId, Name = item.CityName ?? string.Empty }) : null,
-                Region = item.RegionId != null ? _mappingService.MapRegion(new { Id = item.RegionId, Name = item.RegionName ?? string.Empty }) : null,
-                PostalCity = item.PostalCityId != null ? _mappingService.MapCity(new { Id = item.PostalCityId, Name = item.PostalCityName ?? string.Empty }) : null,
-                PostalRegion = item.PostalRegionId != null ? _mappingService.MapRegion(new { Id = item.PostalRegionId, Name = item.PostalRegionName ?? string.Empty }) : null,
-                OrganizationType = _mappingService.MapOrganizationType(item.OrganizationTypeId, item.OrganizationTypeName, item.OrganizationTypeNameEN),
-                KitchenType = _mappingService.MapKitchenType(item.KitchenTypeId, item.KitchenTypeName, item.KitchenTypeNameEN),
-                GroupType = _mappingService.MapGroupType(item.GroupTypeId, item.GroupTypeName, item.GroupTypeNameEN),
-                DeliveryType = _mappingService.MapDeliveryType(item.DeliveryTypeId, item.DeliveryTypeName, item.DeliveryTypeNameEN),
-                SponsorType = _mappingService.MapSponsorType(item.SponsorTypeId, item.SponsorTypeName, item.SponsorTypeNameEN),
-                ApplicantType = _mappingService.MapApplicantType(item.ApplicantTypeId, item.ApplicantTypeName, item.ApplicantTypeNameEN),
-                ResidentialType = _mappingService.MapResidentialType(item.ResidentialTypeId, item.ResidentialTypeName, item.ResidentialTypeNameEN),
-                OperatingPolicy = _mappingService.MapOperatingPolicy(item.OperatingPolicyId, item.OperatingPolicyName, item.OperatingPolicyNameEN),
-                CenterType = _mappingService.MapCenterType(item.CenterTypeId, item.CenterName, item.CenterNameEN),
-                AreaType = _mappingService.MapAreaType(item.AreaTypeId, item.AreaTypeName, item.AreaTypeNameEN),
+                City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId, Name = item.CityName ?? string.Empty }) : null,
+                Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId, Name = item.RegionName ?? string.Empty }) : null,
+                PostalCity = item.PostalCityId != null ? _mappingService.Value.MapCity(new { Id = item.PostalCityId, Name = item.PostalCityName ?? string.Empty }) : null,
+                PostalRegion = item.PostalRegionId != null ? _mappingService.Value.MapRegion(new { Id = item.PostalRegionId, Name = item.PostalRegionName ?? string.Empty }) : null,
+                OrganizationType = _mappingService.Value.MapOrganizationType(item.OrganizationTypeId, item.OrganizationTypeName, item.OrganizationTypeNameEN),
+                KitchenType = _mappingService.Value.MapKitchenType(item.KitchenTypeId, item.KitchenTypeName, item.KitchenTypeNameEN),
+                GroupType = _mappingService.Value.MapGroupType(item.GroupTypeId, item.GroupTypeName, item.GroupTypeNameEN),
+                DeliveryType = _mappingService.Value.MapDeliveryType(item.DeliveryTypeId, item.DeliveryTypeName, item.DeliveryTypeNameEN),
+                SponsorType = _mappingService.Value.MapSponsorType(item.SponsorTypeId, item.SponsorTypeName, item.SponsorTypeNameEN),
+                ApplicantType = _mappingService.Value.MapApplicantType(item.ApplicantTypeId, item.ApplicantTypeName, item.ApplicantTypeNameEN),
+                ResidentialType = _mappingService.Value.MapResidentialType(item.ResidentialTypeId, item.ResidentialTypeName, item.ResidentialTypeNameEN),
+                OperatingPolicy = _mappingService.Value.MapOperatingPolicy(item.OperatingPolicyId, item.OperatingPolicyName, item.OperatingPolicyNameEN),
+                CenterType = _mappingService.Value.MapCenterType(item.CenterTypeId, item.CenterName, item.CenterNameEN),
+                AreaType = _mappingService.Value.MapAreaType(item.AreaTypeId, item.AreaTypeName, item.AreaTypeNameEN),
                 Agency = item.AgencyId != null ? new DTOAgency
                 {
                     Id = item.AgencyId,
@@ -168,6 +166,172 @@ public class SchoolMapper(MappingService mappingService)
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Error inesperado al mapear la escuela: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico a un SchoolResponse (sin IDs redundantes)
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolResponse</returns>
+    public SchoolResponse MapResponseFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
+            }
+
+            return new SchoolResponse
+            {
+                Id = item.Id ?? 0,
+                AgencyId = item.AgencyId ?? 0,
+                Name = item.Name ?? string.Empty,
+                SiteCode = item.SiteCode ?? string.Empty,
+                StartDate = item.StartDate,
+                Address = item.Address ?? string.Empty,
+                ZipCode = item.ZipCode ?? string.Empty,
+                Latitude = item.Latitude,
+                Longitude = item.Longitude,
+                PostalAddress = item.PostalAddress ?? string.Empty,
+                PostalZipCode = item.PostalZipCode ?? string.Empty,
+                SameAsPhysicalAddress = item.SameAsPhysicalAddress ?? false,
+                NonProfit = item.NonProfit ?? false,
+                BaseYear = item.BaseYear,
+                RenewalYear = item.RenewalYear,
+                OperatingFromDate = item.OperatingFromDate,
+                OperatingToDate = item.OperatingToDate,
+                OperatingDaysCalculated = item.OperatingDaysCalculated,
+                HasWarehouse = item.HasWarehouse ?? false,
+                HasDiningRoom = item.HasDiningRoom ?? false,
+                AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
+                SitePhone = item.SitePhone ?? string.Empty,
+                Extension = item.Extension ?? string.Empty,
+                MobilePhone = item.MobilePhone ?? string.Empty,
+                CommunityId = item.CommunityId,
+                WalkersId = item.WalkersId,
+                SiteTypeId = item.SiteTypeId,
+                ExperienceId = item.ExperienceId,
+                ReviewResultId = item.ReviewResultId,
+                ReviewDate = item.ReviewDate,
+                ReviewJustification = item.ReviewJustification ?? string.Empty,
+                IsActive = item.IsActive ?? true,
+                InactiveJustification = item.InactiveJustification ?? string.Empty,
+                InactiveDate = item.InactiveDate,
+                CreatedAt = item.CreatedAt ?? DateTime.MinValue,
+                UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
+                IsMainSchool = item.IsMainSchool ?? false,
+                MainSchoolId = item.MainSchoolId ?? 0,
+                MainSchoolName = item.MainSchoolName ?? string.Empty,
+
+                // Objetos relacionados (sin IDs redundantes)
+                City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId, Name = item.CityName ?? string.Empty }) : null,
+                Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId, Name = item.RegionName ?? string.Empty }) : null,
+                PostalCity = item.PostalCityId != null ? _mappingService.Value.MapCity(new { Id = item.PostalCityId, Name = item.PostalCityName ?? string.Empty }) : null,
+                PostalRegion = item.PostalRegionId != null ? _mappingService.Value.MapRegion(new { Id = item.PostalRegionId, Name = item.PostalRegionName ?? string.Empty }) : null,
+                OrganizationType = _mappingService.Value.MapOrganizationType(item.OrganizationTypeId, item.OrganizationTypeName, item.OrganizationTypeNameEN),
+                KitchenType = _mappingService.Value.MapKitchenType(item.KitchenTypeId, item.KitchenTypeName, item.KitchenTypeNameEN),
+                GroupType = _mappingService.Value.MapGroupType(item.GroupTypeId, item.GroupTypeName, item.GroupTypeNameEN),
+                DeliveryType = _mappingService.Value.MapDeliveryType(item.DeliveryTypeId, item.DeliveryTypeName, item.DeliveryTypeNameEN),
+                SponsorType = _mappingService.Value.MapSponsorType(item.SponsorTypeId, item.SponsorTypeName, item.SponsorTypeNameEN),
+                ApplicantType = _mappingService.Value.MapApplicantType(item.ApplicantTypeId, item.ApplicantTypeName, item.ApplicantTypeNameEN),
+                ResidentialType = _mappingService.Value.MapResidentialType(item.ResidentialTypeId, item.ResidentialTypeName, item.ResidentialTypeNameEN),
+                OperatingPolicy = _mappingService.Value.MapOperatingPolicy(item.OperatingPolicyId, item.OperatingPolicyName, item.OperatingPolicyNameEN),
+                CenterType = _mappingService.Value.MapCenterType(item.CenterTypeId, item.CenterName, item.CenterNameEN),
+                AreaType = _mappingService.Value.MapAreaType(item.AreaTypeId, item.AreaTypeName, item.AreaTypeNameEN),
+                Agency = item.AgencyId != null ? new DTOAgency
+                {
+                    Id = item.AgencyId,
+                    Name = item.AgencyName ?? string.Empty
+                } : null,
+                MainSchool = item.MainSchoolId != null ? new SchoolResponse
+                {
+                    Id = item.MainSchoolId,
+                    Name = item.MainSchoolName ?? string.Empty
+                } : null
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear la escuela: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear la escuela: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico a un SchoolResponse simplificado para listas
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolResponse</returns>
+    public static SchoolResponse MapResponseListFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
+            }
+
+            return new SchoolResponse
+            {
+                Id = item.Id ?? 0,
+                AgencyId = item.AgencyId ?? 0,
+                Name = item.Name ?? string.Empty,
+                IsMainSchool = item.IsMainSchool ?? false,
+                MainSchoolId = item.MainSchoolId ?? 0,
+                MainSchool = item.MainSchoolId != null ? new SchoolResponse
+                {
+                    Id = item.MainSchoolId,
+                    Name = item.MainSchoolName ?? string.Empty
+                } : null
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear la escuela: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear la escuela: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico a un SchoolTableResponse optimizado para tablas
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolTableResponse</returns>
+    public static SchoolTableResponse MapTableResponseFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
+            }
+
+            return new SchoolTableResponse
+            {
+                Id = item.Id ?? 0,
+                Name = item.Name ?? string.Empty,
+                Address = item.Address ?? string.Empty,
+                CityName = item.CityName ?? string.Empty,
+                RegionName = item.RegionName ?? string.Empty,
+                IsMainSchool = item.IsMainSchool ?? false,
+                MainSchoolName = item.MainSchoolName
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear la escuela para tabla: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear la escuela para tabla: {ex.Message}", ex);
         }
     }
 
@@ -251,6 +415,136 @@ public class SchoolMapper(MappingService mappingService)
                 Id = item.Id,
                 Name = item.Name ?? string.Empty,
                 NameEN = item.NameEN ?? string.Empty
+            };
+        }
+        catch (Exception ex)
+        {
+            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea un servicio de escuela desde un resultado dinámico a un SchoolServiceResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolServiceResponse</returns>
+    public static SchoolServiceResponse MapSchoolServiceFromResult(dynamic item)
+    {
+        try
+        {
+            return new SchoolServiceResponse
+            {
+                Id = item.Id,
+                SchoolId = item.SchoolId,
+                ChildGroup = item.ChildGroupId != null ? new DTOOptionSelection
+                {
+                    Id = item.ChildGroupId,
+                    Name = item.ChildGroupName,
+                    NameEN = item.ChildGroupNameEN,
+                    OptionKey = item.ChildGroupOptionKey
+                } : null,
+                Breakfast = item.Breakfast,
+                BreakfastFrom = item.BreakfastFrom,
+                BreakfastTo = item.BreakfastTo,
+                Lunch = item.Lunch,
+                LunchFrom = item.LunchFrom,
+                LunchTo = item.LunchTo,
+                SnackAM = item.SnackAM,
+                SnackAMFrom = item.SnackAMFrom,
+                SnackAMTo = item.SnackAMTo,
+                Dinner = item.Dinner,
+                DinnerFrom = item.DinnerFrom,
+                DinnerTo = item.DinnerTo,
+                SnackPM = item.SnackPM,
+                SnackPMFrom = item.SnackPMFrom,
+                SnackPMTo = item.SnackPMTo,
+                SnackNight = item.SnackNight,
+                SnackNightFrom = item.SnackNightFrom,
+                SnackNightTo = item.SnackNightTo,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt
+            };
+        }
+        catch (Exception ex)
+        {
+            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea información de Day Care Home desde un resultado dinámico a un SchoolDayCareHomeResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolDayCareHomeResponse</returns>
+    public static SchoolDayCareHomeResponse MapSchoolDayCareHomeFromResult(dynamic item)
+    {
+        try
+        {
+            return new SchoolDayCareHomeResponse
+            {
+                Id = item.Id,
+                SchoolId = item.SchoolId,
+                IsAuthorizedToOperate = item.IsAuthorizedToOperate,
+                HasFamilyDepartmentLicense = item.HasFamilyDepartmentLicense,
+                NumberOfEnrolledChildren = item.NumberOfEnrolledChildren,
+                NumberOfProviderChildren = item.NumberOfProviderChildren,
+                NumberOfParticipantsWithBloodTies = item.NumberOfParticipantsWithBloodTies,
+                NumberOfParticipantsWithoutBloodTies = item.NumberOfParticipantsWithoutBloodTies,
+                MinorsLiveWithProvider = item.MinorsLiveWithProvider,
+                RelationshipType = item.RelationshipTypeId != null ? new DTOOptionSelection
+                {
+                    Id = item.RelationshipTypeId,
+                    Name = item.RelationshipTypeName,
+                    NameEN = item.RelationshipTypeNameEN,
+                    OptionKey = item.RelationshipTypeOptionKey
+                } : null,
+                OffersServiceToImmigrantChildren = item.OffersServiceToImmigrantChildren,
+                HomeType = item.HomeTypeId != null ? new DTOOptionSelection
+                {
+                    Id = item.HomeTypeId,
+                    Name = item.HomeTypeName,
+                    NameEN = item.HomeTypeNameEN,
+                    OptionKey = item.HomeTypeOptionKey
+                } : null,
+                AdministratorAuthorizedName = item.AdministratorAuthorizedName,
+                AdministratorBirthDate = item.AdministratorBirthDate,
+                OffersServiceToDifferentGroups = item.OffersServiceToDifferentGroups,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt
+            };
+        }
+        catch (Exception ex)
+        {
+            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea un participante de escuela desde un resultado dinámico a un SchoolParticipantResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolParticipantResponse</returns>
+    public static SchoolParticipantResponse MapSchoolParticipantFromResult(dynamic item)
+    {
+        try
+        {
+            return new SchoolParticipantResponse
+            {
+                Id = item.Id,
+                SchoolId = item.SchoolId,
+                ParticipantType = new DTOOptionSelection
+                {
+                    Id = item.ParticipantTypeId,
+                    Name = item.ParticipantTypeName,
+                    NameEN = item.ParticipantTypeNameEN,
+                    OptionKey = item.ParticipantTypeOptionKey
+                },
+                IsActive = item.IsActive,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt
             };
         }
         catch (Exception ex)

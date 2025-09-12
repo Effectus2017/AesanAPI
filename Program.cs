@@ -140,8 +140,6 @@ builder.Services.AddScoped<ICenterTypeRepository, CenterTypeRepository>();
 builder.Services.AddScoped<IHouseholdMemberRepository, HouseholdMemberRepository>();
 builder.Services.AddScoped<IAreaTypeRepository, AreaTypeRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
-// TODO: Remove EmployeeRepository when migration to Staff is complete
-builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffTypeRepository, StaffTypeRepository>();
 builder.Services.AddScoped<IStaffClassificationRepository, StaffClassificationRepository>();
@@ -149,6 +147,7 @@ builder.Services.AddScoped<IStaffRelationshipRepository, StaffRelationshipReposi
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
 builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));
+builder.Services.AddScoped<Lazy<MappingService>>(sp => new Lazy<MappingService>(() => sp.GetRequiredService<MappingService>()));
 
 // Registrar AgencyUsersRepository después de los servicios Lazy
 builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
@@ -282,6 +281,9 @@ builder.Services.AddElmah<SqlErrorLog>(options =>
 });
 
 builder.Services.AddScoped<ILoggingService, LoggingService>();
+
+// Registrar AuditLogger
+builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 
 builder.Services.AddLogging(logging =>
 {

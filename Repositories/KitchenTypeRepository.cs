@@ -238,6 +238,29 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
     }
 
+    /// <summary>
+    /// Obtiene los tipos de cocina válidos para un tipo de grupo específico
+    /// </summary>
+    /// <param name="groupTypeId">El ID del tipo de grupo</param>
+    /// <returns>Los tipos de cocina válidos para el tipo de grupo</returns>
+    public async Task<dynamic> GetKitchenTypesByGroupType(int groupTypeId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@groupTypeId", groupTypeId, DbType.Int32);
+
+            var result = await db.QueryAsync<DTOKitchenType>("100_GetKitchenTypesByGroupType", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de cocina para el tipo de grupo {GroupTypeId}", groupTypeId);
+            throw;
+        }
+    }
+
     private void InvalidateCache(int? kitchenTypeId = null)
     {
         if (kitchenTypeId.HasValue)

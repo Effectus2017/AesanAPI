@@ -49,4 +49,11 @@ public interface IKitchenTypeRepository
     /// <param name="id">El ID del tipo a eliminar.</param>
     /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
     Task<bool> DeleteKitchenType(int id);
+
+    /// <summary>
+    /// Obtiene los tipos de cocina válidos para un tipo de grupo específico.
+    /// </summary>
+    /// <param name="groupTypeId">El ID del tipo de grupo.</param>
+    /// <returns>Los tipos de cocina válidos para el tipo de grupo.</returns>
+    Task<dynamic> GetKitchenTypesByGroupType(int groupTypeId);
 }

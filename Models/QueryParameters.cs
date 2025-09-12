@@ -28,6 +28,7 @@ public class QueryParameters
     public int? SchoolId { get; set; } // ID de la escuela
     public int StaffId { get; set; } // ID del miembro del staff
     public int? StaffTypeId { get; set; } // ID del tipo de staff
+    public int GroupTypeId { get; set; } // ID del tipo de grupo
 
     public string? ImageUrl { get; set; } // URL de la imagen
     public string? RejectionJustification { get; set; } // Justification for rejection

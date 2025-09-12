@@ -1,8 +1,11 @@
 using System.Data;
+using System.Linq;
 using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Request;
+using Api.Models.Response;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -21,8 +24,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// Obtiene una escuela por su ID
     /// </summary>
     /// <param name="id">El ID de la escuela a obtener.</param>
-    /// <returns>La escuela encontrada.</returns>
-    public async Task<DTOSchool> GetSchoolById(int id)
+    /// <returns>La escuela encontrada como SchoolResponse.</returns>
+    public async Task<SchoolResponse> GetSchoolById(int id)
     {
         try
         {
@@ -30,12 +33,14 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryMultipleAsync("102_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("103_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
 
             var school = await result.ReadFirstOrDefaultAsync<dynamic>();
-            //var facilities = result.Read<dynamic>().ToList();
             var satellites = result.Read<dynamic>().ToList();
             var educationLevels = result.Read<dynamic>().ToList();
+            var services = result.Read<dynamic>().ToList();
+            var dayCareHome = await result.ReadFirstOrDefaultAsync<dynamic>();
+            var participants = result.Read<dynamic>().ToList();
 
             if (school == null)
             {
@@ -43,15 +48,17 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             }
 
             var data = _mappingService.MapSchool(school);
-            //data.Facilities = facilities.Select(_mappingService.MapFacility).ToList();
             data.Satellites = satellites.Select(_mappingService.MapSatelliteSchool).ToList();
             data.EducationLevels = educationLevels.Select(_mappingService.MapEducationLevel).ToList();
+            data.Services = services.Select(_mappingService.MapSchoolService).ToList();
+            data.DayCareHome = dayCareHome != null ? _mappingService.MapSchoolDayCareHome(dayCareHome) : null;
+            data.Participants = participants.Select(_mappingService.MapSchoolParticipant).ToList();
             return data;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting school by id {Id}", id);
-            throw;
+            _logger.LogError(ex, "Error getting school by id {Id}: {Message}", id, ex.Message);
+            throw new Exception($"Error al obtener la escuela con ID {id}: {ex.Message}", ex);
         }
     }
 
@@ -61,8 +68,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// <param name="take">El número de escuelas a obtener.</param>
     /// <param name="skip">El número de escuelas a saltar.</param>
     /// <param name="name">El nombre de la escuela a buscar.</param>
+    /// <param name="cityId">ID de la ciudad para filtrar.</param>
+    /// <param name="regionId">ID de la región para filtrar.</param>
+    /// <param name="agencyId">ID de la agencia para filtrar.</param>
     /// <param name="alls">Si se deben obtener todas las escuelas.</param>
-    /// <returns>Las escuelas encontradas.</returns>
+    /// <param name="isList">Si es para lista o paginación.</param>
+    /// <returns>Las escuelas encontradas como SchoolTableResponse.</returns>
     public async Task<dynamic> GetAllSchoolsFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool isList)
     {
         try
@@ -85,14 +96,14 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     cacheKey,
                     async () =>
                     {
-                        using var result = await dbConnection.QueryMultipleAsync("102_GetSchools", parameters, commandType: CommandType.StoredProcedure);
+                        using var result = await dbConnection.QueryMultipleAsync("103_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
                         if (result == null)
                         {
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(_mappingService.MapSchoolList).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapSchoolTable).ToList();
                         return data;
                     },
                     _logger,
@@ -102,24 +113,26 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             }
             else
             {
-                using var result = await dbConnection.QueryMultipleAsync("102_GetSchools", parameters, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("103_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
                     return null;
                 }
 
-                var schoolsDynamic = result.Read<dynamic>().ToList();
+                var schools = result.Read<dynamic>().ToList();
+
+                var data = schools.Select(_mappingService.MapSchoolTable).ToList();
                 var count = result.ReadFirstOrDefault<int>();
-                var data = schoolsDynamic.Select(_mappingService.MapSchool).ToList();
+
                 return new { data, count };
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting schools with parameters: take={Take}, skip={Skip}, name={Name}, cityId={CityId}, regionId={RegionId}, agencyId={AgencyId}, alls={Alls}",
-                take, skip, name, cityId, regionId, agencyId, alls);
-            throw;
+            _logger.LogError(ex, "Error getting schools with parameters: take={Take}, skip={Skip}, name={Name}, cityId={CityId}, regionId={RegionId}, agencyId={AgencyId}, alls={Alls}: {Message}",
+                take, skip, name, cityId, regionId, agencyId, alls, ex.Message);
+            throw new Exception($"Error al obtener las escuelas: {ex.Message}", ex);
         }
     }
 
@@ -179,21 +192,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
             parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@breakfast", request.Breakfast, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@breakfastFrom", request.BreakfastFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@breakfastTo", request.BreakfastTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@lunch", request.Lunch, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@lunchFrom", request.LunchFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@lunchTo", request.LunchTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@dinner", request.Dinner, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@dinnerFrom", request.DinnerFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@dinnerTo", request.DinnerTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackNight", request.SnackNight, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@snackNightFrom", request.SnackNightFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackNightTo", request.SnackNightTo, DbType.Time, ParameterDirection.Input);
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
@@ -204,7 +202,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("102_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("103_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
 
             int schoolId = parameters.Get<int>("@id");
 
@@ -215,9 +213,23 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             }
 
             // Insertar niveles educativos
-            if (request.EducationLevelIds != null && request.EducationLevelIds.Count != 0)
+            if (request.EducationLevels != null && request.EducationLevels.Count != 0)
             {
-                await InsertSchoolEducationLevels(schoolId, request.EducationLevelIds);
+                var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
+                await InsertSchoolEducationLevels(schoolId, educationLevelIds);
+            }
+
+            // Insertar servicios de alimentación
+            await InsertSchoolService(schoolId, request);
+
+            // Insertar información de Day Care Home
+            await InsertSchoolDayCareHome(schoolId, request);
+
+            // Insertar tipos de participantes
+            if (request.Participants != null && request.Participants.Count != 0)
+            {
+                var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
+                await InsertSchoolParticipants(schoolId, participantTypeIds);
             }
 
             // Invalidar caché
@@ -227,8 +239,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la escuela");
-            throw;
+            _logger.LogError(ex, "Error al insertar la escuela: {Message}", ex.Message);
+            throw new Exception($"Error al insertar la escuela: {ex.Message}", ex);
         }
     }
 
@@ -237,7 +249,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     /// </summary>
     /// <param name="request">La solicitud de la escuela a actualizar.</param>
     /// <returns>True si la escuela se actualizó correctamente, false en caso contrario.</returns>
-    public async Task<bool> UpdateSchool(DTOSchool request)
+    public async Task<bool> UpdateSchool(SchoolRequest request)
     {
         try
         {
@@ -281,21 +293,25 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
             parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@breakfast", request.Breakfast, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@breakfastFrom", request.BreakfastFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@breakfastTo", request.BreakfastTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@lunch", request.Lunch, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@lunchFrom", request.LunchFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@lunchTo", request.LunchTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snack", request.Snack, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@snackFrom", request.SnackFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackTo", request.SnackTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@dinner", request.Dinner, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@dinnerFrom", request.DinnerFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@dinnerTo", request.DinnerTo, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackNight", request.SnackNight, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@snackNightFrom", request.SnackNightFrom, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackNightTo", request.SnackNightTo, DbType.Time, ParameterDirection.Input);
+
+            // Los campos de servicios ya no están en SchoolRequest, se manejan por separado
+            // Se mantienen como null para compatibilidad con el stored procedure
+            parameters.Add("@breakfast", null, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@breakfastFrom", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@breakfastTo", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lunch", null, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@lunchFrom", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lunchTo", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackAM", null, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@snackAMFrom", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackAMTo", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@dinner", null, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@dinnerFrom", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@dinnerTo", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackNight", null, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@snackNightFrom", null, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@snackNightTo", null, DbType.Time, ParameterDirection.Input);
+
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
@@ -314,29 +330,30 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             // Si tenemos un mainSchoolId, actualizamos la escuela principal
-            if (request.MainSchoolId.HasValue)
+            if (request.MainSchoolId.HasValue && request.Id.HasValue)
             {
-                await UpdateSatelliteSchool(request.MainSchoolId.Value, request.Id);
+                await UpdateSatelliteSchool(request.MainSchoolId.Value, request.Id.Value);
             }
 
             // Actualizar niveles educativos
-            if (request.EducationLevelIds != null && request.EducationLevelIds.Count != 0)
+            if (request.EducationLevels != null && request.EducationLevels.Count != 0 && request.Id.HasValue)
             {
-                await UpdateSchoolEducationLevels(request.Id, request.EducationLevelIds);
+                var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
+                await UpdateSchoolEducationLevels(request.Id.Value, educationLevelIds);
             }
 
-            if (rowsAffected > 0)
+            if (rowsAffected > 0 && request.Id.HasValue)
             {
                 // Invalidar caché
-                InvalidateCache(request.Id);
+                InvalidateCache(request.Id.Value);
             }
 
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la escuela");
-            throw;
+            _logger.LogError(ex, "Error al actualizar la escuela: {Message}", ex.Message);
+            throw new Exception($"Error al actualizar la escuela: {ex.Message}", ex);
         }
     }
 
@@ -365,8 +382,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la escuela");
-            throw;
+            _logger.LogError(ex, "Error al eliminar la escuela: {Message}", ex.Message);
+            throw new Exception($"Error al eliminar la escuela: {ex.Message}", ex);
         }
     }
 
@@ -565,8 +582,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}", schoolId);
-            throw;
+            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}: {Message}", schoolId, ex.Message);
+            throw new Exception($"Error al actualizar el estado activo de la escuela {schoolId}: {ex.Message}", ex);
         }
     }
 
@@ -615,6 +632,241 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             _logger.LogError(ex, "Error al obtener código de secuencia de agencia {AgencyId}", agencyId);
             return "001";
+        }
+    }
+
+    // DESHABILITADO: Funciones de validación comentadas por el momento
+    // /// <summary>
+    // /// Verifica si el request tiene datos de servicios
+    // /// </summary>
+    // /// <param name="request">Request de la escuela</param>
+    // /// <returns>True si tiene datos de servicios</returns>
+    // private static bool HasServiceData(SchoolRequest request)
+    // {
+    //     return request.Breakfast.HasValue || request.Lunch.HasValue || request.SnackAM.HasValue ||
+    //            request.Dinner.HasValue || request.SnackPM.HasValue || request.SnackNight.HasValue;
+    // }
+
+    // /// <summary>
+    // /// Verifica si el request tiene datos de Day Care Home
+    // /// </summary>
+    // /// <param name="request">Request de la escuela</param>
+    // /// <returns>True si tiene datos de Day Care Home</returns>
+    // private static bool HasDayCareHomeData(SchoolRequest request)
+    // {
+    //     return request.IsAuthorizedToOperate.HasValue || request.HasFamilyDepartmentLicense.HasValue ||
+    //            request.NumberOfEnrolledChildren.HasValue || request.NumberOfProviderChildren.HasValue ||
+    //            request.NumberOfParticipantsWithBloodTies.HasValue || request.NumberOfParticipantsWithoutBloodTies.HasValue ||
+    //            request.MinorsLiveWithProvider.HasValue || request.RelationshipTypeId.HasValue ||
+    //            request.OffersServiceToImmigrantChildren.HasValue || request.HomeTypeId.HasValue ||
+    //            !string.IsNullOrEmpty(request.AdministratorAuthorizedName) || request.AdministratorBirthDate.HasValue ||
+    //            request.OffersServiceToDifferentGroups.HasValue;
+    // }
+
+    /// <summary>
+    /// Inserta servicios de alimentación para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="request">Request con datos de servicios</param>
+    /// <returns>True si se insertó correctamente</returns>
+    private async Task<bool> InsertSchoolService(int schoolId, SchoolRequest request)
+    {
+        try
+        {
+            if (request.Services == null || request.Services.Count == 0)
+            {
+                // Si no hay servicios, insertar un registro vacío
+                return await InsertEmptySchoolService(schoolId);
+            }
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            foreach (var service in request.Services)
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@schoolId", schoolId, DbType.Int32);
+                parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
+                parameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
+                parameters.Add("@breakfastFrom", service.BreakfastFrom, DbType.Time);
+                parameters.Add("@breakfastTo", service.BreakfastTo, DbType.Time);
+                parameters.Add("@lunch", service.Lunch, DbType.Boolean);
+                parameters.Add("@lunchFrom", service.LunchFrom, DbType.Time);
+                parameters.Add("@lunchTo", service.LunchTo, DbType.Time);
+                parameters.Add("@snackAM", service.SnackAM, DbType.Boolean);
+                parameters.Add("@snackAMFrom", service.SnackAMFrom, DbType.Time);
+                parameters.Add("@snackAMTo", service.SnackAMTo, DbType.Time);
+                parameters.Add("@dinner", service.Dinner, DbType.Boolean);
+                parameters.Add("@dinnerFrom", service.DinnerFrom, DbType.Time);
+                parameters.Add("@dinnerTo", service.DinnerTo, DbType.Time);
+                parameters.Add("@snackPM", service.SnackPM, DbType.Boolean);
+                parameters.Add("@snackPMFrom", service.SnackPMFrom, DbType.Time);
+                parameters.Add("@snackPMTo", service.SnackPMTo, DbType.Time);
+                parameters.Add("@snackNight", service.SnackNight, DbType.Boolean);
+                parameters.Add("@snackNightFrom", service.SnackNightFrom, DbType.Time);
+                parameters.Add("@snackNightTo", service.SnackNightTo, DbType.Time);
+                parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                await dbConnection.ExecuteAsync("100_InsertSchoolService", parameters, commandType: CommandType.StoredProcedure);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar servicios para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta un registro vacío de servicios cuando no hay servicios definidos
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <returns>True si se insertó correctamente</returns>
+    private async Task<bool> InsertEmptySchoolService(int schoolId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@childGroupId", null, DbType.Int32);
+            parameters.Add("@breakfast", null, DbType.Boolean);
+            parameters.Add("@breakfastFrom", null, DbType.Time);
+            parameters.Add("@breakfastTo", null, DbType.Time);
+            parameters.Add("@lunch", null, DbType.Boolean);
+            parameters.Add("@lunchFrom", null, DbType.Time);
+            parameters.Add("@lunchTo", null, DbType.Time);
+            parameters.Add("@snackAM", null, DbType.Boolean);
+            parameters.Add("@snackAMFrom", null, DbType.Time);
+            parameters.Add("@snackAMTo", null, DbType.Time);
+            parameters.Add("@dinner", null, DbType.Boolean);
+            parameters.Add("@dinnerFrom", null, DbType.Time);
+            parameters.Add("@dinnerTo", null, DbType.Time);
+            parameters.Add("@snackPM", null, DbType.Boolean);
+            parameters.Add("@snackPMFrom", null, DbType.Time);
+            parameters.Add("@snackPMTo", null, DbType.Time);
+            parameters.Add("@snackNight", null, DbType.Boolean);
+            parameters.Add("@snackNightFrom", null, DbType.Time);
+            parameters.Add("@snackNightTo", null, DbType.Time);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_InsertSchoolService", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar servicios vacíos para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta información de Day Care Home para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="request">Request con datos de Day Care Home</param>
+    /// <returns>True si se insertó correctamente</returns>
+    private async Task<bool> InsertSchoolDayCareHome(int schoolId, SchoolRequest request)
+    {
+        try
+        {
+            if (request.DayCareHome == null)
+            {
+                // Si no hay información de Day Care Home, insertar un registro vacío
+                return await InsertEmptySchoolDayCareHome(schoolId);
+            }
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@isAuthorizedToOperate", request.DayCareHome.IsAuthorizedToOperate, DbType.Boolean);
+            parameters.Add("@hasFamilyDepartmentLicense", request.DayCareHome.HasFamilyDepartmentLicense, DbType.Boolean);
+            parameters.Add("@numberOfEnrolledChildren", request.DayCareHome.NumberOfEnrolledChildren, DbType.Int32);
+            parameters.Add("@numberOfProviderChildren", request.DayCareHome.NumberOfProviderChildren, DbType.Int32);
+            parameters.Add("@numberOfParticipantsWithBloodTies", request.DayCareHome.NumberOfParticipantsWithBloodTies, DbType.Int32);
+            parameters.Add("@numberOfParticipantsWithoutBloodTies", request.DayCareHome.NumberOfParticipantsWithoutBloodTies, DbType.Int32);
+            parameters.Add("@minorsLiveWithProvider", request.DayCareHome.MinorsLiveWithProvider, DbType.Boolean);
+            parameters.Add("@relationshipTypeId", request.DayCareHome.RelationshipTypeId, DbType.Int32);
+            parameters.Add("@offersServiceToImmigrantChildren", request.DayCareHome.OffersServiceToImmigrantChildren, DbType.Boolean);
+            parameters.Add("@homeTypeId", request.DayCareHome.HomeTypeId, DbType.Int32);
+            parameters.Add("@administratorAuthorizedName", request.DayCareHome.AdministratorAuthorizedName, DbType.String);
+            parameters.Add("@administratorBirthDate", request.DayCareHome.AdministratorBirthDate, DbType.Date);
+            parameters.Add("@offersServiceToDifferentGroups", request.DayCareHome.OffersServiceToDifferentGroups, DbType.Boolean);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_InsertSchoolDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar información de Day Care Home para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta un registro vacío de Day Care Home cuando no hay información específica
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <returns>True si se insertó correctamente</returns>
+    private async Task<bool> InsertEmptySchoolDayCareHome(int schoolId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@isAuthorizedToOperate", null, DbType.Boolean);
+            parameters.Add("@hasFamilyDepartmentLicense", null, DbType.Boolean);
+            parameters.Add("@numberOfEnrolledChildren", null, DbType.Int32);
+            parameters.Add("@numberOfProviderChildren", null, DbType.Int32);
+            parameters.Add("@numberOfParticipantsWithBloodTies", null, DbType.Int32);
+            parameters.Add("@numberOfParticipantsWithoutBloodTies", null, DbType.Int32);
+            parameters.Add("@minorsLiveWithProvider", null, DbType.Boolean);
+            parameters.Add("@relationshipTypeId", null, DbType.Int32);
+            parameters.Add("@offersServiceToImmigrantChildren", null, DbType.Boolean);
+            parameters.Add("@homeTypeId", null, DbType.Int32);
+            parameters.Add("@administratorAuthorizedName", null, DbType.String);
+            parameters.Add("@administratorBirthDate", null, DbType.Date);
+            parameters.Add("@offersServiceToDifferentGroups", null, DbType.Boolean);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_InsertSchoolDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar información vacía de Day Care Home para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta tipos de participantes para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="participantTypeIds">Lista de IDs de tipos de participantes</param>
+    /// <returns>True si se insertaron correctamente</returns>
+    private async Task<bool> InsertSchoolParticipants(int schoolId, List<int> participantTypeIds)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@participantTypeIds", string.Join(",", participantTypeIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_InsertSchoolParticipants", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar tipos de participantes para la escuela {SchoolId}", schoolId);
+            throw;
         }
     }
 }
