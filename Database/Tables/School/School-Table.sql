@@ -1,6 +1,7 @@
 -- DEPRECATED: Esta versión de la tabla School ha sido reemplazada por una nueva versión. No modificar ni usar para nuevas migraciones
 -- Tabla: School (Sitios/Escuelas)
--- Versión 2.0 - Estructura extendida y actualizada según nuevos requerimientos
+-- Versión 2.3 - Estructura con SiteNumber para numeración consecutiva por agencia
+-- Última actualización: 2025-01-15 - Agregado SiteNumber con índice único por agencia
 CREATE TABLE School
 (
     Id INT PRIMARY KEY IDENTITY(1,1),
@@ -39,25 +40,9 @@ CREATE TABLE School
     AreaTypeId INT NULL,
     HasWarehouse BIT NULL,
     HasDiningRoom BIT NULL,
-    AdministratorAuthorizedName NVARCHAR(255) NULL,
     SitePhone NVARCHAR(20) NULL,
     Extension NVARCHAR(10) NULL,
     MobilePhone NVARCHAR(20) NULL,
-    Breakfast BIT NULL,
-    BreakfastFrom TIME NULL,
-    BreakfastTo TIME NULL,
-    Lunch BIT NULL,
-    LunchFrom TIME NULL,
-    LunchTo TIME NULL,
-    Snack BIT NULL,
-    SnackFrom TIME NULL,
-    SnackTo TIME NULL,
-    Dinner BIT NULL,
-    DinnerFrom TIME NULL,
-    DinnerTo TIME NULL,
-    SnackNight BIT NULL,
-    SnackNightFrom TIME NULL,
-    SnackNightTo TIME NULL,
     CommunityId INT NULL,
     WalkersId INT NULL,
     SiteTypeId INT NULL,
@@ -65,6 +50,10 @@ CREATE TABLE School
     ReviewResultId INT NULL,
     ReviewDate DATETIME NULL,
     ReviewJustification NVARCHAR(500) NULL,
+    GeneralEnrollment INT NULL,
+    -- Matrícula General - Número total de estudiantes matriculados
+    SiteNumber INT NOT NULL,
+    -- Número de Sitio - Contador consecutivo por agencia
     IsActive BIT NOT NULL DEFAULT 1,
     InactiveJustification NVARCHAR(500) NULL,
     InactiveDate DATETIME NULL,
@@ -126,7 +115,12 @@ ALTER TABLE School
 
 
 -- Facilidades (Almacén, Salón Comedor) se gestionan en SchoolFacility
--- Los catálogos KitchenType, GroupType, DeliveryType, SponsorType, ApplicantType, OperatingPolicy deben crearse si no existen. 
+-- Los catálogos KitchenType, GroupType, DeliveryType, SponsorType, ApplicantType, OperatingPolicy deben crearse si no existen.
+
+-- NOTA: Los siguientes campos fueron migrados a tablas especializadas:
+-- - Servicios de comidas (Breakfast, Lunch, Dinner, Snack, SnackNight y sus horarios) -> SchoolService
+-- - Campos específicos de Day Care Home (AdministratorAuthorizedName, etc.) -> SchoolDayCareHome
+-- - Tipos de participantes -> SchoolParticipant 
 
 ALTER TABLE School
     ADD CONSTRAINT FK_School_CenterType FOREIGN KEY (CenterTypeId) REFERENCES CenterType(Id);
@@ -159,6 +153,9 @@ ALTER TABLE School
 -- ReviewResult se maneja en su tabla ReviewResult
 ALTER TABLE School
     ADD CONSTRAINT FK_School_ReviewResult FOREIGN KEY (ReviewResultId) REFERENCES ReviewResult(Id);
+
+-- Índice único para garantizar unicidad de SiteNumber por agencia
+CREATE UNIQUE INDEX UK_School_AgencyId_SiteNumber ON School(AgencyId, SiteNumber);
 
 
 

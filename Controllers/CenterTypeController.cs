@@ -27,31 +27,20 @@ public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfW
     {
         try
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _logger.LogInformation("Obteniendo tipo de centro por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del tipo de centro es requerido");
-                }
-
-                var result = await _unitOfWork.CenterTypeRepository.GetCenterTypeById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Tipo de centro con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Obteniendo tipo de centro por ID: {Id}", queryParameters.Id);
+
+            var result = await _unitOfWork.CenterTypeRepository.GetCenterTypeById(queryParameters.Id);
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de centro");
-            return StatusCode(500, "Error al obtener el tipo de centro");
+            _logger.LogError(ex, "Error al obtener el tipo de centro con ID {Id}", queryParameters.Id);
+            return StatusCode(500, new ErrorResponse("Error al obtener el tipo de centro", ex.Message));
         }
     }
 
@@ -66,25 +55,18 @@ public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfW
     {
         try
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var result = await _unitOfWork.CenterTypeRepository.GetAllCenterTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron tipos de centro");
-                }
-
-                return Ok(result);
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
 
-            _logger.LogError("Error al obtener los tipos de centro");
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _unitOfWork.CenterTypeRepository.GetAllCenterTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name ?? string.Empty, queryParameters.Alls, queryParameters.IsList);
+            return Ok(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de centro");
-            return StatusCode(500, "Error al obtener los tipos de centro");
+            return StatusCode(500, new ErrorResponse("Error al obtener los tipos de centro", ex.Message));
         }
     }
 
@@ -92,31 +74,25 @@ public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfW
     /// Inserta un nuevo tipo de centro
     /// </summary>
     /// <param name="request">Tipo de centro</param>
-    /// <returns>ID del tipo de centro</returns>
+    /// <returns>ID del tipo de centro creado</returns>
     [HttpPost("insert-center-type")]
     [SwaggerOperation(Summary = "Inserta un nuevo tipo de centro", Description = "Crea un nuevo tipo de centro en la base de datos.")]
     public async Task<IActionResult> Insert([FromBody] CenterTypeRequest request)
     {
         try
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var result = await _unitOfWork.CenterTypeRepository.InsertCenterType(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("No se pudo insertar el tipo de centro");
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var newId = await _unitOfWork.CenterTypeRepository.InsertCenterType(request);
+            return Ok(new { id = newId, message = "Tipo de centro creado exitosamente" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el tipo de centro");
-            return StatusCode(500, "Error al insertar el tipo de centro");
+            return StatusCode(500, new ErrorResponse("Error al insertar el tipo de centro", ex.Message));
         }
     }
 
@@ -131,24 +107,18 @@ public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfW
     {
         try
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var result = await _unitOfWork.CenterTypeRepository.UpdateCenterType(request);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de centro con ID {request.Id} no encontrado");
-                }
-
-                return NoContent();
+                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _unitOfWork.CenterTypeRepository.UpdateCenterType(request);
+            return NoContent();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el tipo de centro");
-            return StatusCode(500, "Error al actualizar el tipo de centro");
+            return StatusCode(500, new ErrorResponse("Error al actualizar el tipo de centro", ex.Message));
         }
     }
 
@@ -166,12 +136,6 @@ public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfW
             if (ModelState.IsValid)
             {
                 var result = await _unitOfWork.CenterTypeRepository.DeleteCenterType(queryParameters.Id);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de centro con ID {queryParameters.Id} no encontrado");
-                }
-
                 return NoContent();
             }
 
@@ -180,8 +144,41 @@ public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfW
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el tipo de centro");
-            return StatusCode(500, "Error al eliminar el tipo de centro");
+            return StatusCode(500, new ErrorResponse("Error al eliminar el tipo de centro", ex.Message));
         }
     }
 
+    /// <summary>
+    /// Obtiene los tipos de centro válidos para un programa específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de tipos de centro válidos para el programa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-center-types-by-program")]
+    [SwaggerOperation(Summary = "Obtiene tipos de centro por programa", Description = "Devuelve los tipos de centro válidos para un programa específico.")]
+    public async Task<ActionResult> GetCenterTypesByProgram([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de centro para el programa: {ProgramId}", queryParameters.ProgramId);
+
+                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
+                {
+                    return BadRequest("El ID del programa es requerido");
+                }
+
+                var result = await _unitOfWork.CenterTypeRepository.GetCenterTypesByProgram(queryParameters.ProgramId.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de centro para el programa {ProgramId}", queryParameters.ProgramId);
+            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de centro", ex.Message));
+        }
+    }
 }

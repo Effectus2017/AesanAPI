@@ -33,7 +33,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryMultipleAsync("103_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("104_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
 
             var school = await result.ReadFirstOrDefaultAsync<dynamic>();
             var satellites = result.Read<dynamic>().ToList();
@@ -96,7 +96,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                     cacheKey,
                     async () =>
                     {
-                        using var result = await dbConnection.QueryMultipleAsync("103_GetSchools", parameters, commandType: CommandType.StoredProcedure);
+                        using var result = await dbConnection.QueryMultipleAsync("104_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
                         if (result == null)
                         {
@@ -113,7 +113,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             }
             else
             {
-                using var result = await dbConnection.QueryMultipleAsync("103_GetSchools", parameters, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("104_GetSchools", parameters, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -200,9 +200,15 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
+
+            // Obtener el siguiente número de sitio para la agencia
+            int nextSiteNumber = await GetNextSiteNumber(request.AgencyId.Value);
+            parameters.Add("@siteNumber", nextSiteNumber, DbType.Int32, ParameterDirection.Input);
+
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("103_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("104_InsertSchool", parameters, commandType: CommandType.StoredProcedure);
 
             int schoolId = parameters.Get<int>("@id");
 
@@ -322,10 +328,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@isActive", request.IsActive, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@siteNumber", request.SiteNumber, DbType.Int32, ParameterDirection.Input);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("102_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("104_UpdateSchool", parameters, commandType: CommandType.StoredProcedure);
 
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
@@ -866,6 +874,29 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar tipos de participantes para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene el siguiente número de sitio disponible para una agencia
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>El siguiente número de sitio disponible</returns>
+    private async Task<int> GetNextSiteNumber(int agencyId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@AgencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+
+            var result = await dbConnection.QuerySingleAsync<int>("100_GetNextSiteNumber", parameters, commandType: CommandType.StoredProcedure);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
             throw;
         }
     }

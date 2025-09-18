@@ -1,9 +1,15 @@
 using Api.Models;
+using Api.Models.Response;
 using System;
 using System.Collections.Generic;
 
 namespace Api.Models;
 
+/// <summary>
+/// DEPRECATED: Este modelo está siendo reemplazado por SchoolResponse.
+/// No usar para nuevas implementaciones.
+/// </summary>
+[Obsolete("Este modelo está siendo reemplazado por SchoolResponse. No usar para nuevas implementaciones.")]
 public class DTOSchool
 {
     public int Id { get; set; }
@@ -89,7 +95,7 @@ public class DTOSchool
     public DTOOrganizationType? OrganizationType { get; set; }
     public DTOKitchenType? KitchenType { get; set; }
     public DTOGroupType? GroupType { get; set; }
-    public DTODeliveryType? DeliveryType { get; set; }
+    public DeliveryTypeResponse? DeliveryType { get; set; }
     public DTOSponsorType? SponsorType { get; set; }
     public DTOApplicantType? ApplicantType { get; set; }
     public DTOResidentialType? ResidentialType { get; set; }
@@ -105,6 +111,7 @@ public class DTOSchool
     public DateTime? UpdatedAt { get; set; }
     public int? MainSchoolId { get; set; }
     public string? MainSchoolName { get; set; }
+    public int? GeneralEnrollment { get; set; }
 
     // Main School
     public DTOSchool? MainSchool { get; set; }

@@ -26,8 +26,8 @@ public interface ICenterTypeRepository
     /// Inserta un tipo de centro
     /// </summary>
     /// <param name="request">El tipo de centro a insertar</param>
-    /// <returns>True si la inserción fue exitosa, false en caso contrario</returns>
-    Task<bool> InsertCenterType(CenterTypeRequest request);
+    /// <returns>El ID del tipo de centro insertado, o 0 si falló</returns>
+    Task<int> InsertCenterType(CenterTypeRequest request);
 
     /// <summary>
     /// Actualiza un tipo de centro existente
@@ -42,4 +42,11 @@ public interface ICenterTypeRepository
     /// <param name="id">El ID del tipo de centro a eliminar</param>
     /// <returns>True si la eliminación fue exitosa, false en caso contrario</returns>
     Task<bool> DeleteCenterType(int id);
+
+    /// <summary>
+    /// Obtiene los tipos de centro válidos para un programa específico.
+    /// </summary>
+    /// <param name="programId">El ID del programa.</param>
+    /// <returns>Los tipos de centro válidos para el programa.</returns>
+    Task<dynamic> GetCenterTypesByProgram(int programId);
 }

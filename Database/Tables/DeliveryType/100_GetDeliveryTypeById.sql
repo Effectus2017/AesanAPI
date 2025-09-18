@@ -5,7 +5,7 @@ CREATE OR ALTER PROCEDURE [100_GetDeliveryTypeById]
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT Id, Name, NameEN, IsActive, CreatedAt, UpdatedAt, DisplayOrder
+    SELECT Id, Name, NameEN, IsActive, CreatedAt, UpdatedAt, DisplayOrder, SelectionNotification
     FROM DeliveryType
     WHERE Id = @id;
 END; 

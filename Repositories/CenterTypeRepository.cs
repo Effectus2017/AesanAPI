@@ -92,7 +92,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
 
                 if (result == null)
                 {
-                    return null;
+                    return null!;
                 }
 
                 var data = result.Read<dynamic>().Select(_mappingService.MapCenterType).ToList();
@@ -111,8 +111,8 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
     /// Inserta un nuevo tipo de centro
     /// </summary>
     /// <param name="request">El tipo de centro a insertar</param>
-    /// <returns>True si la inserción fue exitosa, false en caso contrario</returns>
-    public async Task<bool> InsertCenterType(CenterTypeRequest request)
+    /// <returns>El ID del tipo de centro insertado, o 0 si falló</returns>
+    public async Task<int> InsertCenterType(CenterTypeRequest request)
     {
         try
         {
@@ -122,8 +122,13 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
             parameters.Add("@nameEN", request.NameEN);
             parameters.Add("@displayOrder", request.DisplayOrder);
             parameters.Add("@isActive", request.IsActive);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
             await db.ExecuteAsync("100_InsertCenterType", parameters, commandType: CommandType.StoredProcedure);
-            return true;
+
+            var newId = parameters.Get<int>("@id");
+            InvalidateCache();
+            return newId;
         }
         catch (Exception ex)
         {
@@ -172,6 +177,12 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
             var param = new DynamicParameters();
             param.Add("@id", id);
             var rows = await db.ExecuteAsync("100_DeleteCenterType", param, commandType: CommandType.StoredProcedure);
+
+            if (rows > 0)
+            {
+                InvalidateCache(id);
+            }
+
             return rows > 0;
         }
         catch (Exception ex)
@@ -181,14 +192,68 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
     }
 
+    /// <summary>
+    /// Obtiene los tipos de centro válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">El ID del programa</param>
+    /// <returns>Los tipos de centro válidos para el programa</returns>
+    public async Task<dynamic> GetCenterTypesByProgram(int programId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@programId", programId, DbType.Int32);
+
+            var result = await db.QueryAsync<DTOCenterType>("100_GetCenterTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de centro para el programa {ProgramId}", programId);
+            throw;
+        }
+    }
+
     private void InvalidateCache(int? centerTypeId = null)
     {
-        if (centerTypeId.HasValue)
+        try
         {
-            _cache.Remove($"CenterType_{centerTypeId}");
+            // Invalidar cache específico del tipo de centro si se proporciona ID
+            if (centerTypeId.HasValue)
+            {
+                _cache.Remove($"CenterType_{centerTypeId}");
+            }
+
+            // Invalidar todos los caches relacionados con CenterTypes
+            // Buscar y remover todas las claves que contengan "CenterTypes"
+            var cacheKeys = _cache.GetType()
+                .GetField("_entries", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                .GetValue(_cache) as System.Collections.IDictionary;
+
+            if (cacheKeys != null)
+            {
+                var keysToRemove = new List<object>();
+                foreach (var key in cacheKeys.Keys)
+                {
+                    if (key?.ToString()?.Contains("CenterTypes") == true)
+                    {
+                        keysToRemove.Add(key);
+                    }
+                }
+
+                foreach (var key in keysToRemove)
+                {
+                    _cache.Remove(key);
+                }
+            }
+
+            _logger.LogInformation("Cache invalidado para CenterType Repository");
         }
-        _cache.Remove("CenterTypes");
-        _logger.LogInformation("Cache invalidado para CenterType Repository");
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al invalidar cache de CenterType");
+        }
     }
 
 }

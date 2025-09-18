@@ -93,6 +93,7 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 IsMainSchool = item.IsMainSchool ?? false,
                 MainSchoolId = item.MainSchoolId ?? 0,
                 MainSchoolName = item.MainSchoolName ?? string.Empty,
+                GeneralEnrollment = item.GeneralEnrollment,
 
                 // Nested catalogs
                 City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId, Name = item.CityName ?? string.Empty }) : null,
@@ -224,6 +225,7 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 IsMainSchool = item.IsMainSchool ?? false,
                 MainSchoolId = item.MainSchoolId ?? 0,
                 MainSchoolName = item.MainSchoolName ?? string.Empty,
+                GeneralEnrollment = item.GeneralEnrollment,
 
                 // Objetos relacionados (sin IDs redundantes)
                 City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId, Name = item.CityName ?? string.Empty }) : null,
@@ -322,7 +324,11 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 CityName = item.CityName ?? string.Empty,
                 RegionName = item.RegionName ?? string.Empty,
                 IsMainSchool = item.IsMainSchool ?? false,
-                MainSchoolName = item.MainSchoolName
+                MainSchoolName = item.MainSchoolName,
+                GeneralEnrollment = item.GeneralEnrollment,
+                SiteNumber = item.SiteNumber ?? 0,
+                AgencyCode = item.AgencyCode,
+                SiteCode = item.SiteCode
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
@@ -363,11 +369,11 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
-    /// Mapea un resultado dinámico a un DTOSatelliteSchool
+    /// Mapea un resultado dinámico a un SchoolSatelliteResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSatelliteSchool</returns>
-    public static DTOSatelliteSchool MapSatelliteFromResult(dynamic item)
+    /// <returns>SchoolSatelliteResponse</returns>
+    public static SchoolSatelliteResponse MapSatelliteFromResult(dynamic item)
     {
         try
         {
@@ -376,7 +382,7 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 return null;
             }
 
-            return new DTOSatelliteSchool
+            return new SchoolSatelliteResponse
             {
                 Id = item.Id,
                 MainSchoolId = item.MainSchoolId,

@@ -479,7 +479,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
             }
 
-            string currentMonitorId = currentAgency.Monitor.Id.ToString();
+            int? currentMonitorId = currentAgency.Monitor?.Id;
 
             var parameters = new DynamicParameters();
             parameters.Add("@id", agencyId);
@@ -509,18 +509,18 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             // Verificar si hay un nuevo monitor asignado y es diferente al actual
-            if (!string.IsNullOrEmpty(agencyRequest.MonitorId) && currentMonitorId != agencyRequest.MonitorId)
+            if (agencyRequest.MonitorId.HasValue && currentMonitorId != agencyRequest.MonitorId)
             {
                 // Si había un monitor previo, des asignar el monitor primero
-                if (!string.IsNullOrEmpty(currentMonitorId))
+                if (currentMonitorId.HasValue)
                 {
                     _logger.LogInformation($"Des asignando monitor anterior {currentMonitorId} de la agencia {agencyId}");
-                    await _agencyUsersRepository.UnassignAgencyFromUser(currentMonitorId, agencyId);
+                    await _agencyUsersRepository.UnassignAgencyFromUser(currentMonitorId.ToString(), agencyId);
 
                     // Enviar correo de des asignación al monitor anterior
                     var previousMonitor = new DTOUser
                     {
-                        Id = currentMonitorId,
+                        Id = currentMonitorId.ToString(),
                         FirstName = currentAgency.Monitor.FirstName,
                         FatherLastName = currentAgency.Monitor.FatherLastName,
                         Email = currentAgency.Monitor.Email
@@ -530,7 +530,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
                 // Asignar el nuevo monitor
                 _logger.LogInformation($"Asignando nuevo monitor {agencyRequest.MonitorId} a la agencia {agencyId}");
-                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId, agencyId, agencyRequest.AssignedBy, false, true);
+                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId.ToString(), agencyId, agencyRequest.AssignedBy, false, true);
             }
 
             // Invalidar caché

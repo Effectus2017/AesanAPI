@@ -44,7 +44,7 @@ public class AgencyRequest
     // Código de Agencia
     public string? AgencyCode { get; set; }
     // Monitor
-    public string? MonitorId { get; set; }
+    public int? MonitorId { get; set; }
     // Usuario que asigna
     public string? AssignedBy { get; set; }
 

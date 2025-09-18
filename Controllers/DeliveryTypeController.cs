@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
-using Api.Models.DTO;
+using Api.Models.Request;
+using Api.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -87,7 +88,7 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     /// <returns>El tipo de entrega creado.</returns>
     [HttpPost("insert-delivery-type")]
     [SwaggerOperation(Summary = "Crea un nuevo tipo de entrega", Description = "Crea un nuevo tipo de entrega.")]
-    public async Task<ActionResult> Insert([FromBody] DTODeliveryType request)
+    public async Task<ActionResult> Insert([FromBody] DeliveryTypeRequest request)
     {
         try
         {
@@ -119,7 +120,7 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     /// <returns>El tipo de entrega actualizado.</returns>
     [HttpPut("update-delivery-type")]
     [SwaggerOperation(Summary = "Actualiza un tipo de entrega existente", Description = "Actualiza los datos de un tipo de entrega existente.")]
-    public async Task<IActionResult> Update([FromBody] DTODeliveryType request)
+    public async Task<IActionResult> Update([FromBody] DeliveryTypeRequest request)
     {
         try
         {

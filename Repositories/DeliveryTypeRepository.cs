@@ -3,6 +3,8 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Request;
+using Api.Models.Response;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -31,7 +33,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryFirstOrDefaultAsync<DTODeliveryType>("100_GetDeliveryTypeById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryFirstOrDefaultAsync<DeliveryTypeResponse>("100_GetDeliveryTypeById", parameters, commandType: CommandType.StoredProcedure);
             return result;
         }
         catch (Exception ex)
@@ -108,7 +110,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     /// </summary>
     /// <param name="deliveryType">El tipo de entrega a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    public async Task<bool> InsertDeliveryType(DTODeliveryType deliveryType)
+    public async Task<bool> InsertDeliveryType(DeliveryTypeRequest deliveryType)
     {
         try
         {
@@ -118,6 +120,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             parameters.Add("@nameEN", deliveryType.NameEN, DbType.String);
             parameters.Add("@isActive", deliveryType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", deliveryType.DisplayOrder, DbType.Int32);
+            parameters.Add("@selectionNotification", deliveryType.SelectionNotification, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
             await db.ExecuteAsync("100_InsertDeliveryType", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
@@ -136,7 +139,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     /// </summary>
     /// <param name="deliveryType">El tipo de entrega a actualizar.</param>
     /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
-    public async Task<bool> UpdateDeliveryType(DTODeliveryType deliveryType)
+    public async Task<bool> UpdateDeliveryType(DeliveryTypeRequest deliveryType)
     {
         try
         {
@@ -147,6 +150,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             parameters.Add("@nameEN", deliveryType.NameEN, DbType.String);
             parameters.Add("@isActive", deliveryType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", deliveryType.DisplayOrder, DbType.Int32);
+            parameters.Add("@selectionNotification", deliveryType.SelectionNotification, DbType.Boolean);
             await db.ExecuteAsync("100_UpdateDeliveryType", parameters, commandType: CommandType.StoredProcedure);
             InvalidateCache(deliveryType.Id);
             return true;

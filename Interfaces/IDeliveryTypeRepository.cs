@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Request;
 
 namespace Api.Interfaces;
 
@@ -26,14 +27,14 @@ public interface IDeliveryTypeRepository
     /// </summary>
     /// <param name="deliveryType">El tipo de entrega a insertar.</param>
     /// <returns>True si la inserción es exitosa, false en caso contrario.</returns>
-    Task<bool> InsertDeliveryType(DTODeliveryType deliveryType);
+    Task<bool> InsertDeliveryType(DeliveryTypeRequest deliveryType);
 
     /// <summary>
     /// Actualiza un tipo de entrega existente.
     /// </summary>
     /// <param name="deliveryType">El tipo de entrega a actualizar.</param>
     /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
-    Task<bool> UpdateDeliveryType(DTODeliveryType deliveryType);
+    Task<bool> UpdateDeliveryType(DeliveryTypeRequest deliveryType);
 
     /// <summary>
     /// Elimina un tipo de entrega existente.

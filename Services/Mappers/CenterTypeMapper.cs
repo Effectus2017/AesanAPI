@@ -26,7 +26,9 @@ public static class CenterTypeMapper
             {
                 Id = result.Id,
                 Name = result.Name,
-                NameEN = result.NameEN
+                NameEN = result.NameEN,
+                IsActive = result.IsActive,
+                DisplayOrder = result.DisplayOrder
             };
         }
         catch (Exception ex)
@@ -56,7 +58,9 @@ public static class CenterTypeMapper
                 Name = result.Name,
                 NameEN = result.NameEN,
                 IsActive = result.IsActive,
-                DisplayOrder = result.DisplayOrder
+                DisplayOrder = result.DisplayOrder,
+                CreatedAt = result.CreatedAt,
+                UpdatedAt = result.UpdatedAt
             };
         }
         catch (Exception ex)

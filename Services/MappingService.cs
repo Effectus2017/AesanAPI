@@ -169,11 +169,11 @@ public class MappingService
     }
 
     /// <summary>
-    /// Mapea una escuela satélite desde un resultado dinámico a un DTOSatelliteSchool
+    /// Mapea una escuela satélite desde un resultado dinámico a un SchoolSatelliteResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOSatelliteSchool</returns>
-    public DTOSatelliteSchool MapSatelliteSchool(dynamic item)
+    /// <returns>SchoolSatelliteResponse</returns>
+    public SchoolSatelliteResponse MapSatelliteSchool(dynamic item)
     {
         return SchoolMapper.MapSatelliteFromResult(item);
     }
@@ -379,21 +379,21 @@ public class MappingService
     #region Delivery Type Mappings
 
     /// <summary>
-    /// Mapea un tipo de entrega desde un resultado dinámico a un DTODeliveryType (versión simplificada para listas)
+    /// Mapea un tipo de entrega desde un resultado dinámico a un DeliveryTypeResponse (versión simplificada para listas)
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTODeliveryType</returns>
-    public DTODeliveryType MapDeliveryTypeList(dynamic item)
+    /// <returns>DeliveryTypeResponse</returns>
+    public DeliveryTypeResponse MapDeliveryTypeList(dynamic item)
     {
         return DeliveryTypeMapper.MapListFromResult(item);
     }
 
     /// <summary>
-    /// Mapea un tipo de entrega desde un resultado dinámico a un DTODeliveryType completo
+    /// Mapea un tipo de entrega desde un resultado dinámico a un DeliveryTypeResponse completo
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTODeliveryType</returns>
-    public DTODeliveryType MapDeliveryType(dynamic item)
+    /// <returns>DeliveryTypeResponse</returns>
+    public DeliveryTypeResponse MapDeliveryType(dynamic item)
     {
         return DeliveryTypeMapper.MapFromResult(item);
     }
@@ -402,8 +402,8 @@ public class MappingService
     /// Mapea una lista de tipos de entrega desde resultados dinámicos
     /// </summary>
     /// <param name="items">Resultados dinámicos</param>
-    /// <returns>Lista de DTODeliveryType</returns>
-    public List<DTODeliveryType> MapDeliveryTypes(IEnumerable<dynamic> items)
+    /// <returns>Lista de DeliveryTypeResponse</returns>
+    public List<DeliveryTypeResponse> MapDeliveryTypes(IEnumerable<dynamic> items)
     {
         return items.Select(MapDeliveryType).ToList();
     }
@@ -971,12 +971,12 @@ public class MappingService
     /// <param name="id">ID del tipo</param>
     /// <param name="name">Nombre del tipo</param>
     /// <param name="nameEN">Nombre en inglés del tipo</param>
-    /// <returns>DTODeliveryType o null</returns>
-    public DTODeliveryType? MapDeliveryType(int? id, string? name, string? nameEN = null)
+    /// <returns>DeliveryTypeResponse o null</returns>
+    public DeliveryTypeResponse? MapDeliveryType(int? id, string? name, string? nameEN = null)
     {
         if (id == null) return null;
 
-        return new DTODeliveryType
+        return new DeliveryTypeResponse
         {
             Id = id.Value,
             Name = name ?? string.Empty,

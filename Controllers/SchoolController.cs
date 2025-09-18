@@ -121,6 +121,12 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     {
         try
         {
+            // Validación condicional: requerir justificación solo cuando IsActive es false
+            if (request.IsActive == false && string.IsNullOrWhiteSpace(request.InactiveJustification))
+            {
+                ModelState.AddModelError("InactiveJustification", "Se requiere justificación para inactivar la escuela");
+            }
+
             if (ModelState.IsValid)
             {
                 var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);

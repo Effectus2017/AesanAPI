@@ -140,4 +140,38 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de área");
         }
     }
+
+    /// <summary>
+    /// Obtiene el tipo de área válido para una ciudad específica
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID de la ciudad</param>
+    /// <returns>Tipo de área válido para la ciudad, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-area-type-by-city")]
+    [SwaggerOperation(Summary = "Obtiene tipo de área por ciudad", Description = "Devuelve el tipo de área válido para una ciudad específica.")]
+    public async Task<ActionResult> GetAreaTypeByCity([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipo de área para la ciudad: {CityId}", queryParameters.CityId);
+
+                if (queryParameters.CityId == 0)
+                {
+                    return BadRequest("El ID de la ciudad es requerido");
+                }
+
+                var result = await _areaTypeRepository.GetAreaTypeByCity(queryParameters.CityId);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el tipo de área para la ciudad {CityId}", queryParameters.CityId);
+            return StatusCode(500, "Error interno del servidor al obtener el tipo de área");
+        }
+    }
 }

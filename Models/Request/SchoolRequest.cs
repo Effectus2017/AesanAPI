@@ -76,6 +76,12 @@ public class SchoolRequest
 
     // Estado de actividad
     public bool? IsActive { get; set; }
-    public string InactiveJustification { get; set; }
+    public string? InactiveJustification { get; set; }
     public DateTime? InactiveDate { get; set; }
+
+    // Matrícula General
+    public int? GeneralEnrollment { get; set; }
+
+    // Número de Sitio
+    public int? SiteNumber { get; set; }
 }

@@ -20,6 +20,11 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
+    /// <summary>
+    /// Obtiene un tipo de área por su ID
+    /// </summary>
+    /// <param name="id">El ID del tipo de área</param>
+    /// <returns>El tipo de área obtenido</returns>
     public async Task<dynamic> GetAreaTypeById(int id)
     {
         try
@@ -37,6 +42,15 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
     }
 
+    /// <summary>
+    /// Obtiene todos los tipos de área
+    /// </summary>
+    /// <param name="take">El número de tipos de área a tomar</param>
+    /// <param name="skip">El número de tipos de área a saltar</param>
+    /// <param name="name">El nombre del tipo de área</param>
+    /// <param name="alls">Indica si se deben obtener todos los tipos de área</param>
+    /// <param name="isList">Indica si se debe retornar una lista o un objeto</param>
+    /// <returns>Los tipos de área obtenidos</returns>
     public async Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool isList)
     {
         try
@@ -82,6 +96,11 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
     }
 
+    /// <summary>
+    /// Inserta un tipo de área
+    /// </summary>
+    /// <param name="areaType">El tipo de área a insertar</param>
+    /// <returns>Indica si la inserción fue exitosa</returns>
     public async Task<bool> InsertAreaType(AreaTypeRequest areaType)
     {
         try
@@ -104,6 +123,11 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
     }
 
+    /// <summary>
+    /// Actualiza un tipo de área
+    /// </summary>
+    /// <param name="areaType">El tipo de área a actualizar</param>
+    /// <returns>Indica si la actualización fue exitosa</returns>
     public async Task<bool> UpdateAreaType(DTOAreaType areaType)
     {
         try
@@ -125,6 +149,11 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
     }
 
+    /// <summary>
+    /// Elimina un tipo de área
+    /// </summary>
+    /// <param name="id">El ID del tipo de área a eliminar</param>
+    /// <returns>Indica si la eliminación fue exitosa</returns>
     public async Task<bool> DeleteAreaType(int id)
     {
         try
@@ -138,6 +167,29 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting area type with id {Id}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene el tipo de área válido para una ciudad específica
+    /// </summary>
+    /// <param name="cityId">El ID de la ciudad</param>
+    /// <returns>El tipo de área válido para la ciudad</returns>
+    public async Task<dynamic> GetAreaTypeByCity(int cityId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@cityId", cityId, DbType.Int32);
+
+            var result = await db.QueryAsync<DTOAreaType>("100_GetAreaTypeByCity", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el tipo de área para la ciudad {CityId}", cityId);
             throw;
         }
     }

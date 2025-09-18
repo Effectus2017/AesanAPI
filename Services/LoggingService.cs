@@ -1,7 +1,7 @@
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Channel;
-using ElmahCore;
+// using ElmahCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,15 +36,15 @@ public class LoggingService(
         _telemetryClient.TrackException(telemetry);
 
         // Log to ELMAH
-        var context = _httpContextAccessor.HttpContext;
-        if (context != null)
-        {
-            var errorLog = context.RequestServices.GetService<ErrorLog>();
-            if (errorLog != null)
-            {
-                await errorLog.LogAsync(new Error(ex, context));
-            }
-        }
+        // var context = _httpContextAccessor.HttpContext;
+        // if (context != null)
+        // {
+        //     var errorLog = context.RequestServices.GetService<ErrorLog>();
+        //     if (errorLog != null)
+        //     {
+        //         await errorLog.LogAsync(new Error(ex, context));
+        //     }
+        // }
 
         // Log to console in development
         if (_environment.IsDevelopment())

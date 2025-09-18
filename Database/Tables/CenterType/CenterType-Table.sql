@@ -16,3 +16,15 @@ VALUES
     ('Orfanato', 'Orphanage', 10, 1),
     ('Centro de tratamiento residencial para salud mental', 'Residential Treatment Center for Mental Health', 20, 1),
     ('Centro Correccional Juvenil', 'Juvenile Correctional Center', 30, 1);
+
+
+--Albergue = Emergency Shelters
+--Centro de Cuidado Adulto = Adult Care Center
+--Centro de Cuidado Diurno = Day Care Center
+
+INSERT INTO CenterType
+    (Name, NameEN, DisplayOrder, IsActive)
+VALUES
+    ('Albergue', 'Emergency Shelters', 40, 1),
+    ('Centro de Cuidado Adulto', 'Adult Care Center', 50, 1),
+    ('Centro de Cuidado Diurno', 'Day Care Center', 60, 1);

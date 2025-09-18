@@ -1,0 +1,11 @@
+CREATE TABLE AreaTypeCity
+(
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    AreaTypeId INT NOT NULL,
+    CityId INT NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL,
+    FOREIGN KEY (AreaTypeId) REFERENCES AreaType(Id),
+    FOREIGN KEY (CityId) REFERENCES City(Id)
+);

@@ -41,3 +41,11 @@ INSERT INTO OrganizationType
     (Name, NameEN, DisplayOrder, IsActive)
 VALUES
     ('Otros', 'Others', 40, 1);
+
+
+
+-- update OrganizationType set NameEN = 'Other' where Id = 4;
+
+UPDATE OrganizationType
+SET Name = 'Municipios', NameEN = 'Municipalities'
+WHERE Id = 4;

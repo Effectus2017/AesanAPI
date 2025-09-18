@@ -62,7 +62,7 @@ public class SchoolResponse
     public DTOOrganizationType? OrganizationType { get; set; }
     public DTOKitchenType? KitchenType { get; set; }
     public DTOGroupType? GroupType { get; set; }
-    public DTODeliveryType? DeliveryType { get; set; }
+    public DeliveryTypeResponse? DeliveryType { get; set; }
     public DTOSponsorType? SponsorType { get; set; }
     public DTOApplicantType? ApplicantType { get; set; }
     public DTOResidentialType? ResidentialType { get; set; }
@@ -79,12 +79,15 @@ public class SchoolResponse
     public DateTime? UpdatedAt { get; set; }
     public int? MainSchoolId { get; set; }
     public string? MainSchoolName { get; set; }
+    public int? GeneralEnrollment { get; set; }
+    public int SiteNumber { get; set; }
+    public string? AgencyCode { get; set; }
 
     // Main School
     public SchoolResponse? MainSchool { get; set; }
 
     // Satélites
-    public List<DTOSatelliteSchool>? Satellites { get; set; }
+    public List<SchoolSatelliteResponse>? Satellites { get; set; }
 
     // Niveles educativos
     public List<DTOEducationLevel>? EducationLevels { get; set; }

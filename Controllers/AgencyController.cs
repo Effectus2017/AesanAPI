@@ -3,7 +3,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using ElmahCore;
+// using ElmahCore;
 
 namespace Api.Controllers;
 
@@ -189,8 +189,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     return Ok(result);
                 }
 
-                var error = new Exception($"Error al actualizar la agencia {queryParameters.AgencyId}");
-                await HttpContext.RaiseError(error);
+                // var error = new Exception($"Error al actualizar la agencia {queryParameters.AgencyId}");
+                // await HttpContext.RaiseError(error);
                 return BadRequest("Error al actualizar la agencia");
             }
 
@@ -199,7 +199,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la agencia {AgencyId}: {Message}", queryParameters.AgencyId, ex.Message);
-            await HttpContext.RaiseError(ex);
+            // await HttpContext.RaiseError(ex);
             return StatusCode(500, ex.Message);
         }
     }

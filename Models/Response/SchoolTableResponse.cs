@@ -41,4 +41,24 @@ public class SchoolTableResponse
     /// Nombre de la escuela principal (si esta es una escuela satélite)
     /// </summary>
     public string? MainSchoolName { get; set; }
+
+    /// <summary>
+    /// Matrícula General - Número total de estudiantes matriculados en la escuela
+    /// </summary>
+    public int? GeneralEnrollment { get; set; }
+
+    /// <summary>
+    /// Número de Sitio - Contador consecutivo por agencia
+    /// </summary>
+    public int SiteNumber { get; set; }
+
+    /// <summary>
+    /// Código de la Agencia - Para formar el código completo del sitio
+    /// </summary>
+    public string? AgencyCode { get; set; }
+
+    /// <summary>
+    /// Código completo del sitio - Generado en el backend
+    /// </summary>
+    public string? SiteCode { get; set; }
 }

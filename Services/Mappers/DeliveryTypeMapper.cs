@@ -1,10 +1,10 @@
-using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Services.Mappers;
 
 /// <summary>
 /// Mapper estático para entidades relacionadas con DeliveryType
-/// Contiene todos los métodos de mapeo para DTODeliveryType
+/// Contiene todos los métodos de mapeo para DeliveryTypeResponse
 /// </summary>
 public static class DeliveryTypeMapper
 {
@@ -12,27 +12,32 @@ public static class DeliveryTypeMapper
     /// Mapea el resultado de la consulta a un tipo de entrega (versión simplificada para listas)
     /// </summary>
     /// <param name="result">Resultado de la consulta</param>
-    /// <returns>DTODeliveryType</returns>
-    public static DTODeliveryType MapListFromResult(dynamic result)
+    /// <returns>DeliveryTypeResponse</returns>
+    public static DeliveryTypeResponse MapListFromResult(dynamic result)
     {
         try
         {
             if (result == null)
             {
-                return new DTODeliveryType();
+                return new DeliveryTypeResponse();
             }
 
-            return new DTODeliveryType
+            return new DeliveryTypeResponse
             {
                 Id = result.Id,
                 Name = result.Name,
-                NameEN = result.NameEN
+                NameEN = result.NameEN,
+                SelectionNotification = result.SelectionNotification ?? false,
+                DisplayOrder = result.DisplayOrder,
+                IsActive = result.IsActive,
+                CreatedAt = result.CreatedAt,
+                UpdatedAt = result.UpdatedAt
             };
         }
         catch (Exception ex)
         {
             // Log the error but return empty object to avoid breaking the application
-            return new DTODeliveryType();
+            return new DeliveryTypeResponse();
         }
     }
 
@@ -40,29 +45,32 @@ public static class DeliveryTypeMapper
     /// Mapea el resultado de la consulta a un tipo de entrega completo
     /// </summary>
     /// <param name="result">Resultado de la consulta</param>
-    /// <returns>DTODeliveryType</returns>
-    public static DTODeliveryType MapFromResult(dynamic result)
+    /// <returns>DeliveryTypeResponse</returns>
+    public static DeliveryTypeResponse MapFromResult(dynamic result)
     {
         try
         {
             if (result == null)
             {
-                return new DTODeliveryType();
+                return new DeliveryTypeResponse();
             }
 
-            return new DTODeliveryType
+            return new DeliveryTypeResponse
             {
                 Id = result.Id,
                 Name = result.Name,
                 NameEN = result.NameEN,
                 IsActive = result.IsActive,
-                DisplayOrder = result.DisplayOrder
+                DisplayOrder = result.DisplayOrder,
+                SelectionNotification = result.SelectionNotification ?? false,
+                CreatedAt = result.CreatedAt,
+                UpdatedAt = result.UpdatedAt
             };
         }
         catch (Exception ex)
         {
             // Log the error but return empty object to avoid breaking the application
-            return new DTODeliveryType();
+            return new DeliveryTypeResponse();
         }
     }
 }
