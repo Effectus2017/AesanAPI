@@ -44,7 +44,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting organization type by id: {Id}", id);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -108,7 +108,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         {
             _logger.LogError(ex, "Error getting organization types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
                 take, skip, name, alls, isList);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -135,7 +135,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error inserting organization type: {OrganizationType}", organizationType);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -161,7 +161,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating organization type: {OrganizationType}", organizationType);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -183,7 +183,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting organization type with id {Id}", id);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 

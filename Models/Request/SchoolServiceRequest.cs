@@ -39,4 +39,21 @@ public class SchoolServiceRequest
     public bool? SnackNight { get; set; }
     public TimeSpan? SnackNightFrom { get; set; }
     public TimeSpan? SnackNightTo { get; set; }
+
+    // Servicios adicionales para PACNA
+    public bool? DinnerExtended { get; set; }
+    public TimeSpan? DinnerExtendedFrom { get; set; }
+    public TimeSpan? DinnerExtendedTo { get; set; }
+
+    public bool? DinnerAtRisk { get; set; }
+    public TimeSpan? DinnerAtRiskFrom { get; set; }
+    public TimeSpan? DinnerAtRiskTo { get; set; }
+
+    public bool? SnackExtended { get; set; }
+    public TimeSpan? SnackExtendedFrom { get; set; }
+    public TimeSpan? SnackExtendedTo { get; set; }
+
+    public bool? SnackAtRisk { get; set; }
+    public TimeSpan? SnackAtRiskFrom { get; set; }
+    public TimeSpan? SnackAtRiskTo { get; set; }
 }

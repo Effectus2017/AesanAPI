@@ -4,6 +4,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT Id, Name, NameEN, IsActive, DisplayOrder
-    FROM OrganizationTypes
+    FROM OrganizationType
     WHERE Id = @id;
 END 

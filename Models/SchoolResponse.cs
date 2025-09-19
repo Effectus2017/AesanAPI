@@ -69,6 +69,7 @@ public class SchoolResponse
     public DTOOperatingPolicy? OperatingPolicy { get; set; }
     public DTOCenterType? CenterType { get; set; }
     public DTOAreaType? AreaType { get; set; }
+    public DTOAreaType? LocationType { get; set; }
     public DTOAgency? Agency { get; set; }
 
     public bool IsMainSchool { get; set; }
@@ -116,4 +117,5 @@ public class SchoolResponse
     public int? ResidentialTypeId => ResidentialType?.Id;
     public int? OperatingPolicyId => OperatingPolicy?.Id;
     public int? AreaTypeId => AreaType?.Id;
+    public int? LocationTypeId => LocationType?.Id;
 }

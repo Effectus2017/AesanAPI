@@ -7,12 +7,12 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT Id, Name, NameEN, IsActive, DisplayOrder
-    FROM OrganizationTypes
+    FROM OrganizationType
     WHERE (@name IS NULL OR Name LIKE '%' + @name + '%')
-    ORDER BY DisplayOrder
+    ORDER BY Name, DisplayOrder
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*)
-    FROM OrganizationTypes
+    FROM OrganizationType
     WHERE (@name IS NULL OR Name LIKE '%' + @name + '%');
 END 

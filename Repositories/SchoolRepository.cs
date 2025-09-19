@@ -33,7 +33,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryMultipleAsync("104_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("105_GetSchoolById", parameters, commandType: CommandType.StoredProcedure);
 
             var school = await result.ReadFirstOrDefaultAsync<dynamic>();
             var satellites = result.Read<dynamic>().ToList();
@@ -186,6 +186,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@residentialTypeId", request.ResidentialTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@areaTypeId", request.AreaTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@locationTypeId", request.LocationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
@@ -280,6 +281,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@organizationTypeId", request.OrganizationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@centerTypeId", request.CenterTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@areaTypeId", request.AreaTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@locationTypeId", request.LocationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);

@@ -30,6 +30,24 @@ CREATE TABLE SchoolService
     SnackNight BIT NULL,
     SnackNightFrom TIME NULL,
     SnackNightTo TIME NULL,
+
+    -- Servicios adicionales para PACNA
+    DinnerExtended BIT NULL,
+    DinnerExtendedFrom TIME NULL,
+    DinnerExtendedTo TIME NULL,
+
+    DinnerAtRisk BIT NULL,
+    DinnerAtRiskFrom TIME NULL,
+    DinnerAtRiskTo TIME NULL,
+
+    SnackExtended BIT NULL,
+    SnackExtendedFrom TIME NULL,
+    SnackExtendedTo TIME NULL,
+
+    SnackAtRisk BIT NULL,
+    SnackAtRiskFrom TIME NULL,
+    SnackAtRiskTo TIME NULL,
+
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
 

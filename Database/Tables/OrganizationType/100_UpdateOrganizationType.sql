@@ -7,7 +7,7 @@ CREATE PROCEDURE [dbo].[100_UpdateOrganizationType]
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE OrganizationTypes
+    UPDATE OrganizationType
     SET Name = @name, NameEN = @nameEN, IsActive = @isActive, DisplayOrder = @displayOrder
     WHERE Id = @id;
 END 

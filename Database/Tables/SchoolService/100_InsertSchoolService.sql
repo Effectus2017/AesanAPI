@@ -19,6 +19,18 @@ CREATE OR ALTER PROCEDURE [dbo].[100_InsertSchoolService]
     @snackNight BIT = NULL,
     @snackNightFrom TIME = NULL,
     @snackNightTo TIME = NULL,
+    @dinnerExtended BIT = NULL,
+    @dinnerExtendedFrom TIME = NULL,
+    @dinnerExtendedTo TIME = NULL,
+    @dinnerAtRisk BIT = NULL,
+    @dinnerAtRiskFrom TIME = NULL,
+    @dinnerAtRiskTo TIME = NULL,
+    @snackExtended BIT = NULL,
+    @snackExtendedFrom TIME = NULL,
+    @snackExtendedTo TIME = NULL,
+    @snackAtRisk BIT = NULL,
+    @snackAtRiskFrom TIME = NULL,
+    @snackAtRiskTo TIME = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -33,6 +45,10 @@ BEGIN
         Dinner, DinnerFrom, DinnerTo,
         SnackPM, SnackPMFrom, SnackPMTo,
         SnackNight, SnackNightFrom, SnackNightTo,
+        DinnerExtended, DinnerExtendedFrom, DinnerExtendedTo,
+        DinnerAtRisk, DinnerAtRiskFrom, DinnerAtRiskTo,
+        SnackExtended, SnackExtendedFrom, SnackExtendedTo,
+        SnackAtRisk, SnackAtRiskFrom, SnackAtRiskTo,
         CreatedAt
         )
     VALUES
@@ -44,6 +60,10 @@ BEGIN
             @dinner, @dinnerFrom, @dinnerTo,
             @snackPM, @snackPMFrom, @snackPMTo,
             @snackNight, @snackNightFrom, @snackNightTo,
+            @dinnerExtended, @dinnerExtendedFrom, @dinnerExtendedTo,
+            @dinnerAtRisk, @dinnerAtRiskFrom, @dinnerAtRiskTo,
+            @snackExtended, @snackExtendedFrom, @snackExtendedTo,
+            @snackAtRisk, @snackAtRiskFrom, @snackAtRiskTo,
             GETDATE()
         );
 

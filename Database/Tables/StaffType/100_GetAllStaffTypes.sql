@@ -33,7 +33,7 @@ BEGIN
             AND (@alls = 1 OR (@name IS NULL OR
             Name LIKE '%' + @name + '%' OR
             NameEn LIKE '%' + @name + '%'))
-        ORDER BY DisplayOrder, Name;
+        ORDER BY Name, DisplayOrder;
     END
     ELSE
     BEGIN
@@ -51,7 +51,7 @@ BEGIN
             AND (@alls = 1 OR (@name IS NULL OR
             Name LIKE '%' + @name + '%' OR
             NameEn LIKE '%' + @name + '%'))
-        ORDER BY DisplayOrder, Name
+        ORDER BY Name, DisplayOrder
         OFFSET @skip ROWS
         FETCH NEXT @take ROWS ONLY;
 

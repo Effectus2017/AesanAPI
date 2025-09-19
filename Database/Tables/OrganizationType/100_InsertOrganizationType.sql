@@ -7,7 +7,7 @@ CREATE PROCEDURE [dbo].[100_InsertOrganizationType]
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO OrganizationTypes
+    INSERT INTO OrganizationType
         (Name, NameEN, IsActive, DisplayOrder)
     VALUES
         (@name, @nameEN, @isActive, @displayOrder);

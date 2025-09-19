@@ -3,5 +3,5 @@ CREATE PROCEDURE [dbo].[100_DeleteOrganizationType]
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM OrganizationTypes WHERE Id = @id;
+    DELETE FROM OrganizationType WHERE Id = @id;
 END 

@@ -14,7 +14,7 @@ BEGIN
         AND (@name IS NULL OR Name LIKE '%' + @name + '%')
         AND (@optionKey IS NULL OR OptionKey = @optionKey)
         AND IsActive = 1
-    ORDER BY DisplayOrder, Name
+    ORDER BY Name, DisplayOrder
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     -- Total count
