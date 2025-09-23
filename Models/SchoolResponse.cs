@@ -102,6 +102,9 @@ public class SchoolResponse
     // Tipos de participantes
     public List<SchoolParticipantResponse>? Participants { get; set; }
 
+    // Grupos de niños específicos
+    public List<SchoolChildGroupResponse>? ChildGroups { get; set; }
+
     // Propiedades de conveniencia para operaciones que necesiten IDs
     public int CityId => City?.Id ?? 0;
     public int RegionId => Region?.Id ?? 0;

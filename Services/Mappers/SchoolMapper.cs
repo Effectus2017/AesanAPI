@@ -60,6 +60,7 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 ResidentialTypeId = item.ResidentialTypeId,
                 OperatingPolicyId = item.OperatingPolicyId,
                 AreaTypeId = item.AreaTypeId,
+                LocationTypeId = item.LocationTypeId,
                 HasWarehouse = item.HasWarehouse ?? false,
                 HasDiningRoom = item.HasDiningRoom ?? false,
                 AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
@@ -110,6 +111,7 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 OperatingPolicy = _mappingService.Value.MapOperatingPolicy(item.OperatingPolicyId, item.OperatingPolicyName, item.OperatingPolicyNameEN),
                 CenterType = _mappingService.Value.MapCenterType(item.CenterTypeId, item.CenterName, item.CenterNameEN),
                 AreaType = _mappingService.Value.MapAreaType(item.AreaTypeId, item.AreaTypeName, item.AreaTypeNameEN),
+                LocationType = _mappingService.Value.MapAreaType(item.LocationTypeId, item.LocationTypeName, item.LocationTypeNameEN),
                 Agency = item.AgencyId != null ? new DTOAgency
                 {
                     Id = item.AgencyId,
@@ -444,12 +446,14 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
             {
                 Id = item.Id,
                 SchoolId = item.SchoolId,
-                ChildGroup = item.ChildGroupId != null ? new DTOOptionSelection
+                ChildGroup = item.ChildGroupId != null ? new SchoolChildGroupResponse
                 {
                     Id = item.ChildGroupId,
-                    Name = item.ChildGroupName,
-                    NameEN = item.ChildGroupNameEN,
-                    OptionKey = item.ChildGroupOptionKey
+                    SchoolId = item.SchoolId,
+                    GroupName = item.ChildGroupName,
+                    NumberOfChildren = item.ChildGroupNumberOfChildren ?? 0,
+                    CreatedAt = item.ChildGroupCreatedAt ?? DateTime.MinValue,
+                    UpdatedAt = item.ChildGroupUpdatedAt
                 } : null,
                 Breakfast = item.Breakfast,
                 BreakfastFrom = item.BreakfastFrom,
@@ -550,6 +554,32 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                     OptionKey = item.ParticipantTypeOptionKey
                 },
                 IsActive = item.IsActive,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt
+            };
+        }
+        catch (Exception ex)
+        {
+            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea un grupo de niños específico desde un resultado dinámico a un SchoolChildGroupResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolChildGroupResponse</returns>
+    public static SchoolChildGroupResponse MapSchoolChildGroupFromResult(dynamic item)
+    {
+        try
+        {
+            return new SchoolChildGroupResponse
+            {
+                Id = item.Id,
+                SchoolId = item.SchoolId,
+                GroupName = item.GroupName,
+                NumberOfChildren = item.NumberOfChildren,
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt
             };

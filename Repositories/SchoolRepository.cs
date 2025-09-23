@@ -232,6 +232,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             // Insertar información de Day Care Home
             await InsertSchoolDayCareHome(schoolId, request);
 
+            // Insertar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
+            if (request.DayCareHome?.OffersServiceToDifferentGroups == true &&
+                request.ChildGroups != null && request.ChildGroups.Count != 0)
+            {
+                await InsertSchoolChildGroups(schoolId, request.ChildGroups);
+            }
+
             // Insertar tipos de participantes
             if (request.Participants != null && request.Participants.Count != 0)
             {
@@ -350,6 +357,13 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             {
                 var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
                 await UpdateSchoolEducationLevels(request.Id.Value, educationLevelIds);
+            }
+
+            // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
+            if (request.DayCareHome?.OffersServiceToDifferentGroups == true &&
+                request.ChildGroups != null && request.ChildGroups.Count != 0 && request.Id.HasValue)
+            {
+                await UpdateSchoolChildGroups(request.Id.Value, request.ChildGroups);
             }
 
             if (rowsAffected > 0 && request.Id.HasValue)
@@ -881,7 +895,76 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     }
 
     /// <summary>
-    /// Obtiene el siguiente número de sitio disponible para una agencia
+    /// Inserta los grupos de niños específicos para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="childGroups">Lista de grupos de niños</param>
+    /// <returns>True si se insertaron correctamente</returns>
+    private async Task<bool> InsertSchoolChildGroups(int schoolId, List<SchoolChildGroupRequest> childGroups)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            foreach (var childGroup in childGroups)
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@schoolId", schoolId, DbType.Int32);
+                parameters.Add("@groupName", childGroup.GroupName, DbType.String);
+                parameters.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
+                parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                await dbConnection.ExecuteAsync("100_InsertSchoolChildGroup", parameters, commandType: CommandType.StoredProcedure);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar grupos de niños para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza los grupos de niños específicos para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="childGroups">Lista de grupos de niños</param>
+    /// <returns>True si se actualizaron correctamente</returns>
+    private async Task<bool> UpdateSchoolChildGroups(int schoolId, List<SchoolChildGroupRequest> childGroups)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            // Primero eliminar todos los grupos existentes para esta escuela
+            var deleteParameters = new DynamicParameters();
+            deleteParameters.Add("@schoolId", schoolId, DbType.Int32);
+            await dbConnection.ExecuteAsync("100_DeleteSchoolChildGroupsBySchoolId", deleteParameters, commandType: CommandType.StoredProcedure);
+
+            // Luego insertar los nuevos grupos
+            foreach (var childGroup in childGroups)
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@schoolId", schoolId, DbType.Int32);
+                parameters.Add("@groupName", childGroup.GroupName, DbType.String);
+                parameters.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
+                parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                await dbConnection.ExecuteAsync("100_InsertSchoolChildGroup", parameters, commandType: CommandType.StoredProcedure);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar grupos de niños para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// </summary>
     /// <param name="agencyId">ID de la agencia</param>
     /// <returns>El siguiente número de sitio disponible</returns>

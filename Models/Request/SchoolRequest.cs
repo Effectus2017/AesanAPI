@@ -61,6 +61,7 @@ public class SchoolRequest
     public List<SchoolServiceRequest> Services { get; set; } = new();
     public SchoolDayCareHomeRequest? DayCareHome { get; set; }
     public List<SchoolParticipantRequest> Participants { get; set; } = new();
+    public List<SchoolChildGroupRequest> ChildGroups { get; set; } = new();
 
     // Campos adicionales
     public int? CommunityId { get; set; }

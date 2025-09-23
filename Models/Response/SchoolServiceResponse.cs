@@ -13,7 +13,7 @@ public class SchoolServiceResponse
     /// <summary>
     /// Información del grupo de niños. NULL = servicio general, NOT NULL = servicio específico por grupo
     /// </summary>
-    public DTOOptionSelection? ChildGroup { get; set; }
+    public SchoolChildGroupResponse? ChildGroup { get; set; }
 
     // Servicios de alimentación
     public bool? Breakfast { get; set; }

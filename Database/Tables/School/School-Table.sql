@@ -38,6 +38,7 @@ CREATE TABLE School
     ResidentialTypeId INT NULL,
     OperatingPolicyId INT NULL,
     AreaTypeId INT NULL,
+    LocationTypeId INT NULL,
     HasWarehouse BIT NULL,
     HasDiningRoom BIT NULL,
     SitePhone NVARCHAR(20) NULL,
@@ -132,7 +133,9 @@ ALTER TABLE School
 ALTER TABLE School
     ADD CONSTRAINT FK_School_AreaType FOREIGN KEY (AreaTypeId) REFERENCES AreaType(Id);
 
-
+-- LocationType se maneja en su tabla AreaType (mismos valores que AreaType)
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_LocationType FOREIGN KEY (LocationTypeId) REFERENCES AreaType(Id);
 
 -- Community se maneja en su tabla Community
 ALTER TABLE School

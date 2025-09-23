@@ -147,7 +147,6 @@ BEGIN
         ss.SchoolId,
         ss.ChildGroupId,
         cg.Name AS ChildGroupName,
-        cg.NameEN AS ChildGroupNameEN,
         cg.OptionKey AS ChildGroupOptionKey,
         ss.Breakfast,
         ss.BreakfastFrom,
@@ -230,6 +229,18 @@ BEGIN
     FROM SchoolParticipant sp
         LEFT JOIN OptionSelection pt ON sp.ParticipantTypeId = pt.Id
     WHERE sp.SchoolId = @id AND sp.IsActive = 1;
+
+    -- Obtener grupos de niños específicos de la escuela
+    SELECT
+        scg.Id,
+        scg.SchoolId,
+        scg.GroupName,
+        scg.NumberOfChildren,
+        scg.CreatedAt,
+        scg.UpdatedAt
+    FROM SchoolChildGroup scg
+    WHERE scg.SchoolId = @id
+    ORDER BY scg.GroupName;
 END;
 
 -- EXEC [105_GetSchoolById] @id = 3;

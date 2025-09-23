@@ -143,7 +143,6 @@ BEGIN
         ss.SchoolId,
         ss.ChildGroupId,
         cg.Name AS ChildGroupName,
-        cg.NameEN AS ChildGroupNameEN,
         cg.OptionKey AS ChildGroupOptionKey,
         ss.Breakfast,
         ss.BreakfastFrom,
