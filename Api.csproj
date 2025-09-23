@@ -15,7 +15,19 @@
         <OutputPath>bin\Release\</OutputPath>
     </PropertyGroup>
 
+   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Staging|AnyCPU' ">
+        <DeleteExistingFiles>true</DeleteExistingFiles>
+        <Optimize>true</Optimize>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <OutputPath>bin\Staging\</OutputPath>
+    </PropertyGroup>
+
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <Content Remove="appsettings.Development.json" />
+        <None Include="appsettings.Development.json" />
+    </ItemGroup>
+
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Staging|AnyCPU' ">
         <Content Remove="appsettings.Development.json" />
         <None Include="appsettings.Development.json" />
     </ItemGroup>
