@@ -244,7 +244,9 @@ builder.Services.AddCors(options =>
                 .WithOrigins(
                     "https://aesanweb-dev.azurewebsites.net",
                     "https://aesanapi.azurewebsites.net",
-                    "https://webaes.azurewebsites.net"
+                    "https://webaes.azurewebsites.net",
+                    "https://nutreapidev.azurewebsites.net",
+                    "https://nutreapiprod.azurewebsites.net"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
