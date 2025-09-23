@@ -71,9 +71,16 @@ CREATE TABLE AgencyInscription
     -- Deadline to complete the registration of the Sites
     -- 10 minutos (10), 30 minutos (30), 1 hora (60), 2 horas (120), 3 horas (180), 4 horas (240), 5 horas (300), 6 horas (360), 7 horas (420), 8 horas (480), 9 horas (540), 10 horas (600)
     DeadlineToCompleteRegistration datetime NULL,
+    -- Campo de fecha de registro de la inscripción completada
+    -- Date of completed registration
+    CompletedRegistrationDate datetime NULL,
 
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
+
+ALTER TABLE AgencyInscription
+ADD CompletedRegistrationDate datetime NULL;
+GO
 
 ALTER TABLE AgencyInscription
 ADD TaxExemptionStatusId int NULL,

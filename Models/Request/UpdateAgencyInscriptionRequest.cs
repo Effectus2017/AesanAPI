@@ -11,6 +11,7 @@ public class UpdateAgencyInscriptionRequest
     public bool AppointmentCoordinated { get; set; } = false;
     public DateTime? AppointmentDate { get; set; }
     public string? RejectionJustification { get; set; }
+    public DateTime? CompletedRegistrationDate { get; set; }
 }
 
 /// ------------------------------------------------------------------------------------------------

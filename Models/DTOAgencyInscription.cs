@@ -114,6 +114,11 @@ public class DTOAgencyInscription
     /// </summary>
     public DateTime? DeadlineToCompleteRegistration { get; set; }
 
+    /// <summary>
+    /// Fecha de registro de la inscripción completada
+    /// </summary>
+    public DateTime? CompletedRegistrationDate { get; set; }
+
     // Relaciones con OptionSelection para los campos de selección
     /// <summary>
     /// Estado del registro de educación básica (relación)

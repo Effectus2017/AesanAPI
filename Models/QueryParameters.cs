@@ -45,4 +45,5 @@ public class QueryParameters
     public string? OptionKey { get; set; } // Clave de la opción
     public string? CurrentUserId { get; set; } // ID del usuario actual logueado
     public bool? IsPropietary { get; set; } // Si es agencia propietaria (NUTRE)
+    public DateTime? CompletedRegistrationDate { get; set; } // Fecha de registro completado
 }

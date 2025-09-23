@@ -61,6 +61,7 @@ BEGIN
         ai.AppointmentDate,
         ai.Comments,
         ai.DeadlineToCompleteRegistration,
+        ai.CompletedRegistrationDate,
 
         -- Datos de OptionSelection para BasicEducationRegistry
         os_ber.Name AS BasicEducationRegistryName,

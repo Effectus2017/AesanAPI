@@ -782,6 +782,41 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
+    /// <summary>
+    /// Actualiza la fecha de registro completado de una agencia
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <param name="completedRegistrationDate">Fecha de registro completado</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    public async Task<bool> UpdateCompletedRegistrationDate(int agencyId, DateTime completedRegistrationDate)
+    {
+        try
+        {
+            _logger.LogInformation($"Actualizando fecha de registro completado para la agencia {agencyId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@completedRegistrationDate", completedRegistrationDate);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("114_UpdateCompletedRegistrationDate", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                await InvalidateCache(agencyId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error updating completed registration date for agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al actualizar la fecha de registro completado de la agencia {agencyId}: {ex.Message}", ex);
+        }
+    }
+
     private async Task InvalidateCache(int? agencyId = null)
     {
         try

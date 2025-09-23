@@ -60,7 +60,6 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 ResidentialTypeId = item.ResidentialTypeId,
                 OperatingPolicyId = item.OperatingPolicyId,
                 AreaTypeId = item.AreaTypeId,
-                LocationTypeId = item.LocationTypeId,
                 HasWarehouse = item.HasWarehouse ?? false,
                 HasDiningRoom = item.HasDiningRoom ?? false,
                 AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
@@ -111,7 +110,6 @@ public class SchoolMapper(Lazy<MappingService> mappingService)
                 OperatingPolicy = _mappingService.Value.MapOperatingPolicy(item.OperatingPolicyId, item.OperatingPolicyName, item.OperatingPolicyNameEN),
                 CenterType = _mappingService.Value.MapCenterType(item.CenterTypeId, item.CenterName, item.CenterNameEN),
                 AreaType = _mappingService.Value.MapAreaType(item.AreaTypeId, item.AreaTypeName, item.AreaTypeNameEN),
-                LocationType = _mappingService.Value.MapAreaType(item.LocationTypeId, item.LocationTypeName, item.LocationTypeNameEN),
                 Agency = item.AgencyId != null ? new DTOAgency
                 {
                     Id = item.AgencyId,

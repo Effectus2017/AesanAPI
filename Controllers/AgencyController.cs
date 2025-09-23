@@ -326,4 +326,41 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
             return StatusCode(500, ex.Message);
         }
     }
+
+    /// <summary>
+    /// Actualiza la fecha de registro completado de una agencia
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-completed-registration-date")]
+    [SwaggerOperation(Summary = "Actualiza la fecha de registro completado de una agencia", Description = "Actualiza la fecha de registro completado de una agencia específica.")]
+    public async Task<IActionResult> UpdateCompletedRegistrationDate([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (queryParameters.AgencyId == 0)
+                {
+                    return BadRequest("El ID de la agencia es requerido");
+                }
+
+                if (queryParameters.CompletedRegistrationDate == null)
+                {
+                    return BadRequest("La fecha de registro completado es requerida");
+                }
+
+                var result = await _unitOfWork.AgencyRepository.UpdateCompletedRegistrationDate(queryParameters.AgencyId, queryParameters.CompletedRegistrationDate.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar la fecha de registro completado de la agencia: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
+        }
+    }
 }

@@ -79,6 +79,8 @@ BEGIN
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
         ai.IsDayCareHome,
+        ai.DeadlineToCompleteRegistration,
+        ai.CompletedRegistrationDate,
         a.IsActive,
         a.IsListable,
         a.CreatedAt,
