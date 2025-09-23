@@ -217,7 +217,8 @@ builder.Services.AddCors(options =>
                     "http://localhost:5002",
                     "https://localhost:5002",
                     "https://nutre-dev.local:4202",
-                    "https://aesanweb-dev.azurewebsites.net"
+                    "https://aesanweb-dev.azurewebsites.net",
+                    "https://nutre-web-dev.azurewebsites.net"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
@@ -246,7 +247,8 @@ builder.Services.AddCors(options =>
                     "https://aesanapi.azurewebsites.net",
                     "https://webaes.azurewebsites.net",
                     "https://nutreapidev.azurewebsites.net",
-                    "https://nutreapiprod.azurewebsites.net"
+                    "https://nutreapiprod.azurewebsites.net",
+                    "https://nutre-web-dev.azurewebsites.net"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
