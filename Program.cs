@@ -188,10 +188,29 @@ builder.Services.AddSwaggerGen(c =>
 // Configuración de Dapper
 builder.Services.AddScoped<DapperContext>();
 
-// Registro de SendGrid
-builder.Services.AddSingleton<ISendGridClient>(
-    new SendGridClient(builder.Configuration["SendGrid:ApiKey"])
-);
+// Registro de SendGrid (condicional)
+var enableSendGrid = builder.Configuration.GetValue<bool>("SendGrid:EnableSendGrid");
+if (enableSendGrid)
+{
+    var sendGridApiKey = builder.Configuration["SendGrid:ApiKey"];
+    if (!string.IsNullOrEmpty(sendGridApiKey) &&
+        sendGridApiKey != "your_sendgrid_api_key_here" &&
+        sendGridApiKey != "your_staging_sendgrid_api_key_here")
+    {
+        builder.Services.AddSingleton<ISendGridClient>(
+            new SendGridClient(sendGridApiKey)
+        );
+    }
+    else
+    {
+        throw new InvalidOperationException("SendGrid está habilitado pero no se encontró una API key válida en la configuración.");
+    }
+}
+else
+{
+    // SendGrid deshabilitado - no registrar el servicio
+    Console.WriteLine("[CONFIG] SendGrid está deshabilitado en la configuración.");
+}
 
 // Configuración de AutoMapper
 builder.Services.AddAutoMapper(cfg =>
