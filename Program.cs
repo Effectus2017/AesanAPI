@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using SendGrid;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
@@ -188,29 +187,7 @@ builder.Services.AddSwaggerGen(c =>
 // Configuración de Dapper
 builder.Services.AddScoped<DapperContext>();
 
-// Registro de SendGrid (condicional)
-var enableSendGrid = builder.Configuration.GetValue<bool>("SendGrid:EnableSendGrid");
-if (enableSendGrid)
-{
-    var sendGridApiKey = builder.Configuration["SendGrid:ApiKey"];
-    if (!string.IsNullOrEmpty(sendGridApiKey) &&
-        sendGridApiKey != "your_sendgrid_api_key_here" &&
-        sendGridApiKey != "your_staging_sendgrid_api_key_here")
-    {
-        builder.Services.AddSingleton<ISendGridClient>(
-            new SendGridClient(sendGridApiKey)
-        );
-    }
-    else
-    {
-        throw new InvalidOperationException("SendGrid está habilitado pero no se encontró una API key válida en la configuración.");
-    }
-}
-else
-{
-    // SendGrid deshabilitado - no registrar el servicio
-    Console.WriteLine("[CONFIG] SendGrid está deshabilitado en la configuración.");
-}
+// SendGrid removido - solo se usa Gmail para envío de correos
 
 // Configuración de AutoMapper
 builder.Services.AddAutoMapper(cfg =>
@@ -415,8 +392,7 @@ else
 }
 
 // CORS debe ir antes de routing y después de los middleware de error
-var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" :
-                 app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" : app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
 app.UseCors(corsPolicy);
 
 // Habilitar ELMAH

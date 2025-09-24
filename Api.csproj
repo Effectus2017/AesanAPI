@@ -30,18 +30,24 @@
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <Content Remove="appsettings.Development.json" />
-    <None Include="appsettings.Development.json" />
+    <Content Remove="appsettings.json" />
+    <Content Remove="appsettings.Staging.json" />
+    <None Include="appsettings.json" />
+    <None Include="appsettings.Staging.json" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Content Remove="appsettings.json" />
-    <None Include="appsettings.json" />
+    <Content Remove="appsettings.Development.json" />
+    <Content Remove="appsettings.Staging.json" />
+    <None Include="appsettings.Development.json" />
+    <None Include="appsettings.Staging.json" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Staging|AnyCPU' ">
-    <Content Remove="appsettings.Staging.json" />
-    <None Include="appsettings.Staging.json" />
+    <Content Remove="appsettings.json" />
+    <Content Remove="appsettings.Development.json" />
+    <None Include="appsettings.json" />
+    <None Include="appsettings.Development.json" />
   </ItemGroup>
 
   <ItemGroup>
