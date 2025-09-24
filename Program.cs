@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using SendGrid;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
@@ -188,10 +187,7 @@ builder.Services.AddSwaggerGen(c =>
 // Configuración de Dapper
 builder.Services.AddScoped<DapperContext>();
 
-// Registro de SendGrid
-builder.Services.AddSingleton<ISendGridClient>(
-    new SendGridClient(builder.Configuration["SendGrid:ApiKey"])
-);
+// SendGrid removido - solo se usa Gmail para envío de correos
 
 // Configuración de AutoMapper
 builder.Services.AddAutoMapper(cfg =>
@@ -217,7 +213,8 @@ builder.Services.AddCors(options =>
                     "http://localhost:5002",
                     "https://localhost:5002",
                     "https://nutre-dev.local:4202",
-                    "https://aesanweb-dev.azurewebsites.net"
+                    "https://aesanweb-dev.azurewebsites.net",
+                    "https://nutre-web-dev.azurewebsites.net"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
@@ -246,7 +243,8 @@ builder.Services.AddCors(options =>
                     "https://aesanapi.azurewebsites.net",
                     "https://webaes.azurewebsites.net",
                     "https://nutreapidev.azurewebsites.net",
-                    "https://nutreapiprod.azurewebsites.net"
+                    "https://nutreapiprod.azurewebsites.net",
+                    "https://nutre-web-dev.azurewebsites.net"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
@@ -394,8 +392,7 @@ else
 }
 
 // CORS debe ir antes de routing y después de los middleware de error
-var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" :
-                 app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" : app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
 app.UseCors(corsPolicy);
 
 // Habilitar ELMAH

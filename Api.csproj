@@ -8,29 +8,47 @@
     <NoWarn>$(NoWarn);*;</NoWarn>
   </PropertyGroup>
 
-   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <DeleteExistingFiles>true</DeleteExistingFiles>
-        <Optimize>true</Optimize>
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <OutputPath>bin\Release\</OutputPath>
-    </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DeleteExistingFiles>true</DeleteExistingFiles>
+    <Optimize>false</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
 
-   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Staging|AnyCPU' ">
-        <DeleteExistingFiles>true</DeleteExistingFiles>
-        <Optimize>true</Optimize>
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <OutputPath>bin\Staging\</OutputPath>
-    </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DeleteExistingFiles>true</DeleteExistingFiles>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Staging|AnyCPU' ">
+    <DeleteExistingFiles>true</DeleteExistingFiles>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Staging\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <Content Remove="appsettings.json" />
+    <Content Remove="appsettings.Staging.json" />
+    <None Include="appsettings.json" />
+    <None Include="appsettings.Staging.json" />
+  </ItemGroup>
 
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <Content Remove="appsettings.Development.json" />
-        <None Include="appsettings.Development.json" />
-    </ItemGroup>
+    <Content Remove="appsettings.Development.json" />
+    <Content Remove="appsettings.Staging.json" />
+    <None Include="appsettings.Development.json" />
+    <None Include="appsettings.Staging.json" />
+  </ItemGroup>
 
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Staging|AnyCPU' ">
-        <Content Remove="appsettings.Development.json" />
-        <None Include="appsettings.Development.json" />
-    </ItemGroup>
+    <Content Remove="appsettings.json" />
+    <Content Remove="appsettings.Development.json" />
+    <None Include="appsettings.json" />
+    <None Include="appsettings.Development.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />

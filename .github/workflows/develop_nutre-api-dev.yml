@@ -51,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C679852893964341ACFF4BE98087F6BA }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0DCFBE19733041DAAA3C7E7939B5274E }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_08B97EA0F1564038954CECF998C35A24 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_58FAA03DC41A488CA2032E3F50A34BB3 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5F0228592B034F9D881597AD6C42B696 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8F53D6A3CD834D8EB166736013747EF4 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -62,3 +62,4 @@ jobs:
           app-name: "nutre-api-dev"
           slot-name: "Production"
           package: .
+          clean: true
