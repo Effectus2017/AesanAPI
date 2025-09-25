@@ -240,6 +240,29 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
     }
 
     /// <summary>
+    /// Obtiene la ubicación del sitio por tipo de grupo
+    /// </summary>
+    /// <param name="groupTypeId">ID del tipo de grupo</param>
+    /// <returns>Ubicación del sitio</returns>
+    public async Task<dynamic> GetSiteLocationByGroupType(int groupTypeId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@groupTypeId", groupTypeId, DbType.Int32);
+
+            var result = await db.QueryAsync<DTOOptionSelection>("100_GetSiteLocationByGroupType", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la ubicación del sitio para el tipo de grupo con ID {GroupTypeId}", groupTypeId);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Invalida el caché para el tipo de grupo
     /// </summary>
     /// <param name="groupTypeId">ID del tipo de grupo</param>

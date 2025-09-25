@@ -22,7 +22,7 @@ BEGIN
     FROM KitchenType
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%')
-    ORDER BY Name, DisplayOrder
+    ORDER BY DisplayOrder, Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*)
@@ -32,4 +32,4 @@ BEGIN
 END;
 
 
-EXEC [100_GetAllKitchenTypes] @take = 10, @skip = 0, @name = NULL, @alls = 0;
+-- EXEC [100_GetAllKitchenTypes] @take = 10, @skip = 0, @name = NULL, @alls = 0;

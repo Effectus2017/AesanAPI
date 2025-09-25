@@ -27,8 +27,8 @@ CREATE TABLE AgencyInscription
     AtRiskService bit NULL DEFAULT (0),
     -- Si la agencia tiene registro de educación básica
     -- Does it have a Basic Education Registry Certificate?
-    -- En Proceso (3), Otorgado (4), Denegado (5)
-    BasicEducationRegistryId int NULL,
+    -- Si (1) y No (2)
+    BasicEducationRegistry bit NULL DEFAULT (0),
     -- Si la agencia tiene servicio de tiempo
     ServiceTime datetime NULL,
     -- Si la agencia fue rechazada, se guarda la justificación
@@ -74,6 +74,10 @@ CREATE TABLE AgencyInscription
     -- Campo de fecha de registro de la inscripción completada
     -- Date of completed registration
     CompletedRegistrationDate datetime NULL,
+    -- ¿Está interesado en participar de horario extendido? (Solo para PACNA)
+    -- Are you interested in participating in extended hours? (Only for PACNA)
+    -- Si (1) y No (2)
+    ExtendedHours bit NULL DEFAULT (0),
 
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
@@ -92,22 +96,13 @@ ADD TaxExemptionStatusId int NULL,
     IsDayCareHome bit NULL DEFAULT (0);
 GO
 
+-- Add foreign key constraints for OptionSelection fields
 ALTER TABLE AgencyInscription
 ADD FOREIGN KEY (TaxExemptionStatusId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (TaxExemptionTypeId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (TypeOfEntityId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (TypeOfApplicantId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (PublicAllianceContractId) REFERENCES OptionSelection(Id);
-GO
-
--- Rename BasicEducationRegistry to BasicEducationRegistryId
-EXEC sp_rename 'AgencyInscription.BasicEducationRegistry', 'BasicEducationRegistryId', 'COLUMN';
-GO
-
--- Add foreign key constraint for BasicEducationRegistryId
-ALTER TABLE AgencyInscription
-ADD CONSTRAINT FK_AgencyInscription_BasicEducationRegistry 
-    FOREIGN KEY (BasicEducationRegistryId) REFERENCES OptionSelection(Id);
 GO
 
 -- Agregar columna para la fecha limite para completar la inscripción de los Sitios

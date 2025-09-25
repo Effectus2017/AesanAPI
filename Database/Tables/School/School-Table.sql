@@ -59,6 +59,7 @@ CREATE TABLE School
     InactiveJustification NVARCHAR(500) NULL,
     InactiveDate DATETIME NULL,
     SiteCode NVARCHAR(255) NULL,
+    SiteLocationId INT NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
 );
@@ -156,6 +157,10 @@ ALTER TABLE School
 -- ReviewResult se maneja en su tabla ReviewResult
 ALTER TABLE School
     ADD CONSTRAINT FK_School_ReviewResult FOREIGN KEY (ReviewResultId) REFERENCES ReviewResult(Id);
+
+-- SiteLocation se maneja en su tabla OptionSelection
+ALTER TABLE School
+    ADD CONSTRAINT FK_School_SiteLocation FOREIGN KEY (SiteLocationId) REFERENCES OptionSelection(Id);
 
 -- Índice único para garantizar unicidad de SiteNumber por agencia
 CREATE UNIQUE INDEX UK_School_AgencyId_SiteNumber ON School(AgencyId, SiteNumber);

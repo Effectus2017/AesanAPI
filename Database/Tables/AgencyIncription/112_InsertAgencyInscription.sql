@@ -1,5 +1,5 @@
 -- Insertar una inscripción de agencia
--- 1.1.2
+-- 1.1.4 - Actualizado para incluir ExtendedHours
 CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @agencyId int,
     @nonProfit bit,
@@ -7,7 +7,8 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @stateFundsDenied bit,
     @organizedAthleticPrograms bit,
     @atRiskService bit,
-    @basicEducationRegistryId int,
+    @basicEducationRegistry bit,
+    @extendedHours bit,
     @serviceTime datetime,
     @taxExemptionStatusId int,
     @taxExemptionTypeId int,
@@ -25,7 +26,7 @@ BEGIN
         (
         AgencyId, NonProfit, FederalFundsDenied, StateFundsDenied,
         OrganizedAthleticPrograms, AtRiskService,
-        BasicEducationRegistryId, ServiceTime,
+        BasicEducationRegistry, ExtendedHours, ServiceTime,
         TaxExemptionStatusId, TaxExemptionTypeId,
         PublicAllianceContractId, NationalYouthProgram, IsDayCareHome, DeadlineToCompleteRegistration
         )
@@ -33,7 +34,7 @@ BEGIN
         (
             @agencyId, @nonProfit, @federalFundsDenied, @stateFundsDenied,
             @organizedAthleticPrograms, @atRiskService,
-            @basicEducationRegistryId, @serviceTime,
+            @basicEducationRegistry, @extendedHours, @serviceTime,
             @taxExemptionStatusId, @taxExemptionTypeId,
             @publicAllianceContractId, @nationalYouthProgram, @isDayCareHome, @deadlineToCompleteRegistration
         );

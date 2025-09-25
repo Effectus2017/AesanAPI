@@ -216,4 +216,43 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de grupo");
         }
     }
+
+    /// <summary>
+    /// Obtiene la ubicación del sitio por tipo de grupo
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del tipo de grupo</param>
+    /// <returns>La ubicación del sitio si se encuentra, NotFound si no existe, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-site-location-by-group-type")]
+    [SwaggerOperation(Summary = "Obtiene la ubicación del sitio por tipo de grupo", Description = "Devuelve la ubicación del sitio basada en el tipo de grupo proporcionado.")]
+    public async Task<ActionResult> GetSiteLocationByGroupType([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo ubicación del sitio para tipo de grupo ID: {GroupTypeId}", queryParameters.GroupTypeId);
+
+                if (queryParameters.GroupTypeId == 0)
+                {
+                    return BadRequest("El ID del tipo de grupo es requerido");
+                }
+
+                var result = await _groupTypeRepository.GetSiteLocationByGroupType(queryParameters.GroupTypeId);
+
+                if (result == null)
+                {
+                    return NotFound($"No se encontró ubicación del sitio para el tipo de grupo con ID {queryParameters.GroupTypeId}");
+                }
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la ubicación del sitio para el tipo de grupo con ID {GroupTypeId}", queryParameters.GroupTypeId);
+            return StatusCode(500, "Error interno del servidor al obtener la ubicación del sitio");
+        }
+    }
 }

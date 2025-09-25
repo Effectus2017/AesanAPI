@@ -352,7 +352,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.StateFundsDenied,
                 agencyRequest.OrganizedAthleticPrograms,
                 agencyRequest.AtRiskService,
-                agencyRequest.BasicEducationRegistryId,
+                agencyRequest.BasicEducationRegistry,
+                agencyRequest.ExtendedHours,
                 agencyRequest.ServiceTime,
                 agencyRequest.TaxExemptionStatusId,
                 agencyRequest.TaxExemptionTypeId,
@@ -396,7 +397,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, bool stateFundsDenied, bool organizedAthleticPrograms, bool atRiskService, int basicEducationRegistryId, DateTime serviceTime, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, bool stateFundsDenied, bool organizedAthleticPrograms, bool atRiskService, bool basicEducationRegistry, bool extendedHours, DateTime serviceTime, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
     {
         try
         {
@@ -407,7 +408,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@stateFundsDenied", stateFundsDenied);
             parameters.Add("@organizedAthleticPrograms", organizedAthleticPrograms);
             parameters.Add("@atRiskService", atRiskService);
-            parameters.Add("@basicEducationRegistryId", basicEducationRegistryId);
+            parameters.Add("@basicEducationRegistry", basicEducationRegistry);
+            parameters.Add("@extendedHours", extendedHours);
             parameters.Add("@serviceTime", serviceTime);
             parameters.Add("@taxExemptionStatusId", taxExemptionStatusId);
             parameters.Add("@taxExemptionTypeId", taxExemptionTypeId);

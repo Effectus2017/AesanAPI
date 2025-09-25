@@ -65,7 +65,8 @@ BEGIN
         a.ImageURL,
         a.IsPropietary,
         -- Campos de inscripción actualizados
-        ai.BasicEducationRegistryId,
+        ai.BasicEducationRegistry,
+        ai.ExtendedHours,
         ai.NonProfit,
         ai.FederalFundsDenied,
         ai.StateFundsDenied,
@@ -397,14 +398,14 @@ FETCH NEXT @take ROWS ONLY;
 END;
 GO
 
-EXEC [117_GetAgencies]
-    @take = 10,
-    @skip = 0,
-    @name = NULL,
-    @regionId = NULL,
-    @cityId = NULL,
-    @programId = NULL,
-    @statusId = NULL,
-    @userId = NULL,
-    @alls = 1,
-    @isPropietary = NULL;
+-- EXEC [117_GetAgencies]
+--     @take = 10,
+--     @skip = 0,
+--     @name = NULL,
+--     @regionId = NULL,
+--     @cityId = NULL,
+--     @programId = NULL,
+--     @statusId = NULL,
+--     @userId = NULL,
+--     @alls = 1,
+--     @isPropietary = NULL;

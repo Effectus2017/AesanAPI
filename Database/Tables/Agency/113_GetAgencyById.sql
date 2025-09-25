@@ -47,7 +47,8 @@ BEGIN
         ai.StateFundsDenied,
         ai.OrganizedAthleticPrograms,
         ai.AtRiskService,
-        ai.BasicEducationRegistryId,
+        ai.BasicEducationRegistry,
+        ai.ExtendedHours,
         ai.ServiceTime,
         ai.TaxExemptionStatusId,
         ai.TaxExemptionTypeId,
@@ -62,11 +63,6 @@ BEGIN
         ai.Comments,
         ai.DeadlineToCompleteRegistration,
         ai.CompletedRegistrationDate,
-
-        -- Datos de OptionSelection para BasicEducationRegistry
-        os_ber.Name AS BasicEducationRegistryName,
-        os_ber.NameEN AS BasicEducationRegistryNameEN,
-        os_ber.OptionKey AS BasicEducationRegistryOptionKey,
 
         -- Datos de OptionSelection para TaxExemptionStatus
         os_tes.Name AS TaxExemptionStatusName,
@@ -101,7 +97,6 @@ BEGIN
         LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
         LEFT JOIN AgencyInscription ai ON a.Id = ai.AgencyId
         -- JOINs con OptionSelection para datos de inscripción
-        LEFT JOIN OptionSelection os_ber ON ai.BasicEducationRegistryId = os_ber.Id
         LEFT JOIN OptionSelection os_tes ON ai.TaxExemptionStatusId = os_tes.Id
         LEFT JOIN OptionSelection os_tet ON ai.TaxExemptionTypeId = os_tet.Id
         LEFT JOIN OptionSelection os_toe ON ai.TypeOfEntityId = os_toe.Id

@@ -231,3 +231,10 @@ VALUES
     ('18 años o más con discapacidad', '18 or more years with disability', 'participantType', 0, 1, 890),
     ('60 años o más', '60 or more years', 'participantType', 0, 1, 900);
 
+
+-- Insertar valores de Site Location en OptionSelection
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
+VALUES
+    ('Fijo', 'Fixed', 'siteLocation', 1, 1, 910),
+    ('Móvil', 'Mobile', 'siteLocation', 1, 2, 920);

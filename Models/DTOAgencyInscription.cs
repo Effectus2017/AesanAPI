@@ -39,10 +39,16 @@ public class DTOAgencyInscription
     public bool? AtRiskService { get; set; }
 
     /// <summary>
-    /// Estado del registro de educación básica
-    /// En Proceso (3), Otorgado (4), Denegado (5)
+    /// Si la agencia tiene registro de educación básica
+    /// Si (1) y No (2)
     /// </summary>
-    public int? BasicEducationRegistryId { get; set; }
+    public bool? BasicEducationRegistry { get; set; }
+
+    /// <summary>
+    /// Si está interesado en participar de horario extendido (Solo para programa PACNA)
+    /// Si (1) y No (2)
+    /// </summary>
+    public bool? ExtendedHours { get; set; }
 
     /// <summary>
     /// Si la agencia tiene servicio de tiempo
@@ -120,11 +126,6 @@ public class DTOAgencyInscription
     public DateTime? CompletedRegistrationDate { get; set; }
 
     // Relaciones con OptionSelection para los campos de selección
-    /// <summary>
-    /// Estado del registro de educación básica (relación)
-    /// </summary>
-    public DTOOptionSelection? BasicEducationRegistry { get; set; }
-
     /// <summary>
     /// Estatus de la exención contributiva (relación)
     /// </summary>

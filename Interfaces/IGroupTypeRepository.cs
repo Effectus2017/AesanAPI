@@ -47,4 +47,11 @@ public interface IGroupTypeRepository
     /// <param name="id">ID del tipo de grupo</param>
     /// <returns>True si se eliminó correctamente, false en caso contrario</returns>
     Task<bool> DeleteGroupType(int id);
+
+    /// <summary>
+    /// Obtiene la ubicación del sitio por tipo de grupo
+    /// </summary>
+    /// <param name="groupTypeId">ID del tipo de grupo</param>
+    /// <returns>Ubicación del sitio</returns>
+    Task<dynamic> GetSiteLocationByGroupType(int groupTypeId);
 }

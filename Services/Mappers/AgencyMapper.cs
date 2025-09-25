@@ -124,7 +124,8 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 IsDayCareHome = item.IsDayCareHome,
 
                 // Campos de ID de opciones
-                BasicEducationRegistryId = item.BasicEducationRegistryId,
+                BasicEducationRegistry = item.BasicEducationRegistry,
+                ExtendedHours = item.ExtendedHours,
                 TaxExemptionStatusId = item.TaxExemptionStatusId,
                 TaxExemptionTypeId = item.TaxExemptionTypeId,
                 TypeOfEntityId = item.TypeOfEntityId,
@@ -140,14 +141,6 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 DeadlineToCompleteRegistration = item.DeadlineToCompleteRegistration,
 
                 // Relaciones con OptionSelection (si están disponibles en el resultado)
-                BasicEducationRegistry = item.BasicEducationRegistryId != null ? new DTOOptionSelection
-                {
-                    Id = item.BasicEducationRegistryId,
-                    Name = item.BasicEducationRegistryName ?? string.Empty,
-                    NameEN = item.BasicEducationRegistryNameEN ?? string.Empty,
-                    OptionKey = item.BasicEducationRegistryOptionKey ?? string.Empty
-                } : null,
-
                 TaxExemptionStatus = item.TaxExemptionStatusId != null ? new DTOOptionSelection
                 {
                     Id = item.TaxExemptionStatusId,
@@ -289,7 +282,8 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 item.AtRiskService,
                 item.NationalYouthProgram,
                 item.IsDayCareHome,
-                item.BasicEducationRegistryId,
+                item.BasicEducationRegistry,
+                item.ExtendedHours,
                 item.TaxExemptionStatusId,
                 item.TaxExemptionTypeId,
                 item.TypeOfEntityId,

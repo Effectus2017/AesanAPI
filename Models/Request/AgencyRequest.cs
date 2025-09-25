@@ -60,8 +60,12 @@ public class AgencyRequest
     public bool NonProfit { get; set; } = false;
     // ¿Posee Certificación de Registro de Educación Básica?
     // Do you have Basic Education Registry Certification?
-    // En Proceso (3), Otorgado (4), Denegado (5)
-    public int BasicEducationRegistryId { get; set; } = 0;
+    // Si (1) y No (2)
+    public bool BasicEducationRegistry { get; set; } = false;
+    // ¿Está interesado en participar de horario extendido? (Solo para PACNA)
+    // Are you interested in participating in extended hours? (Only for PACNA)
+    // Si (1) y No (2)
+    public bool ExtendedHours { get; set; } = false;
     // ¿Ha sido denegado o descalificado de fondos estatales en los últimos siete años?
     // Have you been denied or disqualified from state funds in the last seven years?
     // Si (1) y No (2)
