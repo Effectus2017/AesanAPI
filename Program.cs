@@ -71,34 +71,11 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]))
         };
 
-        // Configuración específica para SignalR - SIN AUTENTICACIÓN
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var path = context.HttpContext.Request.Path;
-
-                // Permitir conexiones SignalR sin autenticación
-                if (path.StartsWithSegments("/hubs"))
-                {
-                    // No validar token para SignalR
-                    context.Token = null;
-                    return Task.CompletedTask;
-                }
-
-                // Para otras rutas, mantener la autenticación normal
-                var accessToken = context.Request.Query["access_token"];
-                if (!string.IsNullOrEmpty(accessToken))
-                {
-                    context.Token = accessToken;
-                }
-
-                return Task.CompletedTask;
-            }
-        };
+        // Habilitar detalles de error para debugging
+        options.IncludeErrorDetails = true;
     });
 
 builder.Services
@@ -152,6 +129,7 @@ builder.Services.AddScoped<Lazy<MappingService>>(sp => new Lazy<MappingService>(
 builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
 builder.Services.AddScoped<ISchoolStaffRepository, SchoolStaffRepository>();
+builder.Services.AddScoped<ISchoolCalendarRepository, SchoolCalendarRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 
@@ -284,7 +262,9 @@ builder.Services.AddLogging(logging =>
     logging.AddConsole();
     logging.AddDebug();
     logging.AddApplicationInsights();
-    logging.SetMinimumLevel(LogLevel.Warning);
+    logging.SetMinimumLevel(LogLevel.Information);
+    logging.AddFilter("Microsoft.AspNetCore.Authentication", LogLevel.Debug);
+    logging.AddFilter("Microsoft.AspNetCore.Authorization", LogLevel.Debug);
 });
 
 // --- INICIO: Configuración de políticas de permisos granulares (deshabilitado por ahora) ---

@@ -20,6 +20,7 @@ namespace Api.Repositories;
 public class UserRepository(UserManager<User> userManager,
     RoleManager<Role> roleManager,
     IOptions<ApplicationSettings> appSettings,
+    IConfiguration configuration,
     IMapper mapper,
     ILoggingService loggingService,
     DapperContext context,
@@ -33,6 +34,7 @@ public class UserRepository(UserManager<User> userManager,
     private readonly UserManager<User> _userManager = userManager;
     private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
+    private readonly IConfiguration _configuration = configuration;
     private readonly IMapper _mapper = mapper;
     private readonly ILoggingService _loggingService = loggingService;
     private readonly IEmailService _emailService = emailService;
@@ -343,8 +345,10 @@ public class UserRepository(UserManager<User> userManager,
             // Generar el token de acceso
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
             var days = 2;
+            var issuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
+            var audience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
 
             // Obtener los roles del usuario
             var roles = await _userManager.GetRolesAsync(_user);
@@ -360,6 +364,8 @@ public class UserRepository(UserManager<User> userManager,
             {
                 Subject = GetClaims(_user, roles, agency, userPrograms, permissions),
                 Expires = DateTime.UtcNow.AddDays(days),
+                Issuer = issuer,
+                Audience = audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 

@@ -246,6 +246,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 await InsertSchoolParticipants(schoolId, participantTypeIds);
             }
 
+            // Insertar días de funcionamiento si se proporcionan fechas
+            if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue)
+            {
+                await InsertSiteOperatingDays(schoolId, request.OperatingFromDate.Value, request.OperatingToDate.Value);
+            }
+
             // Invalidar caché
             InvalidateCache(schoolId);
 
@@ -960,6 +966,42 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar grupos de niños para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta días de funcionamiento para un sitio basado en las fechas desde y hasta
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="operatingFromDate">Fecha desde</param>
+    /// <param name="operatingToDate">Fecha hasta</param>
+    /// <returns>Número de días insertados</returns>
+    private async Task<int> InsertSiteOperatingDays(int schoolId, DateTime operatingFromDate, DateTime operatingToDate)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@SchoolId", schoolId, DbType.Int32);
+            parameters.Add("@OperatingFromDate", operatingFromDate.Date, DbType.Date);
+            parameters.Add("@OperatingToDate", operatingToDate.Date, DbType.Date);
+            parameters.Add("@DefaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
+            parameters.Add("@DefaultEndTime", TimeSpan.FromHours(16), DbType.Time);  // 16:00:00
+            parameters.Add("@DefaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
+
+            var result = await dbConnection.QuerySingleAsync<int>("100_InsertSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
+
+            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para la escuela {SchoolId} desde {FromDate} hasta {ToDate}",
+                result, schoolId, operatingFromDate.Date, operatingToDate.Date);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar días de funcionamiento para la escuela {SchoolId} desde {FromDate} hasta {ToDate}",
+                schoolId, operatingFromDate.Date, operatingToDate.Date);
             throw;
         }
     }
