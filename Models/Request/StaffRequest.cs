@@ -33,4 +33,9 @@ public class StaffRequest
     public int? ReviewResultId { get; set; }
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
+
+    // Campos de asignación de escuela (School Assignment)
+    public int? SchoolId { get; set; } = null;
+    public int? AssignmentTypeId { get; set; } = 1; // Por defecto: Principal
+    public bool IsPrimary { get; set; } = false;
 }

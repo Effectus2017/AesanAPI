@@ -60,6 +60,8 @@ CREATE TABLE School
     InactiveDate DATETIME NULL,
     SiteCode NVARCHAR(255) NULL,
     SiteLocationId INT NULL,
+    -- ¿Cuánto tiempo lleva el sitio ofreciendo servicios con una matrícula establecida? / How long has the school/site been providing services with an established enrollment?
+    ServiceTime DATETIME NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
 );

@@ -83,7 +83,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                                                        SELECT DISTINCT sr.StaffId
+                                                                                                                                                        SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -155,7 +155,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                                                        SELECT DISTINCT sr.StaffId
+                                                                                                                                                        SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -184,7 +184,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                                                        SELECT DISTINCT sr.StaffId
+                                                                                                                                                        SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION

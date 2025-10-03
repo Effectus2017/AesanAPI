@@ -41,6 +41,11 @@ public class DTOStaff
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
 
+    // Datos de la relación SchoolStaff
+    public int? SchoolId { get; set; }
+    public int? AssignmentTypeId { get; set; }
+    public bool? IsPrimary { get; set; }
+
     // Relaciones anidadas (para GetById)
     public DTOCity? City { get; set; }
     public DTORegion? Region { get; set; }

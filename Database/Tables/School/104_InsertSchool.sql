@@ -46,6 +46,7 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSchool]
     @siteCode NVARCHAR(20) = NULL,
     @generalEnrollment INT = NULL,
     @siteNumber INT,
+    @serviceTime DATETIME = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -73,7 +74,7 @@ BEGIN
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         CommunityId, WalkersId, SiteTypeId, ExperienceId,
-        ReviewResultId, ReviewDate, ReviewJustification, SiteCode, GeneralEnrollment, SiteNumber,
+        ReviewResultId, ReviewDate, ReviewJustification, SiteCode, GeneralEnrollment, SiteNumber, ServiceTime,
         IsMainSchool, IsActive, CreatedAt
         )
     VALUES
@@ -84,7 +85,7 @@ BEGIN
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
             @communityId, @walkersId, @siteTypeId, @experienceId,
-            @reviewResultId, @reviewDate, @reviewJustification, @siteCode, @generalEnrollment, @siteNumber,
+            @reviewResultId, @reviewDate, @reviewJustification, @siteCode, @generalEnrollment, @siteNumber, @serviceTime,
             @isMainSchool, 1, GETDATE()
     );
 

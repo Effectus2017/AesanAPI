@@ -36,6 +36,12 @@ public class DTOSchool
     public int? BaseYear { get; set; }
     public int? RenewalYear { get; set; }
 
+    /// <summary>
+    /// ¿Desde cuándo su Entidad ofrece servicios con una matrícula establecida?
+    /// Since when has your Entity offered services with an established registration?
+    /// </summary>
+    public DateTime? ServiceTime { get; set; }
+
     // Información Operacional
     // EducationLevelId se reemplaza por una lista de DTOEducationLevel
     public DateTime? OperatingFromDate { get; set; }

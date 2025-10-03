@@ -38,6 +38,7 @@ BEGIN
         s.OperatingFromDate,
         s.OperatingToDate,
         s.OperatingDaysCalculated,
+        s.ServiceTime,
         s.KitchenTypeId,
         kt.Name AS KitchenTypeName,
         kt.NameEN AS KitchenTypeNameEN,

@@ -41,13 +41,18 @@ BEGIN
         a.Name AS AgencyName,
         s.Comments,
         s.UserId,
-        u.FirstName + ' ' + u.FatherLastName AS UserName,
+        u.UserName,
         s.CreatedAt,
         s.UpdatedAt,
         s.IsActive,
         s.ReviewResultId,
         s.ReviewDate,
-        s.ReviewJustification
+        s.ReviewJustification,
+
+        -- Datos de la relación SchoolStaff
+        ss.SchoolId,
+        ss.AssignmentTypeId,
+        ss.IsPrimary
     FROM Staff s
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -57,5 +62,6 @@ BEGIN
         LEFT JOIN Region r ON s.RegionId = r.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN AspNetUsers u ON s.UserId = u.Id
+        LEFT JOIN SchoolStaff ss ON s.Id = ss.StaffId AND ss.IsActive = 1
     WHERE s.Id = @id;
 END

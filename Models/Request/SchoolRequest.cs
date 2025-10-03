@@ -38,6 +38,12 @@ public class SchoolRequest
     public DateTime? OperatingToDate { get; set; }
     public int? OperatingDaysCalculated { get; set; }
 
+    /// <summary>
+    /// ¿Desde cuándo su Entidad ofrece servicios con una matrícula establecida?
+    /// Since when has your Entity offered services with an established registration?
+    /// </summary>
+    public DateTime? ServiceTime { get; set; }
+
     // Información Operacional
     public int? KitchenTypeId { get; set; }
     public int? GroupTypeId { get; set; }

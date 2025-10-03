@@ -17,7 +17,8 @@ public class StaffRepository(
     IMemoryCache cache,
     IOptions<ApplicationSettings> appSettings,
     MappingService mappingService,
-    IAuditLogger auditLogger) : IStaffRepository
+    IAuditLogger auditLogger,
+    ISchoolStaffRepository schoolStaffRepository) : IStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -25,6 +26,7 @@ public class StaffRepository(
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly IAuditLogger _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
+    private readonly ISchoolStaffRepository _schoolStaffRepository = schoolStaffRepository ?? throw new ArgumentNullException(nameof(schoolStaffRepository));
 
     /// <summary>
     /// Obtiene un miembro del staff por su ID
@@ -160,19 +162,33 @@ public class StaffRepository(
 
             if (staffId > 0)
             {
-                // Registrar en auditoría
-                await _auditLogger.LogChangeAsync(
-                    "Staff",
-                    staffId.ToString(),
-                    "INSERT",
-                    staffRequest.UserId ?? "SYSTEM",
-                    null, // oldEntity (no hay para INSERT)
-                    staffRequest, // newEntity
-                    "Nuevo miembro del staff creado",
-                    "StaffCreation"
-                );
-
                 InvalidateCache(staffId);
+
+                // Si se proporcionó una escuela, crear la asociación
+                if (staffRequest.SchoolId.HasValue && staffRequest.SchoolId.Value > 0)
+                {
+                    _logger.LogInformation("Asignando staff {StaffId} a la escuela {SchoolId}", staffId, staffRequest.SchoolId.Value);
+
+                    var schoolStaffRequest = new SchoolStaffRequest
+                    {
+                        SchoolId = staffRequest.SchoolId.Value,
+                        StaffId = staffId,
+                        AssignmentTypeId = staffRequest.AssignmentTypeId ?? 1,
+                        IsPrimary = staffRequest.IsPrimary,
+                        Comments = $"Asignación creada automáticamente al crear el staff"
+                    };
+
+                    try
+                    {
+                        await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
+                        _logger.LogInformation("Staff {StaffId} asignado exitosamente a la escuela {SchoolId}", staffId, staffRequest.SchoolId.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error al asignar staff {StaffId} a la escuela {SchoolId}, pero el staff fue creado exitosamente", staffId, staffRequest.SchoolId.Value);
+                        // No lanzar excepción aquí porque el staff ya fue creado exitosamente
+                    }
+                }
             }
 
             return staffId > 0;
@@ -229,6 +245,32 @@ public class StaffRepository(
             var staffId = parameters.Get<int>("@id");
 
             InvalidateCache(staffId);
+
+            // Si se proporcionó una escuela, crear la asociación
+            if (staffId > 0 && staffRequest.SchoolId.HasValue && staffRequest.SchoolId.Value > 0)
+            {
+                _logger.LogInformation("Asignando staff {StaffId} a la escuela {SchoolId}", staffId, staffRequest.SchoolId.Value);
+
+                var schoolStaffRequest = new SchoolStaffRequest
+                {
+                    SchoolId = staffRequest.SchoolId.Value,
+                    StaffId = staffId,
+                    AssignmentTypeId = staffRequest.AssignmentTypeId ?? 1,
+                    IsPrimary = staffRequest.IsPrimary,
+                    Comments = $"Asignación creada automáticamente al crear el staff"
+                };
+
+                try
+                {
+                    await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
+                    _logger.LogInformation("Staff {StaffId} asignado exitosamente a la escuela {SchoolId}", staffId, staffRequest.SchoolId.Value);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error al asignar staff {StaffId} a la escuela {SchoolId}, pero el staff fue creado exitosamente", staffId, staffRequest.SchoolId.Value);
+                    // No lanzar excepción aquí porque el staff ya fue creado exitosamente
+                }
+            }
 
             return staffId;
         }
@@ -310,6 +352,10 @@ public class StaffRepository(
                 );
 
                 InvalidateCache(staffRequest.Id.Value);
+
+                // Manejar la asignación de escuela
+                await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SchoolId, staffRequest.AssignmentTypeId, staffRequest.IsPrimary);
+
                 return true;
             }
 
@@ -579,6 +625,114 @@ public class StaffRepository(
         {
             _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", staffId);
             throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Maneja la actualización de la asignación de escuela para un staff
+    /// </summary>
+    /// <param name="staffId">ID del staff</param>
+    /// <param name="newSchoolId">Nuevo ID de escuela (null si no hay escuela)</param>
+    /// <param name="assignmentTypeId">Tipo de asignación</param>
+    /// <param name="isPrimary">Si es asignación principal</param>
+    private async Task HandleSchoolAssignmentUpdate(int staffId, int? newSchoolId, int? assignmentTypeId, bool isPrimary)
+    {
+        try
+        {
+            // Obtener asignaciones actuales del staff
+            var currentAssignments = await _schoolStaffRepository.GetSchoolsByStaff(staffId);
+            var currentAssignment = currentAssignments.FirstOrDefault(a => a.IsActive);
+
+            // Caso 1: No hay asignación actual y no se proporcionó nueva escuela → No hacer nada
+            if (currentAssignment == null && (!newSchoolId.HasValue || newSchoolId.Value <= 0))
+            {
+                _logger.LogInformation("No hay cambios en la asignación de escuela para el staff {StaffId}", staffId);
+                return;
+            }
+
+            // Caso 2: No hay asignación actual pero se proporcionó una escuela → Crear nueva
+            if (currentAssignment == null && newSchoolId.HasValue && newSchoolId.Value > 0)
+            {
+                _logger.LogInformation("Creando nueva asignación: Staff {StaffId} → Escuela {SchoolId}", staffId, newSchoolId.Value);
+
+                var schoolStaffRequest = new SchoolStaffRequest
+                {
+                    SchoolId = newSchoolId.Value,
+                    StaffId = staffId,
+                    AssignmentTypeId = assignmentTypeId ?? 1,
+                    IsPrimary = isPrimary,
+                    Comments = $"Asignación actualizada automáticamente"
+                };
+
+                await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
+                _logger.LogInformation("Asignación creada exitosamente");
+                return;
+            }
+
+            // Caso 3: Hay asignación actual pero no se proporcionó escuela → Desasignar
+            if (currentAssignment != null && (!newSchoolId.HasValue || newSchoolId.Value <= 0))
+            {
+                _logger.LogInformation("Eliminando asignación: Staff {StaffId} de Escuela {SchoolId}", staffId, currentAssignment.SchoolId);
+                await _schoolStaffRepository.UnassignStaffFromSchool(currentAssignment.SchoolId, staffId);
+                _logger.LogInformation("Asignación eliminada exitosamente");
+                return;
+            }
+
+            // Caso 4: Hay asignación actual y cambió la escuela → Desasignar anterior y crear nueva
+            if (currentAssignment != null && newSchoolId.HasValue && newSchoolId.Value > 0 && currentAssignment.SchoolId != newSchoolId.Value)
+            {
+                _logger.LogInformation("Cambiando asignación: Staff {StaffId} de Escuela {OldSchoolId} → {NewSchoolId}",
+                    staffId, currentAssignment.SchoolId, newSchoolId.Value);
+
+                // Desasignar de la escuela anterior
+                await _schoolStaffRepository.UnassignStaffFromSchool(currentAssignment.SchoolId, staffId);
+
+                // Asignar a la nueva escuela
+                var schoolStaffRequest = new SchoolStaffRequest
+                {
+                    SchoolId = newSchoolId.Value,
+                    StaffId = staffId,
+                    AssignmentTypeId = assignmentTypeId ?? 1,
+                    IsPrimary = isPrimary,
+                    Comments = $"Asignación actualizada automáticamente"
+                };
+
+                await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
+                _logger.LogInformation("Asignación actualizada exitosamente");
+                return;
+            }
+
+            // Caso 5: Misma escuela pero cambió tipo o isPrimary → Actualizar asignación existente
+            if (currentAssignment != null && newSchoolId.HasValue && newSchoolId.Value > 0 && currentAssignment.SchoolId == newSchoolId.Value)
+            {
+                // Verificar si cambió algo
+                bool assignmentTypeChanged = assignmentTypeId.HasValue && currentAssignment.AssignmentTypeId != assignmentTypeId.Value;
+                bool isPrimaryChanged = currentAssignment.IsPrimary != isPrimary;
+
+                if (assignmentTypeChanged || isPrimaryChanged)
+                {
+                    _logger.LogInformation("Actualizando asignación existente: Staff {StaffId} en Escuela {SchoolId}", staffId, newSchoolId.Value);
+
+                    var updateRequest = new UpdateSchoolStaffRequest
+                    {
+                        AssignmentTypeId = assignmentTypeId ?? currentAssignment.AssignmentTypeId,
+                        IsPrimary = isPrimary,
+                        Comments = $"Asignación actualizada automáticamente"
+                    };
+
+                    await _schoolStaffRepository.UpdateSchoolStaff(currentAssignment.Id, updateRequest);
+                    _logger.LogInformation("Asignación actualizada exitosamente");
+                }
+                else
+                {
+                    _logger.LogInformation("No hay cambios en la asignación de escuela para el staff {StaffId}", staffId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al manejar la asignación de escuela para el staff {StaffId}, pero la actualización del staff fue exitosa", staffId);
+            // No lanzar excepción aquí porque el staff ya fue actualizado exitosamente
         }
     }
 

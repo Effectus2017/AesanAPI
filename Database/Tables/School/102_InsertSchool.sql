@@ -59,6 +59,7 @@ CREATE OR ALTER PROCEDURE [dbo].[102_InsertSchool]
     @reviewDate DATETIME = NULL,
     @reviewJustification NVARCHAR(500) = NULL,
     @siteCode NVARCHAR(20) = NULL,
+    @serviceTime DATETIME = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -88,7 +89,7 @@ BEGIN
         Breakfast, BreakfastFrom, BreakfastTo, Lunch, LunchFrom, LunchTo, Snack, SnackFrom, SnackTo,
         Dinner, DinnerFrom, DinnerTo, SnackNight, SnackNightFrom, SnackNightTo,
         CommunityId, WalkersId, SiteTypeId, ExperienceId,
-        ReviewResultId, ReviewDate, ReviewJustification, SiteCode,
+        ReviewResultId, ReviewDate, ReviewJustification, SiteCode, ServiceTime,
         IsMainSchool, IsActive, CreatedAt
         )
     VALUES
@@ -101,7 +102,7 @@ BEGIN
             @breakfast, @breakfastFrom, @breakfastTo, @lunch, @lunchFrom, @lunchTo, @snack, @snackFrom, @snackTo,
             @dinner, @dinnerFrom, @dinnerTo, @snackNight, @snackNightFrom, @snackNightTo,
             @communityId, @walkersId, @siteTypeId, @experienceId,
-            @reviewResultId, @reviewDate, @reviewJustification, @siteCode,
+            @reviewResultId, @reviewDate, @reviewJustification, @siteCode, @serviceTime,
             @isMainSchool, 1, GETDATE()
     );
 

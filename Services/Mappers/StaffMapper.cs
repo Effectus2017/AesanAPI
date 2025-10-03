@@ -110,7 +110,12 @@ public static class StaffMapper
                 result.IsActive,
                 result.ReviewResultId,
                 result.ReviewDate,
-                result.ReviewJustification
+                result.ReviewJustification,
+
+                // Datos de la relación SchoolStaff
+                SchoolId = result.SchoolId,
+                AssignmentTypeId = result.AssignmentTypeId,
+                IsPrimary = result.IsPrimary
             };
         }
         catch (Exception ex)
@@ -173,6 +178,11 @@ public static class StaffMapper
                 ReviewResultId = item.ReviewResultId,
                 ReviewDate = item.ReviewDate,
                 ReviewJustification = item.ReviewJustification,
+
+                // Datos de la relación SchoolStaff
+                SchoolId = item.SchoolId,
+                AssignmentTypeId = item.AssignmentTypeId,
+                IsPrimary = item.IsPrimary,
 
                 City = mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }),
                 Region = mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }),

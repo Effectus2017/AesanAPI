@@ -189,7 +189,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@locationTypeId", request.LocationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
             parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
             parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
@@ -202,6 +201,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
 
             // Obtener el siguiente número de sitio para la agencia
             int nextSiteNumber = await GetNextSiteNumber(request.AgencyId.Value);
@@ -310,28 +310,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
             parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
             parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
 
-            // Los campos de servicios ya no están en SchoolRequest, se manejan por separado
-            // Se mantienen como null para compatibilidad con el stored procedure
-            parameters.Add("@breakfast", null, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@breakfastFrom", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@breakfastTo", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@lunch", null, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@lunchFrom", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@lunchTo", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackAM", null, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@snackAMFrom", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackAMTo", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@dinner", null, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@dinnerFrom", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@dinnerTo", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackNight", null, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@snackNightFrom", null, DbType.Time, ParameterDirection.Input);
-            parameters.Add("@snackNightTo", null, DbType.Time, ParameterDirection.Input);
 
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
@@ -345,6 +327,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteNumber", request.SiteNumber, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -370,6 +353,25 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 request.ChildGroups != null && request.ChildGroups.Count != 0 && request.Id.HasValue)
             {
                 await UpdateSchoolChildGroups(request.Id.Value, request.ChildGroups);
+            }
+
+            // Actualizar servicios de alimentación
+            if (request.Services != null && request.Services.Count != 0 && request.Id.HasValue)
+            {
+                await UpdateSchoolService(request.Id.Value, request.Services);
+            }
+
+            // Actualizar información de Day Care Home
+            if (request.DayCareHome != null && request.Id.HasValue)
+            {
+                await UpdateSchoolDayCareHome(request.Id.Value, request.DayCareHome);
+            }
+
+            // Actualizar tipos de participantes
+            if (request.Participants != null && request.Participants.Count != 0 && request.Id.HasValue)
+            {
+                var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
+                await UpdateSchoolParticipants(request.Id.Value, participantTypeIds);
             }
 
             if (rowsAffected > 0 && request.Id.HasValue)
@@ -1024,6 +1026,154 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza servicios de alimentación para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="services">Lista de servicios</param>
+    /// <returns>True si se actualizaron correctamente</returns>
+    private async Task<bool> UpdateSchoolService(int schoolId, List<SchoolServiceRequest> services)
+    {
+        try
+        {
+            // Primero obtener los servicios existentes
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            // Usar estrategia "eliminar y recrear" para mantener consistencia
+            var deleteParameters = new DynamicParameters();
+            deleteParameters.Add("@schoolId", schoolId, DbType.Int32);
+            await dbConnection.ExecuteAsync("DELETE FROM SchoolService WHERE SchoolId = @schoolId", deleteParameters);
+
+            // Ahora insertar los nuevos servicios
+            foreach (var service in services)
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@schoolId", schoolId, DbType.Int32);
+                parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
+                parameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
+                parameters.Add("@breakfastFrom", service.BreakfastFrom, DbType.Time);
+                parameters.Add("@breakfastTo", service.BreakfastTo, DbType.Time);
+                parameters.Add("@lunch", service.Lunch, DbType.Boolean);
+                parameters.Add("@lunchFrom", service.LunchFrom, DbType.Time);
+                parameters.Add("@lunchTo", service.LunchTo, DbType.Time);
+                parameters.Add("@snackAM", service.SnackAM, DbType.Boolean);
+                parameters.Add("@snackAMFrom", service.SnackAMFrom, DbType.Time);
+                parameters.Add("@snackAMTo", service.SnackAMTo, DbType.Time);
+                parameters.Add("@dinner", service.Dinner, DbType.Boolean);
+                parameters.Add("@dinnerFrom", service.DinnerFrom, DbType.Time);
+                parameters.Add("@dinnerTo", service.DinnerTo, DbType.Time);
+                parameters.Add("@snackPM", service.SnackPM, DbType.Boolean);
+                parameters.Add("@snackPMFrom", service.SnackPMFrom, DbType.Time);
+                parameters.Add("@snackPMTo", service.SnackPMTo, DbType.Time);
+                parameters.Add("@snackNight", service.SnackNight, DbType.Boolean);
+                parameters.Add("@snackNightFrom", service.SnackNightFrom, DbType.Time);
+                parameters.Add("@snackNightTo", service.SnackNightTo, DbType.Time);
+                parameters.Add("@dinnerExtended", service.DinnerExtended, DbType.Boolean);
+                parameters.Add("@dinnerExtendedFrom", service.DinnerExtendedFrom, DbType.Time);
+                parameters.Add("@dinnerExtendedTo", service.DinnerExtendedTo, DbType.Time);
+                parameters.Add("@dinnerAtRisk", service.DinnerAtRisk, DbType.Boolean);
+                parameters.Add("@dinnerAtRiskFrom", service.DinnerAtRiskFrom, DbType.Time);
+                parameters.Add("@dinnerAtRiskTo", service.DinnerAtRiskTo, DbType.Time);
+                parameters.Add("@snackExtended", service.SnackExtended, DbType.Boolean);
+                parameters.Add("@snackExtendedFrom", service.SnackExtendedFrom, DbType.Time);
+                parameters.Add("@snackExtendedTo", service.SnackExtendedTo, DbType.Time);
+                parameters.Add("@snackAtRisk", service.SnackAtRisk, DbType.Boolean);
+                parameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
+                parameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
+                parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                await dbConnection.ExecuteAsync("100_InsertSchoolService", parameters, commandType: CommandType.StoredProcedure);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar servicios para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza información de Day Care Home para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="dayCareHome">Datos de Day Care Home</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    private async Task<bool> UpdateSchoolDayCareHome(int schoolId, SchoolDayCareHomeRequest dayCareHome)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            // Buscar el registro existente
+            var existingId = await dbConnection.QuerySingleOrDefaultAsync<int?>(
+                "SELECT Id FROM SchoolDayCareHome WHERE SchoolId = @schoolId",
+                new { schoolId });
+
+            if (existingId.HasValue)
+            {
+                // Actualizar registro existente
+                var parameters = new DynamicParameters();
+                parameters.Add("@id", existingId.Value, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@schoolId", schoolId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@isAuthorizedToOperate", dayCareHome.IsAuthorizedToOperate, DbType.Boolean, ParameterDirection.Input);
+                parameters.Add("@hasFamilyDepartmentLicense", dayCareHome.HasFamilyDepartmentLicense, DbType.Boolean, ParameterDirection.Input);
+                parameters.Add("@numberOfEnrolledChildren", dayCareHome.NumberOfEnrolledChildren, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@numberOfProviderChildren", dayCareHome.NumberOfProviderChildren, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@numberOfParticipantsWithBloodTies", dayCareHome.NumberOfParticipantsWithBloodTies, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@numberOfParticipantsWithoutBloodTies", dayCareHome.NumberOfParticipantsWithoutBloodTies, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@minorsLiveWithProvider", dayCareHome.MinorsLiveWithProvider, DbType.Boolean, ParameterDirection.Input);
+                parameters.Add("@relationshipTypeId", dayCareHome.RelationshipTypeId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@offersServiceToImmigrantChildren", dayCareHome.OffersServiceToImmigrantChildren, DbType.Boolean, ParameterDirection.Input);
+                parameters.Add("@homeTypeId", dayCareHome.HomeTypeId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@administratorAuthorizedName", dayCareHome.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
+                parameters.Add("@administratorBirthDate", dayCareHome.AdministratorBirthDate, DbType.Date, ParameterDirection.Input);
+                parameters.Add("@offersServiceToDifferentGroups", dayCareHome.OffersServiceToDifferentGroups, DbType.Boolean, ParameterDirection.Input);
+                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                await dbConnection.ExecuteAsync("100_UpdateSchoolDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+                var rowsAffected = parameters.Get<int>("@rowsAffected");
+                return rowsAffected > 0;
+            }
+            else
+            {
+                // Insertar nuevo registro si no existe
+                return await InsertSchoolDayCareHome(schoolId, new SchoolRequest { DayCareHome = dayCareHome });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar información de Day Care Home para la escuela {SchoolId}", schoolId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Actualiza tipos de participantes para una escuela
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="participantTypeIds">Lista de IDs de tipos de participantes</param>
+    /// <returns>True si se actualizaron correctamente</returns>
+    private async Task<bool> UpdateSchoolParticipants(int schoolId, List<int> participantTypeIds)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@participantTypeIds", string.Join(",", participantTypeIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_UpdateSchoolParticipants", parameters, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar tipos de participantos para la escuela {SchoolId}", schoolId);
             throw;
         }
     }

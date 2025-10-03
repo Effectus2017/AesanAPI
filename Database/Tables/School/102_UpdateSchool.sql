@@ -60,7 +60,8 @@ CREATE OR ALTER PROCEDURE [dbo].[102_UpdateSchool]
     @reviewJustification NVARCHAR(500) = NULL,
     @isActive BIT = NULL,
     @inactiveJustification NVARCHAR(255) = NULL,
-    @inactiveDate DATETIME = NULL
+    @inactiveDate DATETIME = NULL,
+    @serviceTime DATETIME = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -128,6 +129,7 @@ BEGIN
         IsActive = @isActive,
         InactiveJustification = @inactiveJustification,
         InactiveDate = @inactiveDate,
+        ServiceTime = @serviceTime,
         UpdatedAt = GETDATE()
     WHERE Id = @id;
 
