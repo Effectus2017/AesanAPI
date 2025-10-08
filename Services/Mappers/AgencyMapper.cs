@@ -117,7 +117,9 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 // Campos booleanos de inscripción
                 NonProfit = item.NonProfit,
                 FederalFundsDenied = item.FederalFundsDenied,
+                FederalFundsDeniedReason = item.FederalFundsDeniedReason, // Nuevo mapeo
                 StateFundsDenied = item.StateFundsDenied,
+                StateFundsDeniedReason = item.StateFundsDeniedReason,
                 OrganizedAthleticPrograms = item.OrganizedAthleticPrograms,
                 AtRiskService = item.AtRiskService,
                 NationalYouthProgram = item.NationalYouthProgram,

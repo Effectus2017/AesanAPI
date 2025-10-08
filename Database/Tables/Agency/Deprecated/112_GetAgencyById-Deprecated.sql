@@ -46,7 +46,7 @@ BEGIN
         ai.StateFundsDenied,
         ai.OrganizedAthleticPrograms,
         ai.AtRiskService,
-        ai.BasicEducationRegistryId,
+        ai.BasicEducationRegistry,
         ai.ServiceTime,
         ai.TaxExemptionStatusId,
         ai.TaxExemptionTypeId,

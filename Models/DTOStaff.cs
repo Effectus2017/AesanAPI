@@ -1,3 +1,5 @@
+using Api.Models.Response;
+
 namespace Api.Models;
 
 public class DTOStaff
@@ -53,4 +55,6 @@ public class DTOStaff
     public DTOOptionSelection? Position { get; set; }
     public DTOStaffType? StaffType { get; set; }
     public DTOStaffClassification? StaffClassification { get; set; }
+    public SchoolListItemResponse? School { get; set; }
+    public DTOOptionSelection? AssignmentType { get; set; }
 }

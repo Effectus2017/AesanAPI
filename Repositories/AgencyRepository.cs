@@ -349,7 +349,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyId,
                 agencyRequest.NonProfit,
                 agencyRequest.FederalFundsDenied,
+                agencyRequest.FederalFundsDeniedReason, // Nuevo argumento
                 agencyRequest.StateFundsDenied,
+                agencyRequest.StateFundsDeniedReason,
                 agencyRequest.OrganizedAthleticPrograms,
                 agencyRequest.AtRiskService,
                 agencyRequest.BasicEducationRegistry,
@@ -390,6 +392,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="nonProfit">Si es sin fines de lucro</param>
     /// <param name="federalFundsDenied">Fondos federales denegados</param>
     /// <param name="stateFundsDenied">Fondos estatales denegados</param>
+    /// <param name="stateFundsDeniedReason">Razón por la cuál fue descalificado o denegado de fondos estatales</param>
     /// <param name="organizedAthleticPrograms">Programas atléticos organizados</param>
     /// <param name="atRiskService">Servicio a personas en riesgo</param>
     /// <param name="basicEducationRegistry">Registro de educación básica</param>
@@ -397,7 +400,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, bool stateFundsDenied, bool organizedAthleticPrograms, bool atRiskService, bool basicEducationRegistry, bool extendedHours, DateTime serviceTime, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool organizedAthleticPrograms, bool atRiskService, bool basicEducationRegistry, bool extendedHours, DateTime serviceTime, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
     {
         try
         {
@@ -405,7 +408,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@nonProfit", nonProfit);
             parameters.Add("@federalFundsDenied", federalFundsDenied);
+            parameters.Add("@federalFundsDeniedReason", federalFundsDeniedReason); // Nuevo parámetro
             parameters.Add("@stateFundsDenied", stateFundsDenied);
+            parameters.Add("@stateFundsDeniedReason", stateFundsDeniedReason);
             parameters.Add("@organizedAthleticPrograms", organizedAthleticPrograms);
             parameters.Add("@atRiskService", atRiskService);
             parameters.Add("@basicEducationRegistry", basicEducationRegistry);

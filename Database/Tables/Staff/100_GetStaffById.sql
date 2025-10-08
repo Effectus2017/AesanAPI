@@ -51,7 +51,10 @@ BEGIN
 
         -- Datos de la relación SchoolStaff
         ss.SchoolId,
+        sch.Name AS SchoolName,
         ss.AssignmentTypeId,
+        os_assignment.Name AS AssignmentTypeName,
+        os_assignment.NameEN AS AssignmentTypeNameEN,
         ss.IsPrimary
     FROM Staff s
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
@@ -63,5 +66,7 @@ BEGIN
         LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN AspNetUsers u ON s.UserId = u.Id
         LEFT JOIN SchoolStaff ss ON s.Id = ss.StaffId AND ss.IsActive = 1
+        LEFT JOIN School sch ON ss.SchoolId = sch.Id
+        LEFT JOIN OptionSelection os_assignment ON ss.AssignmentTypeId = os_assignment.Id
     WHERE s.Id = @id;
 END

@@ -84,6 +84,8 @@ BEGIN
         s.InactiveDate,
         s.GeneralEnrollment,
         s.SiteNumber,
+        s.OrganizedAthleticPrograms,
+        s.AtRiskService,
         s.IsMainSchool,
         a.AgencyCode,
         -- Generar código completo del sitio: extraer parte numérica del AgencyCode + SiteNumber

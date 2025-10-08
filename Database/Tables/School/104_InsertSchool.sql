@@ -47,6 +47,8 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSchool]
     @generalEnrollment INT = NULL,
     @siteNumber INT,
     @serviceTime DATETIME = NULL,
+    @organizedAthleticPrograms BIT = NULL,
+    @atRiskService BIT = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -75,6 +77,7 @@ BEGIN
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         CommunityId, WalkersId, SiteTypeId, ExperienceId,
         ReviewResultId, ReviewDate, ReviewJustification, SiteCode, GeneralEnrollment, SiteNumber, ServiceTime,
+        OrganizedAthleticPrograms, AtRiskService,
         IsMainSchool, IsActive, CreatedAt
         )
     VALUES
@@ -86,6 +89,7 @@ BEGIN
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
             @communityId, @walkersId, @siteTypeId, @experienceId,
             @reviewResultId, @reviewDate, @reviewJustification, @siteCode, @generalEnrollment, @siteNumber, @serviceTime,
+            @organizedAthleticPrograms, @atRiskService,
             @isMainSchool, 1, GETDATE()
     );
 

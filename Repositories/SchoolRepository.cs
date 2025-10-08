@@ -203,6 +203,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
 
+            // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
+            parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
+
             // Obtener el siguiente número de sitio para la agencia
             int nextSiteNumber = await GetNextSiteNumber(request.AgencyId.Value);
             parameters.Add("@siteNumber", nextSiteNumber, DbType.Int32, ParameterDirection.Input);
@@ -328,6 +332,10 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteNumber", request.SiteNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
+
+            // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
+            parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 

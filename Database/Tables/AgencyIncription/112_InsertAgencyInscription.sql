@@ -1,10 +1,13 @@
 -- Insertar una inscripción de agencia
--- 1.1.4 - Actualizado para incluir ExtendedHours
+-- 1.1.5 - Actualizado para incluir StateFundsDeniedReason
 CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @agencyId int,
     @nonProfit bit,
     @federalFundsDenied bit,
+    @federalFundsDeniedReason nvarchar(max),
+    -- Nuevo parámetro
     @stateFundsDenied bit,
+    @stateFundsDeniedReason nvarchar(max),
     @organizedAthleticPrograms bit,
     @atRiskService bit,
     @basicEducationRegistry bit,
@@ -24,7 +27,8 @@ BEGIN
     BEGIN TRY   
         INSERT INTO AgencyInscription
         (
-        AgencyId, NonProfit, FederalFundsDenied, StateFundsDenied,
+        AgencyId, NonProfit, FederalFundsDenied, FederalFundsDeniedReason, -- Nuevo campo
+        StateFundsDenied, StateFundsDeniedReason,
         OrganizedAthleticPrograms, AtRiskService,
         BasicEducationRegistry, ExtendedHours, ServiceTime,
         TaxExemptionStatusId, TaxExemptionTypeId,
@@ -32,7 +36,8 @@ BEGIN
         )
     VALUES
         (
-            @agencyId, @nonProfit, @federalFundsDenied, @stateFundsDenied,
+            @agencyId, @nonProfit, @federalFundsDenied, @federalFundsDeniedReason, -- Nuevo valor
+            @stateFundsDenied, @stateFundsDeniedReason,
             @organizedAthleticPrograms, @atRiskService,
             @basicEducationRegistry, @extendedHours, @serviceTime,
             @taxExemptionStatusId, @taxExemptionTypeId,

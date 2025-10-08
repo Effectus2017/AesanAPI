@@ -69,7 +69,9 @@ BEGIN
         ai.ExtendedHours,
         ai.NonProfit,
         ai.FederalFundsDenied,
+        ai.FederalFundsDeniedReason, -- Nuevo campo
         ai.StateFundsDenied,
+        ai.StateFundsDeniedReason,
         ai.OrganizedAthleticPrograms,
         ai.AtRiskService,
         ai.ServiceTime,

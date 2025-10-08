@@ -248,6 +248,16 @@ public class MappingService
         return SchoolMapper.MapTableResponseFromResult(item);
     }
 
+    /// <summary>
+    /// Mapea una escuela desde un resultado dinámico para elementos de lista
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolListItemResponse para listas</returns>
+    public SchoolListItemResponse MapSchoolListItem(dynamic item)
+    {
+        return SchoolMapper.MapListItemFromResult(item);
+    }
+
     #endregion
 
     #region Option Selection Mappings

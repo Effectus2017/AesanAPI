@@ -24,9 +24,21 @@ public class DTOAgencyInscription
     public bool? FederalFundsDenied { get; set; }
 
     /// <summary>
+    /// Razón por la cuál fue descalificado o denegado de fondos federales
+    /// Se activa cuando FederalFundsDenied = true
+    /// </summary>
+    public string? FederalFundsDeniedReason { get; set; }
+
+    /// <summary>
     /// Si la agencia no acepta fondos estatales
     /// </summary>
     public bool? StateFundsDenied { get; set; }
+
+    /// <summary>
+    /// Razón por la cuál fue descalificado o denegado de fondos estatales
+    /// Se activa cuando StateFundsDenied = true
+    /// </summary>
+    public string? StateFundsDeniedReason { get; set; }
 
     /// <summary>
     /// Si la agencia tiene programas de atletismo organizados

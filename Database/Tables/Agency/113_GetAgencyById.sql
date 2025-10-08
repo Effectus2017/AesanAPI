@@ -44,6 +44,7 @@ BEGIN
         ai.Id AS AgencyInscriptionId,
         ai.NonProfit,
         ai.FederalFundsDenied,
+        ai.FederalFundsDeniedReason, -- Nuevo campo
         ai.StateFundsDenied,
         ai.OrganizedAthleticPrograms,
         ai.AtRiskService,

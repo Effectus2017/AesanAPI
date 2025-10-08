@@ -70,10 +70,18 @@ public class AgencyRequest
     // Have you been denied or disqualified from state funds in the last seven years?
     // Si (1) y No (2)
     public bool StateFundsDenied { get; set; } = false;
+    // ¿Razón por la cuál fue descalificado o denegado de fondos estatales?
+    // Reason why the sponsor was disqualified or denied state funds?
+    // Se activa cuando StateFundsDenied = true
+    public string? StateFundsDeniedReason { get; set; }
     // ¿Ha sido denegado o descalificado de fondos federales en los últimos siete años?
     // Have you been denied or disqualified from federal funds in the last seven years?
     // Si (1) y No (2)
     public bool FederalFundsDenied { get; set; } = false;
+    // ¿Razón por la cuál fue descalificado o denegado de fondos federales?
+    // Reason why the sponsor was disqualified or denied federal funds?
+    // Se activa cuando FederalFundsDenied = true
+    public string? FederalFundsDeniedReason { get; set; }
     // ¿El Auspiciador ofrece programas atléticos organizados que participan en deportes competitivos interestelares o a nivel comunitario?
     // Does the Sponsor offer any organized athletic programs engaged in interscholastic or community level competitive sports?
     // Si (1) y No (2)

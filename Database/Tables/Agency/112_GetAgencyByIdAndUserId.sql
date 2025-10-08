@@ -12,32 +12,33 @@ BEGIN
     SELECT
         a.*,
 
-        -- Datos del usuario de la agencia (auspiciador)
-        auaSponsor.UserId as UserId,
-        u2.FirstName AS UserFirstName,
-        u2.MiddleName AS UserMiddleName,
-        u2.FatherLastName AS UserFatherLastName,
-        u2.MotherLastName AS UserMotherLastName,
+        -- Datos del usuario de la agencia (auspiciador) - desde Staff
+        s_sponsor.Id as UserId,
+        s_sponsor.FirstName AS UserFirstName,
+        s_sponsor.MiddleName AS UserMiddleName,
+        s_sponsor.FatherLastName AS UserFatherLastName,
+        s_sponsor.MotherLastName AS UserMotherLastName,
         -- AdministrationTitle reemplazado por la posición del Staff del auspiciador
-        ISNULL(os_position_sponsor.Name, u2.AdministrationTitle) AS UserAdministrationTitle,
+        os_position_sponsor.Name AS UserAdministrationTitle,
 
-        -- Datos del usuario monitor (el usuario actual)
-        auaMonitor.UserId as MonitorId,
-        u.FirstName AS MonitorFirstName,
-        u.MiddleName AS MonitorMiddleName,
-        u.FatherLastName AS MonitorFatherLastName,
-        u.MotherLastName AS MonitorMotherLastName,
+        -- Datos del usuario monitor (el usuario actual) - desde Staff
+        s_monitor.Id as MonitorId,
+        s_monitor.FirstName AS MonitorFirstName,
+        s_monitor.MiddleName AS MonitorMiddleName,
+        s_monitor.FatherLastName AS MonitorFatherLastName,
+        s_monitor.MotherLastName AS MonitorMotherLastName,
         -- AdministrationTitle reemplazado por la posición del Staff del monitor
-        ISNULL(os_position_monitor.Name, u.AdministrationTitle) AS MonitorAdministrationTitle,
+        os_position_monitor.Name AS MonitorAdministrationTitle,
 
         -- Campos de AgencyInscription con IDs
         ai.Id AS AgencyInscriptionId,
         ai.NonProfit,
         ai.FederalFundsDenied,
+        ai.FederalFundsDeniedReason, -- Nuevo campo
         ai.StateFundsDenied,
         ai.OrganizedAthleticPrograms,
         ai.AtRiskService,
-        ai.BasicEducationRegistryId,
+        ai.BasicEducationRegistry,
         ai.ServiceTime,
         ai.TaxExemptionStatusId,
         ai.TaxExemptionTypeId,
@@ -113,7 +114,7 @@ BEGIN
         LEFT JOIN OptionSelection os_position_sponsor ON s_sponsor.PositionId = os_position_sponsor.Id
         LEFT JOIN OptionSelection os_position_monitor ON s_monitor.PositionId = os_position_monitor.Id
         -- JOINs con OptionSelection para datos de inscripción
-        LEFT JOIN OptionSelection os_ber ON ai.BasicEducationRegistryId = os_ber.Id
+        LEFT JOIN OptionSelection os_ber ON ai.BasicEducationRegistry = os_ber.Id
         LEFT JOIN OptionSelection os_tes ON ai.TaxExemptionStatusId = os_tes.Id
         LEFT JOIN OptionSelection os_tet ON ai.TaxExemptionTypeId = os_tet.Id
         LEFT JOIN OptionSelection os_toe ON ai.TypeOfEntityId = os_toe.Id
@@ -136,14 +137,16 @@ BEGIN
     -- Tercera consulta: Obtener los usuarios que hicieron appointments en las agencias
     SELECT DISTINCT
         u.Id,
-        u.FirstName,
-        u.MiddleName,
-        u.FatherLastName,
-        u.MotherLastName,
+        s.FirstName,
+        s.MiddleName,
+        s.FatherLastName,
+        s.MotherLastName,
         ap.AgencyId
     FROM AspNetUsers u
         INNER JOIN AgencyProgram ap ON ap.UserId = u.Id AND ap.IsActive = 1
         INNER JOIN AgencyUsers aua ON ap.AgencyId = aua.AgencyId AND aua.IsActive = 1
+        -- LEFT JOIN con Staff para obtener datos personales
+        LEFT JOIN Staff s ON u.Id = s.UserId
     WHERE aua.UserId = @userId
         AND (@agencyId IS NULL OR ap.AgencyId = @agencyId);
 END;

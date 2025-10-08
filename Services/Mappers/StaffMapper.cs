@@ -184,12 +184,15 @@ public static class StaffMapper
                 AssignmentTypeId = item.AssignmentTypeId,
                 IsPrimary = item.IsPrimary,
 
+                School = item.SchoolId != null ? mappingService.MapSchoolListItem(new { Id = item.SchoolId, Name = item.SchoolName }) : null,
+                AssignmentType = item.AssignmentTypeId != null ? mappingService.MapOptionSelection(item.AssignmentTypeId, item.AssignmentTypeName, item.AssignmentTypeNameEN) : null,
+
                 City = mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }),
                 Region = mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }),
-                Status = mappingService.MapOptionSelection(item.StatusId, item.StatusName, item.StatusNameEN),
-                Position = mappingService.MapOptionSelection(item.PositionId, item.PositionName, item.PositionNameEN),
-                StaffType = mappingService.MapStaffType(item.StaffTypeId, item.StaffTypeName, item.StaffTypeNameEn),
-                StaffClassification = mappingService.MapStaffClassification(item.StaffClassificationId, item.StaffClassificationName, item.StaffClassificationNameEn)
+                Status = item.StatusId != null ? mappingService.MapOptionSelection(item.StatusId, item.StatusName, item.StatusNameEN) : null,
+                Position = item.PositionId != null ? mappingService.MapOptionSelection(item.PositionId, item.PositionName, item.PositionNameEN) : null,
+                StaffType = item.StaffTypeId != null ? mappingService.MapStaffType(item.StaffTypeId, item.StaffTypeName, item.StaffTypeNameEn) : null,
+                StaffClassification = item.StaffClassificationId != null ? mappingService.MapStaffClassification(item.StaffClassificationId, item.StaffClassificationName, item.StaffClassificationNameEn) : null
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

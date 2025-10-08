@@ -1,5 +1,5 @@
 -- Descripción: Obtiene los datos de una agencia por su ID y el ID del usuario
--- 1.1.2 - Versión actualizada con campos de contrato del Staff
+-- 1.1.1
 CREATE OR ALTER PROCEDURE [111_GetAgencyByIdAndUserId]
     @agencyId int,
     @userId nvarchar(450)
@@ -11,29 +11,23 @@ BEGIN
     SELECT
         a.*,
 
-        -- Datos del usuario de la agencia (auspiciador) - desde Staff
-        s_sponsor.Id as UserId,
-        s_sponsor.FirstName AS UserFirstName,
-        s_sponsor.MiddleName AS UserMiddleName,
-        s_sponsor.FatherLastName AS UserFatherLastName,
-        s_sponsor.MotherLastName AS UserMotherLastName,
+        -- Datos del usuario de la agencia (auspiciador)
+        auaSponsor.UserId as UserId,
+        u2.FirstName AS UserFirstName,
+        u2.MiddleName AS UserMiddleName,
+        u2.FatherLastName AS UserFatherLastName,
+        u2.MotherLastName AS UserMotherLastName,
         -- AdministrationTitle reemplazado por la posición del Staff del auspiciador
-        os_position_sponsor.Name AS UserAdministrationTitle,
-        -- Campos de contrato del Staff del auspiciador
-        s_sponsor.ContractStartDate AS UserContractStartDate,
-        s_sponsor.ContractEndDate AS UserContractEndDate,
+        ISNULL(os_position_sponsor.Name, u2.AdministrationTitle) AS UserAdministrationTitle,
 
-        -- Datos del usuario monitor (el usuario actual) - desde Staff
-        s_monitor.Id as MonitorId,
-        s_monitor.FirstName AS MonitorFirstName,
-        s_monitor.MiddleName AS MonitorMiddleName,
-        s_monitor.FatherLastName AS MonitorFatherLastName,
-        s_monitor.MotherLastName AS MonitorMotherLastName,
+        -- Datos del usuario monitor (el usuario actual)
+        auaMonitor.UserId as MonitorId,
+        u.FirstName AS MonitorFirstName,
+        u.MiddleName AS MonitorMiddleName,
+        u.FatherLastName AS MonitorFatherLastName,
+        u.MotherLastName AS MonitorMotherLastName,
         -- AdministrationTitle reemplazado por la posición del Staff del monitor
-        os_position_monitor.Name AS MonitorAdministrationTitle,
-        -- Campos de contrato del Staff del monitor
-        s_monitor.ContractStartDate AS MonitorContractStartDate,
-        s_monitor.ContractEndDate AS MonitorContractEndDate,
+        ISNULL(os_position_monitor.Name, u.AdministrationTitle) AS MonitorAdministrationTitle,
 
         -- Comentarios de la asignación de programa
         ai.Comments as Comments,
@@ -51,9 +45,11 @@ BEGIN
         ai.NonProfit,
         ai.FederalFundsDenied,
         ai.StateFundsDenied,
+        ai.StateFundsDeniedReason,
         ai.OrganizedAthleticPrograms,
         ai.AtRiskService,
-        ai.BasicEducationRegistryId,
+        ai.BasicEducationRegistry,
+        ai.ExtendedHours,
         ai.ServiceTime,
         ai.TaxExemptionStatusId,
         ai.TaxExemptionTypeId,
@@ -82,7 +78,7 @@ BEGIN
         LEFT JOIN AspNetUsers u2 ON auaSponsor.UserId = u2.Id
         -- Datos del usuario monitor
         LEFT JOIN AspNetUsers u ON auaMonitor.UserId = u.Id
-        -- LEFT JOINs con Staff para obtener las posiciones de los usuarios y datos personales
+        -- LEFT JOINs con Staff para obtener las posiciones de los usuarios
         LEFT JOIN Staff s_sponsor ON u2.Id = s_sponsor.UserId
         LEFT JOIN Staff s_monitor ON u.Id = s_monitor.UserId
         -- LEFT JOINs con OptionSelection para obtener los nombres de las posiciones
@@ -102,7 +98,7 @@ BEGIN
     WHERE aua.UserId = @userId
         AND (@agencyId IS NULL OR ap.AgencyId = @agencyId);
 
-    -- Tercera consulta: Obtener los usuarios que hicieron appointments en las agencias - desde Staff
+    -- Tercera consulta: Obtener los usuarios que hicieron appointments en las agencias
     SELECT DISTINCT
         u.Id,
         s.FirstName,
@@ -118,4 +114,4 @@ BEGIN
     WHERE aua.UserId = @userId
         AND (@agencyId IS NULL OR ap.AgencyId = @agencyId);
 END;
-GO
+GO 

@@ -76,10 +76,11 @@ BEGIN
             a.ImageURL,
             a.IsPropietary,
             -- Campos de inscripción actualizados
-            ai.BasicEducationRegistryId,
+            ai.BasicEducationRegistry,
             ai.NonProfit,
             ai.FederalFundsDenied,
             ai.StateFundsDenied,
+            ai.StateFundsDeniedReason,
             ai.OrganizedAthleticPrograms,
             ai.AtRiskService,
             ai.ServiceTime,
@@ -97,15 +98,15 @@ BEGIN
             a.AgencyCode,
             own.IsOwner,
 
-            -- Datos del usuario de la agencia
-            u.Id as UserId,
-            u.FirstName AS UserFirstName,
-            u.FatherLastName AS UserFatherLastName,
+            -- Datos del usuario de la agencia - desde Staff
+            s.Id as UserId,
+            s.FirstName AS UserFirstName,
+            s.FatherLastName AS UserFatherLastName,
 
-            -- Datos del usuario monitor
-            mon.UserId as MonitorId,
-            mu.FirstName AS MonitorFirstName,
-            mu.FatherLastName AS MonitorFatherLastName,
+            -- Datos del usuario monitor - desde Staff
+            s_monitor.Id as MonitorId,
+            s_monitor.FirstName AS MonitorFirstName,
+            s_monitor.FatherLastName AS MonitorFatherLastName,
 
             -- Comentarios de la asignación de programa
             ai.Comments as ProgramRejectionJustification,
@@ -122,8 +123,10 @@ BEGIN
             LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
             LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
             LEFT JOIN AspNetUsers u ON own.UserId = u.Id
+            LEFT JOIN Staff s ON u.Id = s.UserId
             LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
             LEFT JOIN AspNetUsers mu ON mon.UserId = mu.Id
+            LEFT JOIN Staff s_monitor ON mu.Id = s_monitor.UserId
         WHERE a.IsPropietary = 0
             AND (
         @alls = 1
@@ -191,15 +194,16 @@ BEGIN
             p.Name,
             p.Description,
             ap.AgencyId,
-            -- Usuario asignado al programa
-            u.FirstName,
-            u.MiddleName,
-            u.FatherLastName,
-            u.MotherLastName
+            -- Usuario asignado al programa - desde Staff
+            s_program.FirstName,
+            s_program.MiddleName,
+            s_program.FatherLastName,
+            s_program.MotherLastName
         FROM Program p
             INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId
             INNER JOIN FilteredAgencies fa ON ap.AgencyId = fa.Id
             LEFT JOIN AspNetUsers u ON ap.UserId = u.Id
+            LEFT JOIN Staff s_program ON u.Id = s_program.UserId
         WHERE ap.IsActive = 1;
 
         -- Count query

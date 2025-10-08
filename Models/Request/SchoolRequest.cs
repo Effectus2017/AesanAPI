@@ -92,4 +92,20 @@ public class SchoolRequest
 
     // Número de Sitio
     public int? SiteNumber { get; set; }
+
+    // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
+
+    /// <summary>
+    /// ¿El sitio ofrece programas atléticos organizados que participan en deportes competitivos interescolares o a nivel comunitario?
+    /// Does the site offer organized athletic programs engaged in interscholastic or community level competitive sports?
+    /// Solo para programa PACNA
+    /// </summary>
+    public bool? OrganizedAthleticPrograms { get; set; } = false;
+
+    /// <summary>
+    /// ¿El sitio está interesado en participar en el servicio de merienda y cena en riesgo?
+    /// Is the site interested in participating in the at-risk snack and dinner service?
+    /// Solo para programa PACNA
+    /// </summary>
+    public bool? AtRiskService { get; set; } = false;
 }

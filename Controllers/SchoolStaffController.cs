@@ -3,6 +3,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Api.Controllers;
 
@@ -12,7 +13,7 @@ namespace Api.Controllers;
 /// </summary>
 [Route("school-staff")]
 [ApiController]
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SchoolStaffController(ILogger<SchoolStaffController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolStaffController> _logger = logger;
@@ -21,27 +22,32 @@ public class SchoolStaffController(ILogger<SchoolStaffController> logger, IUnitO
     /// <summary>
     /// Obtiene todos los empleados asignados a un sitio específico
     /// </summary>
-    /// <param name="schoolId">ID del sitio</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del sitio</param>
     /// <returns>Lista de empleados asignados al sitio</returns>
     [HttpGet("get-staff-by-school")]
     [SwaggerOperation(Summary = "Obtiene empleados asignados a un sitio", Description = "Devuelve todos los empleados asignados a un sitio específico.")]
-    public async Task<IActionResult> GetStaffBySchool([FromQuery] int schoolId)
+    public async Task<IActionResult> GetStaffBySchool([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (schoolId <= 0)
+            if (ModelState.IsValid)
             {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
+                if (queryParameters.SchoolId == null || queryParameters.SchoolId == 0)
+                {
+                    return BadRequest("El ID del sitio es requerido");
+                }
+
+                _logger.LogInformation("Obteniendo empleados asignados al sitio {SchoolId}", queryParameters.SchoolId);
+
+                var result = await _unitOfWork.SchoolStaffRepository.GetStaffBySchool(queryParameters.SchoolId ?? 0);
+                return Ok(result);
             }
 
-            _logger.LogInformation("Obteniendo empleados asignados al sitio {SchoolId}", schoolId);
-
-            var result = await _unitOfWork.SchoolStaffRepository.GetStaffBySchool(schoolId);
-            return Ok(result);
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener empleados del sitio {SchoolId}", schoolId);
+            _logger.LogError(ex, "Error al obtener empleados del sitio {SchoolId}", queryParameters.SchoolId);
             return StatusCode(500, "Error al obtener empleados del sitio");
         }
     }
@@ -49,27 +55,32 @@ public class SchoolStaffController(ILogger<SchoolStaffController> logger, IUnitO
     /// <summary>
     /// Obtiene todos los sitios asignados a un empleado específico
     /// </summary>
-    /// <param name="staffId">ID del empleado</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del empleado</param>
     /// <returns>Lista de sitios asignados al empleado</returns>
     [HttpGet("get-schools-by-staff")]
     [SwaggerOperation(Summary = "Obtiene sitios asignados a un empleado", Description = "Devuelve todos los sitios asignados a un empleado específico.")]
-    public async Task<IActionResult> GetSchoolsByStaff([FromQuery] int staffId)
+    public async Task<IActionResult> GetSchoolsByStaff([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (staffId <= 0)
+            if (ModelState.IsValid)
             {
-                return BadRequest("El ID del empleado debe ser mayor a 0");
+                if (queryParameters.StaffId == 0)
+                {
+                    return BadRequest("El ID del empleado es requerido");
+                }
+
+                _logger.LogInformation("Obteniendo sitios asignados al empleado {StaffId}", queryParameters.StaffId);
+
+                var result = await _unitOfWork.SchoolStaffRepository.GetSchoolsByStaff(queryParameters.StaffId);
+                return Ok(result);
             }
 
-            _logger.LogInformation("Obteniendo sitios asignados al empleado {StaffId}", staffId);
-
-            var result = await _unitOfWork.SchoolStaffRepository.GetSchoolsByStaff(staffId);
-            return Ok(result);
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener sitios del empleado {StaffId}", staffId);
+            _logger.LogError(ex, "Error al obtener sitios del empleado {StaffId}", queryParameters.StaffId);
             return StatusCode(500, "Error al obtener sitios del empleado");
         }
     }
@@ -77,33 +88,38 @@ public class SchoolStaffController(ILogger<SchoolStaffController> logger, IUnitO
     /// <summary>
     /// Obtiene una asignación específica por su ID
     /// </summary>
-    /// <param name="id">ID de la asignación</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID de la asignación</param>
     /// <returns>La asignación si existe</returns>
     [HttpGet("get-assignment-by-id")]
     [SwaggerOperation(Summary = "Obtiene una asignación por ID", Description = "Devuelve una asignación específica basada en su ID.")]
-    public async Task<IActionResult> GetAssignmentById([FromQuery] int id)
+    public async Task<IActionResult> GetAssignmentById([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (id <= 0)
+            if (ModelState.IsValid)
             {
-                return BadRequest("El ID de la asignación debe ser mayor a 0");
+                if (queryParameters.Id == 0)
+                {
+                    return BadRequest("El ID de la asignación es requerido");
+                }
+
+                _logger.LogInformation("Obteniendo asignación con ID {Id}", queryParameters.Id);
+
+                var result = await _unitOfWork.SchoolStaffRepository.GetSchoolStaffById(queryParameters.Id);
+
+                if (result == null)
+                {
+                    return NotFound($"Asignación con ID {queryParameters.Id} no encontrada");
+                }
+
+                return Ok(result);
             }
 
-            _logger.LogInformation("Obteniendo asignación con ID {Id}", id);
-
-            var result = await _unitOfWork.SchoolStaffRepository.GetSchoolStaffById(id);
-
-            if (result == null)
-            {
-                return NotFound($"Asignación con ID {id} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la asignación con ID {Id}", id);
+            _logger.LogError(ex, "Error al obtener la asignación con ID {Id}", queryParameters.Id);
             return StatusCode(500, "Error al obtener la asignación");
         }
     }
@@ -180,34 +196,38 @@ public class SchoolStaffController(ILogger<SchoolStaffController> logger, IUnitO
     /// <summary>
     /// Desasigna un empleado de un sitio
     /// </summary>
-    /// <param name="schoolId">ID del sitio</param>
-    /// <param name="staffId">ID del empleado</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen los IDs del sitio y empleado</param>
     /// <returns>Resultado de la desasignación</returns>
     [HttpDelete("unassign-staff")]
     [SwaggerOperation(Summary = "Desasigna un empleado de un sitio", Description = "Elimina la asignación de un empleado a un sitio específico.")]
-    public async Task<IActionResult> UnassignStaff([FromQuery] int schoolId, [FromQuery] int staffId)
+    public async Task<IActionResult> UnassignStaff([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (schoolId <= 0 || staffId <= 0)
+            if (ModelState.IsValid)
             {
-                return BadRequest("Los IDs del sitio y empleado deben ser mayores a 0");
+                if (queryParameters.SchoolId == null || queryParameters.SchoolId == 0 || queryParameters.StaffId == 0)
+                {
+                    return BadRequest("Los IDs del sitio y empleado son requeridos");
+                }
+
+                _logger.LogInformation("Desasignando empleado {StaffId} del sitio {SchoolId}", queryParameters.StaffId, queryParameters.SchoolId);
+
+                var result = await _unitOfWork.SchoolStaffRepository.UnassignStaffFromSchool(queryParameters.SchoolId ?? 0, queryParameters.StaffId);
+
+                if (result)
+                {
+                    return Ok(new { Message = "Empleado desasignado exitosamente" });
+                }
+
+                return BadRequest("Error al desasignar empleado");
             }
 
-            _logger.LogInformation("Desasignando empleado {StaffId} del sitio {SchoolId}", staffId, schoolId);
-
-            var result = await _unitOfWork.SchoolStaffRepository.UnassignStaffFromSchool(schoolId, staffId);
-
-            if (result)
-            {
-                return Ok(new { Message = "Empleado desasignado exitosamente" });
-            }
-
-            return BadRequest("Error al desasignar empleado");
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al desasignar empleado {StaffId} del sitio {SchoolId}", staffId, schoolId);
+            _logger.LogError(ex, "Error al desasignar empleado {StaffId} del sitio {SchoolId}", queryParameters.StaffId, queryParameters.SchoolId);
             return StatusCode(500, "Error al desasignar empleado del sitio");
         }
     }

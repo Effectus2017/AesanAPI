@@ -48,7 +48,9 @@ CREATE OR ALTER PROCEDURE [dbo].[104_UpdateSchool]
     @inactiveDate DATETIME = NULL,
     @generalEnrollment INT = NULL,
     @siteNumber INT = NULL,
-    @serviceTime DATETIME = NULL
+    @serviceTime DATETIME = NULL,
+    @organizedAthleticPrograms BIT = NULL,
+    @atRiskService BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -104,6 +106,8 @@ BEGIN
         GeneralEnrollment = @generalEnrollment,
         SiteNumber = @siteNumber,
         ServiceTime = @serviceTime,
+        OrganizedAthleticPrograms = @organizedAthleticPrograms,
+        AtRiskService = @atRiskService,
         UpdatedAt = GETDATE()
     WHERE Id = @id;
 

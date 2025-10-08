@@ -78,6 +78,12 @@ CREATE TABLE AgencyInscription
     -- Are you interested in participating in extended hours? (Only for PACNA)
     -- Si (1) y No (2)
     ExtendedHours bit NULL DEFAULT (0),
+    -- ¿Qué razón por la cuál fue descalificado o denegado de fondos estatales?
+    -- What reason was the sponsor disqualified or denied state funds?
+    StateFundsDeniedReason nvarchar(max) NULL,
+    -- ¿Qué razón por la cuál fue descalificado o denegado de fondos federales?
+    -- What reason was the sponsor disqualified or denied federal funds?
+    FederalFundsDeniedReason nvarchar(max) NULL,
 
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id)
 );
