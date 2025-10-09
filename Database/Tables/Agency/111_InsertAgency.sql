@@ -21,6 +21,7 @@ CREATE OR ALTER PROCEDURE [111_InsertAgency]
     @isListable bit,
     @agencyCode nvarchar(50),
     @isPropietary bit,
+    @isRecurrent bit,
     @id int OUTPUT
 AS
 BEGIN
@@ -35,7 +36,7 @@ BEGIN
         SdrNumber, Address, ZipCode, PostalAddress,
         PostalZipCode, Phone, Email, Latitude,
         Longitude, ImageURL, IsActive, IsListable,
-        AgencyCode, IsPropietary
+        AgencyCode, IsPropietary, IsRecurrent
         )
     VALUES
         (
@@ -44,7 +45,7 @@ BEGIN
             @sdrNumber, @address, @zipCode, @postalAddress,
             @postalZipCode, @phone, @email, @latitude,
             @longitude, @imageUrl, @isActive, @isListable,
-            @agencyCode, @isPropietary
+            @agencyCode, @isPropietary, @isRecurrent
         );
 
         SET @id = SCOPE_IDENTITY();

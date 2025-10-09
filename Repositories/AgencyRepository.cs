@@ -332,6 +332,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@isListable", agencyRequest.IsListable);
             parameters.Add("@agencyCode", agencyRequest.AgencyCode);
             parameters.Add("@isPropietary", false);
+            parameters.Add("@isRecurrent", false);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
@@ -508,6 +509,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@phone", agencyRequest.Phone);
             parameters.Add("@imageURL", agencyRequest.ImageUrl);
             parameters.Add("@email", agencyRequest.Email);
+            parameters.Add("@isRecurrent", agencyRequest.IsRecurrent);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 

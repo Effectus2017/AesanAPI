@@ -108,4 +108,11 @@ public class SchoolRequest
     /// Solo para programa PACNA
     /// </summary>
     public bool? AtRiskService { get; set; } = false;
+
+    /// <summary>
+    /// Indica si la agencia es Day Care Home
+    /// Indicates if the agency is Day Care Home
+    /// Se obtiene de la inscripción de la agencia
+    /// </summary>
+    public bool? IsDayCareHome { get; set; } = false;
 }

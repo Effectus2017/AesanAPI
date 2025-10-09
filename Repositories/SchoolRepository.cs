@@ -233,8 +233,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             // Insertar servicios de alimentación
             await InsertSchoolService(schoolId, request);
 
-            // Insertar información de Day Care Home
-            await InsertSchoolDayCareHome(schoolId, request);
+            // Insertar información de Day Care Home solo si la agencia es Day Care Home
+            if (request.IsDayCareHome == true)
+            {
+                await InsertSchoolDayCareHome(schoolId, request);
+            }
 
             // Insertar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
             if (request.DayCareHome?.OffersServiceToDifferentGroups == true &&
@@ -369,8 +372,8 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
                 await UpdateSchoolService(request.Id.Value, request.Services);
             }
 
-            // Actualizar información de Day Care Home
-            if (request.DayCareHome != null && request.Id.HasValue)
+            // Actualizar información de Day Care Home solo si la agencia es Day Care Home
+            if (request.DayCareHome != null && request.Id.HasValue && request.IsDayCareHome == true)
             {
                 await UpdateSchoolDayCareHome(request.Id.Value, request.DayCareHome);
             }
@@ -1107,7 +1110,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     }
 
     /// <summary>
-    /// Actualiza información de Day Care Home para una escuela
+    /// Actualiza información de Day Care Home para una escuela existente
     /// </summary>
     /// <param name="schoolId">ID de la escuela</param>
     /// <param name="dayCareHome">Datos de Day Care Home</param>
@@ -1118,41 +1121,27 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         {
             using IDbConnection dbConnection = _context.CreateConnection();
 
-            // Buscar el registro existente
-            var existingId = await dbConnection.QuerySingleOrDefaultAsync<int?>(
-                "SELECT Id FROM SchoolDayCareHome WHERE SchoolId = @schoolId",
-                new { schoolId });
+            // Actualizar registro existente usando SchoolId directamente
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isAuthorizedToOperate", dayCareHome.IsAuthorizedToOperate, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@hasFamilyDepartmentLicense", dayCareHome.HasFamilyDepartmentLicense, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@numberOfEnrolledChildren", dayCareHome.NumberOfEnrolledChildren, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@numberOfProviderChildren", dayCareHome.NumberOfProviderChildren, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@numberOfParticipantsWithBloodTies", dayCareHome.NumberOfParticipantsWithBloodTies, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@numberOfParticipantsWithoutBloodTies", dayCareHome.NumberOfParticipantsWithoutBloodTies, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@minorsLiveWithProvider", dayCareHome.MinorsLiveWithProvider, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@relationshipTypeId", dayCareHome.RelationshipTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@offersServiceToImmigrantChildren", dayCareHome.OffersServiceToImmigrantChildren, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@homeTypeId", dayCareHome.HomeTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@administratorAuthorizedName", dayCareHome.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
+            parameters.Add("@administratorBirthDate", dayCareHome.AdministratorBirthDate, DbType.Date, ParameterDirection.Input);
+            parameters.Add("@offersServiceToDifferentGroups", dayCareHome.OffersServiceToDifferentGroups, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            if (existingId.HasValue)
-            {
-                // Actualizar registro existente
-                var parameters = new DynamicParameters();
-                parameters.Add("@id", existingId.Value, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@schoolId", schoolId, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@isAuthorizedToOperate", dayCareHome.IsAuthorizedToOperate, DbType.Boolean, ParameterDirection.Input);
-                parameters.Add("@hasFamilyDepartmentLicense", dayCareHome.HasFamilyDepartmentLicense, DbType.Boolean, ParameterDirection.Input);
-                parameters.Add("@numberOfEnrolledChildren", dayCareHome.NumberOfEnrolledChildren, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@numberOfProviderChildren", dayCareHome.NumberOfProviderChildren, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@numberOfParticipantsWithBloodTies", dayCareHome.NumberOfParticipantsWithBloodTies, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@numberOfParticipantsWithoutBloodTies", dayCareHome.NumberOfParticipantsWithoutBloodTies, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@minorsLiveWithProvider", dayCareHome.MinorsLiveWithProvider, DbType.Boolean, ParameterDirection.Input);
-                parameters.Add("@relationshipTypeId", dayCareHome.RelationshipTypeId, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@offersServiceToImmigrantChildren", dayCareHome.OffersServiceToImmigrantChildren, DbType.Boolean, ParameterDirection.Input);
-                parameters.Add("@homeTypeId", dayCareHome.HomeTypeId, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@administratorAuthorizedName", dayCareHome.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
-                parameters.Add("@administratorBirthDate", dayCareHome.AdministratorBirthDate, DbType.Date, ParameterDirection.Input);
-                parameters.Add("@offersServiceToDifferentGroups", dayCareHome.OffersServiceToDifferentGroups, DbType.Boolean, ParameterDirection.Input);
-                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-                await dbConnection.ExecuteAsync("100_UpdateSchoolDayCareHome", parameters, commandType: CommandType.StoredProcedure);
-                var rowsAffected = parameters.Get<int>("@rowsAffected");
-                return rowsAffected > 0;
-            }
-            else
-            {
-                // Insertar nuevo registro si no existe
-                return await InsertSchoolDayCareHome(schoolId, new SchoolRequest { DayCareHome = dayCareHome });
-            }
+            await dbConnection.ExecuteAsync("100_UpdateSchoolDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            return rowsAffected > 0;
         }
         catch (Exception ex)
         {
@@ -1160,6 +1149,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             throw;
         }
     }
+
 
     /// <summary>
     /// Actualiza tipos de participantes para una escuela

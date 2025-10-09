@@ -119,6 +119,10 @@ public class AgencyRequest
     // Si (1) y No (2)
     public bool IsDayCareHome { get; set; } = false;
 
+    // ¿Es la agencia recurrente?
+    // Is the agency recurrent?
+    public bool IsRecurrent { get; set; } = false;
+
     // Nombres
     public string FirstName { get; set; } = "";
     public string MiddleName { get; set; } = "";

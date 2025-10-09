@@ -54,4 +54,8 @@ public class DTOAgency
 
     // Datos de inscripción de la agencia
     public DTOAgencyInscription? Inscription { get; set; }
+
+    // ¿Es la agencia recurrente?
+    // Is the agency recurrent?
+    public bool IsRecurrent { get; set; } = false;
 }

@@ -29,7 +29,9 @@ CREATE OR ALTER PROCEDURE [111_UpdateAgency]
     -- Imagen
     @imageURL NVARCHAR(MAX) = NULL,
     -- Datos de contacto
-    @email NVARCHAR(255)
+    @email NVARCHAR(255),
+    -- Es recurrente
+    @isRecurrent BIT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -63,6 +65,8 @@ BEGIN
             ImageURL = @imageURL,
             -- Datos de contacto
             Email = @email,
+            -- Es recurrente
+            IsRecurrent = @isRecurrent,
             -- Auditoría
             UpdatedAt = GETDATE()
         WHERE Id = @id;

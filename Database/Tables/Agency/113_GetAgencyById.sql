@@ -39,6 +39,7 @@ BEGIN
         a.UpdatedAt,
         a.AgencyCode,
         a.IsPropietary,
+        a.IsRecurrent,
 
         -- Campos de AgencyInscription
         ai.Id AS AgencyInscriptionId,

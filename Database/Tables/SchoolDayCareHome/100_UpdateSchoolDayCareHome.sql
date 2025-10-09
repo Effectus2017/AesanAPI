@@ -1,6 +1,5 @@
 CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSchoolDayCareHome]
-    @id INT,
-    @schoolId INT = NULL,
+    @schoolId INT,
     @isAuthorizedToOperate BIT = NULL,
     @hasFamilyDepartmentLicense BIT = NULL,
     @numberOfEnrolledChildren INT = NULL,
@@ -20,8 +19,7 @@ BEGIN
     SET NOCOUNT ON;
 
     UPDATE SchoolDayCareHome
-    SET SchoolId = ISNULL(@schoolId, SchoolId),
-        IsAuthorizedToOperate = ISNULL(@isAuthorizedToOperate, IsAuthorizedToOperate),
+    SET IsAuthorizedToOperate = ISNULL(@isAuthorizedToOperate, IsAuthorizedToOperate),
         HasFamilyDepartmentLicense = ISNULL(@hasFamilyDepartmentLicense, HasFamilyDepartmentLicense),
         NumberOfEnrolledChildren = ISNULL(@numberOfEnrolledChildren, NumberOfEnrolledChildren),
         NumberOfProviderChildren = ISNULL(@numberOfProviderChildren, NumberOfProviderChildren),
@@ -35,10 +33,10 @@ BEGIN
         AdministratorBirthDate = ISNULL(@administratorBirthDate, AdministratorBirthDate),
         OffersServiceToDifferentGroups = ISNULL(@offersServiceToDifferentGroups, OffersServiceToDifferentGroups),
         UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    WHERE SchoolId = @schoolId;
 
     SET @rowsAffected = @@ROWCOUNT;
 END;
 
 -- Ejemplo de uso:
--- EXEC [100_UpdateSchoolDayCareHome] @id = 1, @isAuthorizedToOperate = 1, @numberOfEnrolledChildren = 15, @schoolId = 1, @rowsAffected = 0 OUTPUT;
+-- EXEC [100_UpdateSchoolDayCareHome] @schoolId = 1, @isAuthorizedToOperate = 1, @numberOfEnrolledChildren = 15, @rowsAffected = 0 OUTPUT;
