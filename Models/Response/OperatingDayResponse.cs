@@ -13,7 +13,7 @@ public class OperatingDayResponse
     /// <summary>
     /// ID del sitio al que pertenece este día de funcionamiento
     /// </summary>
-    public int SchoolId { get; set; }
+    public int SiteId { get; set; }
 
     /// <summary>
     /// Fecha de funcionamiento

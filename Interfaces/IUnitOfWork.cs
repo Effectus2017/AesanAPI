@@ -8,7 +8,7 @@ public interface IUnitOfWork
     IGeoRepository GeoRepository { get; }
     IProgramRepository ProgramRepository { get; }
     IAgencyRepository AgencyRepository { get; }
-    ISchoolRepository SchoolRepository { get; }
+    ISiteRepository SiteRepository { get; }
     IAgencyUsersRepository AgencyUsersRepository { get; }
     IAgencyFilesRepository AgencyFilesRepository { get; }
     ICenterTypeRepository CenterTypeRepository { get; }
@@ -18,5 +18,6 @@ public interface IUnitOfWork
     IStaffTypeRepository StaffTypeRepository { get; }
     IStaffClassificationRepository StaffClassificationRepository { get; }
     IMessageRepository MessageRepository { get; }
-    ISchoolStaffRepository SchoolStaffRepository { get; }
+    ISiteStaffRepository SiteStaffRepository { get; }
+    ISiteCalendarRepository SiteCalendarRepository { get; }
 }

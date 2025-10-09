@@ -179,12 +179,12 @@ public static class StaffMapper
                 ReviewDate = item.ReviewDate,
                 ReviewJustification = item.ReviewJustification,
 
-                // Datos de la relación SchoolStaff
-                SchoolId = item.SchoolId,
+                // Datos de la relación SiteStaff
+                SiteId = item.SiteId,
                 AssignmentTypeId = item.AssignmentTypeId,
                 IsPrimary = item.IsPrimary,
 
-                School = item.SchoolId != null ? mappingService.MapSchoolListItem(new { Id = item.SchoolId, Name = item.SchoolName }) : null,
+                Site = item.SiteId != null ? mappingService.MapSiteListItem(new { Id = item.SiteId, Name = item.SiteName }) : null,
                 AssignmentType = item.AssignmentTypeId != null ? mappingService.MapOptionSelection(item.AssignmentTypeId, item.AssignmentTypeName, item.AssignmentTypeNameEN) : null,
 
                 City = mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }),

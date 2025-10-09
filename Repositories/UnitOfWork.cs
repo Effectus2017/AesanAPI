@@ -7,7 +7,7 @@ public class UnitOfWork(ApplicationDbContext context,
     IGeoRepository geoRepository,
     IProgramRepository programRepository,
     IAgencyRepository agencyRepository,
-    ISchoolRepository schoolRepository,
+    ISiteRepository siteRepository,
     IAgencyUsersRepository agencyUsersRepository,
     IAgencyFilesRepository agencyFilesRepository,
     ICenterTypeRepository centerTypeRepository,
@@ -17,7 +17,8 @@ public class UnitOfWork(ApplicationDbContext context,
     IStaffTypeRepository staffTypeRepository,
     IStaffClassificationRepository staffClassificationRepository,
     IMessageRepository messageRepository,
-    ISchoolStaffRepository schoolStaffRepository
+    ISiteStaffRepository siteStaffRepository,
+    ISiteCalendarRepository siteCalendarRepository
     ) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
@@ -25,7 +26,7 @@ public class UnitOfWork(ApplicationDbContext context,
     public IGeoRepository GeoRepository { get; private set; } = geoRepository;
     public IProgramRepository ProgramRepository { get; private set; } = programRepository;
     public IAgencyRepository AgencyRepository { get; private set; } = agencyRepository;
-    public ISchoolRepository SchoolRepository { get; private set; } = schoolRepository;
+    public ISiteRepository SiteRepository { get; private set; } = siteRepository;
     public IAgencyUsersRepository AgencyUsersRepository { get; private set; } = agencyUsersRepository;
     public IAgencyFilesRepository AgencyFilesRepository { get; private set; } = agencyFilesRepository;
     public ICenterTypeRepository CenterTypeRepository { get; private set; } = centerTypeRepository;
@@ -36,5 +37,6 @@ public class UnitOfWork(ApplicationDbContext context,
     public IStaffTypeRepository StaffTypeRepository { get; private set; } = staffTypeRepository;
     public IStaffClassificationRepository StaffClassificationRepository { get; private set; } = staffClassificationRepository;
     public IMessageRepository MessageRepository { get; private set; } = messageRepository;
-    public ISchoolStaffRepository SchoolStaffRepository { get; private set; } = schoolStaffRepository;
+    public ISiteStaffRepository SiteStaffRepository { get; private set; } = siteStaffRepository;
+    public ISiteCalendarRepository SiteCalendarRepository { get; private set; } = siteCalendarRepository;
 }

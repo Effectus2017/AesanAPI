@@ -19,20 +19,33 @@ public static class OptionSelectionMapper
         {
             if (result == null)
             {
-                return new DTOOptionSelection();
+                return new DTOOptionSelection
+                {
+                    Id = 0,
+                    Name = string.Empty,
+                    NameEN = string.Empty,
+                    OptionKey = string.Empty
+                };
             }
 
             return new DTOOptionSelection
             {
                 Id = result.Id,
-                Name = result.Name,
-                NameEN = result.NameEN,
+                Name = result.Name ?? string.Empty,
+                NameEN = result.NameEN ?? string.Empty,
+                OptionKey = result.OptionKey ?? string.Empty,
             };
         }
         catch (Exception ex)
         {
             // Log the error but return empty object to avoid breaking the application
-            return new DTOOptionSelection();
+            return new DTOOptionSelection
+            {
+                Id = 0,
+                Name = string.Empty,
+                NameEN = string.Empty,
+                OptionKey = string.Empty
+            };
         }
     }
 
@@ -47,15 +60,21 @@ public static class OptionSelectionMapper
         {
             if (result == null)
             {
-                return new DTOOptionSelection();
+                return new DTOOptionSelection
+                {
+                    Id = 0,
+                    Name = string.Empty,
+                    NameEN = string.Empty,
+                    OptionKey = string.Empty
+                };
             }
 
             return new DTOOptionSelection
             {
                 Id = result.Id,
-                Name = result.Name,
-                NameEN = result.NameEN,
-                OptionKey = result.OptionKey,
+                Name = result.Name ?? string.Empty,
+                NameEN = result.NameEN ?? string.Empty,
+                OptionKey = result.OptionKey ?? string.Empty,
                 IsActive = result.IsActive,
                 DisplayOrder = result.DisplayOrder,
             };
@@ -63,7 +82,13 @@ public static class OptionSelectionMapper
         catch (Exception ex)
         {
             // Log the error but return empty object to avoid breaking the application
-            return new DTOOptionSelection();
+            return new DTOOptionSelection
+            {
+                Id = 0,
+                Name = string.Empty,
+                NameEN = string.Empty,
+                OptionKey = string.Empty
+            };
         }
     }
 }

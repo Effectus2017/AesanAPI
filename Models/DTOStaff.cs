@@ -43,8 +43,8 @@ public class DTOStaff
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
 
-    // Datos de la relación SchoolStaff
-    public int? SchoolId { get; set; }
+    // Datos de la relación SiteStaff
+    public int? SiteId { get; set; }
     public int? AssignmentTypeId { get; set; }
     public bool? IsPrimary { get; set; }
 
@@ -55,6 +55,6 @@ public class DTOStaff
     public DTOOptionSelection? Position { get; set; }
     public DTOStaffType? StaffType { get; set; }
     public DTOStaffClassification? StaffClassification { get; set; }
-    public SchoolListItemResponse? School { get; set; }
+    public SiteListItemResponse? Site { get; set; }
     public DTOOptionSelection? AssignmentType { get; set; }
 }

@@ -60,8 +60,10 @@ public class CacheKeys
     public string AgencyStatuses { get; set; } = "AgencyStatuses_{0}_{1}_{2}_{3}";
     public string AgencyUsers { get; set; } = "AgencyUsers_{0}_{1}_{2}";
 
-    // Claves para School
+    // Claves para School (deprecated)
     public string Schools { get; set; } = "Schools_{0}_{1}_{2}_{3}";
+    // Claves para Site
+    public string Sites { get; set; } = "Sites_{0}_{1}_{2}_{3}_{4}_{5}_{6}";
     public string AreaTypes { get; set; } = "AreaTypes_{0}_{1}_{2}_{3}";
     // Claves para OrganizationType
     public string OrganizationTypes { get; set; } = "OrganizationTypes_{0}_{1}_{2}_{3}";

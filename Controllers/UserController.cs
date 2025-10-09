@@ -281,7 +281,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
 
             if (string.IsNullOrEmpty(currentUserId))
             {
-                _loggingService.LogError(new Exception("No se pudo obtener el ID del usuario logueado"), "Error al obtener usuario logueado");
+                await _loggingService.LogError(new Exception("No se pudo obtener el ID del usuario logueado"), "Error al obtener usuario logueado");
                 return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo identificar al usuario" });
             }
 
@@ -294,7 +294,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
             }
             else
             {
-                _loggingService.LogError(new Exception("UpdateWithSP retornó false"), "Fallo en actualización de usuario con SP", new Dictionary<string, string>
+                await _loggingService.LogError(new Exception("UpdateWithSP retornó false"), "Fallo en actualización de usuario con SP", new Dictionary<string, string>
                 {
                     { "User", JsonSerializer.Serialize(entity) },
                     { "UserId", entity.Id }
@@ -497,7 +497,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
         catch (Exception ex)
         {
-            _loggingService.LogError(ex, "Error al forzar contraseña", new Dictionary<string, string> {
+            await _loggingService.LogError(ex, "Error al forzar contraseña", new Dictionary<string, string> {
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
@@ -528,7 +528,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
         catch (Exception ex)
         {
-            _loggingService.LogError(ex, "Error en el proceso de contraseña olvidada", new Dictionary<string, string> { { "Email", queryParameters.Email } });
+            await _loggingService.LogError(ex, "Error en el proceso de contraseña olvidada", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al procesar la solicitud." });
         }
     }
@@ -560,7 +560,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
         catch (Exception ex)
         {
-            _loggingService.LogError(ex, "Error al validar token de restablecimiento", new Dictionary<string, string> { { "Email", queryParameters.Email } });
+            await _loggingService.LogError(ex, "Error al validar token de restablecimiento", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al validar el token." });
         }
     }
@@ -598,7 +598,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
         catch (Exception ex)
         {
-            _loggingService.LogError(ex, "Error al restablecer contraseña con token", new Dictionary<string, string> { { "Email", queryParameters.Email } });
+            await _loggingService.LogError(ex, "Error al restablecer contraseña con token", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al restablecer la contraseña." });
         }
     }
@@ -632,7 +632,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
         catch (Exception ex)
         {
-            _loggingService.LogError(ex, "Error al actualizar el avatar del usuario", new Dictionary<string, string> { { "UserId", request.UserId } });
+            await _loggingService.LogError(ex, "Error al actualizar el avatar del usuario", new Dictionary<string, string> { { "UserId", request.UserId } });
             return StatusCode(500, new { message = "Error al actualizar el avatar del usuario", error = ex.Message });
         }
     }

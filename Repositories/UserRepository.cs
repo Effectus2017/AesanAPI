@@ -1566,7 +1566,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            _loggingService.LogError(ex, "Error al obtener códigos de agencias existentes");
+            await _loggingService.LogError(ex, "Error al obtener códigos de agencias existentes");
             throw;
         }
     }

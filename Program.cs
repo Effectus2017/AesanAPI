@@ -96,7 +96,7 @@ builder.Services.AddScoped<IGeoRepository, GeoRepository>();
 builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
 builder.Services.AddScoped<IAgencyRepository, AgencyRepository>();
 builder.Services.AddScoped<IAgencyStatusRepository, AgencyStatusRepository>();
-builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
+builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<IMealTypeRepository, MealTypeRepository>();
 builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
 builder.Services.AddScoped<IFoodAuthorityRepository, FoodAuthorityRepository>();
@@ -128,14 +128,14 @@ builder.Services.AddScoped<Lazy<MappingService>>(sp => new Lazy<MappingService>(
 // Registrar AgencyUsersRepository después de los servicios Lazy
 builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
-builder.Services.AddScoped<ISchoolStaffRepository, SchoolStaffRepository>();
-builder.Services.AddScoped<ISchoolCalendarRepository, SchoolCalendarRepository>();
+builder.Services.AddScoped<ISiteStaffRepository, SiteStaffRepository>();
+builder.Services.AddScoped<ISiteCalendarRepository, SiteCalendarRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Registrar mappers
 builder.Services.AddScoped<AgencyMapper>();
-builder.Services.AddScoped<SchoolMapper>();
+builder.Services.AddScoped<SiteMapper>();
 builder.Services.AddScoped<StaffClassificationMapper>();
 builder.Services.AddScoped<KitchenTypeMapper>();
 builder.Services.AddScoped<GroupTypeMapper>();
@@ -177,8 +177,6 @@ builder.Services.AddAutoMapper(cfg =>
 builder.Services.AddSignalR();
 
 // Configuración de CORS
-var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(

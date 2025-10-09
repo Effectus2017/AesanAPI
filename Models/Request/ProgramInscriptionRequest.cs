@@ -8,7 +8,7 @@ public class ProgramInscriptionRequest
     public int ProgramId { get; set; }
     public string ApplicationNumber { get; set; }
     public bool IsPublic { get; set; }
-    public int TotalNumberSchools { get; set; }
+    public int TotalNumberSites { get; set; }
     public bool HasBasicEducationCertification { get; set; }
     public bool IsAeaMenuCreated { get; set; }
     public string ExemptionRequirement { get; set; }
@@ -28,7 +28,7 @@ public class ProgramInscriptionRequest
     public decimal? SnackPercentage { get; set; }
     public decimal? ReducedSnackPercentage { get; set; }
     public int? FederalFundingCertificationId { get; set; }
-    public List<SchoolRequest>? Schools { get; set; }
+    public List<SiteRequest>? Sites { get; set; }
     public List<FederalFundingSourceRequest>? FederalFundingSources { get; set; }
     public List<int>? RequiredDocumentIds { get; set; }
 }
