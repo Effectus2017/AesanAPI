@@ -55,26 +55,16 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @generalEnrollment INT = NULL,
     @siteNumber INT,
     @serviceTime DATETIME = NULL,
+    @isActive BIT = NULL,
+    @isMainSite BIT = NULL,
+    @inactiveJustification NVARCHAR(500) = NULL,
+    @inactiveDate DATETIME = NULL,
     @organizedAthleticPrograms BIT = NULL,
     @atRiskService BIT = NULL,
     @id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    DECLARE @isMainSite BIT = 1;
-
-    -- Lógica para asegurar que solo un sitio principal por agencia
-    IF EXISTS (SELECT 1
-    FROM Site
-    WHERE AgencyId = @agencyId AND IsMainSite = 1 AND IsActive = 1)
-    BEGIN
-        SET @isMainSite = 0;
-    END
-    ELSE
-    BEGIN
-        SET @isMainSite = 1;
-    END
 
     INSERT INTO Site
         (
@@ -84,8 +74,8 @@ BEGIN
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         CommunityId, WalkersId, SiteTypeId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
-        SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, OrganizedAthleticPrograms, AtRiskService,
-        IsMainSite, IsActive, CreatedAt
+        SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, IsMainSite, InactiveJustification, InactiveDate,
+        OrganizedAthleticPrograms, AtRiskService, CreatedAt
         )
     VALUES
         (
@@ -95,8 +85,8 @@ BEGIN
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
             @communityId, @walkersId, @siteTypeId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
-            @siteCode, @generalEnrollment, @siteNumber, @serviceTime, @organizedAthleticPrograms, @atRiskService,
-            @isMainSite, 1, GETDATE()
+            @siteCode, @generalEnrollment, @siteNumber, @serviceTime, @isActive, @isMainSite, @inactiveJustification, @inactiveDate,
+            @organizedAthleticPrograms, @atRiskService, GETDATE()
     );
 
     SET @id = SCOPE_IDENTITY();

@@ -511,11 +511,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@email", agencyRequest.Email);
             parameters.Add("@isRecurrent", agencyRequest.IsRecurrent);
 
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-
-            await connection.ExecuteAsync("111_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await connection.ExecuteAsync("111_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
 
             // Verificar si hay un nuevo monitor asignado y es diferente al actual
             if (agencyRequest.MonitorId.HasValue && currentMonitorId != agencyRequest.MonitorId)

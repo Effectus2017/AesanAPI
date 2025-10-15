@@ -13,15 +13,26 @@ CREATE OR ALTER PROCEDURE [dbo].[103_UpdateSiteActiveStatus]
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    UPDATE Site 
-    SET 
-        IsActive = @isActive,
-        InactiveJustification = @inactiveJustification,
-        InactiveDate = CASE WHEN @isActive = 0 THEN GETDATE() ELSE NULL END,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    BEGIN TRY
+        UPDATE Site 
+        SET 
+            IsActive = @isActive,
+            InactiveJustification = @inactiveJustification,
+            InactiveDate = CASE WHEN @isActive = 0 THEN GETDATE() ELSE NULL END,
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
 
-    -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;

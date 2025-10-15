@@ -1,0 +1,86 @@
+-- =============================================
+-- DEPRECATED: Este SP ha sido reemplazado por 100_UpdateSiteService
+-- Fecha de deprecación: 2025-01-15
+-- Razón: Migración de School a Site
+-- =============================================
+
+CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSchoolService]
+    @id INT,
+    @schoolId INT = NULL,
+    @childGroupId INT = NULL,
+    @breakfast BIT = NULL,
+    @breakfastFrom TIME = NULL,
+    @breakfastTo TIME = NULL,
+    @lunch BIT = NULL,
+    @lunchFrom TIME = NULL,
+    @lunchTo TIME = NULL,
+    @snackAM BIT = NULL,
+    @snackAMFrom TIME = NULL,
+    @snackAMTo TIME = NULL,
+    @dinner BIT = NULL,
+    @dinnerFrom TIME = NULL,
+    @dinnerTo TIME = NULL,
+    @snackPM BIT = NULL,
+    @snackPMFrom TIME = NULL,
+    @snackPMTo TIME = NULL,
+    @snackNight BIT = NULL,
+    @snackNightFrom TIME = NULL,
+    @snackNightTo TIME = NULL,
+    @dinnerExtended BIT = NULL,
+    @dinnerExtendedFrom TIME = NULL,
+    @dinnerExtendedTo TIME = NULL,
+    @dinnerAtRisk BIT = NULL,
+    @dinnerAtRiskFrom TIME = NULL,
+    @dinnerAtRiskTo TIME = NULL,
+    @snackExtended BIT = NULL,
+    @snackExtendedFrom TIME = NULL,
+    @snackExtendedTo TIME = NULL,
+    @snackAtRisk BIT = NULL,
+    @snackAtRiskFrom TIME = NULL,
+    @snackAtRiskTo TIME = NULL,
+    @rowsAffected INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE SchoolService
+    SET SchoolId = ISNULL(@schoolId, SchoolId),
+        ChildGroupId = ISNULL(@childGroupId, ChildGroupId),
+        Breakfast = ISNULL(@breakfast, Breakfast),
+        BreakfastFrom = ISNULL(@breakfastFrom, BreakfastFrom),
+        BreakfastTo = ISNULL(@breakfastTo, BreakfastTo),
+        Lunch = ISNULL(@lunch, Lunch),
+        LunchFrom = ISNULL(@lunchFrom, LunchFrom),
+        LunchTo = ISNULL(@lunchTo, LunchTo),
+        SnackAM = ISNULL(@snackAM, SnackAM),
+        SnackAMFrom = ISNULL(@snackAMFrom, SnackAMFrom),
+        SnackAMTo = ISNULL(@snackAMTo, SnackAMTo),
+        Dinner = ISNULL(@dinner, Dinner),
+        DinnerFrom = ISNULL(@dinnerFrom, DinnerFrom),
+        DinnerTo = ISNULL(@dinnerTo, DinnerTo),
+        SnackPM = ISNULL(@snackPM, SnackPM),
+        SnackPMFrom = ISNULL(@snackPMFrom, SnackPMFrom),
+        SnackPMTo = ISNULL(@snackPMTo, SnackPMTo),
+        SnackNight = ISNULL(@snackNight, SnackNight),
+        SnackNightFrom = ISNULL(@snackNightFrom, SnackNightFrom),
+        SnackNightTo = ISNULL(@snackNightTo, SnackNightTo),
+        DinnerExtended = ISNULL(@dinnerExtended, DinnerExtended),
+        DinnerExtendedFrom = ISNULL(@dinnerExtendedFrom, DinnerExtendedFrom),
+        DinnerExtendedTo = ISNULL(@dinnerExtendedTo, DinnerExtendedTo),
+        DinnerAtRisk = ISNULL(@dinnerAtRisk, DinnerAtRisk),
+        DinnerAtRiskFrom = ISNULL(@dinnerAtRiskFrom, DinnerAtRiskFrom),
+        DinnerAtRiskTo = ISNULL(@dinnerAtRiskTo, DinnerAtRiskTo),
+        SnackExtended = ISNULL(@snackExtended, SnackExtended),
+        SnackExtendedFrom = ISNULL(@snackExtendedFrom, SnackExtendedFrom),
+        SnackExtendedTo = ISNULL(@snackExtendedTo, SnackExtendedTo),
+        SnackAtRisk = ISNULL(@snackAtRisk, SnackAtRisk),
+        SnackAtRiskFrom = ISNULL(@snackAtRiskTo, SnackAtRiskFrom),
+        SnackAtRiskTo = ISNULL(@snackAtRiskTo, SnackAtRiskTo),
+        UpdatedAt = GETDATE()
+    WHERE Id = @id;
+
+    SET @rowsAffected = @@ROWCOUNT;
+END;
+
+-- Ejemplo de uso:
+-- EXEC [100_UpdateSchoolService] @id = 1, @breakfast = 1, @breakfastFrom = '08:00', @breakfastTo = '09:00', @schoolId = 1, @rowsAffected = 0 OUTPUT;

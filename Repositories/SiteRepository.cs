@@ -158,7 +158,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             parameters.Add("@agencyId", request.AgencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@name", request.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@startDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@startDate", request.StartDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@address", request.Address, DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", request.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
@@ -175,8 +175,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@operatingToDate", request.OperatingToDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.Date, ParameterDirection.Input);
+            parameters.Add("@operatingToDate", request.OperatingToDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
@@ -195,11 +195,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@siteLocationId", request.SiteLocationId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@experienceId", request.ExperienceId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
-            parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
 
@@ -286,7 +286,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@id", request.Id, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@agencyId", request.AgencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@name", request.Name, DbType.String, ParameterDirection.Input);
-            parameters.Add("@startDate", request.StartDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@startDate", request.StartDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@address", request.Address, DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", request.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", request.RegionId, DbType.Int32, ParameterDirection.Input);
@@ -305,8 +305,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@nonProfit", request.NonProfit, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@baseYear", request.BaseYear, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@renewalYear", request.RenewalYear, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@operatingToDate", request.OperatingToDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.Date, ParameterDirection.Input);
+            parameters.Add("@operatingToDate", request.OperatingToDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
@@ -320,20 +320,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
             parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
-
-
+            parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@siteLocationId", request.SiteLocationId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@experienceId", request.ExperienceId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@isActive", request.IsActive, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@isMainSite", request.IsMainSite, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@siteNumber", request.SiteNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
 
             // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
@@ -344,51 +344,51 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             await dbConnection.ExecuteAsync("104_UpdateSite", parameters, commandType: CommandType.StoredProcedure);
 
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            int rowsAffected = parameters.Get<int>("@rowsAffected");
 
-            // Si tenemos un mainSiteId, actualizamos el sitio principal
-            if (request.MainSiteId.HasValue && request.Id.HasValue)
+            // Solo continuar con las actualizaciones relacionadas si el sitio principal se actualizó correctamente
+            if (rowsAffected > 0)
             {
-                await UpdateSatelliteSite(request.MainSiteId.Value, request.Id.Value);
-            }
+                // Si tenemos un mainSiteId, actualizamos el sitio principal
+                if (request.MainSiteId.HasValue)
+                {
+                    await UpdateSatelliteSite(request.MainSiteId.Value, request.Id.Value);
+                }
 
-            // Actualizar niveles educativos
-            if (request.EducationLevels != null && request.EducationLevels.Count != 0 && request.Id.HasValue)
-            {
-                var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
-                await UpdateSiteEducationLevels(request.Id.Value, educationLevelIds);
-            }
+                // Actualizar niveles educativos
+                if (request.EducationLevels != null && request.EducationLevels.Count != 0)
+                {
+                    var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
+                    await UpdateSiteEducationLevels(request.Id.Value, educationLevelIds);
+                }
 
-            // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
-            if (request.DayCareHome?.OffersServiceToDifferentGroups == true &&
-                request.ChildGroups != null && request.ChildGroups.Count != 0 && request.Id.HasValue)
-            {
-                await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups);
-            }
+                // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
+                // if (request.DayCareHome?.OffersServiceToDifferentGroups == true && request.ChildGroups != null && request.ChildGroups.Count != 0)
+                // {
+                //     await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups);
+                // }
 
-            // Actualizar servicios de alimentación
-            if (request.Services != null && request.Services.Count != 0 && request.Id.HasValue)
-            {
-                await UpdateSiteService(request.Id.Value, request.Services);
-            }
+                // // Actualizar servicios de alimentación
+                // if (request.Services != null && request.Services.Count != 0)
+                // {
+                //     await UpdateSiteService(request.Id.Value, request.Services);
+                // }
 
-            // Actualizar información de Day Care Home solo si la agencia es Day Care Home
-            if (request.DayCareHome != null && request.Id.HasValue && request.IsDayCareHome == true)
-            {
-                await UpdateSiteDayCareHome(request.Id.Value, request.DayCareHome);
-            }
+                // // Actualizar información de Day Care Home solo si la agencia es Day Care Home
+                // if (request.DayCareHome != null && request.IsDayCareHome == true)
+                // {
+                //     await UpdateSiteDayCareHome(request.Id.Value, request.DayCareHome);
+                // }
 
-            // Actualizar tipos de participantes
-            if (request.Participants != null && request.Participants.Count != 0 && request.Id.HasValue)
-            {
-                var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
-                await UpdateSiteParticipants(request.Id.Value, participantTypeIds);
-            }
+                // // Actualizar tipos de participantes
+                // if (request.Participants != null && request.Participants.Count != 0)
+                // {
+                //     var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
+                //     await UpdateSiteParticipants(request.Id.Value, participantTypeIds);
+                // }
 
-            if (rowsAffected > 0 && request.Id.HasValue)
-            {
                 // Invalidar caché
-                InvalidateCache(request.Id.Value);
+                //InvalidateCache(request.Id.Value);
             }
 
             return rowsAffected > 0;
@@ -519,7 +519,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al actualizar/insertar SatelliteSite para MainSiteId={mainSiteId}, SatelliteSiteId={satelliteSiteId}");
-            return false;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -545,7 +545,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar niveles educativos para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -570,7 +570,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar niveles educativos para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -589,7 +589,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al verificar si existe un sitio principal");
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -626,7 +626,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado activo del sitio {SiteId}: {Message}", siteId, ex.Message);
-            throw new Exception($"Error al actualizar el estado activo del sitio {siteId}: {ex.Message}", ex);
+            throw new Exception(ex.Message);
         }
     }
 
@@ -729,7 +729,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar servicios para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -773,7 +773,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar servicios vacíos para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -807,7 +807,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@relationshipTypeId", request.DayCareHome.RelationshipTypeId, DbType.Int32);
             parameters.Add("@offersServiceToImmigrantChildren", request.DayCareHome.OffersServiceToImmigrantChildren, DbType.Boolean);
             parameters.Add("@homeTypeId", request.DayCareHome.HomeTypeId, DbType.Int32);
-            parameters.Add("@administratorAuthorizedName", request.DayCareHome.AdministratorAuthorizedName, DbType.String);
             parameters.Add("@administratorBirthDate", request.DayCareHome.AdministratorBirthDate, DbType.Date);
             parameters.Add("@offersServiceToDifferentGroups", request.DayCareHome.OffersServiceToDifferentGroups, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
@@ -818,7 +817,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar información de Day Care Home para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -856,7 +855,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar información vacía de Day Care Home para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -881,7 +880,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar tipos de participantes para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -913,7 +912,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar grupos de niños para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -951,7 +950,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar grupos de niños para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -987,7 +986,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al insertar días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -1009,7 +1008,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -1077,7 +1076,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar servicios para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -1106,7 +1105,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@relationshipTypeId", dayCareHome.RelationshipTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@offersServiceToImmigrantChildren", dayCareHome.OffersServiceToImmigrantChildren, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@homeTypeId", dayCareHome.HomeTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@administratorAuthorizedName", dayCareHome.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
             parameters.Add("@administratorBirthDate", dayCareHome.AdministratorBirthDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@offersServiceToDifferentGroups", dayCareHome.OffersServiceToDifferentGroups, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
@@ -1118,7 +1116,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar información de Day Care Home para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -1144,7 +1142,39 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar tipos de participantes para el sitio {SiteId}", siteId);
-            throw;
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los sitios satélites de un sitio principal específico
+    /// </summary>
+    /// <param name="mainSiteId">ID del sitio principal</param>
+    /// <returns>Objeto con data y count de sitios satélites</returns>
+    public async Task<dynamic> GetSiteSatellitesByMainSiteId(int mainSiteId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@mainSiteId", mainSiteId, DbType.Int32);
+
+            using var result = await dbConnection.QueryMultipleAsync("106_GetSiteSatellitesByMainSiteId", parameters, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return new { data = Array.Empty<SiteSatelliteResponse>(), count = 0 };
+            }
+
+            var satellites = result.Read<dynamic>().Select(_mappingService.MapSatelliteSite).ToList();
+            var count = result.ReadFirstOrDefault<int>();
+
+            return new { data = satellites, count };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener sitios satélites para el sitio principal {MainSiteId}: {Message}", mainSiteId, ex.Message);
+            throw new Exception($"Error al obtener sitios satélites para el sitio principal {mainSiteId}: {ex.Message}", ex);
         }
     }
 }

@@ -14,7 +14,6 @@ public class SiteDayCareHomeRequest
     public int? RelationshipTypeId { get; set; }
     public bool? OffersServiceToImmigrantChildren { get; set; }
     public int? HomeTypeId { get; set; }
-    public string? AdministratorAuthorizedName { get; set; }
     public DateTime? AdministratorBirthDate { get; set; }
     public bool? OffersServiceToDifferentGroups { get; set; }
 }

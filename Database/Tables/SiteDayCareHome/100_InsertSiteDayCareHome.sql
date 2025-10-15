@@ -18,7 +18,6 @@ CREATE OR ALTER PROCEDURE [dbo].[100_InsertSiteDayCareHome]
     @relationshipTypeId INT = NULL,
     @offersServiceToImmigrantChildren BIT = NULL,
     @homeTypeId INT = NULL,
-    @administratorAuthorizedName NVARCHAR(255) = NULL,
     @administratorBirthDate DATE = NULL,
     @offersServiceToDifferentGroups BIT = NULL,
     @id INT OUTPUT
@@ -30,14 +29,14 @@ BEGIN
         (
         SiteId, IsAuthorizedToOperate, HasFamilyDepartmentLicense, NumberOfEnrolledChildren, NumberOfProviderChildren,
         NumberOfParticipantsWithBloodTies, NumberOfParticipantsWithoutBloodTies, MinorsLiveWithProvider,
-        RelationshipTypeId, OffersServiceToImmigrantChildren, HomeTypeId, AdministratorAuthorizedName,
+        RelationshipTypeId, OffersServiceToImmigrantChildren, HomeTypeId,
         AdministratorBirthDate, OffersServiceToDifferentGroups, CreatedAt
         )
     VALUES
         (
             @siteId, @isAuthorizedToOperate, @hasFamilyDepartmentLicense, @numberOfEnrolledChildren, @numberOfProviderChildren,
             @numberOfParticipantsWithBloodTies, @numberOfParticipantsWithoutBloodTies, @minorsLiveWithProvider,
-            @relationshipTypeId, @offersServiceToImmigrantChildren, @homeTypeId, @administratorAuthorizedName,
+            @relationshipTypeId, @offersServiceToImmigrantChildren, @homeTypeId,
             @administratorBirthDate, @offersServiceToDifferentGroups, GETDATE()
     );
 

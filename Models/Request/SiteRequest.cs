@@ -20,10 +20,10 @@ public class SiteRequest
     public double? Longitude { get; set; }
 
     // Dirección Postal
-    public required string PostalAddress { get; set; }
+    public string? PostalAddress { get; set; }
     public int? PostalCityId { get; set; }
     public int? PostalRegionId { get; set; }
-    public required string PostalZipCode { get; set; }
+    public string? PostalZipCode { get; set; }
     public bool? SameAsPhysicalAddress { get; set; }
 
     // Información Administrativa
@@ -58,10 +58,10 @@ public class SiteRequest
     public bool? HasDiningRoom { get; set; }
 
     // Administrador/Representante Autorizado
-    public required string AdministratorAuthorizedName { get; set; }
-    public required string SitePhone { get; set; }
-    public required string Extension { get; set; }
-    public required string MobilePhone { get; set; }
+    public string? AdministratorAuthorizedName { get; set; }
+    public string? SitePhone { get; set; }
+    public string? Extension { get; set; }
+    public string? MobilePhone { get; set; }
 
     // ===== RELACIONES CON MODELOS REQUEST =====
     public List<SiteServiceRequest> Services { get; set; } = new();
@@ -73,6 +73,7 @@ public class SiteRequest
     public int? CommunityId { get; set; }
     public int? WalkersId { get; set; }
     public int? SiteTypeId { get; set; }
+    public int? SiteLocationId { get; set; }
     public int? ExperienceId { get; set; }
     public int? ReviewResultId { get; set; }
     public DateTime? ReviewDate { get; set; }

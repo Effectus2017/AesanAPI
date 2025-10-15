@@ -44,81 +44,96 @@ CREATE OR ALTER PROCEDURE [dbo].[104_UpdateSite]
     @sitePhone NVARCHAR(20) = NULL,
     @extension NVARCHAR(10) = NULL,
     @mobilePhone NVARCHAR(20) = NULL,
+    @administratorAuthorizedName NVARCHAR(255) = NULL,
     @communityId INT = NULL,
     @walkersId INT = NULL,
     @siteTypeId INT = NULL,
+    @siteLocationId INT = NULL,
     @experienceId INT = NULL,
     @reviewResultId INT = NULL,
     @reviewDate DATETIME = NULL,
     @reviewJustification NVARCHAR(500) = NULL,
     @isActive BIT = NULL,
+    @isMainSite BIT = NULL,
     @inactiveJustification NVARCHAR(500) = NULL,
     @inactiveDate DATETIME = NULL,
     @generalEnrollment INT = NULL,
-    @siteNumber INT,
     @serviceTime DATETIME = NULL,
     @organizedAthleticPrograms BIT = NULL,
     @atRiskService BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    UPDATE Site 
-    SET 
-        AgencyId = @agencyId,
-        Name = @name,
-        StartDate = @startDate,
-        Address = @address,
-        CityId = @cityId,
-        RegionId = @regionId,
-        ZipCode = @zipCode,
-        Latitude = @latitude,
-        Longitude = @longitude,
-        PostalAddress = @postalAddress,
-        PostalCityId = @postalCityId,
-        PostalRegionId = @postalRegionId,
-        PostalZipCode = @postalZipCode,
-        SameAsPhysicalAddress = @sameAsPhysicalAddress,
-        OrganizationTypeId = @organizationTypeId,
-        CenterTypeId = @centerTypeId,
-        AreaTypeId = @areaTypeId,
-        LocationTypeId = @locationTypeId,
-        NonProfit = @nonProfit,
-        BaseYear = @baseYear,
-        RenewalYear = @renewalYear,
-        OperatingFromDate = @operatingFromDate,
-        OperatingToDate = @operatingToDate,
-        OperatingDaysCalculated = @operatingDaysCalculated,
-        KitchenTypeId = @kitchenTypeId,
-        GroupTypeId = @groupTypeId,
-        DeliveryTypeId = @deliveryTypeId,
-        SponsorTypeId = @sponsorTypeId,
-        ApplicantTypeId = @applicantTypeId,
-        ResidentialTypeId = @residentialTypeId,
-        OperatingPolicyId = @operatingPolicyId,
-        HasWarehouse = @hasWarehouse,
-        HasDiningRoom = @hasDiningRoom,
-        SitePhone = @sitePhone,
-        Extension = @extension,
-        MobilePhone = @mobilePhone,
-        CommunityId = @communityId,
-        WalkersId = @walkersId,
-        SiteTypeId = @siteTypeId,
-        ExperienceId = @experienceId,
-        ReviewResultId = @reviewResultId,
-        ReviewDate = @reviewDate,
-        ReviewJustification = @reviewJustification,
-        IsActive = @isActive,
-        InactiveJustification = @inactiveJustification,
-        InactiveDate = @inactiveDate,
-        GeneralEnrollment = @generalEnrollment,
-        SiteNumber = @siteNumber,
-        ServiceTime = @serviceTime,
-        OrganizedAthleticPrograms = @organizedAthleticPrograms,
-        AtRiskService = @atRiskService,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    BEGIN TRY
+        UPDATE Site 
+        SET 
+            AgencyId = ISNULL(@agencyId, AgencyId),
+            Name = ISNULL(@name, Name),
+            StartDate = ISNULL(@startDate, StartDate),
+            Address = ISNULL(@address, Address),
+            CityId = ISNULL(@cityId, CityId),
+            RegionId = ISNULL(@regionId, RegionId),
+            ZipCode = ISNULL(@zipCode, ZipCode),
+            Latitude = ISNULL(@latitude, Latitude),
+            Longitude = ISNULL(@longitude, Longitude),
+            PostalAddress = ISNULL(@postalAddress, PostalAddress),
+            PostalCityId = ISNULL(@postalCityId, PostalCityId),
+            PostalRegionId = ISNULL(@postalRegionId, PostalRegionId),
+            PostalZipCode = ISNULL(@postalZipCode, PostalZipCode),
+            SameAsPhysicalAddress = ISNULL(@sameAsPhysicalAddress, SameAsPhysicalAddress),
+            OrganizationTypeId = ISNULL(@organizationTypeId, OrganizationTypeId),
+            CenterTypeId = ISNULL(@centerTypeId, CenterTypeId),
+            AreaTypeId = ISNULL(@areaTypeId, AreaTypeId),
+            LocationTypeId = ISNULL(@locationTypeId, LocationTypeId),
+            NonProfit = ISNULL(@nonProfit, NonProfit),
+            BaseYear = ISNULL(@baseYear, BaseYear),
+            RenewalYear = ISNULL(@renewalYear, RenewalYear),
+            OperatingFromDate = ISNULL(@operatingFromDate, OperatingFromDate),
+            OperatingToDate = ISNULL(@operatingToDate, OperatingToDate),
+            OperatingDaysCalculated = ISNULL(@operatingDaysCalculated, OperatingDaysCalculated),
+            KitchenTypeId = ISNULL(@kitchenTypeId, KitchenTypeId),
+            GroupTypeId = ISNULL(@groupTypeId, GroupTypeId),
+            DeliveryTypeId = ISNULL(@deliveryTypeId, DeliveryTypeId),
+            SponsorTypeId = ISNULL(@sponsorTypeId, SponsorTypeId),
+            ApplicantTypeId = ISNULL(@applicantTypeId, ApplicantTypeId),
+            ResidentialTypeId = ISNULL(@residentialTypeId, ResidentialTypeId),
+            OperatingPolicyId = ISNULL(@operatingPolicyId, OperatingPolicyId),
+            HasWarehouse = ISNULL(@hasWarehouse, HasWarehouse),
+            HasDiningRoom = ISNULL(@hasDiningRoom, HasDiningRoom),
+            SitePhone = ISNULL(@sitePhone, SitePhone),
+            Extension = ISNULL(@extension, Extension),
+            MobilePhone = ISNULL(@mobilePhone, MobilePhone),
+            AdministratorAuthorizedName = ISNULL(@administratorAuthorizedName, AdministratorAuthorizedName),
+            CommunityId = ISNULL(@communityId, CommunityId),
+            WalkersId = ISNULL(@walkersId, WalkersId),
+            SiteTypeId = ISNULL(@siteTypeId, SiteTypeId),
+            SiteLocationId = ISNULL(@siteLocationId, SiteLocationId),
+            ExperienceId = ISNULL(@experienceId, ExperienceId),
+            ReviewResultId = ISNULL(@reviewResultId, ReviewResultId),
+            ReviewDate = ISNULL(@reviewDate, ReviewDate),
+            ReviewJustification = ISNULL(@reviewJustification, ReviewJustification),
+            IsActive = ISNULL(@isActive, IsActive),
+            IsMainSite = ISNULL(@isMainSite, IsMainSite),
+            InactiveJustification = ISNULL(@inactiveJustification, InactiveJustification),
+            InactiveDate = ISNULL(@inactiveDate, InactiveDate),
+            GeneralEnrollment = ISNULL(@generalEnrollment, GeneralEnrollment),
+            ServiceTime = ISNULL(@serviceTime, ServiceTime),
+            OrganizedAthleticPrograms = ISNULL(@organizedAthleticPrograms, OrganizedAthleticPrograms),
+            AtRiskService = ISNULL(@atRiskService, AtRiskService),
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
 
-    -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;

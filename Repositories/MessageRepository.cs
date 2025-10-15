@@ -119,11 +119,7 @@ namespace Api.Repositories
                 parameters.Add("@link", messageRequest.Link, DbType.String);
                 parameters.Add("@useRouter", messageRequest.UseRouter, DbType.Boolean);
                 parameters.Add("@userId", messageRequest.UserId, DbType.String);
-                parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-                await dbConnection.ExecuteAsync("100_UpdateMessage", parameters, commandType: CommandType.StoredProcedure);
-
-                var rowsAffected = parameters.Get<int>("@rowsAffected");
+                var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateMessage", parameters, commandType: CommandType.StoredProcedure);
 
                 return rowsAffected > 0;
             }

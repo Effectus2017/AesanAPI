@@ -14,23 +14,26 @@ CREATE OR ALTER PROCEDURE [dbo].[103_UpdateSiteSatellite]
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    -- Verificar si ya existe la relación
-    IF EXISTS (SELECT 1
+    BEGIN TRY
+        -- Verificar si ya existe la relación
+        IF EXISTS (SELECT 1
     FROM SiteSatellite
     WHERE SatelliteSiteId = @satelliteSiteId)
-    BEGIN
+        BEGIN
         -- Actualizar relación existente
         UPDATE SiteSatellite 
-        SET 
-            MainSiteId = @mainSiteId,
-            Comment = @comment,
-            IsActive = @isActive,
-            UpdatedAt = GETDATE()
-        WHERE SatelliteSiteId = @satelliteSiteId;
+            SET 
+                MainSiteId = @mainSiteId,
+                Comment = @comment,
+                IsActive = @isActive,
+                UpdatedAt = GETDATE()
+            WHERE SatelliteSiteId = @satelliteSiteId;
     END
-    ELSE
-    BEGIN
+        ELSE
+        BEGIN
         -- Insertar nueva relación
         INSERT INTO SiteSatellite
             (
@@ -39,9 +42,17 @@ BEGIN
         VALUES
             (
                 @mainSiteId, @satelliteSiteId, GETDATE(), @comment, @isActive, GETDATE()
-        );
+            );
     END
 
-    -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;

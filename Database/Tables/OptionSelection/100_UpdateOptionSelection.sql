@@ -8,16 +8,28 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateOptionSelection]
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    UPDATE OptionSelection
-    SET Name = @name,
-        NameEN = @nameEN,
-        OptionKey = @optionKey,
-        IsActive = @isActive,
-        DisplayOrder = @displayOrder,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    BEGIN TRY
+        UPDATE OptionSelection
+        SET Name = @name,
+            NameEN = @nameEN,
+            OptionKey = @optionKey,
+            IsActive = @isActive,
+            DisplayOrder = @displayOrder,
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
 
-    RETURN @@ROWCOUNT;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;
 GO 

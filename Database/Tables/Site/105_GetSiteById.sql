@@ -30,7 +30,7 @@ BEGIN
         opol.Name AS OperatingPolicyName, opol.NameEN AS OperatingPolicyNameEN, s.AreaTypeId,
         atype.Name AS AreaTypeName, atype.NameEN AS AreaTypeNameEN, s.LocationTypeId,
         ltype.Name AS LocationTypeName, ltype.NameEN AS LocationTypeNameEN, s.HasWarehouse,
-        s.HasDiningRoom, s.SitePhone, s.Extension, s.MobilePhone, s.CommunityId, s.WalkersId,
+        s.HasDiningRoom, s.AdministratorAuthorizedName, s.SitePhone, s.Extension, s.MobilePhone, s.CommunityId, s.WalkersId,
         s.SiteTypeId, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
         s.OrganizedAthleticPrograms, s.AtRiskService, s.IsMainSite, a.AgencyCode,
@@ -113,3 +113,5 @@ BEGIN
     WHERE scg.SiteId = @id
     ORDER BY scg.GroupName;
 END;
+
+EXEC [105_GetSiteById] @id = 1; 

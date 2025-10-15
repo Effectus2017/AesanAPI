@@ -331,11 +331,7 @@ public class StaffRepository(
 
             parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String);
 
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await dbConnection.ExecuteAsync("100_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
-
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {

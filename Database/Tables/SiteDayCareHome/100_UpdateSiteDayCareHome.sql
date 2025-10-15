@@ -18,31 +18,40 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSiteDayCareHome]
     @relationshipTypeId INT = NULL,
     @offersServiceToImmigrantChildren BIT = NULL,
     @homeTypeId INT = NULL,
-    @administratorAuthorizedName NVARCHAR(255) = NULL,
     @administratorBirthDate DATE = NULL,
     @offersServiceToDifferentGroups BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    UPDATE SiteDayCareHome 
-    SET 
-        IsAuthorizedToOperate = @isAuthorizedToOperate,
-        HasFamilyDepartmentLicense = @hasFamilyDepartmentLicense,
-        NumberOfEnrolledChildren = @numberOfEnrolledChildren,
-        NumberOfProviderChildren = @numberOfProviderChildren,
-        NumberOfParticipantsWithBloodTies = @numberOfParticipantsWithBloodTies,
-        NumberOfParticipantsWithoutBloodTies = @numberOfParticipantsWithoutBloodTies,
-        MinorsLiveWithProvider = @minorsLiveWithProvider,
-        RelationshipTypeId = @relationshipTypeId,
-        OffersServiceToImmigrantChildren = @offersServiceToImmigrantChildren,
-        HomeTypeId = @homeTypeId,
-        AdministratorAuthorizedName = @administratorAuthorizedName,
-        AdministratorBirthDate = @administratorBirthDate,
-        OffersServiceToDifferentGroups = @offersServiceToDifferentGroups,
-        UpdatedAt = GETDATE()
-    WHERE SiteId = @siteId;
+    BEGIN TRY
+        UPDATE SiteDayCareHome 
+        SET 
+            IsAuthorizedToOperate = @isAuthorizedToOperate,
+            HasFamilyDepartmentLicense = @hasFamilyDepartmentLicense,
+            NumberOfEnrolledChildren = @numberOfEnrolledChildren,
+            NumberOfProviderChildren = @numberOfProviderChildren,
+            NumberOfParticipantsWithBloodTies = @numberOfParticipantsWithBloodTies,
+            NumberOfParticipantsWithoutBloodTies = @numberOfParticipantsWithoutBloodTies,
+            MinorsLiveWithProvider = @minorsLiveWithProvider,
+            RelationshipTypeId = @relationshipTypeId,
+            OffersServiceToImmigrantChildren = @offersServiceToImmigrantChildren,
+            HomeTypeId = @homeTypeId,
+            AdministratorBirthDate = @administratorBirthDate,
+            OffersServiceToDifferentGroups = @offersServiceToDifferentGroups,
+            UpdatedAt = GETDATE()
+        WHERE SiteId = @siteId;
 
-    -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;

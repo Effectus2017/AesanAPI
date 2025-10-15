@@ -45,4 +45,11 @@ public interface ISiteRepository
     /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
     /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
     Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null);
+
+    /// <summary>
+    /// Obtiene todos los sitios satélites de un sitio principal específico
+    /// </summary>
+    /// <param name="mainSiteId">ID del sitio principal</param>
+    /// <returns>Objeto con data y count de sitios satélites</returns>
+    Task<dynamic> GetSiteSatellitesByMainSiteId(int mainSiteId);
 }

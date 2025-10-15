@@ -63,7 +63,7 @@ CREATE TABLE [dbo].[Site]
     [ServiceTime] [datetime] NULL,
     [OrganizedAthleticPrograms] [bit] NULL,
     [AtRiskService] [bit] NULL,
-    [IsMainSite] [bit] NOT NULL DEFAULT 0,
+    [IsMainSite] [bit] NULL,
     [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] [datetime] NULL,
     CONSTRAINT [PK_Site] PRIMARY KEY CLUSTERED ([Id] ASC)
