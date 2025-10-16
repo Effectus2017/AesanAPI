@@ -78,23 +78,23 @@ public class SiteResponse
     public DTOAreaType? LocationType { get; set; }
     public DTOAgency? Agency { get; set; }
 
-    public bool IsMainSite { get; set; }
     public bool IsActive { get; set; }
     public string? InactiveJustification { get; set; }
     public DateTime? InactiveDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public int? MainSiteId { get; set; }
-    public string? MainSiteName { get; set; }
     public int? GeneralEnrollment { get; set; }
     public int SiteNumber { get; set; }
     public string? AgencyCode { get; set; }
 
-    // Main Site
-    public SiteResponse? MainSite { get; set; }
+    // School relacionada
+    public SchoolResponse? School { get; set; }
 
-    // Satélites
-    public List<SiteSatelliteResponse>? Satellites { get; set; }
+    // Propiedades para sitio principal/satélite
+    public bool? IsMainSite { get; set; }
+    public int? MainSiteId { get; set; }
+    public string? MainSiteName { get; set; }
+    public SiteResponse? MainSite { get; set; }
 
     // Niveles educativos
     public List<DTOEducationLevel>? EducationLevels { get; set; }

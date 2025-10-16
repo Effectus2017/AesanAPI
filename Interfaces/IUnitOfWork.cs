@@ -9,6 +9,8 @@ public interface IUnitOfWork
     IProgramRepository ProgramRepository { get; }
     IAgencyRepository AgencyRepository { get; }
     ISiteRepository SiteRepository { get; }
+    ISchoolRepository SchoolRepository { get; }
+    ISchoolSiteRepository SchoolSiteRepository { get; }
     IAgencyUsersRepository AgencyUsersRepository { get; }
     IAgencyFilesRepository AgencyFilesRepository { get; }
     ICenterTypeRepository CenterTypeRepository { get; }

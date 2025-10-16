@@ -170,8 +170,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 Address = item.Address ?? string.Empty,
                 CityName = item.CityName ?? string.Empty,
                 RegionName = item.RegionName ?? string.Empty,
-                IsMainSite = item.IsMainSite ?? false,
-                MainSiteName = item.MainSiteName,
+                IsActive = item.IsActive ?? true,
+                GroupTypeName = item.GroupTypeName,
                 GeneralEnrollment = item.GeneralEnrollment,
                 SiteNumber = item.SiteNumber ?? 0,
                 AgencyCode = item.AgencyCode,
@@ -185,40 +185,6 @@ public class SiteMapper(Lazy<MappingService> mappingService)
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Error inesperado al mapear el sitio para tabla: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Mapea un resultado dinámico a un SiteSatelliteResponse
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>SiteSatelliteResponse</returns>
-    public static SiteSatelliteResponse MapSatelliteFromResult(dynamic item)
-    {
-        try
-        {
-            if (item == null)
-            {
-                return null;
-            }
-
-            return new SiteSatelliteResponse
-            {
-                Id = item.Id,
-                MainSiteId = item.MainSiteId,
-                SatelliteSiteId = item.SatelliteSiteId,
-                SatelliteSiteName = item.SatelliteSiteName,
-                AssignmentDate = item.AssignmentDate,
-                Comment = item.Comment,
-                IsActive = item.IsActive,
-                CreatedAt = item.CreatedAt,
-                UpdatedAt = item.UpdatedAt
-            };
-        }
-        catch (Exception)
-        {
-            // Log the error but return null to avoid breaking the application
-            return null;
         }
     }
 

@@ -81,3 +81,12 @@ VALUES
     (NEWID(), 'staff.type.create', 'Crear tipos de staff', 'Create staff types', 1),
     (NEWID(), 'staff.type.edit', 'Editar tipos de staff', 'Edit staff types', 1),
     (NEWID(), 'staff.type.delete', 'Eliminar tipos de staff', 'Delete staff types', 1);
+
+-- Insertar permisos para escuelas
+INSERT INTO Permission
+    (Id, ValueKey, Name, NameEn, IsActive)
+VALUES
+    (NEWID(), 'school.view', 'Ver escuelas', 'View schools', 1),
+    (NEWID(), 'school.create', 'Crear escuelas', 'Create schools', 1),
+    (NEWID(), 'school.edit', 'Editar escuelas', 'Edit schools', 1),
+    (NEWID(), 'school.delete', 'Eliminar escuelas', 'Delete schools', 1);

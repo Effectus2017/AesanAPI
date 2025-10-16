@@ -155,6 +155,66 @@ public class MappingService
 
     #endregion
 
+    #region School Mappings
+
+    /// <summary>
+    /// Mapea una escuela desde un resultado dinámico a un SchoolResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolResponse</returns>
+    public SchoolResponse MapSchool(dynamic item)
+    {
+        return new SchoolResponse
+        {
+            Id = item.Id,
+            AgencyId = item.AgencyId,
+            Name = item.Name,
+            SchoolCode = item.SchoolCode,
+            SchoolNumber = item.SchoolNumber,
+            IsActive = item.IsActive,
+            CreatedAt = item.CreatedAt,
+            UpdatedAt = item.UpdatedAt,
+            Agency = new DTOAgency
+            {
+                Id = item.AgencyId,
+                Name = item.AgencyName,
+                Code = item.AgencyCode
+            }
+        };
+    }
+
+    /// <summary>
+    /// Mapea una asignación School-Site desde un resultado dinámico a un SchoolSiteResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolSiteResponse</returns>
+    public SchoolSiteResponse MapSchoolSite(dynamic item)
+    {
+        return new SchoolSiteResponse
+        {
+            Id = item.Id,
+            SchoolId = item.SchoolId,
+            SiteId = item.SiteId,
+            AssignmentDate = item.AssignmentDate,
+            Comment = item.Comment,
+            IsActive = item.IsActive,
+            CreatedAt = item.CreatedAt,
+            UpdatedAt = item.UpdatedAt,
+            School = null, // No hay información de School en el stored procedure
+            Site = new SiteResponse
+            {
+                Id = item.SiteId,
+                Name = item.SiteName,
+                SiteCode = item.SiteCode,
+                SiteNumber = item.SiteNumber,
+                Address = item.Address,
+                IsActive = item.SiteIsActive
+            }
+        };
+    }
+
+    #endregion
+
     #region Site Mappings
 
     /// <summary>
@@ -185,16 +245,6 @@ public class MappingService
     public SiteTableResponse MapSiteTable(dynamic item)
     {
         return SiteMapper.MapTableResponseFromResult(item);
-    }
-
-    /// <summary>
-    /// Mapea un sitio satélite desde un resultado dinámico a un SiteSatelliteResponse
-    /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>SiteSatelliteResponse</returns>
-    public SiteSatelliteResponse MapSatelliteSite(dynamic item)
-    {
-        return SiteMapper.MapSatelliteFromResult(item);
     }
 
     /// <summary>

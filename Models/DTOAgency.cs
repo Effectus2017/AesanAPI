@@ -51,6 +51,7 @@ public class DTOAgency
     public List<DTOProgram> Programs { get; set; } = [];
     // Código de la Agencia
     public string AgencyCode { get; set; } = "";
+    public string Code { get; set; } = "";
 
     // Datos de inscripción de la agencia
     public DTOAgencyInscription? Inscription { get; set; }

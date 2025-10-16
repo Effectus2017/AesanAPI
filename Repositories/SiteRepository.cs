@@ -36,7 +36,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             var result = await dbConnection.QueryMultipleAsync("105_GetSiteById", parameters, commandType: CommandType.StoredProcedure);
 
             var site = await result.ReadFirstOrDefaultAsync<dynamic>();
-            var satellites = result.Read<dynamic>().ToList();
             var educationLevels = result.Read<dynamic>().ToList();
             var services = result.Read<dynamic>().ToList();
             var dayCareHome = await result.ReadFirstOrDefaultAsync<dynamic>();
@@ -48,7 +47,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             }
 
             var data = _mappingService.MapSite(site);
-            data.Satellites = satellites.Select(_mappingService.MapSatelliteSite).ToList();
             data.EducationLevels = educationLevels.Select(_mappingService.MapEducationLevel).ToList();
             data.Services = services.Select(_mappingService.MapSiteService).ToList();
             data.DayCareHome = dayCareHome != null ? _mappingService.MapSiteDayCareHome(dayCareHome) : null;
@@ -217,12 +215,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             int siteId = parameters.Get<int>("@id");
 
-            // Si tenemos un mainSiteId, insertamos el sitio principal
-            if (request.MainSiteId.HasValue)
-            {
-                await InsertSatelliteSite(request.MainSiteId.Value, siteId);
-            }
-
             // Insertar niveles educativos
             if (request.EducationLevels != null && request.EducationLevels.Count != 0)
             {
@@ -349,12 +341,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Solo continuar con las actualizaciones relacionadas si el sitio principal se actualizó correctamente
             if (rowsAffected > 0)
             {
-                // Si tenemos un mainSiteId, actualizamos el sitio principal
-                if (request.MainSiteId.HasValue)
-                {
-                    await UpdateSatelliteSite(request.MainSiteId.Value, request.Id.Value);
-                }
-
                 // Actualizar niveles educativos
                 if (request.EducationLevels != null && request.EducationLevels.Count != 0)
                 {
@@ -445,84 +431,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         _cache.Remove(_appSettings.Cache.Keys.Sites);
         _logger.LogInformation("Cache invalidado para Site Repository");
     }
-
-    /// <summary>
-    /// Inserta un sitio satélite
-    /// </summary>
-    /// <param name="mainSiteId">El ID del sitio principal.</param>
-    /// <param name="satelliteSiteId">El ID del sitio satélite.</param>
-    /// <returns>True si el sitio satélite se insertó correctamente, false en caso contrario.</returns>
-    public async Task<bool> InsertSatelliteSite(int mainSiteId, int satelliteSiteId)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@mainSiteId", mainSiteId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@satelliteSiteId", satelliteSiteId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@comment", "Sitio actualizado", DbType.String, ParameterDirection.Input);
-            parameters.Add("@isActive", true, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-            await dbConnection.ExecuteAsync("102_InsertSatelliteSite", parameters, commandType: CommandType.StoredProcedure);
-
-            int id = parameters.Get<int>("@id");
-
-            if (id == 0)
-            {
-                _logger.LogError("Error al insertar el sitio satélite {SatelliteSiteId}", satelliteSiteId);
-                return false;
-            }
-
-            InvalidateCache(satelliteSiteId);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error al insertar SatelliteSite para MainSiteId={mainSiteId}, SatelliteSiteId={satelliteSiteId}");
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Actualiza o inserta un sitio satélite
-    /// </summary>
-    /// <param name="mainSiteId">El ID del sitio principal.</param>
-    /// <param name="satelliteSiteId">El ID del sitio satélite.</param>
-    /// <returns>True si el sitio satélite se actualizó o insertó correctamente, false en caso contrario.</returns>
-    public async Task<bool> UpdateSatelliteSite(int mainSiteId, int satelliteSiteId)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@mainSiteId", mainSiteId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@satelliteSiteId", satelliteSiteId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@comment", "Sitio actualizado/creado", DbType.String, ParameterDirection.Input);
-            parameters.Add("@isActive", true, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await dbConnection.ExecuteAsync("103_UpdateSiteSatellite", parameters, commandType: CommandType.StoredProcedure);
-
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
-
-            if (rowsAffected == 0)
-            {
-                _logger.LogError("Error al actualizar/insertar el sitio principal {MainSiteId} con el sitio satélite {SatelliteSiteId}", mainSiteId, satelliteSiteId);
-                return false;
-            }
-
-            return true;
-        }
-
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error al actualizar/insertar SatelliteSite para MainSiteId={mainSiteId}, SatelliteSiteId={satelliteSiteId}");
-            throw new Exception(ex.Message);
-        }
-    }
-
 
     /// <summary>
     /// Inserta múltiples niveles educativos para un sitio
@@ -1147,34 +1055,26 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Obtiene todos los sitios satélites de un sitio principal específico
+    /// Verifica si una agencia tiene un sitio principal
     /// </summary>
-    /// <param name="mainSiteId">ID del sitio principal</param>
-    /// <returns>Objeto con data y count de sitios satélites</returns>
-    public async Task<dynamic> GetSiteSatellitesByMainSiteId(int mainSiteId)
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>True si tiene sitio principal, false en caso contrario</returns>
+    public async Task<bool> HasMainSite(int agencyId)
     {
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@mainSiteId", mainSiteId, DbType.Int32);
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
 
-            using var result = await dbConnection.QueryMultipleAsync("106_GetSiteSatellitesByMainSiteId", parameters, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return new { data = Array.Empty<SiteSatelliteResponse>(), count = 0 };
-            }
-
-            var satellites = result.Read<dynamic>().Select(_mappingService.MapSatelliteSite).ToList();
-            var count = result.ReadFirstOrDefault<int>();
-
-            return new { data = satellites, count };
+            var count = await dbConnection.QuerySingleAsync<int>("SELECT COUNT(*) FROM Site WHERE AgencyId = @agencyId AND IsMainSite = 1", parameters);
+            return count > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener sitios satélites para el sitio principal {MainSiteId}: {Message}", mainSiteId, ex.Message);
-            throw new Exception($"Error al obtener sitios satélites para el sitio principal {mainSiteId}: {ex.Message}", ex);
+            _logger.LogError(ex, "Error al verificar si la agencia {AgencyId} tiene sitio principal", agencyId);
+            throw new Exception(ex.Message);
         }
     }
+
 }

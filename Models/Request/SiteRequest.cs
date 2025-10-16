@@ -79,7 +79,10 @@ public class SiteRequest
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
 
-    // Sitio Principal
+    // School asignada
+    public int SchoolId { get; set; }
+
+    // Propiedades para sitio principal/satélite
     public bool? IsMainSite { get; set; }
     public int? MainSiteId { get; set; }
 

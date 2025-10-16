@@ -32,12 +32,6 @@ public interface ISiteRepository
     Task<bool> DeleteSite(int id);
 
     /// <summary>
-    /// Verifica si existe un sitio principal en la base de datos
-    /// </summary>
-    /// <returns>True si existe un sitio principal, false en caso contrario</returns>
-    Task<bool> HasMainSite();
-
-    /// <summary>
     /// Actualiza el estado activo/inactivo de un sitio
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
@@ -47,9 +41,9 @@ public interface ISiteRepository
     Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null);
 
     /// <summary>
-    /// Obtiene todos los sitios satélites de un sitio principal específico
+    /// Verifica si una agencia tiene un sitio principal
     /// </summary>
-    /// <param name="mainSiteId">ID del sitio principal</param>
-    /// <returns>Objeto con data y count de sitios satélites</returns>
-    Task<dynamic> GetSiteSatellitesByMainSiteId(int mainSiteId);
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>True si tiene sitio principal, false en caso contrario</returns>
+    Task<bool> HasMainSite(int agencyId);
 }

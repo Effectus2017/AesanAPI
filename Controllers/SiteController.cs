@@ -176,27 +176,23 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
     }
 
     /// <summary>
-    /// Verifica si existe un sitio principal en la base de datos
+    /// Verifica si existe un sitio principal para una agencia
     /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
     /// <returns>True si existe un sitio principal, false en caso contrario</returns>
     [HttpGet("has-main-site")]
-    [SwaggerOperation(Summary = "Verifica si existe un sitio principal", Description = "Devuelve true si existe un sitio principal, false en caso contrario.")]
-    public async Task<ActionResult<bool>> HasMainSite()
+    [SwaggerOperation(Summary = "Verifica si existe un sitio principal", Description = "Devuelve true si existe un sitio principal para la agencia especificada, false en caso contrario.")]
+    public async Task<ActionResult<bool>> HasMainSite([FromQuery] int agencyId)
     {
         try
         {
-            var result = await _unitOfWork.SiteRepository.HasMainSite();
-
-            if (!result)
-            {
-                return NotFound("No se encontró ningún sitio principal");
-            }
+            var result = await _unitOfWork.SiteRepository.HasMainSite(agencyId);
 
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar si existe un sitio principal: {Message}", ex.Message);
+            _logger.LogError(ex, "Error al verificar si existe un sitio principal para la agencia {AgencyId}: {Message}", agencyId, ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -236,38 +232,6 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado activo del sitio {SiteId}: {Message}", queryParameters.SiteId, ex.Message);
-            return StatusCode(500, ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Obtiene todos los sitios satélites de un sitio principal específico
-    /// </summary>
-    /// <param name="queryParameters">Los parámetros de consulta que incluyen el ID del sitio principal</param>
-    /// <returns>Lista de sitios satélites del sitio principal</returns>
-    [HttpGet("get-satellites-by-main-site")]
-    [SwaggerOperation(Summary = "Obtiene sitios satélites por sitio principal", Description = "Devuelve todos los sitios satélites asociados a un sitio principal específico con data y count.")]
-    public async Task<IActionResult> GetSiteSatellitesByMainSite([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (queryParameters.Id <= 0)
-            {
-                return BadRequest("El ID del sitio principal es requerido y debe ser mayor a 0");
-            }
-
-            var result = await _unitOfWork.SiteRepository.GetSiteSatellitesByMainSiteId(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"No se encontraron sitios satélites para el sitio principal con ID {queryParameters.Id}");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener sitios satélites para el sitio principal {MainSiteId}: {Message}", queryParameters.Id, ex.Message);
             return StatusCode(500, ex.Message);
         }
     }

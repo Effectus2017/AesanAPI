@@ -97,6 +97,8 @@ builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
 builder.Services.AddScoped<IAgencyRepository, AgencyRepository>();
 builder.Services.AddScoped<IAgencyStatusRepository, AgencyStatusRepository>();
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
+builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
+builder.Services.AddScoped<ISchoolSiteRepository, SchoolSiteRepository>();
 builder.Services.AddScoped<IMealTypeRepository, MealTypeRepository>();
 builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
 builder.Services.AddScoped<IFoodAuthorityRepository, FoodAuthorityRepository>();

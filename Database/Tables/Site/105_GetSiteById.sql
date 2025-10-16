@@ -59,13 +59,6 @@ BEGIN
         LEFT JOIN AreaType ltype ON s.LocationTypeId = ltype.Id
     WHERE s.Id = @id;
 
-    -- Obtener satélites del sitio
-    SELECT ss.Id, ss.MainSiteId, ss.SatelliteSiteId, s.Name AS SatelliteSiteName,
-        ss.AssignmentDate, ss.Comment, ss.IsActive, ss.CreatedAt, ss.UpdatedAt
-    FROM SiteSatellite ss
-        LEFT JOIN Site s ON ss.SatelliteSiteId = s.Id
-    WHERE ss.MainSiteId = @id AND ss.IsActive = 1;
-
     -- Obtener niveles educativos del sitio
     SELECT sel.Id, sel.SiteId, sel.EducationLevelId, el.Name AS EducationLevelName,
         el.NameEN AS EducationLevelNameEN, sel.IsActive, sel.CreatedAt, sel.UpdatedAt
@@ -114,4 +107,4 @@ BEGIN
     ORDER BY scg.GroupName;
 END;
 
-EXEC [105_GetSiteById] @id = 1; 
+--EXEC [105_GetSiteById] @id = 1; 

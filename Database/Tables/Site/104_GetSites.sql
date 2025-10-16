@@ -21,8 +21,8 @@ BEGIN
     -- Retorna únicamente los campos necesarios para la tabla de sitios
     SELECT
         s.Id, s.Name, s.Address, c.Name AS CityName, r.Name AS RegionName,
-        s.IsMainSite, s2.Name AS MainSiteName, s.GeneralEnrollment, s.SiteNumber,
-        a.AgencyCode,
+        s.GeneralEnrollment, s.SiteNumber, s.IsActive,
+        a.AgencyCode, gt.Name AS GroupTypeName,
         -- Generar código completo del sitio: extraer parte numérica del AgencyCode + SiteNumber
         CASE 
             WHEN a.AgencyCode IS NOT NULL AND s.SiteNumber IS NOT NULL THEN
@@ -33,8 +33,7 @@ BEGIN
         INNER JOIN City c ON s.CityId = c.Id
         INNER JOIN Region r ON s.RegionId = r.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
-        LEFT JOIN SiteSatellite ss ON s.Id = ss.SatelliteSiteId
-        LEFT JOIN Site s2 ON ss.MainSiteId = s2.Id
+        LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
     WHERE s.IsActive = 1
         AND (
             @alls = 1
@@ -44,7 +43,7 @@ BEGIN
         AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             )
         )
-    ORDER BY s.IsMainSite DESC, s.Name
+    ORDER BY s.Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     -- Retorna el conteo total para paginación
