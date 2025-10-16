@@ -229,6 +229,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         {
             // Primero obtenemos el archivo para saber a qué agencia pertenece
             var existingFile = await GetAgencyFileById(id);
+
             if (existingFile == null)
             {
                 return false;
@@ -239,11 +240,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await db.ExecuteAsync(
-                "100_VerifyAgencyFile",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await db.ExecuteAsync("100_VerifyAgencyFile", parameters, commandType: CommandType.StoredProcedure);
 
             int rowsAffected = parameters.Get<int>("@rowsAffected");
 

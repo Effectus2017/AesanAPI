@@ -155,10 +155,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@nameEN", operatingPolicy.NameEN, DbType.String);
             parameters.Add("@isActive", operatingPolicy.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", operatingPolicy.DisplayOrder, DbType.Int32);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_UpdateOperatingPolicy", parameters, commandType: CommandType.StoredProcedure); // 100_UpdateOperatingPolicy
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await db.ExecuteAsync("100_UpdateOperatingPolicy", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {

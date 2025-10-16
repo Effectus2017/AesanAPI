@@ -187,12 +187,16 @@ public static class ProgramMapper
                 NeedsFederalRelayService = new DTOOptionSelection
                 {
                     Id = result.NeedsFederalRelayServiceId,
-                    Name = result.NeedsFederalRelayServiceName
+                    Name = result.NeedsFederalRelayServiceName ?? string.Empty,
+                    NameEN = string.Empty,
+                    OptionKey = string.Empty
                 },
                 ShowEvidence = new DTOOptionSelection
                 {
                     Id = result.ShowEvidenceId,
-                    Name = result.ShowEvidenceName
+                    Name = result.ShowEvidenceName ?? string.Empty,
+                    NameEN = string.Empty,
+                    OptionKey = string.Empty
                 },
                 ShowEvidenceDescription = result.ShowEvidenceDescription,
                 SnackPercentage = result.SnackPercentage,

@@ -156,10 +156,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
             parameters.Add("@nameEN", groupType.NameEN, DbType.String);
             parameters.Add("@isActive", groupType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", groupType.DisplayOrder, DbType.Int32);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_UpdateGroupType", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await db.ExecuteAsync("100_UpdateGroupType", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {

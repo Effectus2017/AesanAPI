@@ -32,10 +32,10 @@ VALUES
     (NEWID(), 'document.delete', 'Eliminar documentos', 'Delete documents', 1),
     (NEWID(), 'document.download', 'Descargar documentos', 'Download documents', 1),
 
-    (NEWID(), 'school.view', 'Ver escuelas', 'View schools', 1),
-    (NEWID(), 'school.create', 'Crear escuelas', 'Create schools', 1),
-    (NEWID(), 'school.edit', 'Editar escuelas', 'Edit schools', 1),
-    (NEWID(), 'school.delete', 'Eliminar escuelas', 'Delete schools', 1),
+    (NEWID(), 'site.view', 'Ver sitios', 'View sites', 1),
+    (NEWID(), 'site.create', 'Crear sitios', 'Create sites', 1),
+    (NEWID(), 'site.edit', 'Editar sitios', 'Edit sites', 1),
+    (NEWID(), 'site.delete', 'Eliminar sitios', 'Delete sites', 1),
 
     (NEWID(), 'report.view', 'Ver reportes', 'View reports', 1),
     (NEWID(), 'dashboard.view', 'Ver dashboard', 'View dashboard', 1),
@@ -56,7 +56,7 @@ VALUES
     (NEWID(), 'employee.assign.agency', 'Asignar agencias a empleados', 'Assign agencies to employees', 1),
     (NEWID(), 'employee.assign.role', 'Asignar roles a empleados', 'Assign roles to employees', 1),
     (NEWID(), 'employee.assign.permission', 'Asignar permisos a empleados', 'Assign permissions to employees', 1),
-    (NEWID(), 'employee.assign.school', 'Asignar escuelas a empleados', 'Assign schools to employees', 1),
+    (NEWID(), 'employee.assign.site', 'Asignar sitios a empleados', 'Assign sites to employees', 1),
     (NEWID(), 'employee.assign.program', 'Asignar programas a empleados', 'Assign programs to employees', 1);
 
 -- Insertar permisos para staff
@@ -70,7 +70,7 @@ VALUES
     (NEWID(), 'staff.assign.agency', 'Asignar agencias a staff', 'Assign agencies to staff', 1),
     (NEWID(), 'staff.assign.role', 'Asignar roles a staff', 'Assign roles to staff', 1),
     (NEWID(), 'staff.assign.permission', 'Asignar permisos a staff', 'Assign permissions to staff', 1),
-    (NEWID(), 'staff.assign.school', 'Asignar escuelas a staff', 'Assign schools to staff', 1),
+    (NEWID(), 'staff.assign.site', 'Asignar sitios a staff', 'Assign sites to staff', 1),
     (NEWID(), 'staff.assign.program', 'Asignar programas a staff', 'Assign programs to staff', 1);
 
 -- Insertar permisos para tipos de staff
@@ -82,3 +82,11 @@ VALUES
     (NEWID(), 'staff.type.edit', 'Editar tipos de staff', 'Edit staff types', 1),
     (NEWID(), 'staff.type.delete', 'Eliminar tipos de staff', 'Delete staff types', 1);
 
+-- Insertar permisos para escuelas
+INSERT INTO Permission
+    (Id, ValueKey, Name, NameEn, IsActive)
+VALUES
+    (NEWID(), 'school.view', 'Ver escuelas', 'View schools', 1),
+    (NEWID(), 'school.create', 'Crear escuelas', 'Create schools', 1),
+    (NEWID(), 'school.edit', 'Editar escuelas', 'Edit schools', 1),
+    (NEWID(), 'school.delete', 'Eliminar escuelas', 'Delete schools', 1);

@@ -9,12 +9,27 @@ CREATE OR ALTER PROCEDURE [100_UpdateCenterType]
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE CenterType
-    SET Name = @name,
-        NameEN = @nameEN,
-        DisplayOrder = @displayOrder,
-        IsActive = @isActive,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        UPDATE CenterType
+        SET Name = @name,
+            NameEN = @nameEN,
+            DisplayOrder = @displayOrder,
+            IsActive = @isActive,
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
+
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;
 GO 

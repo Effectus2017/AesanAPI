@@ -156,10 +156,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
             parameters.Add("@nameEN", sponsorType.NameEN, DbType.String);
             parameters.Add("@isActive", sponsorType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", sponsorType.DisplayOrder, DbType.Int32);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_UpdateSponsorType", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await db.ExecuteAsync("100_UpdateSponsorType", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {

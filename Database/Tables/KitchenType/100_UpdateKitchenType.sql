@@ -12,16 +12,26 @@ CREATE OR ALTER PROCEDURE [100_UpdateKitchenType]
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @rowsaffected INT;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    UPDATE KitchenType
-    SET Name = @name,
-        NameEN = @nameEN,
-        IsActive = @isActive,
-        DisplayOrder = @displayOrder,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    BEGIN TRY
+        UPDATE KitchenType
+        SET Name = @name,
+            NameEN = @nameEN,
+            IsActive = @isActive,
+            DisplayOrder = @displayOrder,
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
 
-    SET @rowsaffected = @@ROWCOUNT;
-    RETURN @rowsaffected;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END; 

@@ -4,6 +4,9 @@ using Api.Models.Response;
 
 namespace Api.Interfaces;
 
+/// <summary>
+/// Interfaz para el repositorio de School
+/// </summary>
 public interface ISchoolRepository
 {
     /// <summary>
@@ -12,9 +15,9 @@ public interface ISchoolRepository
     Task<SchoolResponse> GetSchoolById(int id);
 
     /// <summary>
-    /// Obtiene todas las escuelas
+    /// Obtiene todas las escuelas con paginación y filtros
     /// </summary>
-    Task<dynamic> GetAllSchoolsFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool isList);
+    Task<dynamic> GetAllSchools(int take, int skip, string? name, int? agencyId, bool alls);
 
     /// <summary>
     /// Inserta una nueva escuela
@@ -27,22 +30,12 @@ public interface ISchoolRepository
     Task<bool> UpdateSchool(SchoolRequest request);
 
     /// <summary>
-    /// Elimina una escuela
+    /// Elimina una escuela (soft delete)
     /// </summary>
     Task<bool> DeleteSchool(int id);
 
     /// <summary>
-    /// Verifica si existe una escuela principal en la base de datos
+    /// Obtiene todas las escuelas de una agencia específica
     /// </summary>
-    /// <returns>True si existe una escuela principal, false en caso contrario</returns>
-    Task<bool> HasMainSchool();
-
-    /// <summary>
-    /// Actualiza el estado activo/inactivo de una escuela
-    /// </summary>
-    /// <param name="schoolId">ID de la escuela</param>
-    /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
-    /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
-    /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
-    Task<bool> UpdateSchoolActiveStatus(int schoolId, bool isActive, string inactiveJustification = null);
+    Task<dynamic> GetSchoolsByAgencyId(int agencyId);
 }

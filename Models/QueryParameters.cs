@@ -25,7 +25,8 @@ public class QueryParameters
     public bool IsActive { get; set; } = true; // Estado activo
     public string? InactiveJustification { get; set; } // Justificación para inactivación
     public DateTime? InactiveDate { get; set; } // Fecha de inactivación
-    public int? SchoolId { get; set; } // ID de la escuela
+    public int? SchoolId { get; set; } // ID de la escuela (deprecated)
+    public int? SiteId { get; set; } // ID del sitio
     public int StaffId { get; set; } // ID del miembro del staff
     public int? StaffTypeId { get; set; } // ID del tipo de staff
     public int GroupTypeId { get; set; } // ID del tipo de grupo

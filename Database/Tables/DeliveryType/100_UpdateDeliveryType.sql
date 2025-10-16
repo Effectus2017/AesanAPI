@@ -10,13 +10,27 @@ CREATE OR ALTER PROCEDURE [100_UpdateDeliveryType]
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE DeliveryType
-    SET Name = @name,
-        NameEN = @nameEN,
-        IsActive = @isActive,
-        DisplayOrder = @displayOrder,
-        SelectionNotification = @selectionNotification,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
-    RETURN @@ROWCOUNT;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        UPDATE DeliveryType
+        SET Name = @name,
+            NameEN = @nameEN,
+            IsActive = @isActive,
+            DisplayOrder = @displayOrder,
+            SelectionNotification = @selectionNotification,
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
+
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END; 

@@ -9,11 +9,11 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, ISchoolRepository schoolRepository, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IProgramRepository
+public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, ISiteRepository siteRepository, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<ProgramRepository> _logger = logger;
-    private readonly ISchoolRepository _schoolRepository = schoolRepository ?? throw new ArgumentNullException(nameof(schoolRepository));
+    private readonly ISiteRepository _siteRepository = siteRepository ?? throw new ArgumentNullException(nameof(siteRepository));
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -196,7 +196,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             dataTable.Columns.Add("programId", typeof(int));
             dataTable.Columns.Add("applicationNumber", typeof(string));
             dataTable.Columns.Add("isPublic", typeof(bool));
-            dataTable.Columns.Add("totalNumberSchools", typeof(int));
+            dataTable.Columns.Add("totalNumberSites", typeof(int));
             dataTable.Columns.Add("hasBasicEducationCertification", typeof(bool));
             dataTable.Columns.Add("isAeaMenuCreated", typeof(bool));
             dataTable.Columns.Add("exemptionRequirement", typeof(string));
@@ -222,7 +222,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                 request.ProgramId,
                 request.ApplicationNumber,
                 request.IsPublic,
-                request.TotalNumberSchools,
+                request.TotalNumberSites,
                 request.HasBasicEducationCertification,
                 request.IsAeaMenuCreated,
                 request.ExemptionRequirement,
@@ -252,17 +252,17 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
             int inscriptionId = parameters.Get<int>("@id");
 
-            // Insertar escuelas usando el repositorio de escuelas
-            if (request.Schools != null && request.Schools.Any())
+            // Insertar sitios usando el repositorio de sitios
+            if (request.Sites != null && request.Sites.Any())
             {
-                foreach (var schoolRequest in request.Schools)
+                foreach (var siteRequest in request.Sites)
                 {
-                    var schoolId = await _schoolRepository.InsertSchool(schoolRequest);
+                    var siteId = await _siteRepository.InsertSite(siteRequest);
 
-                    // Vincular la escuela con la inscripción
+                    // Vincular el sitio con la inscripción
                     await dbConnection.ExecuteAsync(
-                        "INSERT INTO ProgramInscriptionSchool (ProgramInscriptionId, SchoolId) VALUES (@InscriptionId, @SchoolId)",
-                        new { InscriptionId = inscriptionId, SchoolId = schoolId }
+                        "INSERT INTO ProgramInscriptionSite (ProgramInscriptionId, SiteId) VALUES (@InscriptionId, @SiteId)",
+                        new { InscriptionId = inscriptionId, SiteId = siteId }
                     );
                 }
             }

@@ -246,47 +246,6 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[100_InsertSchool]
-    @Name NVARCHAR(255),
-    @EducationLevelId INT,
-    @OperatingPeriodId INT,
-    @Address NVARCHAR(255),
-    @CityId INT,
-    @RegionId INT,
-    @ZipCode INT,
-    @OrganizationTypeId INT,
-    @Id INT OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    INSERT INTO School
-        (
-        Name,
-        EducationLevelId,
-        OperatingPeriodId,
-        Address,
-        CityId,
-        RegionId,
-        ZipCode,
-        OrganizationTypeId
-        )
-    VALUES
-        (
-            @Name,
-            @EducationLevelId,
-            @OperatingPeriodId,
-            @Address,
-            @CityId,
-            @RegionId,
-            @ZipCode,
-            @OrganizationTypeId
-    );
-
-    SET @Id = SCOPE_IDENTITY();
-END;
-GO
-
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertFederalFundingSource]
     @InscriptionId INT,
     @Name NVARCHAR(255),

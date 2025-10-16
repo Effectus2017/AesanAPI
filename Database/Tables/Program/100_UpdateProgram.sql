@@ -7,17 +7,26 @@ CREATE OR ALTER PROCEDURE [100_UpdateProgram]
 AS
 BEGIN
     SET NOCOUNT ON;
-    
-    DECLARE @rowsAffected INT;
+    DECLARE @rowsAffected INT = 0;
+    BEGIN TRANSACTION;
 
-    UPDATE Program
-    SET Name = @name,
-        Description = @description,
-        IsActive = @isActive,
-        UpdatedAt = GETDATE()
-    WHERE Id = @id;
+    BEGIN TRY
+        UPDATE Program
+        SET Name = @name,
+            Description = @description,
+            IsActive = @isActive,
+            UpdatedAt = GETDATE()
+        WHERE Id = @id;
 
-    SET @rowsAffected = @@ROWCOUNT;
-    RETURN @rowsAffected;
+        SET @rowsAffected = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        RETURN @rowsAffected;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END;
 GO 

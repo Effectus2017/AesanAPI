@@ -188,11 +188,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
             parameters.Add("@name", permission.Name, DbType.String, size: 255);
             parameters.Add("@nameEn", permission.NameEn, DbType.String, size: 255);
             parameters.Add("@isActive", permission.IsActive, DbType.Boolean);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_UpdatePermission", parameters, commandType: CommandType.StoredProcedure);
-
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await db.ExecuteAsync("100_UpdatePermission", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {

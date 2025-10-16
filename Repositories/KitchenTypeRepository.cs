@@ -155,10 +155,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
             parameters.Add("@nameEN", kitchenType.NameEN, DbType.String);
             parameters.Add("@isActive", kitchenType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", kitchenType.DisplayOrder, DbType.Int32);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-
-            await db.ExecuteAsync("100_UpdateKitchenType", parameters, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = await db.ExecuteAsync("100_UpdateKitchenType", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {

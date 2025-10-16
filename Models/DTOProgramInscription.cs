@@ -31,7 +31,7 @@ public class DTOProgramInscription
     public DateTime Date { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public List<SchoolResponse> Schools { get; set; }
+    public List<SiteResponse> Sites { get; set; }
     public List<DTOFederalFundingSource> FederalFundingSources { get; set; }
     public List<DTODocumentsRequired> RequiredDocuments { get; set; }
 }

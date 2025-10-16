@@ -10,7 +10,7 @@ namespace Api.Controllers;
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con las escuelas.
 /// Proporciona endpoints para la gestión completa de escuelas, incluyendo creación,
-/// lectura, actualización y eliminación de registros escolares.
+/// lectura, actualización y eliminación de registros de escuelas.
 /// </summary>
 [Route("school")]
 [ApiController]
@@ -51,15 +51,20 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     /// </summary>
     /// <param name="queryParameters">Los parámetros de consulta para la paginación y filtrado</param>
     /// <returns>Una lista paginada de escuelas</returns>
-    [HttpGet("get-all-schools-from-db")]
+    [HttpGet("get-all-schools")]
     [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
-    public async Task<IActionResult> GetAllSchoolsFromDB([FromQuery] QueryParameters queryParameters)
+    public async Task<IActionResult> GetAllSchools([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.SchoolRepository.GetAllSchoolsFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList);
+                var result = await _unitOfWork.SchoolRepository.GetAllSchools(
+                    queryParameters.Take,
+                    queryParameters.Skip,
+                    queryParameters.Name,
+                    queryParameters.AgencyId,
+                    queryParameters.Alls);
 
                 if (result == null)
                 {
@@ -95,13 +100,18 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
 
                 if (result)
                 {
-                    return Ok(result);
+                    return Ok(new { success = true, message = "Escuela creada exitosamente" });
                 }
 
-                return BadRequest("Error al insertar la escuela");
+                return BadRequest("No se pudo crear la escuela");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Error de validación al insertar escuela: {Message}", ex.Message);
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -121,25 +131,24 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     {
         try
         {
-            // Validación condicional: requerir justificación solo cuando IsActive es false
-            if (request.IsActive == false && string.IsNullOrWhiteSpace(request.InactiveJustification))
-            {
-                ModelState.AddModelError("InactiveJustification", "Se requiere justificación para inactivar la escuela");
-            }
-
             if (ModelState.IsValid)
             {
                 var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
 
                 if (result)
                 {
-                    return Ok(result);
+                    return Ok(new { success = true, message = "Escuela actualizada exitosamente" });
                 }
 
-                return NotFound($"Escuela con ID {request.Id} no encontrada");
+                return BadRequest("No se pudo actualizar la escuela");
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Error de validación al actualizar escuela: {Message}", ex.Message);
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -151,22 +160,32 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     /// <summary>
     /// Elimina una escuela
     /// </summary>
-    /// <param name="queryParameters">Los parámetros de consulta para la eliminación</param>
-    /// <returns>La escuela eliminada</returns>
+    /// <param name="queryParameters">Los parámetros de consulta que incluyen el ID de la escuela</param>
+    /// <returns>Resultado de la eliminación</returns>
     [HttpDelete("delete-school")]
-    [SwaggerOperation(Summary = "Elimina una escuela", Description = "Elimina una escuela de la base de datos.")]
+    [SwaggerOperation(Summary = "Elimina una escuela", Description = "Elimina una escuela de la base de datos (soft delete).")]
     public async Task<IActionResult> DeleteSchool([FromQuery] QueryParameters queryParameters)
     {
         try
         {
+            if (queryParameters.Id <= 0)
+            {
+                return BadRequest("ID de escuela inválido");
+            }
+
             var result = await _unitOfWork.SchoolRepository.DeleteSchool(queryParameters.Id);
 
             if (result)
             {
-                return Ok(result);
+                return Ok(new { success = true, message = "Escuela eliminada exitosamente" });
             }
 
-            return NotFound($"Escuela con ID {queryParameters.Id} no encontrada");
+            return BadRequest("No se pudo eliminar la escuela");
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Error de validación al eliminar escuela: {Message}", ex.Message);
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -176,61 +195,28 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     }
 
     /// <summary>
-    /// Verifica si existe una escuela principal en la base de datos
+    /// Obtiene todas las escuelas de una agencia específica
     /// </summary>
-    /// <returns>True si existe una escuela principal, false en caso contrario</returns>
-    [HttpGet("has-main-school")]
-    [SwaggerOperation(Summary = "Verifica si existe una escuela principal", Description = "Devuelve true si existe una escuela principal, false en caso contrario.")]
-    public async Task<ActionResult<bool>> HasMainSchool()
+    /// <param name="queryParameters">Los parámetros de consulta que incluyen el agencyId</param>
+    /// <returns>Lista de escuelas de la agencia</returns>
+    [HttpGet("get-schools-by-agency")]
+    [SwaggerOperation(Summary = "Obtiene escuelas por agencia", Description = "Devuelve todas las escuelas de una agencia específica.")]
+    public async Task<IActionResult> GetSchoolsByAgencyId([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            var result = await _unitOfWork.SchoolRepository.HasMainSchool();
+            var result = await _unitOfWork.SchoolRepository.GetSchoolsByAgencyId(queryParameters.AgencyId);
 
             if (result == null)
             {
-                return NotFound("No se encontró ninguna escuela principal");
+                return NotFound("No se encontraron escuelas para esta agencia");
             }
 
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar si existe una escuela principal: {Message}", ex.Message);
-            return StatusCode(500, ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Actualiza el estado activo/inactivo de una escuela
-    /// </summary>
-    /// <param name="schoolId">ID de la escuela</param>
-    /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
-    /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
-    /// <returns>True si se actualizó correctamente</returns>
-    [HttpPut("update-active-status")]
-    [SwaggerOperation(Summary = "Actualiza el estado activo/inactivo de una escuela", Description = "Permite activar o inactivar una escuela. Requiere justificación al inactivar.")]
-    public async Task<IActionResult> UpdateSchoolActiveStatus([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (queryParameters.IsActive == false && string.IsNullOrWhiteSpace(queryParameters.InactiveJustification))
-            {
-                return BadRequest("Se requiere justificación para inactivar la escuela");
-            }
-
-            var result = await _unitOfWork.SchoolRepository.UpdateSchoolActiveStatus(queryParameters.SchoolId.Value, queryParameters.IsActive, queryParameters.InactiveJustification);
-
-            if (result)
-            {
-                return Ok(result);
-            }
-
-            return NotFound($"Escuela con ID {queryParameters.SchoolId} no encontrada");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el estado activo de la escuela {SchoolId}: {Message}", queryParameters.SchoolId, ex.Message);
+            _logger.LogError(ex, "Error al obtener escuelas por agencia: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
