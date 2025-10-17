@@ -155,18 +155,29 @@ public static class Utilities
     }
 
     /// <summary>
-    /// Genera un código identificador único para un sitio (escuela)
+    /// Genera un código identificador único para un sitio basado en SchoolCode
     /// </summary>
-    /// <param name="agencySequenceNumber">Número de secuencia de la agencia (ejemplo: 001)</param>
-    /// <param name="existingSiteCodes">Códigos de sitios existentes para validar unicidad</param>
-    /// <returns>Código identificador único del sitio</returns>
-    public static string GenerateSiteCode(string agencySequenceNumber, List<string> existingSiteCodes)
+    /// <param name="schoolCode">Código de la escuela (ejemplo: 001)</param>
+    /// <param name="siteNumber">Número del sitio</param>
+    /// <returns>Código identificador único del sitio en formato SchoolCode-SiteNumber</returns>
+    public static string GenerateSiteCodeFromSchool(string schoolCode, int siteNumber)
     {
-        // Obtener el siguiente número consecutivo para el sitio
-        int nextSiteNumber = GetNextSiteNumber(existingSiteCodes, agencySequenceNumber);
+        return $"{schoolCode}-{siteNumber}";
+    }
 
-        // Construir el código final: {secuenciaAgencia}-{numeroSitio}
-        return $"{agencySequenceNumber}-{nextSiteNumber}";
+    /// <summary>
+    /// Genera un código identificador único para un sitio basado en número de secuencia de agencia
+    /// </summary>
+    /// <param name="agencySequenceNumber">Número de secuencia de la agencia (string)</param>
+    /// <param name="existingCodes">Códigos existentes para validar unicidad</param>
+    /// <returns>Código identificador único del sitio</returns>
+    public static string GenerateSiteCode(string agencySequenceNumber, List<string> existingCodes)
+    {
+        // Generar código con formato: S{agencySequenceNumber}-{año}-{secuencia}
+        string year = DateTime.Now.Year.ToString();
+        string sequence = GetNextSequenceNumber(existingCodes, year);
+
+        return $"S{agencySequenceNumber}-{year}-{sequence}";
     }
 
     /// <summary>

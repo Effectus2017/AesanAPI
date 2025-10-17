@@ -82,10 +82,6 @@ public class SiteRequest
     // School asignada
     public int SchoolId { get; set; }
 
-    // Propiedades para sitio principal/satélite
-    public bool? IsMainSite { get; set; }
-    public int? MainSiteId { get; set; }
-
     // Estado de actividad
     public bool? IsActive { get; set; }
     public string? InactiveJustification { get; set; }

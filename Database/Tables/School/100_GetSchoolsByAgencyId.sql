@@ -2,7 +2,7 @@
 -- Stored Procedure: 100_GetSchoolsByAgencyId
 -- Descripción: Obtiene todas las escuelas de una agencia específica con conteo
 -- Fecha: 2025-10-15
--- Versión: 2.0
+-- Versión: 2.1
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetSchoolsByAgencyId]
@@ -27,7 +27,7 @@ BEGIN
         INNER JOIN [Agency] a ON s.[AgencyId] = a.[Id]
     WHERE s.[AgencyId] = @agencyId
         AND s.[IsActive] = 1
-    ORDER BY s.[Name] ASC;
+    ORDER BY s.[CreatedAt] DESC, s.[SchoolNumber] DESC;
 
     -- Retornar el conteo total
     SELECT COUNT(*)

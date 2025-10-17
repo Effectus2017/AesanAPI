@@ -40,10 +40,4 @@ public interface ISiteRepository
     /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
     Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null);
 
-    /// <summary>
-    /// Verifica si una agencia tiene un sitio principal
-    /// </summary>
-    /// <param name="agencyId">ID de la agencia</param>
-    /// <returns>True si tiene sitio principal, false en caso contrario</returns>
-    Task<bool> HasMainSite(int agencyId);
 }

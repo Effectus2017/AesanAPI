@@ -47,6 +47,7 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @communityId INT = NULL,
     @walkersId INT = NULL,
     @siteTypeId INT = NULL,
+    @siteLocationId INT = NULL,
     @experienceId INT = NULL,
     @reviewResultId INT = NULL,
     @reviewDate DATETIME = NULL,
@@ -55,12 +56,10 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @generalEnrollment INT = NULL,
     @siteNumber INT,
     @serviceTime DATETIME = NULL,
-    @isActive BIT = NULL,
-    @isMainSite BIT = NULL,
     @inactiveJustification NVARCHAR(500) = NULL,
     @inactiveDate DATETIME = NULL,
-    @organizedAthleticPrograms BIT = NULL,
-    @atRiskService BIT = NULL,
+    @organizedAthleticPrograms BIT = 0,
+    @atRiskService BIT = 0,
     @id INT OUTPUT
 AS
 BEGIN
@@ -73,8 +72,8 @@ BEGIN
         OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingFromDate, OperatingToDate, OperatingDaysCalculated,
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
-        CommunityId, WalkersId, SiteTypeId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
-        SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, IsMainSite, InactiveJustification, InactiveDate,
+        CommunityId, WalkersId, SiteTypeId, SiteLocationId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
+        SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, InactiveJustification, InactiveDate,
         OrganizedAthleticPrograms, AtRiskService, CreatedAt
         )
     VALUES
@@ -84,8 +83,8 @@ BEGIN
             @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingFromDate, @operatingToDate, @operatingDaysCalculated,
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
-            @communityId, @walkersId, @siteTypeId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
-            @siteCode, @generalEnrollment, @siteNumber, @serviceTime, @isActive, @isMainSite, @inactiveJustification, @inactiveDate,
+            @communityId, @walkersId, @siteTypeId, @siteLocationId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
+            @siteCode, @generalEnrollment, @siteNumber, @serviceTime, 1, @inactiveJustification, @inactiveDate,
             @organizedAthleticPrograms, @atRiskService, GETDATE()
     );
 

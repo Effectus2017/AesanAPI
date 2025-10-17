@@ -66,6 +66,13 @@ BEGIN
             GETDATE()
         );
         
+        -- Actualizar el SiteCode del Site usando SchoolCode-SiteNumber
+        UPDATE site
+        SET [SiteCode] = sch.[SchoolCode] + '-' + CAST(site.[SiteNumber] AS VARCHAR(10))
+        FROM [Site] site
+        INNER JOIN [School] sch ON sch.[Id] = @schoolId
+        WHERE site.[Id] = @siteId;
+        
         SET @id = SCOPE_IDENTITY();
         SET @rowsAffected = @@ROWCOUNT;
         

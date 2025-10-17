@@ -27,7 +27,7 @@ BEGIN
         s.[SiteCode],
         s.[SiteNumber],
         s.[Address],
-        s.[IsActive] AS SiteIsActive
+        s.[IsActive]
     FROM [SchoolSite] ss
         INNER JOIN [Site] s ON ss.[SiteId] = s.[Id]
     WHERE ss.[SchoolId] = @schoolId

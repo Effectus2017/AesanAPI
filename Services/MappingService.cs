@@ -184,13 +184,13 @@ public class MappingService
     }
 
     /// <summary>
-    /// Mapea una asignación School-Site desde un resultado dinámico a un SchoolSiteResponse
+    /// Mapea una asignación School-Site desde un resultado dinámico a un SchoolSiteTableResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>SchoolSiteResponse</returns>
-    public SchoolSiteResponse MapSchoolSite(dynamic item)
+    /// <returns>SchoolSiteTableResponse</returns>
+    public SchoolSiteTableResponse MapSchoolSite(dynamic item)
     {
-        return new SchoolSiteResponse
+        return new SchoolSiteTableResponse
         {
             Id = item.Id,
             SchoolId = item.SchoolId,
@@ -200,16 +200,11 @@ public class MappingService
             IsActive = item.IsActive,
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
-            School = null, // No hay información de School en el stored procedure
-            Site = new SiteResponse
-            {
-                Id = item.SiteId,
-                Name = item.SiteName,
-                SiteCode = item.SiteCode,
-                SiteNumber = item.SiteNumber,
-                Address = item.Address,
-                IsActive = item.SiteIsActive
-            }
+            SiteName = item.SiteName,
+            SiteCode = item.SiteCode,
+            SiteNumber = item.SiteNumber,
+            Address = item.Address,
+            SiteIsActive = item.IsActive
         };
     }
 

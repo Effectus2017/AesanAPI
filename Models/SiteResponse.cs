@@ -90,12 +90,6 @@ public class SiteResponse
     // School relacionada
     public SchoolResponse? School { get; set; }
 
-    // Propiedades para sitio principal/satélite
-    public bool? IsMainSite { get; set; }
-    public int? MainSiteId { get; set; }
-    public string? MainSiteName { get; set; }
-    public SiteResponse? MainSite { get; set; }
-
     // Niveles educativos
     public List<DTOEducationLevel>? EducationLevels { get; set; }
 

@@ -176,28 +176,6 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
     }
 
     /// <summary>
-    /// Verifica si existe un sitio principal para una agencia
-    /// </summary>
-    /// <param name="agencyId">ID de la agencia</param>
-    /// <returns>True si existe un sitio principal, false en caso contrario</returns>
-    [HttpGet("has-main-site")]
-    [SwaggerOperation(Summary = "Verifica si existe un sitio principal", Description = "Devuelve true si existe un sitio principal para la agencia especificada, false en caso contrario.")]
-    public async Task<ActionResult<bool>> HasMainSite([FromQuery] int agencyId)
-    {
-        try
-        {
-            var result = await _unitOfWork.SiteRepository.HasMainSite(agencyId);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar si existe un sitio principal para la agencia {AgencyId}: {Message}", agencyId, ex.Message);
-            return StatusCode(500, ex.Message);
-        }
-    }
-
-    /// <summary>
     /// Actualiza el estado activo/inactivo de un sitio
     /// </summary>
     /// <param name="siteId">ID del sitio</param>

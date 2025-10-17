@@ -64,9 +64,6 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 InactiveDate = item.InactiveDate,
                 CreatedAt = item.CreatedAt ?? DateTime.MinValue,
                 UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
-                IsMainSite = item.IsMainSite ?? false,
-                MainSiteId = item.MainSiteId ?? 0,
-                MainSiteName = item.MainSiteName ?? string.Empty,
                 GeneralEnrollment = item.GeneralEnrollment,
 
                 // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
@@ -93,11 +90,6 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 {
                     Id = item.AgencyId,
                     Name = item.AgencyName ?? string.Empty
-                } : null,
-                MainSite = item.MainSiteId != null ? new SiteResponse
-                {
-                    Id = item.MainSiteId,
-                    Name = item.MainSiteName ?? string.Empty
                 } : null
             };
         }
@@ -130,13 +122,6 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 Id = item.Id ?? 0,
                 AgencyId = item.AgencyId ?? 0,
                 Name = item.Name ?? string.Empty,
-                IsMainSite = item.IsMainSite ?? false,
-                MainSiteId = item.MainSiteId ?? 0,
-                MainSite = item.MainSiteId != null ? new SiteResponse
-                {
-                    Id = item.MainSiteId,
-                    Name = item.MainSiteName ?? string.Empty
-                } : null
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

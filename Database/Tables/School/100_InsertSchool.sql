@@ -21,8 +21,8 @@ BEGIN
     FROM [School]
     WHERE AgencyId = @agencyId AND IsActive = 1;
 
-    -- Generar SchoolCode basado en SchoolNumber (formato "01", "02", etc.)
-    SET @schoolCode = RIGHT('00' + CAST(@schoolNumber AS VARCHAR(2)), 2);
+    -- Generar SchoolCode basado en SchoolNumber (formato "001", "002", etc.)
+    SET @schoolCode = RIGHT('000' + CAST(@schoolNumber AS VARCHAR(3)), 3);
 
     -- Insertar nueva escuela
     INSERT INTO [School]

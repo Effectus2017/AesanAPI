@@ -198,12 +198,17 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@serviceTime", request.ServiceTime, DbType.DateTime, ParameterDirection.Input);
 
             // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
+
+            // Estado de actividad
+            parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
 
             // Obtener el siguiente número de sitio para la agencia
             int nextSiteNumber = await GetNextSiteNumber(request.AgencyId.Value);
@@ -321,8 +326,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@reviewResultId", request.ReviewResultId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@reviewDate", request.ReviewDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", request.ReviewJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@siteCode", request.SiteCode, DbType.String, ParameterDirection.Input);
+            parameters.Add("@siteNumber", request.SiteNumber, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@isActive", request.IsActive, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@isMainSite", request.IsMainSite, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@inactiveDate", request.InactiveDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@generalEnrollment", request.GeneralEnrollment, DbType.Int32, ParameterDirection.Input);
@@ -478,25 +484,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar niveles educativos para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Verifica si existe un sitio principal en la base de datos
-    /// </summary>
-    /// <returns>True si existe un sitio principal, false en caso contrario</returns>
-    public async Task<bool> HasMainSite()
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var result = await dbConnection.ExecuteScalarAsync<int>("102_HasMainSite", commandType: CommandType.StoredProcedure);
-            return result > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar si existe un sitio principal");
             throw new Exception(ex.Message);
         }
     }
@@ -1050,29 +1037,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar tipos de participantes para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Verifica si una agencia tiene un sitio principal
-    /// </summary>
-    /// <param name="agencyId">ID de la agencia</param>
-    /// <returns>True si tiene sitio principal, false en caso contrario</returns>
-    public async Task<bool> HasMainSite(int agencyId)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@agencyId", agencyId, DbType.Int32);
-
-            var count = await dbConnection.QuerySingleAsync<int>("SELECT COUNT(*) FROM Site WHERE AgencyId = @agencyId AND IsMainSite = 1", parameters);
-            return count > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar si la agencia {AgencyId} tiene sitio principal", agencyId);
             throw new Exception(ex.Message);
         }
     }
