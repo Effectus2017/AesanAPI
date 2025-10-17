@@ -12,13 +12,14 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, IUnitOfWork unitOfWork) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -227,7 +228,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteEducationLevels(siteId, educationLevelIds);
             }
 
-            // Insertar servicios de alimentación
+            // // Insertar servicios de alimentación9
             await InsertSiteService(siteId, request);
 
             // Insertar información de Day Care Home solo si la agencia es Day Care Home
@@ -237,8 +238,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             }
 
             // Insertar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
-            if (request.DayCareHome?.OffersServiceToDifferentGroups == true &&
-                request.ChildGroups != null && request.ChildGroups.Count != 0)
+            if (request.DayCareHome?.OffersServiceToDifferentGroups == true && request.ChildGroups != null && request.ChildGroups.Count != 0)
             {
                 await InsertSiteChildGroups(siteId, request.ChildGroups);
             }
@@ -256,8 +256,27 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value);
             }
 
+            // Crear relación SchoolSite si se proporciona SchoolId
+            if (request.SchoolId > 0)
+            {
+                var schoolSiteRequest = new SchoolSiteRequest
+                {
+                    SchoolId = request.SchoolId,
+                    SiteId = siteId,
+                    IsActive = true,
+                    Comment = $"Asignación automática al crear el sitio {request.Name}"
+                };
+
+                var schoolSiteResult = await _unitOfWork.SchoolSiteRepository.InsertSchoolSite(schoolSiteRequest);
+
+                if (!schoolSiteResult)
+                {
+                    _logger.LogWarning("No se pudo crear la relación SchoolSite para el sitio {SiteId} y escuela {SchoolId}", siteId, request.SchoolId);
+                }
+            }
+
             // Invalidar caché
-            InvalidateCache(siteId);
+            //InvalidateCache(siteId);
 
             return siteId > 0;
         }
