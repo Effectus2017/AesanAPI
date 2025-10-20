@@ -12,14 +12,14 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, IUnitOfWork unitOfWork) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
-    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly Lazy<ISchoolSiteRepository> _schoolSiteRepository = schoolSiteRepository ?? throw new ArgumentNullException(nameof(schoolSiteRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -267,7 +267,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     Comment = $"Asignación automática al crear el sitio {request.Name}"
                 };
 
-                var schoolSiteResult = await _unitOfWork.SchoolSiteRepository.InsertSchoolSite(schoolSiteRequest);
+                // Usar Lazy<ISchoolSiteRepository> para evitar dependencia circular
+                var schoolSiteResult = await _schoolSiteRepository.Value.InsertSchoolSite(schoolSiteRequest);
 
                 if (!schoolSiteResult)
                 {

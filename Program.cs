@@ -125,6 +125,7 @@ builder.Services.AddScoped<IStaffRelationshipRepository, StaffRelationshipReposi
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
 builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));
+builder.Services.AddScoped<Lazy<ISchoolSiteRepository>>(sp => new Lazy<ISchoolSiteRepository>(() => sp.GetRequiredService<ISchoolSiteRepository>()));
 builder.Services.AddScoped<Lazy<MappingService>>(sp => new Lazy<MappingService>(() => sp.GetRequiredService<MappingService>()));
 
 // Registrar AgencyUsersRepository después de los servicios Lazy
