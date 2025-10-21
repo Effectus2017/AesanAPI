@@ -22,7 +22,7 @@ BEGIN
     FROM GroupType
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%')
-    ORDER BY Name, DisplayOrder
+    ORDER BY DisplayOrder, Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     SELECT COUNT(*)

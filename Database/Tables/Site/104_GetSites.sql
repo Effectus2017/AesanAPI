@@ -43,7 +43,7 @@ BEGIN
         AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             )
         )
-    ORDER BY s.Name
+    ORDER BY s.SiteNumber DESC, s.Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     -- Retorna el conteo total para paginación

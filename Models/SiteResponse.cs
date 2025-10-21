@@ -65,7 +65,7 @@ public class SiteResponse
 
     public List<int> EducationLevelIds { get; set; } = [];
     public DTOOperatingPeriod? OperatingPeriod { get; set; }
-    public DTOOrganizationType? OrganizationType { get; set; }
+    public OrganizationTypeResponse? OrganizationType { get; set; }
     public DTOKitchenType? KitchenType { get; set; }
     public DTOGroupType? GroupType { get; set; }
     public DeliveryTypeResponse? DeliveryType { get; set; }

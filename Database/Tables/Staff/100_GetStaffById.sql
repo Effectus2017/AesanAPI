@@ -49,13 +49,17 @@ BEGIN
         s.ReviewDate,
         s.ReviewJustification,
 
-        -- Datos de la relación SchoolStaff
-        ss.SchoolId,
-        sch.Name AS SchoolName,
+        -- Datos de la relación SiteStaff
+        ss.SiteId,
+        site.Name AS SiteName,
         ss.AssignmentTypeId,
         os_assignment.Name AS AssignmentTypeName,
         os_assignment.NameEN AS AssignmentTypeNameEN,
-        ss.IsPrimary
+        ss.IsPrimary,
+        ss.AssignmentDate,
+        ss.StartDate,
+        ss.EndDate,
+        ss.Comments AS AssignmentComments
     FROM Staff s
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -65,8 +69,8 @@ BEGIN
         LEFT JOIN Region r ON s.RegionId = r.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN AspNetUsers u ON s.UserId = u.Id
-        LEFT JOIN SchoolStaff ss ON s.Id = ss.StaffId AND ss.IsActive = 1
-        LEFT JOIN School sch ON ss.SchoolId = sch.Id
+        LEFT JOIN SiteStaff ss ON s.Id = ss.StaffId AND ss.IsActive = 1
+        LEFT JOIN Site site ON ss.SiteId = site.Id
         LEFT JOIN OptionSelection os_assignment ON ss.AssignmentTypeId = os_assignment.Id
     WHERE s.Id = @id;
 END

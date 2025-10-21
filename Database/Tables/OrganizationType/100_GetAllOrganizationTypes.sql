@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[100_GetAllOrganizationTypes]
+CREATE OR ALTER PROCEDURE [dbo].[100_GetAllOrganizationTypes]
     @take INT,
     @skip INT,
     @name NVARCHAR(100) = NULL,
@@ -6,7 +6,7 @@ CREATE PROCEDURE [dbo].[100_GetAllOrganizationTypes]
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT Id, Name, NameEN, IsActive, DisplayOrder
+    SELECT Id, Name, NameEN, IsActive, DisplayOrder, RequiresCenterType
     FROM OrganizationType
     WHERE (@name IS NULL OR Name LIKE '%' + @name + '%')
     ORDER BY Name, DisplayOrder

@@ -24,7 +24,7 @@ public class DTOAgencyInscription
     public bool? FederalFundsDenied { get; set; }
 
     /// <summary>
-    /// Razón por la cuál fue descalificado o denegado de fondos federales
+    /// Razón por la cual fue descalificado o denegado de fondos federales
     /// Se activa cuando FederalFundsDenied = true
     /// </summary>
     public string? FederalFundsDeniedReason { get; set; }
@@ -35,20 +35,10 @@ public class DTOAgencyInscription
     public bool? StateFundsDenied { get; set; }
 
     /// <summary>
-    /// Razón por la cuál fue descalificado o denegado de fondos estatales
+    /// Razón por la cual fue descalificado o denegado de fondos estatales
     /// Se activa cuando StateFundsDenied = true
     /// </summary>
     public string? StateFundsDeniedReason { get; set; }
-
-    /// <summary>
-    /// Si la agencia tiene programas de atletismo organizados
-    /// </summary>
-    public bool? OrganizedAthleticPrograms { get; set; }
-
-    /// <summary>
-    /// Si la agencia ofrece servicios a personas en riesgo
-    /// </summary>
-    public bool? AtRiskService { get; set; }
 
     /// <summary>
     /// Si la agencia tiene registro de educación básica
@@ -62,10 +52,6 @@ public class DTOAgencyInscription
     /// </summary>
     public bool? ExtendedHours { get; set; }
 
-    /// <summary>
-    /// Si la agencia tiene servicio de tiempo
-    /// </summary>
-    public DateTime? ServiceTime { get; set; }
 
     /// <summary>
     /// Justificación de rechazo de la agencia

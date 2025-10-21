@@ -135,7 +135,7 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
     /// <returns>Tipo de organización actualizado</returns>
     [HttpPut("update-organization-type")]
     [SwaggerOperation(Summary = "Actualiza un tipo de organización existente", Description = "Actualiza los datos de un tipo de organización existente.")]
-    public async Task<IActionResult> Update([FromBody] DTOOrganizationType request)
+    public async Task<IActionResult> Update([FromBody] OrganizationTypeResponse request)
     {
         try
         {

@@ -1,5 +1,5 @@
 -- Insertar una inscripción de agencia
--- 1.1.5 - Actualizado para incluir StateFundsDeniedReason
+-- 1.1.8 - Removido organizedAthleticPrograms y atRiskService (ahora están en Site)
 CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @agencyId int,
     @nonProfit bit,
@@ -8,11 +8,8 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     -- Nuevo parámetro
     @stateFundsDenied bit,
     @stateFundsDeniedReason nvarchar(max),
-    @organizedAthleticPrograms bit,
-    @atRiskService bit,
     @basicEducationRegistry bit,
     @extendedHours bit,
-    @serviceTime datetime,
     @taxExemptionStatusId int,
     @taxExemptionTypeId int,
     @publicAllianceContractId int,
@@ -29,8 +26,7 @@ BEGIN
         (
         AgencyId, NonProfit, FederalFundsDenied, FederalFundsDeniedReason, -- Nuevo campo
         StateFundsDenied, StateFundsDeniedReason,
-        OrganizedAthleticPrograms, AtRiskService,
-        BasicEducationRegistry, ExtendedHours, ServiceTime,
+        BasicEducationRegistry, ExtendedHours,
         TaxExemptionStatusId, TaxExemptionTypeId,
         PublicAllianceContractId, NationalYouthProgram, IsDayCareHome, DeadlineToCompleteRegistration
         )
@@ -38,8 +34,7 @@ BEGIN
         (
             @agencyId, @nonProfit, @federalFundsDenied, @federalFundsDeniedReason, -- Nuevo valor
             @stateFundsDenied, @stateFundsDeniedReason,
-            @organizedAthleticPrograms, @atRiskService,
-            @basicEducationRegistry, @extendedHours, @serviceTime,
+            @basicEducationRegistry, @extendedHours,
             @taxExemptionStatusId, @taxExemptionTypeId,
             @publicAllianceContractId, @nationalYouthProgram, @isDayCareHome, @deadlineToCompleteRegistration
         );

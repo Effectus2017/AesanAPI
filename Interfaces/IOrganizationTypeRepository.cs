@@ -34,7 +34,7 @@ public interface IOrganizationTypeRepository
     /// </summary>
     /// <param name="organizationType">El tipo de organización a actualizar.</param>
     /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
-    Task<bool> UpdateOrganizationType(DTOOrganizationType organizationType);
+    Task<bool> UpdateOrganizationType(OrganizationTypeResponse organizationType);
 
     /// <summary>
     /// Elimina un tipo de organización existente.

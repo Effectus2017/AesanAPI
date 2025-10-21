@@ -491,21 +491,21 @@ public class MappingService
     #region Organization Type Mappings
 
     /// <summary>
-    /// Mapea un tipo de organización desde un resultado dinámico a un DTOOrganizationType (versión simplificada para listas)
+    /// Mapea un tipo de organización desde un resultado dinámico a un OrganizationTypeResponse (versión simplificada para listas)
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOOrganizationType</returns>
-    public DTOOrganizationType MapOrganizationTypeList(dynamic item)
+    /// <returns>OrganizationTypeResponse</returns>
+    public OrganizationTypeResponse MapOrganizationTypeList(dynamic item)
     {
         return OrganizationTypeMapper.MapListFromResult(item);
     }
 
     /// <summary>
-    /// Mapea un tipo de organización desde un resultado dinámico a un DTOOrganizationType completo
+    /// Mapea un tipo de organización desde un resultado dinámico a un OrganizationTypeResponse completo
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOOrganizationType</returns>
-    public DTOOrganizationType MapOrganizationType(dynamic item)
+    /// <returns>OrganizationTypeResponse</returns>
+    public OrganizationTypeResponse MapOrganizationType(dynamic item)
     {
         return OrganizationTypeMapper.MapFromResult(item);
     }
@@ -514,8 +514,8 @@ public class MappingService
     /// Mapea una lista de tipos de organización desde resultados dinámicos
     /// </summary>
     /// <param name="items">Resultados dinámicos</param>
-    /// <returns>Lista de DTOOrganizationType</returns>
-    public List<DTOOrganizationType> MapOrganizationTypes(IEnumerable<dynamic> items)
+    /// <returns>Lista de OrganizationTypeResponse</returns>
+    public List<OrganizationTypeResponse> MapOrganizationTypes(IEnumerable<dynamic> items)
     {
         return items.Select(MapOrganizationType).ToList();
     }
@@ -958,16 +958,18 @@ public class MappingService
     /// <param name="id">ID del tipo</param>
     /// <param name="name">Nombre del tipo</param>
     /// <param name="nameEN">Nombre en inglés del tipo</param>
-    /// <returns>DTOOrganizationType o null</returns>
-    public DTOOrganizationType? MapOrganizationType(int? id, string? name, string? nameEN = null)
+    /// <param name="requiresCenterType">Si requiere tipo de centro</param>
+    /// <returns>OrganizationTypeResponse o null</returns>
+    public OrganizationTypeResponse? MapOrganizationType(int? id, string? name, string? nameEN = null, bool? requiresCenterType = null)
     {
         if (id == null) return null;
 
-        return new DTOOrganizationType
+        return new OrganizationTypeResponse
         {
             Id = id.Value,
             Name = name ?? string.Empty,
-            NameEN = nameEN ?? string.Empty
+            NameEN = nameEN ?? string.Empty,
+            RequiresCenterType = requiresCenterType ?? false
         };
     }
 

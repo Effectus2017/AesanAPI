@@ -51,9 +51,6 @@ public class AgencyRequest
     // ------------------------------------------------------------
     // Para Agencia Inscripción (REGISTRO)
     // ------------------------------------------------------------
-
-    // Service Time
-    public DateTime ServiceTime { get; set; } = DateTime.MinValue;
     // ¿Es una organización sin fines de lucro?
     // Is it a non-profit organization?
     // Si (1) y No (2)
@@ -70,7 +67,7 @@ public class AgencyRequest
     // Have you been denied or disqualified from state funds in the last seven years?
     // Si (1) y No (2)
     public bool StateFundsDenied { get; set; } = false;
-    // ¿Razón por la cuál fue descalificado o denegado de fondos estatales?
+    // ¿Razón por la cual fue descalificado o denegado de fondos estatales?
     // Reason why the sponsor was disqualified or denied state funds?
     // Se activa cuando StateFundsDenied = true
     public string? StateFundsDeniedReason { get; set; }
@@ -78,18 +75,10 @@ public class AgencyRequest
     // Have you been denied or disqualified from federal funds in the last seven years?
     // Si (1) y No (2)
     public bool FederalFundsDenied { get; set; } = false;
-    // ¿Razón por la cuál fue descalificado o denegado de fondos federales?
+    // ¿Razón por la cual fue descalificado o denegado de fondos federales?
     // Reason why the sponsor was disqualified or denied federal funds?
     // Se activa cuando FederalFundsDenied = true
     public string? FederalFundsDeniedReason { get; set; }
-    // ¿El Auspiciador ofrece programas atléticos organizados que participan en deportes competitivos interestelares o a nivel comunitario?
-    // Does the Sponsor offer any organized athletic programs engaged in interscholastic or community level competitive sports?
-    // Si (1) y No (2)
-    public bool OrganizedAthleticPrograms { get; set; } = false;
-    // ¿Está interesado en participar en el servicio de merienda y cena en riesgo?
-    // Is the Sponsor interested in participating in the at-risk snack and dinner service?
-    // Si (1) y No (2)
-    public bool AtRiskService { get; set; } = false;
     // ¿En qué estatus se encuentra su Exención Contributiva?
     // In what status is your Tax Exemption?
     // En Proceso (3), Otorgado (4), Denegado (5)

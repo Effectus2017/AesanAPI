@@ -35,24 +35,14 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
 
-            var result = await connection.QueryAsync<DTOSiteStaff>(
-                "100_GetStaffBySite",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await connection.QueryAsync<DTOSiteStaff>("100_GetStaffBySite", parameters, commandType: CommandType.StoredProcedure);
 
             _logger.LogInformation($"Se encontraron {result.Count()} empleados asignados al sitio {siteId}");
             return result;
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener empleados por sitio", new Dictionary<string, string>
-            {
-                { "SiteId", siteId.ToString() },
-                { "ErrorType", ex.GetType().Name },
-                { "ErrorMessage", ex.Message }
-            });
-            throw;
+            throw new Exception($"Error al obtener empleados por sitio: {ex.Message}", ex);
         }
     }
 
@@ -74,24 +64,15 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", staffId, DbType.Int32);
 
-            var result = await connection.QueryAsync<DTOSiteStaff>(
-                "100_GetSitesByStaff",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var result = await connection.QueryAsync<DTOSiteStaff>("100_GetSitesByStaff", parameters, commandType: CommandType.StoredProcedure);
 
             _logger.LogInformation($"Se encontraron {result.Count()} sitios asignados al empleado {staffId}");
+
             return result;
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener sitios por empleado", new Dictionary<string, string>
-            {
-                { "StaffId", staffId.ToString() },
-                { "ErrorType", ex.GetType().Name },
-                { "ErrorMessage", ex.Message }
-            });
-            throw;
+            throw new Exception($"Error al obtener sitios por empleado: {ex.Message}", ex);
         }
     }
 

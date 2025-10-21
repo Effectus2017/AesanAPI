@@ -72,9 +72,6 @@ BEGIN
         ai.FederalFundsDeniedReason, -- Nuevo campo
         ai.StateFundsDenied,
         ai.StateFundsDeniedReason,
-        ai.OrganizedAthleticPrograms,
-        ai.AtRiskService,
-        ai.ServiceTime,
         ai.TaxExemptionStatusId,
         ai.TaxExemptionTypeId,
         ai.TypeOfEntityId,

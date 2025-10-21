@@ -13,7 +13,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
+    SELECT
         s.Id,
         s.Name,
         -- Nivel Educativo
@@ -73,7 +73,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
+    SELECT
         s.Id,
         s.Name,
         -- Nivel Educativo
@@ -124,8 +124,8 @@ BEGIN
 
     -- Validar que exista la relación CityRegion
     DECLARE @cityRegionId INT;
-    SELECT @cityRegionId = Id 
-    FROM CityRegion 
+    SELECT @cityRegionId = Id
+    FROM CityRegion
     WHERE CityId = @cityId AND RegionId = @regionId AND IsActive = 1;
 
     IF @cityRegionId IS NULL
@@ -134,7 +134,8 @@ BEGIN
         RETURN -1;
     END
 
-    INSERT INTO School (
+    INSERT INTO School
+        (
         Name,
         EducationLevelId,
         OperatingPeriodId,
@@ -144,17 +145,18 @@ BEGIN
         OrganizationTypeId,
         IsActive,
         CreatedAt
-    )
-    VALUES (
-        @name,
-        @educationLevelId,
-        @operatingPeriodId,
-        @address,
-        @cityRegionId,
-        @zipCode,
-        @organizationTypeId,
-        1,
-        GETDATE()
+        )
+    VALUES
+        (
+            @name,
+            @educationLevelId,
+            @operatingPeriodId,
+            @address,
+            @cityRegionId,
+            @zipCode,
+            @organizationTypeId,
+            1,
+            GETDATE()
     );
 
     SET @id = SCOPE_IDENTITY();
@@ -180,8 +182,8 @@ BEGIN
 
     -- Validar que exista la relación CityRegion
     DECLARE @cityRegionId INT;
-    SELECT @cityRegionId = Id 
-    FROM CityRegion 
+    SELECT @cityRegionId = Id
+    FROM CityRegion
     WHERE CityId = @cityId AND RegionId = @regionId AND IsActive = 1;
 
     IF @cityRegionId IS NULL

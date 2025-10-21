@@ -32,7 +32,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryFirstOrDefaultAsync<DTOOrganizationType>("100_GetOrganizationTypeById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryFirstOrDefaultAsync<OrganizationTypeResponse>("100_GetOrganizationTypeById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -82,7 +82,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(_mappingService.MapOrganizationTypeList).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapOrganizationType).ToList();
                         return data;
                     },
                     _logger,
@@ -127,6 +127,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             parameters.Add("@nameEN", organizationType.NameEN, DbType.String);
             parameters.Add("@isActive", organizationType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", organizationType.DisplayOrder, DbType.Int32);
+            parameters.Add("@requiresCenterType", organizationType.RequiresCenterType, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
             await db.ExecuteAsync("100_InsertOrganizationType", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
@@ -144,7 +145,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
     /// </summary>
     /// <param name="organizationType">El tipo de organización a actualizar.</param>
     /// <returns>True si la actualización es exitosa, false en caso contrario.</returns>
-    public async Task<bool> UpdateOrganizationType(DTOOrganizationType organizationType)
+    public async Task<bool> UpdateOrganizationType(OrganizationTypeResponse organizationType)
     {
         try
         {
@@ -155,6 +156,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             parameters.Add("@nameEN", organizationType.NameEN, DbType.String);
             parameters.Add("@isActive", organizationType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", organizationType.DisplayOrder, DbType.Int32);
+            parameters.Add("@requiresCenterType", organizationType.RequiresCenterType, DbType.Boolean);
             var affected = await db.ExecuteAsync("100_UpdateOrganizationType", parameters, commandType: CommandType.StoredProcedure);
             return affected > 0;
         }

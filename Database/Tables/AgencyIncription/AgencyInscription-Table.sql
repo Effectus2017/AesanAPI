@@ -17,20 +17,10 @@ CREATE TABLE AgencyInscription
     -- Does it accept state funds?
     -- Si (1) y No (2)
     StateFundsDenied bit NULL DEFAULT (0),
-    -- Si la agencia tiene programas de atletismo organizados
-    -- Does it have organized athletic programs?
-    -- Si (1) y No (2)
-    OrganizedAthleticPrograms bit NULL DEFAULT (0),
-    -- Si la agencia ofrece servicios a personas en riesgo
-    -- Does it offer services to at-risk individuals?
-    -- Si (1) y No (2)
-    AtRiskService bit NULL DEFAULT (0),
     -- Si la agencia tiene registro de educación básica
     -- Does it have a Basic Education Registry Certificate?
     -- Si (1) y No (2)
     BasicEducationRegistry bit NULL DEFAULT (0),
-    -- Si la agencia tiene servicio de tiempo
-    ServiceTime datetime NULL,
     -- Si la agencia fue rechazada, se guarda la justificación
     RejectionJustification nvarchar(max) NULL,
     -- Si la agencia fue rechazada, se guarda la justificación
@@ -78,10 +68,10 @@ CREATE TABLE AgencyInscription
     -- Are you interested in participating in extended hours? (Only for PACNA)
     -- Si (1) y No (2)
     ExtendedHours bit NULL DEFAULT (0),
-    -- ¿Qué razón por la cuál fue descalificado o denegado de fondos estatales?
+    -- ¿Qué razón por la cual fue descalificado o denegado de fondos estatales?
     -- What reason was the sponsor disqualified or denied state funds?
     StateFundsDeniedReason nvarchar(max) NULL,
-    -- ¿Qué razón por la cuál fue descalificado o denegado de fondos federales?
+    -- ¿Qué razón por la cual fue descalificado o denegado de fondos federales?
     -- What reason was the sponsor disqualified or denied federal funds?
     FederalFundsDeniedReason nvarchar(max) NULL,
 

@@ -11,7 +11,7 @@ CREATE TABLE OperatingPeriod
     UpdatedAt DATETIME NULL
 );
 
--- Tipo de Organización
+-- Tipo de OrganizaciÓn
 CREATE TABLE OrganizationType
 (
     Id INT PRIMARY KEY IDENTITY(1,1),

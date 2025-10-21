@@ -120,8 +120,6 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 FederalFundsDeniedReason = item.FederalFundsDeniedReason, // Nuevo mapeo
                 StateFundsDenied = item.StateFundsDenied,
                 StateFundsDeniedReason = item.StateFundsDeniedReason,
-                OrganizedAthleticPrograms = item.OrganizedAthleticPrograms,
-                AtRiskService = item.AtRiskService,
                 NationalYouthProgram = item.NationalYouthProgram,
                 IsDayCareHome = item.IsDayCareHome,
 
@@ -135,7 +133,6 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 PublicAllianceContractId = item.PublicAllianceContractId,
 
                 // Campos de fecha y texto
-                ServiceTime = item.ServiceTime,
                 RejectionJustification = item.RejectionJustification,
                 Comments = item.Comments,
                 AppointmentCoordinated = item.AppointmentCoordinated,
@@ -280,8 +277,6 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 item.NonProfit,
                 item.FederalFundsDenied,
                 item.StateFundsDenied,
-                item.OrganizedAthleticPrograms,
-                item.AtRiskService,
                 item.NationalYouthProgram,
                 item.IsDayCareHome,
                 item.BasicEducationRegistry,

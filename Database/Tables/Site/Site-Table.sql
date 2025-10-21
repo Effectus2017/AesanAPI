@@ -63,7 +63,6 @@ CREATE TABLE [dbo].[Site]
     [ServiceTime] [datetime] NULL,
     [OrganizedAthleticPrograms] [bit] NULL,
     [AtRiskService] [bit] NULL,
-    [IsMainSite] [bit] NULL,
     [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] [datetime] NULL,
     CONSTRAINT [PK_Site] PRIMARY KEY CLUSTERED ([Id] ASC)
@@ -81,7 +80,6 @@ CREATE INDEX [IX_Site_AgencyId] ON [Site]([AgencyId]);
 CREATE INDEX [IX_Site_CityId] ON [Site]([CityId]);
 CREATE INDEX [IX_Site_RegionId] ON [Site]([RegionId]);
 CREATE INDEX [IX_Site_IsActive] ON [Site]([IsActive]);
-CREATE INDEX [IX_Site_IsMainSite] ON [Site]([IsMainSite]);
 CREATE INDEX [IX_Site_SiteNumber] ON [Site]([SiteNumber]);
 CREATE INDEX [IX_Site_OrganizationTypeId] ON [Site]([OrganizationTypeId]);
 CREATE INDEX [IX_Site_CreatedAt] ON [Site]([CreatedAt]);
@@ -112,55 +110,3 @@ ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_SiteType] FOREIGN KEY([SiteTypeId]) R
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_Experience] FOREIGN KEY([ExperienceId]) REFERENCES [Experience]([Id]);
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_ReviewResult] FOREIGN KEY([ReviewResultId]) REFERENCES [ReviewResult]([Id]);
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_SiteLocation] FOREIGN KEY([SiteLocationId]) REFERENCES [OptionSelection]([Id]);
-
--- =============================================
--- Comentarios
--- =============================================
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'Tabla principal para almacenar información de sitios. Reemplaza la tabla School.', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site';
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'Identificador único del sitio', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site', 
-    @level2type = N'COLUMN', @level2name = N'Id';
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'ID de la agencia a la que pertenece el sitio', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site', 
-    @level2type = N'COLUMN', @level2name = N'AgencyId';
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'Nombre del sitio', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site', 
-    @level2type = N'COLUMN', @level2name = N'Name';
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'Número del sitio dentro de la agencia', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site', 
-    @level2type = N'COLUMN', @level2name = N'SiteNumber';
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'Indica si es el sitio principal de la agencia', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site', 
-    @level2type = N'COLUMN', @level2name = N'IsMainSite';
-
-EXEC sys.sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'Indica si el sitio está activo', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
-    @level1type = N'TABLE', @level1name = N'Site', 
-    @level2type = N'COLUMN', @level2name = N'IsActive';
