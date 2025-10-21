@@ -123,7 +123,12 @@ BEGIN
     SELECT DISTINCT
         p.Id,
         p.Name,
+        p.NameEN,
         p.Description,
+        p.DescriptionEN,
+        p.IsActive,
+        p.CreatedAt,
+        p.UpdatedAt,
         ap.AgencyId
     FROM Program p
         INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId AND ap.IsActive = 1

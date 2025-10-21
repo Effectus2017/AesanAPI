@@ -165,10 +165,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@take", take);
             param.Add("@skip", skip);
             param.Add("@name", name);
-            param.Add("@regionId", regionId);
-            param.Add("@cityId", cityId);
-            param.Add("@programId", programId);
-            param.Add("@statusId", statusId);
+            param.Add("@regionId", regionId == 0 ? null : regionId);
+            param.Add("@cityId", cityId == 0 ? null : cityId);
+            param.Add("@programId", programId == 0 ? null : programId);
+            param.Add("@statusId", statusId == 0 ? null : statusId);
             param.Add("@userId", userId);
             param.Add("@alls", alls);
             param.Add("@isPropietary", isPropietary);
