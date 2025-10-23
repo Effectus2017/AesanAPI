@@ -380,11 +380,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 //     await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups);
                 // }
 
-                // // Actualizar servicios de alimentación
-                // if (request.Services != null && request.Services.Count != 0)
-                // {
-                //     await UpdateSiteService(request.Id.Value, request.Services);
-                // }
+                // Actualizar servicios de alimentación
+                if (request.Services != null && request.Services.Count != 0)
+                {
+                    await UpdateSiteService(request.Id.Value, request.Services);
+                }
 
                 // // Actualizar información de Day Care Home solo si la agencia es Day Care Home
                 // if (request.DayCareHome != null && request.IsDayCareHome == true)
@@ -937,17 +937,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     {
         try
         {
-            // Primero obtener los servicios existentes
             using IDbConnection dbConnection = _context.CreateConnection();
 
-            // Usar estrategia "eliminar y recrear" para mantener consistencia
-            var deleteParameters = new DynamicParameters();
-            deleteParameters.Add("@siteId", siteId, DbType.Int32);
-            await dbConnection.ExecuteAsync("DELETE FROM SiteService WHERE SiteId = @siteId", deleteParameters);
-
-            // Ahora insertar los nuevos servicios
-            foreach (var service in services)
+            if (services.Count > 0)
             {
+                var service = services[0]; // Solo hay un servicio por sitio
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
@@ -981,9 +975,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@snackAtRisk", service.SnackAtRisk, DbType.Boolean);
                 parameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
                 parameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
-                parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, commandType: CommandType.StoredProcedure);
+                await dbConnection.ExecuteAsync("100_UpdateSiteService", parameters, commandType: CommandType.StoredProcedure);
             }
 
             return true;

@@ -174,11 +174,11 @@ public class SiteMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
-    /// Mapea un resultado dinámico a un DTOEducationLevel
+    /// Mapea un resultado dinámico a un EducationLevelResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOEducationLevel</returns>
-    public static DTOEducationLevel MapEducationLevelFromResult(dynamic item)
+    /// <returns>EducationLevelResponse</returns>
+    public static EducationLevelResponse MapEducationLevelFromResult(dynamic item)
     {
         try
         {
@@ -187,11 +187,11 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 return null;
             }
 
-            return new DTOEducationLevel
+            return new EducationLevelResponse
             {
                 Id = item.Id,
-                Name = item.Name ?? string.Empty,
-                NameEN = item.NameEN ?? string.Empty
+                Name = item.EducationLevelName ?? string.Empty,
+                NameEN = item.EducationLevelNameEN ?? string.Empty
             };
         }
         catch (Exception)

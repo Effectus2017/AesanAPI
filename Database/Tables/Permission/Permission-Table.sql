@@ -22,21 +22,8 @@ CREATE TABLE UserPermission
     CONSTRAINT PK_UserPermission PRIMARY KEY (UserId, PermissionId)
 );
 
--- Tabla para listar los permisos que se pueden asignar al usuario al seleccionar un rol
--- 2.0.0 - Actualizada para usar PermissionId como VARCHAR(36)
-CREATE TABLE RolePermission
-(
-    RoleId NVARCHAR(450) NOT NULL,
-    PermissionId VARCHAR(36) NOT NULL,
-    CONSTRAINT FK_RolePermission_Role FOREIGN KEY (RoleId) REFERENCES AspNetRoles(Id),
-    CONSTRAINT FK_RolePermission_Permission FOREIGN KEY (PermissionId) REFERENCES Permission(Id),
-    CONSTRAINT PK_RolePermission PRIMARY KEY (RoleId, PermissionId)
-);
-
 -- Índices para mejorar rendimiento
 CREATE INDEX IX_Permission_ValueKey ON Permission(ValueKey);
 CREATE INDEX IX_Permission_IsActive ON Permission(IsActive);
 CREATE INDEX IX_UserPermission_UserId ON UserPermission(UserId);
 CREATE INDEX IX_UserPermission_PermissionId ON UserPermission(PermissionId);
-CREATE INDEX IX_RolePermission_RoleId ON RolePermission(RoleId);
-CREATE INDEX IX_RolePermission_PermissionId ON RolePermission(PermissionId);

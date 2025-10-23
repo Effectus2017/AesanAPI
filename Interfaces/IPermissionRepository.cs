@@ -8,13 +8,10 @@ public interface IPermissionRepository
     Task<dynamic> GetPermissionById(string id);
     Task<dynamic> GetAllPermissions(int take, int skip, string valueKey, string name, bool alls);
     Task<dynamic> GetUserPermissions(string userId);
-    Task<dynamic> GetRolePermissions(string roleId);
     Task<bool> InsertPermission(DTOPermission permission);
     Task<bool> UpdatePermission(DTOPermission permission);
     Task<bool> DeletePermission(string id);
-    // Métodos para asignación de permisos a usuarios y roles
+    // Métodos para asignación de permisos a usuarios
     Task<bool> AssignPermissionToUser(string userId, string permissionId);
     Task<bool> RemovePermissionFromUser(string userId, string permissionId);
-    Task<bool> AssignPermissionToRole(string roleId, string permissionId);
-    Task<bool> RemovePermissionFromRole(string roleId, string permissionId);
 }

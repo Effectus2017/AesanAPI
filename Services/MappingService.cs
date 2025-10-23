@@ -283,11 +283,11 @@ public class MappingService
     }
 
     /// <summary>
-    /// Mapea un nivel educativo desde un resultado dinámico a un DTOEducationLevel
+    /// Mapea un nivel educativo desde un resultado dinámico a un EducationLevelResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOEducationLevel</returns>
-    public DTOEducationLevel MapEducationLevel(dynamic item)
+    /// <returns>EducationLevelResponse</returns>
+    public EducationLevelResponse MapEducationLevel(dynamic item)
     {
         return SiteMapper.MapEducationLevelFromResult(item);
     }

@@ -31,7 +31,7 @@ BEGIN
         atype.Name AS AreaTypeName, atype.NameEN AS AreaTypeNameEN, s.LocationTypeId,
         ltype.Name AS LocationTypeName, ltype.NameEN AS LocationTypeNameEN, s.HasWarehouse,
         s.HasDiningRoom, s.AdministratorAuthorizedName, s.SitePhone, s.Extension, s.MobilePhone, s.CommunityId, s.WalkersId,
-        s.SiteTypeId, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
+        s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
         s.OrganizedAthleticPrograms, s.AtRiskService, s.IsMainSite, a.AgencyCode,
         CASE 
@@ -57,6 +57,7 @@ BEGIN
         LEFT JOIN OperatingPolicy opol ON s.OperatingPolicyId = opol.Id
         LEFT JOIN AreaType atype ON s.AreaTypeId = atype.Id
         LEFT JOIN AreaType ltype ON s.LocationTypeId = ltype.Id
+        LEFT JOIN OptionSelection sl ON s.SiteLocationId = sl.Id
     WHERE s.Id = @id;
 
     -- Obtener niveles educativos del sitio

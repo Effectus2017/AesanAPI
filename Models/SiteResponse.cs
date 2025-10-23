@@ -91,7 +91,7 @@ public class SiteResponse
     public SchoolResponse? School { get; set; }
 
     // Niveles educativos
-    public List<DTOEducationLevel>? EducationLevels { get; set; }
+    public List<EducationLevelResponse>? EducationLevels { get; set; }
 
     // Servicios de alimentación
     public List<SiteServiceResponse>? Services { get; set; }

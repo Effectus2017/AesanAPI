@@ -154,4 +154,4 @@ BEGIN
 END;
 GO
 
--- EXEC [112_GetAgencyByIdAndUserId] 1, 'user-id-here';
+--EXEC [112_GetAgencyByIdAndUserId] @agencyId = 1, @userId = '1db1104b-6c97-4f64-93e1-929296dea7bf';

@@ -167,45 +167,6 @@ public class PermissionController(IPermissionRepository permissionRepository, IL
 
 
     /// <summary>
-    /// Obtiene los permisos de un rol
-    /// </summary>
-    /// <param name="queryParameters">Contains RoleId</param>
-    /// <returns>List of permissions</returns>
-    [HttpGet("get-role-permissions")]
-    [SwaggerOperation(Summary = "Obtiene los permisos de un rol", Description = "Devuelve los permisos asignados a un rol.")]
-    public async Task<ActionResult> GetRolePermissions([FromQuery] QueryParameters queryParameters)
-    {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                if (string.IsNullOrEmpty(queryParameters.RoleId) || queryParameters.RoleId == "0" || queryParameters.RoleId == null)
-                {
-                    return Ok(new List<DTOPermission>());
-                }
-
-                _logger.LogInformation("Obteniendo permisos del rol: {RoleId}", queryParameters.RoleId);
-
-                var result = await _permissionRepository.GetRolePermissions(queryParameters.RoleId);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron permisos");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener permisos del rol {RoleId}", queryParameters.RoleId);
-            return StatusCode(500, "Error interno del servidor al obtener permisos del rol");
-        }
-    }
-
-    /// <summary>
     /// Creates a new permission
     /// </summary>
     /// <param name="permission">The permission data to create</param>
