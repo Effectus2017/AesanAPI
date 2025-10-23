@@ -281,6 +281,74 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
     }
 
+    /// <summary>
+    /// Asigna un permiso a un rol
+    /// </summary>
+    /// <param name="roleId">ID del rol</param>
+    /// <param name="permissionId">ID del permiso a asignar</param>
+    /// <returns>True si la asignación fue exitosa, False en caso contrario</returns>
+    public async Task<bool> AssignPermissionToRole(string roleId, string permissionId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@roleId", roleId, DbType.String, size: 450);
+            parameters.Add("@permissionId", permissionId, DbType.String, size: 36);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await db.ExecuteAsync("100_AssignPermissionToRole", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(permissionId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al asignar permiso al rol");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Remueve un permiso de un rol
+    /// </summary>
+    /// <param name="roleId">ID del rol</param>
+    /// <param name="permissionId">ID del permiso a remover</param>
+    /// <returns>True si la remoción fue exitosa, False en caso contrario</returns>
+    public async Task<bool> RemovePermissionFromRole(string roleId, string permissionId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@roleId", roleId, DbType.String, size: 450);
+            parameters.Add("@permissionId", permissionId, DbType.String, size: 36);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await db.ExecuteAsync("100_RemovePermissionFromRole", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+
+            if (rowsAffected > 0)
+            {
+                InvalidateCache(permissionId);
+            }
+
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al remover permiso del rol");
+            throw;
+        }
+    }
+
     private void InvalidateCache(string? permissionId = null)
     {
         if (!string.IsNullOrEmpty(permissionId))

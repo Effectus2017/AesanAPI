@@ -14,4 +14,7 @@ public interface IPermissionRepository
     // Métodos para asignación de permisos a usuarios
     Task<bool> AssignPermissionToUser(string userId, string permissionId);
     Task<bool> RemovePermissionFromUser(string userId, string permissionId);
+    // Métodos para asignación de permisos a roles
+    Task<bool> AssignPermissionToRole(string roleId, string permissionId);
+    Task<bool> RemovePermissionFromRole(string roleId, string permissionId);
 }
