@@ -103,6 +103,13 @@ public class SiteRequest
     public bool? OrganizedAthleticPrograms { get; set; } = false;
 
     /// <summary>
+    /// De poseer un contrato Público Alianza, especifique su modalidad
+    /// If you have a Public Alliance contract, please specify the type of contract
+    /// Socio-Económico (17), Híbrido (18)
+    /// </summary>
+    public int? PublicAllianceContractId { get; set; }
+
+    /// <summary>
     /// ¿El sitio está interesado en participar en el servicio de merienda y cena en riesgo?
     /// Is the site interested in participating in the at-risk snack and dinner service?
     /// Solo para programa PACNA

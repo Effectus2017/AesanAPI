@@ -206,6 +206,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@publicAllianceContractId", request.PublicAllianceContractId, DbType.Int32, ParameterDirection.Input);
 
             // Estado de actividad
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
@@ -357,6 +358,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@publicAllianceContractId", request.PublicAllianceContractId, DbType.Int32, ParameterDirection.Input);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 

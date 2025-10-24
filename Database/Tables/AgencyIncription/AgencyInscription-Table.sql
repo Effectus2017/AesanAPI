@@ -45,7 +45,7 @@ CREATE TABLE AgencyInscription
     -- Type of Applicant
     -- Laico (16), Base de fe (17)
     TypeOfApplicantId int NULL,
-    -- ¿De poseer un contrato Público Alianza especifique su modalidad?
+    -- De poseer un contrato Público Alianza, especifique su modalidad
     -- If you have a Public Alliance contract, please specify the type of contract
     -- Socio-Económico (17), Híbrido (18)
     PublicAllianceContractId int NULL,

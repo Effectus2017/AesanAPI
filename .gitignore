@@ -232,3 +232,7 @@ bump-version.sh
 update-version.sh
 *.DS_Store
 Database/tools/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/launch-alternative.json
+.omnisharp/omnisharp.json

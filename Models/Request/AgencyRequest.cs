@@ -95,7 +95,7 @@ public class AgencyRequest
     // Type of Applicant
     // Laico (15), Base de fe (16)
     public int TypeOfApplicantId { get; set; } = 0;
-    // ¿De poseer un contrato Público Alianza especifique su modalidad?
+    // De poseer un contrato Público Alianza, especifique su modalidad
     // If you have a Public Alliance contract, please specify the type of contract
     // Socio-Económico (17), Híbrido (18)
     public int PublicAllianceContractId { get; set; } = 0;

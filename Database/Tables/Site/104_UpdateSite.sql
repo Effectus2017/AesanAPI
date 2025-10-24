@@ -61,7 +61,8 @@ CREATE OR ALTER PROCEDURE [dbo].[104_UpdateSite]
     @generalEnrollment INT = NULL,
     @serviceTime DATETIME = NULL,
     @organizedAthleticPrograms BIT = NULL,
-    @atRiskService BIT = NULL
+    @atRiskService BIT = NULL,
+    @publicAllianceContractId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -125,6 +126,7 @@ BEGIN
             ServiceTime = ISNULL(@serviceTime, ServiceTime),
             OrganizedAthleticPrograms = ISNULL(@organizedAthleticPrograms, OrganizedAthleticPrograms),
             AtRiskService = ISNULL(@atRiskService, AtRiskService),
+            PublicAllianceContractId = ISNULL(@publicAllianceContractId, PublicAllianceContractId),
             UpdatedAt = GETDATE()
         WHERE Id = @id;
 

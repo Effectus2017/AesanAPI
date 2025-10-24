@@ -77,6 +77,10 @@ public class SiteResponse
     public DTOAreaType? AreaType { get; set; }
     public DTOAreaType? LocationType { get; set; }
     public DTOAgency? Agency { get; set; }
+    
+    // Contrato de Alianza Pública
+    public int? PublicAllianceContractId { get; set; }
+    public DTOOptionSelection? PublicAllianceContract { get; set; }
 
     public bool IsActive { get; set; }
     public string? InactiveJustification { get; set; }
