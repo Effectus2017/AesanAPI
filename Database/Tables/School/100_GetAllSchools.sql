@@ -26,7 +26,10 @@ BEGIN
         s.[CreatedAt],
         s.[UpdatedAt],
         a.[Name] AS AgencyName,
-        a.[AgencyCode] AS AgencyCode
+        a.[AgencyCode] AS AgencyCode,
+        (SELECT COUNT(*)
+        FROM SchoolSite ss
+        WHERE ss.SchoolId = s.Id AND ss.IsActive = 1) AS SitesCount
     FROM [School] s
         INNER JOIN [Agency] a ON s.[AgencyId] = a.[Id]
     WHERE s.[IsActive] = 1

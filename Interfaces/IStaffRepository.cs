@@ -30,15 +30,9 @@ public interface IStaffRepository
     /// Inserta un nuevo miembro del staff en la base de datos
     /// </summary>
     /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
+    /// <param name="staffId">ID del staff creado (solo si la inserción fue exitosa)</param>
     /// <returns>True si se insertó correctamente</returns>
-    Task<bool> InsertStaff(StaffRequest staffRequest);
-
-    /// <summary>
-    /// Inserta un nuevo miembro del staff en la base de datos y devuelve el ID creado
-    /// </summary>
-    /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
-    /// <returns>El ID del staff creado, o 0 si falló</returns>
-    Task<int> InsertStaffAndGetId(StaffRequest staffRequest);
+    Task<(bool success, int staffId)> InsertStaff(StaffRequest staffRequest);
 
     /// <summary>
     /// Actualiza un miembro del staff existente en la base de datos

@@ -120,8 +120,9 @@ public class StaffRepository(
     /// Inserta un nuevo miembro del staff en la base de datos
     /// </summary>
     /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
+    /// <param name="staffId">ID del staff creado (solo si la inserción fue exitosa)</param>
     /// <returns>True si se insertó correctamente</returns>
-    public async Task<bool> InsertStaff(StaffRequest staffRequest)
+    public async Task<(bool success, int staffId)> InsertStaff(StaffRequest staffRequest)
     {
         try
         {
@@ -158,12 +159,10 @@ public class StaffRepository(
 
             await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
 
-            var staffId = parameters.Get<int>("@id");
+            int staffId = parameters.Get<int>("@id");
 
             if (staffId > 0)
             {
-                InvalidateCache(staffId);
-
                 // Si se proporcionó una sitio, crear la asociación
                 if (staffRequest.SiteId.HasValue && staffRequest.SiteId.Value > 0)
                 {
@@ -191,7 +190,7 @@ public class StaffRepository(
                 }
             }
 
-            return staffId > 0;
+            return (staffId > 0, staffId);
         }
         catch (Exception ex)
         {
@@ -200,86 +199,6 @@ public class StaffRepository(
         }
     }
 
-    /// <summary>
-    /// Inserta un nuevo miembro del staff en la base de datos y devuelve el ID creado
-    /// </summary>
-    /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
-    /// <returns>El ID del staff creado, o 0 si falló</returns>
-    public async Task<int> InsertStaffAndGetId(StaffRequest staffRequest)
-    {
-        try
-        {
-            _logger.LogInformation("Insertando nuevo miembro del staff y obteniendo ID");
-
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@middleName", staffRequest.MiddleName ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
-            // Fechas seguras para SQL Server
-            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@phoneNumber", staffRequest.PhoneNumber ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@agencyId", staffRequest.AgencyId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@userId", staffRequest.UserId, DbType.String, ParameterDirection.Input);
-            parameters.Add("@reviewResultId", staffRequest.ReviewResultId, DbType.Int32, ParameterDirection.Input);
-            // Fecha de revisión segura
-            parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String, ParameterDirection.Input);
-            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-            await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
-
-            var staffId = parameters.Get<int>("@id");
-
-            InvalidateCache(staffId);
-
-            // Si se proporcionó una sitio, crear la asociación
-            if (staffId > 0 && staffRequest.SiteId.HasValue && staffRequest.SiteId.Value > 0)
-            {
-                _logger.LogInformation("Asignando staff {StaffId} a la sitio {SiteId}", staffId, staffRequest.SiteId.Value);
-
-                var siteStaffRequest = new SiteStaffRequest
-                {
-                    SiteId = staffRequest.SiteId.Value,
-                    StaffId = staffId,
-                    AssignmentTypeId = staffRequest.AssignmentTypeId ?? 1,
-                    IsPrimary = staffRequest.IsPrimary,
-                    Comments = $"Asignación creada automáticamente al crear el staff"
-                };
-
-                try
-                {
-                    await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
-                    _logger.LogInformation("Staff {StaffId} asignado exitosamente a la sitio {SiteId}", staffId, staffRequest.SiteId.Value);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error al asignar staff {StaffId} a la sitio {SiteId}, pero el staff fue creado exitosamente", staffId, staffRequest.SiteId.Value);
-                    // No lanzar excepción aquí porque el staff ya fue creado exitosamente
-                }
-            }
-
-            return staffId;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al insertar el miembro del staff");
-            throw new Exception(ex.Message);
-        }
-    }
 
 
 

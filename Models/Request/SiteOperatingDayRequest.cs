@@ -9,6 +9,11 @@ namespace Api.Models.Request;
 public class SiteOperatingDayRequest
 {
     /// <summary>
+    /// ID del día de funcionamiento (opcional, solo para actualizaciones)
+    /// </summary>
+    public int? Id { get; set; }
+
+    /// <summary>
     /// ID del sitio al que pertenece este día de funcionamiento
     /// </summary>
     [Required(ErrorMessage = "El ID del sitio es requerido")]

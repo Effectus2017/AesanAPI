@@ -16,6 +16,7 @@ public class SchoolResponse
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public int SitesCount { get; set; }
 
     // Objetos relacionados
     public DTOAgency? Agency { get; set; }

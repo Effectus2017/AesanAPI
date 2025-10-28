@@ -108,12 +108,12 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
                     return BadRequest("El miembro del staff es requerido");
                 }
 
-                var result = await _unitOfWork.StaffRepository.InsertStaff(request);
+                var (success, staffId) = await _unitOfWork.StaffRepository.InsertStaff(request);
 
-                if (result)
+                if (success)
                 {
-                    _logger.LogInformation("Miembro del staff insertado con ID: {Id}", request.Id);
-                    return Ok(result);
+                    _logger.LogInformation("Miembro del staff insertado con ID: {Id}", staffId);
+                    return Ok(new { success = true, staffId = staffId });
                 }
 
                 _logger.LogWarning("No se pudo insertar el miembro del staff");

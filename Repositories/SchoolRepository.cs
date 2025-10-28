@@ -249,6 +249,9 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var schools = result.Read<dynamic>().Select(_mappingService.MapSchool).ToList();
             var count = result.ReadFirstOrDefault<int>();
 
+            // Debug: verificar que SitesCount se mapea correctamente
+            _logger.LogInformation("Total schools retrieved: {Count}", schools.Count);
+
             return new { data = schools, count };
         }
         catch (Exception ex)

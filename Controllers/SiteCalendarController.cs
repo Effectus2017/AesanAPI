@@ -89,7 +89,21 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
                 return NotFound($"Sitio con ID {request.SiteId} no encontrado");
             }
 
-            var result = await _siteCalendarRepository.ToggleOperatingDay(request);
+            bool result;
+
+            // Si tiene ID, actualizar el registro existente
+            if (request.Id.HasValue && request.Id.Value > 0)
+            {
+                _logger.LogInformation("Actualizando día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
+                    request.Id.Value, request.SiteId, request.OperatingDate.Date);
+                result = await _siteCalendarRepository.UpdateOperatingDay(request.Id.Value, request);
+            }
+            else
+            {
+                _logger.LogInformation("Alternando día de funcionamiento para sitio {SiteId} en fecha {Date}",
+                    request.SiteId, request.OperatingDate.Date);
+                result = await _siteCalendarRepository.ToggleOperatingDay(request);
+            }
 
             if (result)
             {
