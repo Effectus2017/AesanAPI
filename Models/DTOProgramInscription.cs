@@ -25,6 +25,7 @@ public class DTOProgramInscription
     public DTOOptionSelection? NeedsFederalRelayService { get; set; }
     public DTOOptionSelection? ShowEvidence { get; set; }
     public string? ShowEvidenceDescription { get; set; }
+    public DateTime? ServicesOfferedSince { get; set; }
     public decimal? SnackPercentage { get; set; }
     public decimal? ReducedSnackPercentage { get; set; }
     public DTOFederalFundingCertification? FederalFundingCertification { get; set; }

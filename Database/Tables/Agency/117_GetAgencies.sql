@@ -67,6 +67,7 @@ BEGIN
         -- Campos de inscripción actualizados
         ai.BasicEducationRegistry,
         ai.ExtendedHours,
+        ai.ServicesOfferedSince,
         ai.NonProfit,
         ai.FederalFundsDenied,
         ai.FederalFundsDeniedReason, -- Nuevo campo

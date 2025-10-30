@@ -138,6 +138,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 AppointmentCoordinated = item.AppointmentCoordinated,
                 AppointmentDate = item.AppointmentDate,
                 DeadlineToCompleteRegistration = item.DeadlineToCompleteRegistration,
+                ServicesOfferedSince = item.ServicesOfferedSince,
 
                 // Relaciones con OptionSelection (si están disponibles en el resultado)
                 TaxExemptionStatus = item.TaxExemptionStatusId != null ? new DTOOptionSelection
@@ -272,6 +273,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 AppointmentDate = item.ProgramAppointmentDate,
                 RejectionJustification = item.ProgramRejectionJustification ?? string.Empty,
                 item.DeadlineToCompleteRegistration,
+                item.ServicesOfferedSince,
 
                 // Campos de inscripción adicionales (para compatibilidad)
                 item.NonProfit,

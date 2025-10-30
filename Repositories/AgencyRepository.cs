@@ -355,6 +355,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.StateFundsDeniedReason,
                 agencyRequest.BasicEducationRegistry,
                 agencyRequest.ExtendedHours,
+                agencyRequest.ServicesOfferedSince,
                 agencyRequest.TaxExemptionStatusId,
                 agencyRequest.TaxExemptionTypeId,
                 agencyRequest.PublicAllianceContractId,
@@ -395,7 +396,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
     {
         try
         {
@@ -408,6 +409,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@stateFundsDeniedReason", stateFundsDeniedReason);
             parameters.Add("@basicEducationRegistry", basicEducationRegistry);
             parameters.Add("@extendedHours", extendedHours);
+            parameters.Add("@servicesOfferedSince", servicesOfferedSince);
             parameters.Add("@taxExemptionStatusId", taxExemptionStatusId);
             parameters.Add("@taxExemptionTypeId", taxExemptionTypeId);
             parameters.Add("@publicAllianceContractId", publicAllianceContractId);

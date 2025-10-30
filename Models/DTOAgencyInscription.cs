@@ -52,6 +52,11 @@ public class DTOAgencyInscription
     /// </summary>
     public bool? ExtendedHours { get; set; }
 
+    /// <summary>
+    /// ¿Desde cuándo su Entidad ofrece servicios? (Solo para programa PACNA)
+    /// </summary>
+    public DateTime? ServicesOfferedSince { get; set; }
+
 
     /// <summary>
     /// Justificación de rechazo de la agencia

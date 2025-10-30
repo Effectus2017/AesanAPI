@@ -44,6 +44,7 @@ BEGIN
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
         ai.IsDayCareHome,
+        ai.ServicesOfferedSince,
         ai.RejectionJustification,
         ai.AppointmentCoordinated,
         ai.AppointmentDate,

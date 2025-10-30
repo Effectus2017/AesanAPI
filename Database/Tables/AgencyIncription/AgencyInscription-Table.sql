@@ -68,6 +68,8 @@ CREATE TABLE AgencyInscription
     -- Are you interested in participating in extended hours? (Only for PACNA)
     -- Si (1) y No (2)
     ExtendedHours bit NULL DEFAULT (0),
+    -- ¿Desde cuándo su Entidad ofrece servicios? (Solo para PACNA)
+    ServicesOfferedSince datetime NULL,
     -- ¿Qué razón por la cual fue descalificado o denegado de fondos estatales?
     -- What reason was the sponsor disqualified or denied state funds?
     StateFundsDeniedReason nvarchar(max) NULL,
@@ -110,4 +112,12 @@ GO
 -- hacer un update para todos los registros de la tabla AgencyInscription y poner la fecha limite para completar la inscripción de los Sitios
 UPDATE AgencyInscription
 SET DeadlineToCompleteRegistration = DATEADD(DAY, 10, GETDATE());
+GO
+
+-- Agregar columna ServicesOfferedSince si no existe (idempotente)
+IF COL_LENGTH('AgencyInscription', 'ServicesOfferedSince') IS NULL
+BEGIN
+    ALTER TABLE AgencyInscription
+    ADD ServicesOfferedSince datetime NULL;
+END
 GO

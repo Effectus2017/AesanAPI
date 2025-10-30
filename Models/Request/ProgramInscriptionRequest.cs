@@ -25,6 +25,8 @@ public class ProgramInscriptionRequest
     public int NeedsFederalRelayServiceId { get; set; }
     public int ShowEvidenceId { get; set; }
     public string? ShowEvidenceDescription { get; set; }
+    // ¿Desde cuándo su Entidad ofrece servicios? (PACNA)
+    public DateTime? ServicesOfferedSince { get; set; }
     public decimal? SnackPercentage { get; set; }
     public decimal? ReducedSnackPercentage { get; set; }
     public int? FederalFundingCertificationId { get; set; }

@@ -10,6 +10,8 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @stateFundsDeniedReason nvarchar(max),
     @basicEducationRegistry bit,
     @extendedHours bit,
+    -- Nuevo: ¿Desde cuándo su Entidad ofrece servicios?
+    @servicesOfferedSince datetime = NULL,
     @taxExemptionStatusId int,
     @taxExemptionTypeId int,
     @publicAllianceContractId int,
@@ -26,7 +28,7 @@ BEGIN
         (
         AgencyId, NonProfit, FederalFundsDenied, FederalFundsDeniedReason, -- Nuevo campo
         StateFundsDenied, StateFundsDeniedReason,
-        BasicEducationRegistry, ExtendedHours,
+        BasicEducationRegistry, ExtendedHours, ServicesOfferedSince,
         TaxExemptionStatusId, TaxExemptionTypeId,
         PublicAllianceContractId, NationalYouthProgram, IsDayCareHome, DeadlineToCompleteRegistration
         )
@@ -34,7 +36,7 @@ BEGIN
         (
             @agencyId, @nonProfit, @federalFundsDenied, @federalFundsDeniedReason, -- Nuevo valor
             @stateFundsDenied, @stateFundsDeniedReason,
-            @basicEducationRegistry, @extendedHours,
+            @basicEducationRegistry, @extendedHours, @servicesOfferedSince,
             @taxExemptionStatusId, @taxExemptionTypeId,
             @publicAllianceContractId, @nationalYouthProgram, @isDayCareHome, @deadlineToCompleteRegistration
         );

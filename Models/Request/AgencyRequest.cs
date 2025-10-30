@@ -63,6 +63,8 @@ public class AgencyRequest
     // Are you interested in participating in extended hours? (Only for PACNA)
     // Si (1) y No (2)
     public bool ExtendedHours { get; set; } = false;
+    // ¿Desde cuándo su Entidad ofrece servicios? (Solo para PACNA)
+    public DateTime? ServicesOfferedSince { get; set; }
     // ¿Ha sido denegado o descalificado de fondos estatales en los últimos siete años?
     // Have you been denied or disqualified from state funds in the last seven years?
     // Si (1) y No (2)
