@@ -36,6 +36,5 @@ public class StaffRequest
 
     // Campos de asignación de sitio (Site Assignment)
     public int? SiteId { get; set; } = null;
-    public int? AssignmentTypeId { get; set; } = 1; // Por defecto: Principal
     public bool IsPrimary { get; set; } = false;
 }

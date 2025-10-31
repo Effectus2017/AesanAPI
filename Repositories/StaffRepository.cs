@@ -172,7 +172,6 @@ public class StaffRepository(
                     {
                         SiteId = staffRequest.SiteId.Value,
                         StaffId = staffId,
-                        AssignmentTypeId = staffRequest.AssignmentTypeId ?? 1,
                         IsPrimary = staffRequest.IsPrimary,
                         Comments = $"Asignación creada automáticamente al crear el staff"
                     };
@@ -269,7 +268,7 @@ public class StaffRepository(
                 InvalidateCache(staffRequest.Id.Value);
 
                 // Manejar la asignación de sitio
-                await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SiteId, staffRequest.AssignmentTypeId, staffRequest.IsPrimary);
+                await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SiteId, staffRequest.IsPrimary);
 
                 return true;
             }
@@ -548,9 +547,8 @@ public class StaffRepository(
     /// </summary>
     /// <param name="staffId">ID del staff</param>
     /// <param name="newSiteId">Nuevo ID de sitio (null si no hay sitio)</param>
-    /// <param name="assignmentTypeId">Tipo de asignación</param>
     /// <param name="isPrimary">Si es asignación principal</param>
-    private async Task HandleSchoolAssignmentUpdate(int staffId, int? newSiteId, int? assignmentTypeId, bool isPrimary)
+    private async Task HandleSchoolAssignmentUpdate(int staffId, int? newSiteId, bool isPrimary)
     {
         try
         {
@@ -574,7 +572,6 @@ public class StaffRepository(
                 {
                     SiteId = newSiteId.Value,
                     StaffId = staffId,
-                    AssignmentTypeId = assignmentTypeId ?? 1,
                     IsPrimary = isPrimary,
                     Comments = $"Asignación actualizada automáticamente"
                 };
@@ -607,7 +604,6 @@ public class StaffRepository(
                 {
                     SiteId = newSiteId.Value,
                     StaffId = staffId,
-                    AssignmentTypeId = assignmentTypeId ?? 1,
                     IsPrimary = isPrimary,
                     Comments = $"Asignación actualizada automáticamente"
                 };
@@ -617,20 +613,18 @@ public class StaffRepository(
                 return;
             }
 
-            // Caso 5: Misma sitio pero cambió tipo o isPrimary → Actualizar asignación existente
+            // Caso 5: Misma sitio pero cambió isPrimary → Actualizar asignación existente
             if (currentAssignment != null && newSiteId.HasValue && newSiteId.Value > 0 && currentAssignment.SiteId == newSiteId.Value)
             {
                 // Verificar si cambió algo
-                bool assignmentTypeChanged = assignmentTypeId.HasValue && currentAssignment.AssignmentTypeId != assignmentTypeId.Value;
                 bool isPrimaryChanged = currentAssignment.IsPrimary != isPrimary;
 
-                if (assignmentTypeChanged || isPrimaryChanged)
+                if (isPrimaryChanged)
                 {
                     _logger.LogInformation("Actualizando asignación existente: Staff {StaffId} en Sitio {SiteId}", staffId, newSiteId.Value);
 
                     var updateRequest = new UpdateSiteStaffRequest
                     {
-                        AssignmentTypeId = assignmentTypeId ?? currentAssignment.AssignmentTypeId,
                         IsPrimary = isPrimary,
                         Comments = $"Asignación actualizada automáticamente"
                     };

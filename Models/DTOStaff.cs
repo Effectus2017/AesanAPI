@@ -45,7 +45,6 @@ public class DTOStaff
 
     // Datos de la relación SiteStaff
     public int? SiteId { get; set; }
-    public int? AssignmentTypeId { get; set; }
     public bool? IsPrimary { get; set; }
 
     // Relaciones anidadas (para GetById)
@@ -56,5 +55,4 @@ public class DTOStaff
     public DTOStaffType? StaffType { get; set; }
     public DTOStaffClassification? StaffClassification { get; set; }
     public SiteListItemResponse? Site { get; set; }
-    public DTOOptionSelection? AssignmentType { get; set; }
 }

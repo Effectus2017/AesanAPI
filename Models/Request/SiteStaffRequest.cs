@@ -7,7 +7,6 @@ public class SiteStaffRequest
 {
     public int SiteId { get; set; }
     public int StaffId { get; set; }
-    public int AssignmentTypeId { get; set; }
     public bool IsPrimary { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
@@ -19,7 +18,6 @@ public class SiteStaffRequest
 /// </summary>
 public class UpdateSiteStaffRequest
 {
-    public int AssignmentTypeId { get; set; }
     public bool IsPrimary { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }

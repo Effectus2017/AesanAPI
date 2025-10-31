@@ -68,19 +68,16 @@ VALUES
     ('Anual', 'Annual', 'incomeFrequency', 0, 1, 100),
     ('Estatal', 'State', 'taxExemptionType', 0, 1, 110),
     ('Federal', 'Federal', 'taxExemptionType', 0, 1, 120),
-    ('Gobierno', 'Government', 'typeOfEntity', 0, 1, 130),
+    ('Federal', 'Federal', 'typeOfEntity', 0, 1, 130),
+    ('Público', 'Public', 'typeOfEntity', 0, 1, 135),
     ('Privado', 'Private', 'typeOfEntity', 0, 1, 140),
     ('Laico', 'Laic', 'typeOfApplicant', 0, 1, 150),
     ('Base de fe', 'Faith-based', 'typeOfApplicant', 0, 1, 160),
-    ('Socio-Económico', 'Socio-Economic', 'typeOfEntity', 0, 1, 170),
-    ('Híbrido', 'Hybrid', 'typeOfEntity', 0, 1, 180);
-
-
-INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
-VALUES
     ('Socio-Económico', 'Socio-Economic', 'publicAllianceContract', 0, 1, 170),
     ('Híbrido', 'Hybrid', 'publicAllianceContract', 0, 1, 180);
+
+
+-- (las opciones de 'publicAllianceContract' fueron consolidadas arriba)
 
 -- Tipos de Institución Infantil Residencial (RCCI) = Pernoctan o No Pernoctan=Requerido
 INSERT INTO OptionSelection

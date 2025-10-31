@@ -1,5 +1,5 @@
-using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 
 namespace Api.Interfaces;
 
@@ -14,14 +14,14 @@ public interface ISiteStaffRepository
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
     /// <returns>Lista de empleados asignados al sitio</returns>
-    Task<IEnumerable<DTOSiteStaff>> GetStaffBySite(int siteId);
+    Task<IEnumerable<SiteStaffResponse>> GetStaffBySite(int siteId);
 
     /// <summary>
     /// Obtiene todos los sitios asignados a un empleado específico
     /// </summary>
     /// <param name="staffId">ID del empleado</param>
     /// <returns>Lista de sitios asignados al empleado</returns>
-    Task<IEnumerable<DTOSiteStaff>> GetSitesByStaff(int staffId);
+    Task<IEnumerable<SiteStaffResponse>> GetSitesByStaff(int staffId);
 
     /// <summary>
     /// Asigna un empleado a un sitio
@@ -51,5 +51,5 @@ public interface ISiteStaffRepository
     /// </summary>
     /// <param name="id">ID de la asignación</param>
     /// <returns>La asignación si existe, null en caso contrario</returns>
-    Task<DTOSiteStaff?> GetSiteStaffById(int id);
+    Task<SiteStaffResponse?> GetSiteStaffById(int id);
 }

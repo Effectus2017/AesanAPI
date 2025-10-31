@@ -48,7 +48,7 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener empleados del sitio {SiteId}", queryParameters.SiteId);
-            return StatusCode(500, "Error al obtener empleados del sitio");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -81,7 +81,7 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener sitios del empleado {StaffId}", queryParameters.StaffId);
-            return StatusCode(500, "Error al obtener sitios del empleado");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -120,7 +120,7 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener la asignación con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error al obtener la asignación");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -135,6 +135,21 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
     {
         try
         {
+            if (request == null)
+            {
+                return BadRequest("La solicitud de asignación no puede ser nula");
+            }
+
+            if (request.SiteId <= 0)
+            {
+                return BadRequest("El ID del sitio debe ser mayor a 0");
+            }
+
+            if (request.StaffId <= 0)
+            {
+                return BadRequest("El ID del empleado debe ser mayor a 0");
+            }
+
             if (ModelState.IsValid)
             {
                 _logger.LogInformation("Asignando empleado {StaffId} al sitio {SiteId}", request.StaffId, request.SiteId);
@@ -148,8 +163,8 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar empleado {StaffId} al sitio {SiteId}", request.StaffId, request.SiteId);
-            return StatusCode(500, "Error al asignar empleado al sitio");
+            _logger.LogError(ex, "Error al asignar empleado {StaffId} al sitio {SiteId}", request?.StaffId, request?.SiteId);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -168,6 +183,11 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
             if (id <= 0)
             {
                 return BadRequest("El ID de la asignación debe ser mayor a 0");
+            }
+
+            if (request == null)
+            {
+                return BadRequest("La solicitud de actualización no puede ser nula");
             }
 
             if (ModelState.IsValid)
@@ -189,7 +209,7 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la asignación con ID {Id}", id);
-            return StatusCode(500, "Error al actualizar la asignación");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -228,7 +248,7 @@ public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al desasignar empleado {StaffId} del sitio {SiteId}", queryParameters.StaffId, queryParameters.SiteId);
-            return StatusCode(500, "Error al desasignar empleado del sitio");
+            return StatusCode(500, ex.Message);
         }
     }
 }

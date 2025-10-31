@@ -114,7 +114,6 @@ public static class StaffMapper
 
                 // Datos de la relación SchoolStaff
                 SchoolId = result.SchoolId,
-                AssignmentTypeId = result.AssignmentTypeId,
                 IsPrimary = result.IsPrimary
             };
         }
@@ -181,11 +180,9 @@ public static class StaffMapper
 
                 // Datos de la relación SiteStaff
                 SiteId = item.SiteId,
-                AssignmentTypeId = item.AssignmentTypeId,
                 IsPrimary = item.IsPrimary,
 
                 Site = item.SiteId != null ? mappingService.MapSiteListItem(new { Id = item.SiteId, Name = item.SiteName }) : null,
-                AssignmentType = item.AssignmentTypeId != null ? mappingService.MapOptionSelection(item.AssignmentTypeId, item.AssignmentTypeName, item.AssignmentTypeNameEN) : null,
 
                 City = mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }),
                 Region = mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }),
