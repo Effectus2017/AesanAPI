@@ -54,4 +54,9 @@ public class OperatingDayResponse
     /// Fecha y hora de la última actualización del registro
     /// </summary>
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Lista de servicios de alimentación para este día (opcional, se carga bajo demanda)
+    /// </summary>
+    public List<SiteOperatingDayServiceResponse>? Services { get; set; }
 }

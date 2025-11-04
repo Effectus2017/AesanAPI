@@ -885,19 +885,22 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
-            parameters.Add("@SiteId", siteId, DbType.Int32);
-            parameters.Add("@OperatingFromDate", operatingFromDate.Date, DbType.Date);
-            parameters.Add("@OperatingToDate", operatingToDate.Date, DbType.Date);
-            parameters.Add("@DefaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
-            parameters.Add("@DefaultEndTime", TimeSpan.FromHours(16), DbType.Time);  // 16:00:00
-            parameters.Add("@DefaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
+            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@operatingFromDate", operatingFromDate.Date, DbType.Date);
+            parameters.Add("@operatingToDate", operatingToDate.Date, DbType.Date);
+            parameters.Add("@defaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
+            parameters.Add("@defaultEndTime", TimeSpan.FromHours(16), DbType.Time);  // 16:00:00
+            parameters.Add("@defaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
 
-            var result = await dbConnection.QuerySingleAsync<int>("100_InsertSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QuerySingleAsync<dynamic>("100_InsertSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                result, siteId, operatingFromDate.Date, operatingToDate.Date);
+            var daysInserted = (int)result.DaysInserted;
+            var servicesCreated = (int)result.ServicesCreated;
 
-            return result;
+            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento y {ServicesCreated} servicios para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
+                daysInserted, servicesCreated, siteId, operatingFromDate.Date, operatingToDate.Date);
+
+            return daysInserted;
         }
         catch (Exception ex)
         {

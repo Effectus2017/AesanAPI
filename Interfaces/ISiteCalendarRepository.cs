@@ -48,10 +48,4 @@ public interface ISiteCalendarRepository
     /// <returns>True si la operación fue exitosa</returns>
     Task<bool> DeleteOperatingDay(int id);
 
-    /// <summary>
-    /// Verifica si un sitio existe
-    /// </summary>
-    /// <param name="siteId">ID del sitio</param>
-    /// <returns>True si el sitio existe</returns>
-    Task<bool> SiteExists(int siteId);
 }

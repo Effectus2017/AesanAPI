@@ -13,10 +13,11 @@ namespace Api.Repositories;
 /// Repositorio para la gestión de calendario de funcionamiento de sitios
 /// Implementa las operaciones CRUD y específicas para días de funcionamiento
 /// </summary>
-public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarRepository> logger) : ISiteCalendarRepository
+public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarRepository> logger, ISiteOperatingDayServiceRepository? serviceRepository = null) : ISiteCalendarRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteCalendarRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ISiteOperatingDayServiceRepository? _serviceRepository = serviceRepository;
 
     /// <summary>
     /// Obtiene todos los días de funcionamiento de un sitio específico
@@ -47,16 +48,34 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
 
             // Obtener días de funcionamiento
             var operatingDays = await multi.ReadAsync<OperatingDayResponse>();
+            var operatingDaysList = operatingDays.ToList();
+
+            // Cargar servicios para cada día de funcionamiento (si el repositorio está disponible)
+            if (_serviceRepository != null)
+            {
+                foreach (var day in operatingDaysList)
+                {
+                    try
+                    {
+                        day.Services = await _serviceRepository.GetServicesByOperatingDay(day.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error al cargar servicios para el día de funcionamiento {DayId}", day.Id);
+                        day.Services = new List<SiteOperatingDayServiceResponse>();
+                    }
+                }
+            }
 
             var response = new SiteCalendarResponse
             {
                 SiteId = siteInfo.SiteId,
                 SiteName = siteInfo.SiteName,
-                OperatingDays = operatingDays.ToList()
+                OperatingDays = operatingDaysList
             };
 
             _logger.LogInformation("Se obtuvieron {Count} días de funcionamiento para el sitio {SiteId}",
-                operatingDays.Count(), siteId);
+                operatingDaysList.Count, siteId);
 
             return response;
         }
@@ -184,14 +203,17 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         {
             using IDbConnection dbConnection = _context.CreateConnection();
 
-            var query = "DELETE FROM SiteOperatingDays WHERE Id = @Id";
-
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.ExecuteAsync(query, parameters);
+            var result = await dbConnection.QuerySingleAsync<dynamic>(
+                "100_DeleteSiteOperatingDay",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
 
-            var success = result > 0;
+            var rowsAffected = (int)result.RowsAffected;
+            var success = rowsAffected > 0;
 
             _logger.LogInformation("Eliminación de día de funcionamiento {Id}: {Success}",
                 id, success ? "Exitosa" : "Fallida");
@@ -205,28 +227,4 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         }
     }
 
-    /// <summary>
-    /// Verifica si un sitio existe
-    /// </summary>
-    public async Task<bool> SiteExists(int siteId)
-    {
-        try
-        {
-            using IDbConnection dbConnection = _context.CreateConnection();
-
-            var query = "SELECT COUNT(1) FROM Site WHERE Id = @SiteId";
-
-            var parameters = new DynamicParameters();
-            parameters.Add("@siteId", siteId, DbType.Int32);
-
-            var count = await dbConnection.QuerySingleAsync<int>(query, parameters);
-
-            return count > 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar existencia del sitio {SiteId}", siteId);
-            throw;
-        }
-    }
 }

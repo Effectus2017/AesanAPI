@@ -5,10 +5,7 @@ using Api.Models.Request;
 using Api.Models.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Dapper;
-using Api.Data;
 using Api.Interfaces;
-using System.Data;
 
 namespace Api.Controllers;
 
@@ -20,11 +17,10 @@ namespace Api.Controllers;
 [Route("site-calendar")]
 [ApiController]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISiteCalendarRepository siteCalendarRepository, DapperContext context) : Controller
+public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISiteCalendarRepository siteCalendarRepository) : Controller
 {
     private readonly ILogger<SiteCalendarController> _logger = logger;
     private readonly ISiteCalendarRepository _siteCalendarRepository = siteCalendarRepository ?? throw new ArgumentNullException(nameof(siteCalendarRepository));
-    private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
     /// <summary>
     /// Obtiene todos los días de funcionamiento de un sitio específico
@@ -43,14 +39,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
             }
 
             _logger.LogInformation("Obteniendo días de funcionamiento para el sitio {SiteId}", queryParameters.SiteId);
-
-            // Verificar que el sitio existe
-            var siteExists = await _siteCalendarRepository.SiteExists(queryParameters.SiteId.Value);
-            if (!siteExists)
-            {
-                _logger.LogWarning("Sitio {SiteId} no encontrado", queryParameters.SiteId);
-                return NotFound($"Sitio con ID {queryParameters.SiteId} no encontrado");
-            }
 
             var result = await _siteCalendarRepository.GetOperatingDays(queryParameters.SiteId.Value);
             return Ok(result);
@@ -80,14 +68,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
 
             _logger.LogInformation("Alternando día de funcionamiento para sitio {SiteId} en fecha {Date}",
                 request.SiteId, request.OperatingDate.Date);
-
-            // Verificar que el sitio existe
-            var siteExists = await _siteCalendarRepository.SiteExists(request.SiteId);
-            if (!siteExists)
-            {
-                _logger.LogWarning("Sitio {SiteId} no encontrado", request.SiteId);
-                return NotFound($"Sitio con ID {request.SiteId} no encontrado");
-            }
 
             bool result;
 
@@ -156,14 +136,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
             _logger.LogInformation("Actualizando {Count} días de funcionamiento para sitio {SiteId}",
                 requests.Count, siteId);
 
-            // Verificar que el sitio existe
-            var siteExists = await _siteCalendarRepository.SiteExists(siteId);
-            if (!siteExists)
-            {
-                _logger.LogWarning("Sitio {SiteId} no encontrado", siteId);
-                return NotFound($"Sitio con ID {siteId} no encontrado");
-            }
-
             // Validar que todos los requests pertenecen al mismo sitio
             var invalidRequests = requests.Where(r => r.SiteId != siteId).ToList();
             if (invalidRequests.Any())
@@ -208,19 +180,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
             }
 
             _logger.LogInformation("Eliminando día de funcionamiento {Id}", id);
-
-            // Verificar que el día existe consultando directamente
-            using var dbConnection = _context.CreateConnection();
-            var existsQuery = "SELECT COUNT(1) FROM SiteOperatingDays WHERE Id = @Id";
-            var existsParameters = new DynamicParameters();
-            existsParameters.Add("@Id", id, DbType.Int32);
-
-            var exists = await dbConnection.QuerySingleAsync<int>(existsQuery, existsParameters);
-            if (exists == 0)
-            {
-                _logger.LogWarning("Día de funcionamiento {Id} no encontrado", id);
-                return NotFound($"Día de funcionamiento con ID {id} no encontrado");
-            }
 
             var result = await _siteCalendarRepository.DeleteOperatingDay(id);
 
