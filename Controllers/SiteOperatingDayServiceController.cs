@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,7 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de servicios relacionados con días operativos,
 /// incluyendo consulta, creación, actualización, eliminación y habilitación/deshabilitación.
 /// </summary>
-[Route("api/site-operating-day-service")]
+[Route("site-operating-day-service")]
 [ApiController]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteOperatingDayServiceController(
@@ -26,29 +27,27 @@ public class SiteOperatingDayServiceController(
     /// <summary>
     /// Obtiene todos los servicios de un día de funcionamiento
     /// </summary>
-    /// <param name="operatingDayId">ID del día de funcionamiento</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del día de funcionamiento</param>
     /// <returns>Lista de servicios del día</returns>
-    [HttpGet("{operatingDayId}")]
-    [SwaggerOperation(
-        Summary = "Obtiene servicios de un día de funcionamiento",
-        Description = "Devuelve todos los servicios de alimentación relacionados con un día de funcionamiento específico.")]
-    public async Task<IActionResult> GetServicesByOperatingDay(int operatingDayId)
+    [HttpGet]
+    [SwaggerOperation(Summary = "Obtiene servicios de un día de funcionamiento", Description = "Devuelve todos los servicios de alimentación relacionados con un día de funcionamiento específico.")]
+    public async Task<IActionResult> GetServicesByOperatingDay([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (operatingDayId <= 0)
+            if (queryParameters.OperatingDayId == null || queryParameters.OperatingDayId <= 0)
             {
                 return BadRequest("El ID del día de funcionamiento debe ser mayor a 0");
             }
 
-            _logger.LogInformation("Obteniendo servicios para el día de funcionamiento {OperatingDayId}", operatingDayId);
+            _logger.LogInformation("Obteniendo servicios para el día de funcionamiento {OperatingDayId}", queryParameters.OperatingDayId);
 
-            var services = await _repository.GetServicesByOperatingDay(operatingDayId);
+            var services = await _repository.GetServicesByOperatingDay(queryParameters.OperatingDayId.Value);
             return Ok(services);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener servicios para el día de funcionamiento {OperatingDayId}", operatingDayId);
+            _logger.LogError(ex, "Error al obtener servicios para el día de funcionamiento {OperatingDayId}", queryParameters.OperatingDayId);
             return StatusCode(500, ex.Message);
         }
     }
@@ -56,34 +55,32 @@ public class SiteOperatingDayServiceController(
     /// <summary>
     /// Obtiene un servicio por su ID
     /// </summary>
-    /// <param name="id">ID del servicio</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del servicio</param>
     /// <returns>Servicio encontrado</returns>
-    [HttpGet("by-id/{id}")]
-    [SwaggerOperation(
-        Summary = "Obtiene un servicio por ID",
-        Description = "Devuelve la información completa de un servicio de alimentación específico.")]
-    public async Task<IActionResult> GetServiceById(int id)
+    [HttpGet("get-service-by-id")]
+    [SwaggerOperation(Summary = "Obtiene un servicio por ID", Description = "Devuelve la información completa de un servicio de alimentación específico.")]
+    public async Task<IActionResult> GetServiceById([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (id <= 0)
+            if (queryParameters.Id <= 0)
             {
                 return BadRequest("El ID del servicio debe ser mayor a 0");
             }
 
-            _logger.LogInformation("Obteniendo servicio con ID {Id}", id);
+            _logger.LogInformation("Obteniendo servicio con ID {Id}", queryParameters.Id);
 
-            var service = await _repository.GetServiceById(id);
+            var service = await _repository.GetServiceById(queryParameters.Id);
             if (service == null)
             {
-                return NotFound($"Servicio con ID {id} no encontrado");
+                return NotFound($"Servicio con ID {queryParameters.Id} no encontrado");
             }
 
             return Ok(service);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener servicio con ID {Id}", id);
+            _logger.LogError(ex, "Error al obtener servicio con ID {Id}", queryParameters.Id);
             return StatusCode(500, ex.Message);
         }
     }
@@ -94,9 +91,7 @@ public class SiteOperatingDayServiceController(
     /// <param name="request">Datos del servicio a crear</param>
     /// <returns>ID del servicio creado</returns>
     [HttpPost]
-    [SwaggerOperation(
-        Summary = "Crea un servicio para un día de funcionamiento",
-        Description = "Crea un nuevo servicio de alimentación relacionado con un día de funcionamiento específico.")]
+    [SwaggerOperation(Summary = "Crea un servicio para un día de funcionamiento", Description = "Crea un nuevo servicio de alimentación relacionado con un día de funcionamiento específico.")]
     public async Task<IActionResult> CreateService([FromBody] SiteOperatingDayServiceRequest request)
     {
         try
@@ -117,7 +112,7 @@ public class SiteOperatingDayServiceController(
             var id = await _repository.CreateService(request);
 
             _logger.LogInformation("Servicio creado exitosamente con ID {Id}", id);
-            return CreatedAtAction(nameof(GetServiceById), new { id }, new { id });
+            return Ok(new { Id = id, Message = "Servicio creado exitosamente" });
         }
         catch (ArgumentException ex)
         {
@@ -135,14 +130,12 @@ public class SiteOperatingDayServiceController(
     /// <summary>
     /// Actualiza un servicio existente
     /// </summary>
-    /// <param name="id">ID del servicio</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del servicio</param>
     /// <param name="request">Datos actualizados del servicio</param>
     /// <returns>Resultado de la operación</returns>
-    [HttpPut("{id}")]
-    [SwaggerOperation(
-        Summary = "Actualiza un servicio",
-        Description = "Actualiza la información de un servicio de alimentación existente.")]
-    public async Task<IActionResult> UpdateService(int id, [FromBody] SiteOperatingDayServiceRequest request)
+    [HttpPut("update-service")]
+    [SwaggerOperation(Summary = "Actualiza un servicio", Description = "Actualiza la información de un servicio de alimentación existente.")]
+    public async Task<IActionResult> UpdateService([FromQuery] QueryParameters queryParameters, [FromBody] SiteOperatingDayServiceRequest request)
     {
         try
         {
@@ -151,34 +144,34 @@ public class SiteOperatingDayServiceController(
                 return BadRequest(ModelState);
             }
 
-            if (id <= 0)
+            if (queryParameters.Id <= 0)
             {
                 return BadRequest("El ID del servicio debe ser mayor a 0");
             }
 
-            _logger.LogInformation("Actualizando servicio con ID {Id}", id);
+            _logger.LogInformation("Actualizando servicio con ID {Id}", queryParameters.Id);
 
-            var result = await _repository.UpdateService(id, request);
+            var result = await _repository.UpdateService(queryParameters.Id, request);
 
             if (result)
             {
-                _logger.LogInformation("Servicio con ID {Id} actualizado exitosamente", id);
+                _logger.LogInformation("Servicio con ID {Id} actualizado exitosamente", queryParameters.Id);
                 return Ok(true);
             }
             else
             {
-                _logger.LogWarning("No se pudo actualizar el servicio con ID {Id}", id);
+                _logger.LogWarning("No se pudo actualizar el servicio con ID {Id}", queryParameters.Id);
                 return BadRequest("No se pudo procesar la solicitud");
             }
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Error de validación al actualizar servicio con ID {Id}", id);
+            _logger.LogWarning(ex, "Error de validación al actualizar servicio con ID {Id}", queryParameters.Id);
             return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar servicio con ID {Id}", id);
+            _logger.LogError(ex, "Error al actualizar servicio con ID {Id}", queryParameters.Id);
             return StatusCode(500, ex.Message);
         }
     }
@@ -186,39 +179,37 @@ public class SiteOperatingDayServiceController(
     /// <summary>
     /// Elimina un servicio
     /// </summary>
-    /// <param name="id">ID del servicio</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del servicio</param>
     /// <returns>Resultado de la operación</returns>
-    [HttpDelete("{id}")]
-    [SwaggerOperation(
-        Summary = "Elimina un servicio",
-        Description = "Elimina un servicio de alimentación de un día de funcionamiento.")]
-    public async Task<IActionResult> DeleteService(int id)
+    [HttpDelete("delete-service")]
+    [SwaggerOperation(Summary = "Elimina un servicio", Description = "Elimina un servicio de alimentación de un día de funcionamiento.")]
+    public async Task<IActionResult> DeleteService([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            if (id <= 0)
+            if (queryParameters.Id <= 0)
             {
                 return BadRequest("El ID del servicio debe ser mayor a 0");
             }
 
-            _logger.LogInformation("Eliminando servicio con ID {Id}", id);
+            _logger.LogInformation("Eliminando servicio con ID {Id}", queryParameters.Id);
 
-            var result = await _repository.DeleteService(id);
+            var result = await _repository.DeleteService(queryParameters.Id);
 
             if (result)
             {
-                _logger.LogInformation("Servicio con ID {Id} eliminado exitosamente", id);
+                _logger.LogInformation("Servicio con ID {Id} eliminado exitosamente", queryParameters.Id);
                 return Ok(true);
             }
             else
             {
-                _logger.LogWarning("No se pudo eliminar el servicio con ID {Id}", id);
+                _logger.LogWarning("No se pudo eliminar el servicio con ID {Id}", queryParameters.Id);
                 return BadRequest("No se pudo procesar la solicitud");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar servicio con ID {Id}", id);
+            _logger.LogError(ex, "Error al eliminar servicio con ID {Id}", queryParameters.Id);
             return StatusCode(500, ex.Message);
         }
     }
@@ -226,42 +217,40 @@ public class SiteOperatingDayServiceController(
     /// <summary>
     /// Habilita o deshabilita un servicio
     /// </summary>
-    /// <param name="id">ID del servicio</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del servicio</param>
     /// <param name="isEnabled">Estado a establecer (true = habilitado, false = deshabilitado)</param>
     /// <returns>Resultado de la operación</returns>
-    [HttpPost("{id}/toggle")]
-    [SwaggerOperation(
-        Summary = "Habilita o deshabilita un servicio",
-        Description = "Cambia el estado de habilitación de un servicio de alimentación.")]
-    public async Task<IActionResult> ToggleService(int id, [FromBody] bool isEnabled)
+    [HttpPost("toggle-service")]
+    [SwaggerOperation(Summary = "Habilita o deshabilita un servicio", Description = "Cambia el estado de habilitación de un servicio de alimentación.")]
+    public async Task<IActionResult> ToggleService([FromQuery] QueryParameters queryParameters, [FromBody] bool isEnabled)
     {
         try
         {
-            if (id <= 0)
+            if (queryParameters.Id <= 0)
             {
                 return BadRequest("El ID del servicio debe ser mayor a 0");
             }
 
             _logger.LogInformation("{Action} servicio con ID {Id}",
-                isEnabled ? "Habilitando" : "Deshabilitando", id);
+                isEnabled ? "Habilitando" : "Deshabilitando", queryParameters.Id);
 
-            var result = await _repository.ToggleService(id, isEnabled);
+            var result = await _repository.ToggleService(queryParameters.Id, isEnabled);
 
             if (result)
             {
                 _logger.LogInformation("Servicio con ID {Id} {Status} exitosamente",
-                    id, isEnabled ? "habilitado" : "deshabilitado");
+                    queryParameters.Id, isEnabled ? "habilitado" : "deshabilitado");
                 return Ok(true);
             }
             else
             {
-                _logger.LogWarning("No se pudo cambiar el estado del servicio con ID {Id}", id);
+                _logger.LogWarning("No se pudo cambiar el estado del servicio con ID {Id}", queryParameters.Id);
                 return BadRequest("No se pudo procesar la solicitud");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al cambiar estado del servicio con ID {Id}", id);
+            _logger.LogError(ex, "Error al cambiar estado del servicio con ID {Id}", queryParameters.Id);
             return StatusCode(500, ex.Message);
         }
     }

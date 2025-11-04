@@ -47,4 +47,7 @@ public class QueryParameters
     public string? CurrentUserId { get; set; } // ID del usuario actual logueado
     public bool? IsPropietary { get; set; } // Si es agencia propietaria (NUTRE)
     public DateTime? CompletedRegistrationDate { get; set; } // Fecha de registro completado
+    public int? Month { get; set; } // Mes para filtrar días de funcionamiento (1-12)
+    public int? Year { get; set; } // Año para filtrar días de funcionamiento
+    public int? OperatingDayId { get; set; } // ID del día de funcionamiento
 }

@@ -254,7 +254,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Insertar días de funcionamiento si se proporcionan fechas
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue)
             {
-                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value);
+                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services);
             }
 
             // Crear relación SchoolSite si se proporciona SchoolId
@@ -878,7 +878,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="operatingFromDate">Fecha desde</param>
     /// <param name="operatingToDate">Fecha hasta</param>
     /// <returns>Número de días insertados</returns>
-    private async Task<int> InsertSiteOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate)
+    private async Task<int> InsertSiteOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest>? services)
     {
         try
         {
@@ -895,10 +895,15 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             var result = await dbConnection.QuerySingleAsync<dynamic>("100_InsertSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
 
             var daysInserted = (int)result.DaysInserted;
-            var servicesCreated = (int)result.ServicesCreated;
 
-            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento y {ServicesCreated} servicios para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                daysInserted, servicesCreated, siteId, operatingFromDate.Date, operatingToDate.Date);
+            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
+                daysInserted, siteId, operatingFromDate.Date, operatingToDate.Date);
+
+            // Después de crear los días, crear los servicios para cada día
+            if (services != null && services.Count > 0)
+            {
+                await InsertServicesForOperatingDays(siteId, operatingFromDate, operatingToDate, services);
+            }
 
             return daysInserted;
         }
@@ -908,6 +913,177 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 siteId, operatingFromDate.Date, operatingToDate.Date);
             throw new Exception(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Inserta servicios para todos los días de funcionamiento creados
+    /// </summary>
+    private async Task InsertServicesForOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest> services)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            
+            // Obtener todos los días de funcionamiento creados para este sitio en el rango de fechas
+            var operatingDays = await dbConnection.QueryAsync<dynamic>(
+                @"SELECT Id, OperatingDate, StartTime, EndTime, IsExcluded 
+                  FROM SiteOperatingDays 
+                  WHERE SiteId = @siteId 
+                    AND OperatingDate >= @fromDate 
+                    AND OperatingDate <= @toDate
+                    AND IsExcluded = 0",
+                new { siteId, fromDate = operatingFromDate.Date, toDate = operatingToDate.Date });
+
+            int totalServicesCreated = 0;
+
+            foreach (var day in operatingDays)
+            {
+                int operatingDayId = day.Id;
+                TimeSpan dayStartTime = day.StartTime;
+                TimeSpan dayEndTime = day.EndTime;
+
+                // Para cada servicio en la lista
+                foreach (var service in services)
+                {
+                    // Breakfast (ServiceTypeId = 1)
+                    if (service.Breakfast == true && service.BreakfastFrom.HasValue && service.BreakfastTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.BreakfastFrom.Value, service.BreakfastTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, ServiceTypeIds.Breakfast, service.ChildGroupId, service.BreakfastFrom.Value, service.BreakfastTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // Lunch (ServiceTypeId = 2)
+                    if (service.Lunch == true && service.LunchFrom.HasValue && service.LunchTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.LunchFrom.Value, service.LunchTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.Lunch, service.ChildGroupId, service.LunchFrom.Value, service.LunchTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // SnackAM (ServiceTypeId = 3)
+                    if (service.SnackAM == true && service.SnackAMFrom.HasValue && service.SnackAMTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.SnackAMFrom.Value, service.SnackAMTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackAM, service.ChildGroupId, service.SnackAMFrom.Value, service.SnackAMTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // Dinner (ServiceTypeId = 4)
+                    if (service.Dinner == true && service.DinnerFrom.HasValue && service.DinnerTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.DinnerFrom.Value, service.DinnerTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.Dinner, service.ChildGroupId, service.DinnerFrom.Value, service.DinnerTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // SnackPM (ServiceTypeId = 5)
+                    if (service.SnackPM == true && service.SnackPMFrom.HasValue && service.SnackPMTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.SnackPMFrom.Value, service.SnackPMTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackPM, service.ChildGroupId, service.SnackPMFrom.Value, service.SnackPMTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // SnackNight (ServiceTypeId = 6)
+                    if (service.SnackNight == true && service.SnackNightFrom.HasValue && service.SnackNightTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.SnackNightFrom.Value, service.SnackNightTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackNight, service.ChildGroupId, service.SnackNightFrom.Value, service.SnackNightTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // DinnerExtended (ServiceTypeId = 7)
+                    if (service.DinnerExtended == true && service.DinnerExtendedFrom.HasValue && service.DinnerExtendedTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.DinnerExtendedFrom.Value, service.DinnerExtendedTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.DinnerExtended, service.ChildGroupId, service.DinnerExtendedFrom.Value, service.DinnerExtendedTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // DinnerAtRisk (ServiceTypeId = 8)
+                    if (service.DinnerAtRisk == true && service.DinnerAtRiskFrom.HasValue && service.DinnerAtRiskTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.DinnerAtRiskFrom.Value, service.DinnerAtRiskTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.DinnerAtRisk, service.ChildGroupId, service.DinnerAtRiskFrom.Value, service.DinnerAtRiskTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // SnackExtended (ServiceTypeId = 9)
+                    if (service.SnackExtended == true && service.SnackExtendedFrom.HasValue && service.SnackExtendedTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.SnackExtendedFrom.Value, service.SnackExtendedTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackExtended, service.ChildGroupId, service.SnackExtendedFrom.Value, service.SnackExtendedTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+
+                    // SnackAtRisk (ServiceTypeId = 10)
+                    if (service.SnackAtRisk == true && service.SnackAtRiskFrom.HasValue && service.SnackAtRiskTo.HasValue)
+                    {
+                        if (IsTimeWithinRange(service.SnackAtRiskFrom.Value, service.SnackAtRiskTo.Value, dayStartTime, dayEndTime))
+                        {
+                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackAtRisk, service.ChildGroupId, service.SnackAtRiskFrom.Value, service.SnackAtRiskTo.Value);
+                            totalServicesCreated++;
+                        }
+                    }
+                }
+            }
+
+            if (totalServicesCreated > 0)
+            {
+                _logger.LogInformation("Se crearon {TotalServicesCreated} servicios para los días de funcionamiento del sitio {SiteId}",
+                    totalServicesCreated, siteId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId}", siteId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Inserta un servicio para un día específico usando el SP existente
+    /// </summary>
+    private async Task InsertServiceForDay(IDbConnection dbConnection, int operatingDayId, int serviceTypeId, int? childGroupId, TimeSpan startTime, TimeSpan endTime)
+    {
+        var parameters = new DynamicParameters();
+        parameters.Add("@operatingDayId", operatingDayId, DbType.Int32);
+        parameters.Add("@serviceTypeId", serviceTypeId, DbType.Int32);
+        parameters.Add("@childGroupId", childGroupId, DbType.Int32);
+        parameters.Add("@startTime", startTime, DbType.Time);
+        parameters.Add("@endTime", endTime, DbType.Time);
+        parameters.Add("@isEnabled", true, DbType.Boolean);
+        parameters.Add("@comment", (string?)null, DbType.String);
+        parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+        await dbConnection.ExecuteAsync("100_InsertSiteOperatingDayService", parameters, commandType: CommandType.StoredProcedure);
+    }
+
+    /// <summary>
+    /// Valida que los horarios del servicio estén dentro del rango del día
+    /// </summary>
+    private bool IsTimeWithinRange(TimeSpan serviceStart, TimeSpan serviceEnd, TimeSpan dayStart, TimeSpan dayEnd)
+    {
+        return serviceStart >= dayStart && serviceEnd <= dayEnd && serviceStart < serviceEnd;
     }
 
     /// <summary>

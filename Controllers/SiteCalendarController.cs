@@ -23,12 +23,13 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     private readonly ISiteCalendarRepository _siteCalendarRepository = siteCalendarRepository ?? throw new ArgumentNullException(nameof(siteCalendarRepository));
 
     /// <summary>
-    /// Obtiene todos los días de funcionamiento de un sitio específico
+    /// Obtiene días de funcionamiento de un sitio específico
+    /// Opcionalmente filtra por mes y año para mejorar el rendimiento
     /// </summary>
-    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del sitio</param>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del sitio, mes y año opcionales</param>
     /// <returns>Información del sitio y sus días de funcionamiento</returns>
     [HttpGet("get-operating-days")]
-    [SwaggerOperation(Summary = "Obtiene días de funcionamiento de un sitio", Description = "Devuelve todos los días de funcionamiento para un sitio específico.")]
+    [SwaggerOperation(Summary = "Obtiene días de funcionamiento de un sitio", Description = "Devuelve días de funcionamiento para un sitio específico. Opcionalmente filtra por mes y año para mejorar el rendimiento.")]
     public async Task<IActionResult> GetOperatingDays([FromQuery] QueryParameters queryParameters)
     {
         try
@@ -38,9 +39,26 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
                 return BadRequest("El ID del sitio debe ser mayor a 0");
             }
 
-            _logger.LogInformation("Obteniendo días de funcionamiento para el sitio {SiteId}", queryParameters.SiteId);
+            // Validar mes si se proporciona
+            if (queryParameters.Month.HasValue && (queryParameters.Month < 1 || queryParameters.Month > 12))
+            {
+                return BadRequest("El mes debe estar entre 1 y 12");
+            }
 
-            var result = await _siteCalendarRepository.GetOperatingDays(queryParameters.SiteId.Value);
+            // Validar año si se proporciona
+            if (queryParameters.Year.HasValue && queryParameters.Year < 2000)
+            {
+                return BadRequest("El año debe ser mayor a 2000");
+            }
+
+            _logger.LogInformation("Obteniendo días de funcionamiento para el sitio {SiteId} (mes: {Month}, año: {Year})",
+                queryParameters.SiteId, queryParameters.Month?.ToString() ?? "todos", queryParameters.Year?.ToString() ?? "todos");
+
+            var result = await _siteCalendarRepository.GetOperatingDays(
+                queryParameters.SiteId.Value,
+                queryParameters.Month,
+                queryParameters.Year
+            );
             return Ok(result);
         }
         catch (Exception ex)

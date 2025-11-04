@@ -11,11 +11,14 @@ namespace Api.Interfaces;
 public interface ISiteCalendarRepository
 {
     /// <summary>
-    /// Obtiene todos los días de funcionamiento de un sitio específico
+    /// Obtiene días de funcionamiento de un sitio específico
+    /// Opcionalmente filtra por mes y año para mejorar el rendimiento
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
+    /// <param name="month">Mes opcional para filtrar (1-12)</param>
+    /// <param name="year">Año opcional para filtrar</param>
     /// <returns>Respuesta con información del sitio y sus días de funcionamiento</returns>
-    Task<SiteCalendarResponse> GetOperatingDays(int siteId);
+    Task<SiteCalendarResponse> GetOperatingDays(int siteId, int? month = null, int? year = null);
 
     /// <summary>
     /// Alterna el estado de funcionamiento de un día específico

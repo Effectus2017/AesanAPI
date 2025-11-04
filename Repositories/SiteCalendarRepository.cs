@@ -21,8 +21,9 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
 
     /// <summary>
     /// Obtiene todos los días de funcionamiento de un sitio específico
+    /// Opcionalmente filtra por mes y año para mejorar el rendimiento
     /// </summary>
-    public async Task<SiteCalendarResponse> GetOperatingDays(int siteId)
+    public async Task<SiteCalendarResponse> GetOperatingDays(int siteId, int? month = null, int? year = null)
     {
         try
         {
@@ -30,6 +31,8 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
 
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@month", month, DbType.Int32);
+            parameters.Add("@year", year, DbType.Int32);
 
             using var multi = await dbConnection.QueryMultipleAsync("100_GetSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
 
@@ -50,21 +53,11 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             var operatingDays = await multi.ReadAsync<OperatingDayResponse>();
             var operatingDaysList = operatingDays.ToList();
 
-            // Cargar servicios para cada día de funcionamiento (si el repositorio está disponible)
-            if (_serviceRepository != null)
+            // Optimizar carga de servicios: cargar todos en una sola consulta batch
+            if (_serviceRepository != null && operatingDaysList.Any())
             {
-                foreach (var day in operatingDaysList)
-                {
-                    try
-                    {
-                        day.Services = await _serviceRepository.GetServicesByOperatingDay(day.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Error al cargar servicios para el día de funcionamiento {DayId}", day.Id);
-                        day.Services = new List<SiteOperatingDayServiceResponse>();
-                    }
-                }
+                var operatingDayIds = operatingDaysList.Select(d => d.Id).ToList();
+                await LoadServicesBatch(dbConnection, operatingDaysList, operatingDayIds);
             }
 
             var response = new SiteCalendarResponse
@@ -74,8 +67,8 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                 OperatingDays = operatingDaysList
             };
 
-            _logger.LogInformation("Se obtuvieron {Count} días de funcionamiento para el sitio {SiteId}",
-                operatingDaysList.Count, siteId);
+            _logger.LogInformation("Se obtuvieron {Count} días de funcionamiento para el sitio {SiteId} (mes: {Month}, año: {Year})",
+                operatingDaysList.Count, siteId, month?.ToString() ?? "todos", year?.ToString() ?? "todos");
 
             return response;
         }
@@ -83,6 +76,54 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         {
             _logger.LogError(ex, "Error al obtener días de funcionamiento para el sitio {SiteId}", siteId);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Carga servicios para múltiples días de funcionamiento en una sola consulta batch
+    /// </summary>
+    private async Task LoadServicesBatch(IDbConnection dbConnection, List<OperatingDayResponse> operatingDays, List<int> operatingDayIds)
+    {
+        try
+        {
+            // Convertir lista de IDs a string separado por comas
+            var operatingDayIdsString = string.Join(",", operatingDayIds);
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@operatingDayIds", operatingDayIdsString, DbType.String);
+
+            var services = await dbConnection.QueryAsync<SiteOperatingDayServiceResponse>(
+                "100_GetSiteOperatingDayServicesBatch",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            // Agrupar servicios por OperatingDayId usando un diccionario para mejor rendimiento
+            var servicesByDayId = services
+                .GroupBy(s => s.OperatingDayId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Asignar servicios a cada día de funcionamiento
+            foreach (var day in operatingDays)
+            {
+                if (servicesByDayId.TryGetValue(day.Id, out var dayServices))
+                {
+                    day.Services = dayServices;
+                }
+                else
+                {
+                    day.Services = new List<SiteOperatingDayServiceResponse>();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al cargar servicios en batch para {Count} días de funcionamiento", operatingDayIds.Count);
+            // En caso de error, inicializar lista vacía para cada día
+            foreach (var day in operatingDays)
+            {
+                day.Services = new List<SiteOperatingDayServiceResponse>();
+            }
         }
     }
 
