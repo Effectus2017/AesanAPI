@@ -122,4 +122,11 @@ public class SiteRequest
     /// Se obtiene de la inscripción de la agencia
     /// </summary>
     public bool? IsDayCareHome { get; set; } = false;
+
+    /// <summary>
+    /// IDs de programas de la agencia
+    /// Agency program IDs
+    /// Se obtiene desde el frontend para determinar la lógica de días de funcionamiento
+    /// </summary>
+    public List<int>? ProgramIds { get; set; }
 }

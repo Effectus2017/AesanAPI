@@ -1,5 +1,6 @@
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -20,6 +21,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly Lazy<ISchoolSiteRepository> _schoolSiteRepository = schoolSiteRepository ?? throw new ArgumentNullException(nameof(schoolSiteRepository));
+    private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -254,7 +256,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Insertar días de funcionamiento si se proporcionan fechas
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue)
             {
-                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services);
+                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services, request.ProgramIds, request.CenterTypeId, request.IsDayCareHome);
             }
 
             // Crear relación SchoolSite si se proporciona SchoolId
@@ -878,10 +880,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="operatingFromDate">Fecha desde</param>
     /// <param name="operatingToDate">Fecha hasta</param>
     /// <returns>Número de días insertados</returns>
-    private async Task<int> InsertSiteOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest>? services)
+    private async Task<int> InsertSiteOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest>? services, List<int>? programIds = null, int? centerTypeId = null, bool? isDayCareHome = null)
     {
         try
         {
+            // Determinar configuración de días de funcionamiento según programa y tipo de sitio
+            var includeWeekends = await DetermineOperatingDaysConfiguration(programIds, centerTypeId, isDayCareHome);
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
@@ -891,13 +896,14 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@defaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
             parameters.Add("@defaultEndTime", TimeSpan.FromHours(16), DbType.Time);  // 16:00:00
             parameters.Add("@defaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
+            parameters.Add("@includeWeekends", includeWeekends, DbType.Boolean);
 
             var result = await dbConnection.QuerySingleAsync<dynamic>("100_InsertSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
 
             var daysInserted = (int)result.DaysInserted;
 
-            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                daysInserted, siteId, operatingFromDate.Date, operatingToDate.Date);
+            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}. Incluye fines de semana: {IncludeWeekends}",
+                daysInserted, siteId, operatingFromDate.Date, operatingToDate.Date, includeWeekends);
 
             // Después de crear los días, crear los servicios para cada día
             if (services != null && services.Count > 0)
@@ -912,6 +918,124 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogError(ex, "Error al insertar días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
             throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Determina si se deben incluir fines de semana en los días de funcionamiento según el programa y tipo de sitio
+    /// </summary>
+    /// <param name="programIds">IDs de programas de la agencia</param>
+    /// <param name="centerTypeId">ID del tipo de centro (para PACNA)</param>
+    /// <param name="isDayCareHome">Si es Day Care Home (para PACNA)</param>
+    /// <returns>True si se deben incluir fines de semana, false si solo Lunes a Viernes</returns>
+    private async Task<bool> DetermineOperatingDaysConfiguration(List<int>? programIds, int? centerTypeId, bool? isDayCareHome)
+    {
+        try
+        {
+            // Constantes para IDs de programas
+            const int PROGRAM_ID_PDAM = 1;
+            const int PROGRAM_ID_PSAV = 2;
+            const int PROGRAM_ID_PACNA = 3;
+
+            // Nombres de tipos de centro para PACNA
+            const string CENTER_TYPE_CUIDADO_DIURNO = "Centro de Cuidado Diurno";
+            const string CENTER_TYPE_CUIDADO_ADULTO = "Centro de Cuidado Adulto";
+            const string CENTER_TYPE_ALBERGUE = "Albergue";
+
+            // Si no hay programas, usar comportamiento por defecto (todos los días)
+            if (programIds == null || programIds.Count == 0)
+            {
+                _logger.LogInformation("No se proporcionaron programas - usando comportamiento por defecto (todos los días)");
+                return true;
+            }
+
+            // Verificar si tiene PDAM
+            if (programIds.Contains(PROGRAM_ID_PDAM))
+            {
+                _logger.LogInformation("Programa PDAM detectado - Solo Lunes a Viernes");
+                return false;
+            }
+
+            // Verificar si tiene PSAV
+            if (programIds.Contains(PROGRAM_ID_PSAV))
+            {
+                _logger.LogInformation("Programa PSAV detectado - Solo Lunes a Viernes (sábados y domingos se agregan manualmente)");
+                return false;
+            }
+
+            // Verificar si tiene PACNA
+            if (programIds.Contains(PROGRAM_ID_PACNA))
+            {
+                // Si es Day Care Home (Hogares), todos los días
+                if (isDayCareHome == true)
+                {
+                    _logger.LogInformation("Programa PACNA - Hogares (isDayCareHome=true) - Todos los días");
+                    return true;
+                }
+
+                // Si hay centerTypeId, consultar el nombre del tipo de centro
+                if (centerTypeId.HasValue)
+                {
+                    try
+                    {
+                        var centerType = await _centerTypeRepository.Value.GetCenterTypeById(centerTypeId.Value);
+                        if (centerType != null)
+                        {
+                            // Obtener el nombre del CenterType
+                            string? centerTypeName = null;
+                            if (centerType is DTOCenterType dtoCenterType)
+                            {
+                                centerTypeName = dtoCenterType.Name;
+                            }
+                            else
+                            {
+                                // Intentar obtener Name usando reflexión
+                                var nameProperty = centerType.GetType().GetProperty("Name");
+                                if (nameProperty != null)
+                                {
+                                    centerTypeName = nameProperty.GetValue(centerType)?.ToString();
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(centerTypeName))
+                            {
+                                // Centro Diurno: Solo Lunes a Viernes
+                                if (centerTypeName.Equals(CENTER_TYPE_CUIDADO_DIURNO, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _logger.LogInformation("Programa PACNA - Centro Diurno ({CenterTypeName}) - Solo Lunes a Viernes (sábados y domingos se agregan manualmente)", centerTypeName);
+                                    return false;
+                                }
+
+                                // Centro de Adultos o Albergue: Todos los días
+                                if (centerTypeName.Equals(CENTER_TYPE_CUIDADO_ADULTO, StringComparison.OrdinalIgnoreCase) ||
+                                    centerTypeName.Equals(CENTER_TYPE_ALBERGUE, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _logger.LogInformation("Programa PACNA - {CenterTypeName} - Todos los días", centerTypeName);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error al obtener CenterType con ID {CenterTypeId}, usando comportamiento por defecto", centerTypeId.Value);
+                    }
+                }
+
+                // Si no se pudo determinar el tipo de centro, usar comportamiento por defecto
+                _logger.LogInformation("Programa PACNA - No se pudo determinar el tipo de centro - usando comportamiento por defecto (todos los días)");
+                return true;
+            }
+
+            // Por defecto, incluir fines de semana (comportamiento actual)
+            _logger.LogInformation("No aplica ninguna regla específica - usando comportamiento por defecto (todos los días)");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al determinar configuración de días de funcionamiento");
+            // En caso de error, usar comportamiento por defecto
+            return true;
         }
     }
 
