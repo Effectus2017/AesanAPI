@@ -5,6 +5,7 @@ CREATE TABLE [dbo].[SponsorType]
     [NameEN] NVARCHAR(255) NOT NULL DEFAULT '',
     [IsActive] BIT NOT NULL DEFAULT 1,
     [DisplayOrder] INT NOT NULL DEFAULT 0,
+    [SelectionNotification] BIT NOT NULL DEFAULT 0,
     [CreatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] DATETIME NULL
 ); 

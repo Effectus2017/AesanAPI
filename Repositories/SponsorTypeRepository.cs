@@ -121,6 +121,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
             parameters.Add("@nameEN", sponsorType.NameEN, DbType.String);
             parameters.Add("@isActive", sponsorType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", sponsorType.DisplayOrder, DbType.Int32);
+            parameters.Add("@selectionNotification", sponsorType.SelectionNotification, DbType.Boolean);
             parameters.Add("@id", sponsorType.Id, DbType.Int32, direction: ParameterDirection.Output);
 
             await db.ExecuteAsync("100_InsertSponsorType", parameters, commandType: CommandType.StoredProcedure);
@@ -156,6 +157,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
             parameters.Add("@nameEN", sponsorType.NameEN, DbType.String);
             parameters.Add("@isActive", sponsorType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", sponsorType.DisplayOrder, DbType.Int32);
+            parameters.Add("@selectionNotification", sponsorType.SelectionNotification, DbType.Boolean);
             var rowsAffected = await db.ExecuteAsync("100_UpdateSponsorType", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
@@ -199,6 +201,29 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el tipo de auspiciador");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los tipos de auspiciador válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">El ID del programa</param>
+    /// <returns>Los tipos de auspiciador válidos para el programa</returns>
+    public async Task<dynamic> GetSponsorTypesByProgram(int programId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@programId", programId, DbType.Int32);
+
+            var result = await db.QueryAsync<DTOSponsorType>("100_GetSponsorTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de auspiciador para el programa {ProgramId}", programId);
             throw;
         }
     }

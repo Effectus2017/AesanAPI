@@ -12,7 +12,8 @@ BEGIN
         IsActive,
         CreatedAt,
         UpdatedAt,
-        DisplayOrder
+        DisplayOrder,
+        SelectionNotification
     FROM SponsorType
     WHERE Id = @id;
 END; 

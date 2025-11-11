@@ -40,4 +40,11 @@ public interface ISponsorTypeRepository
     /// <param name="id">ID del tipo de auspiciador a eliminar</param>
     /// <returns>True si se eliminó correctamente, false en caso contrario</returns>
     Task<bool> DeleteSponsorType(int id);
+
+    /// <summary>
+    /// Obtiene los tipos de auspiciador válidos para un programa específico.
+    /// </summary>
+    /// <param name="programId">El ID del programa.</param>
+    /// <returns>Los tipos de auspiciador válidos para el programa.</returns>
+    Task<dynamic> GetSponsorTypesByProgram(int programId);
 }

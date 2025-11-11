@@ -165,4 +165,38 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de auspiciador");
         }
     }
+
+    /// <summary>
+    /// Obtiene los tipos de auspiciador válidos para un programa específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de tipos de auspiciador válidos para el programa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-sponsor-types-by-program")]
+    [SwaggerOperation(Summary = "Obtiene tipos de auspiciador por programa", Description = "Devuelve los tipos de auspiciador válidos para un programa específico.")]
+    public async Task<ActionResult> GetSponsorTypesByProgram([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de auspiciador para el programa: {ProgramId}", queryParameters.ProgramId);
+
+                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
+                {
+                    return BadRequest("El ID del programa es requerido");
+                }
+
+                var result = await _sponsorTypeRepository.GetSponsorTypesByProgram(queryParameters.ProgramId.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de auspiciador para el programa {ProgramId}", queryParameters.ProgramId);
+            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de auspiciador", ex.Message));
+        }
+    }
 }

@@ -175,4 +175,38 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de entrega");
         }
     }
+
+    /// <summary>
+    /// Obtiene los tipos de entrega válidos para un programa específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de tipos de entrega válidos para el programa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-delivery-types-by-program")]
+    [SwaggerOperation(Summary = "Obtiene tipos de entrega por programa", Description = "Devuelve los tipos de entrega válidos para un programa específico.")]
+    public async Task<ActionResult> GetDeliveryTypesByProgram([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de entrega para el programa: {ProgramId}", queryParameters.ProgramId);
+
+                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
+                {
+                    return BadRequest("El ID del programa es requerido");
+                }
+
+                var result = await _deliveryTypeRepository.GetDeliveryTypesByProgram(queryParameters.ProgramId.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de entrega para el programa {ProgramId}", queryParameters.ProgramId);
+            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de entrega", ex.Message));
+        }
+    }
 }

@@ -15,7 +15,8 @@ BEGIN
         IsActive,
         CreatedAt,
         UpdatedAt,
-        DisplayOrder
+        DisplayOrder,
+        SelectionNotification
     FROM SponsorType
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%')

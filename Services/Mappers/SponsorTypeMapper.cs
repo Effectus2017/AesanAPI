@@ -29,6 +29,9 @@ public class SponsorTypeMapper
                 NameEN = item.NameEN,
                 IsActive = item.IsActive,
                 DisplayOrder = item.DisplayOrder,
+                SelectionNotification = item.SelectionNotification ?? false,
+                CreatedAt = item.CreatedAt,
+                UpdatedAt = item.UpdatedAt,
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

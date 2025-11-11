@@ -186,6 +186,29 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     }
 
     /// <summary>
+    /// Obtiene los tipos de entrega válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">El ID del programa</param>
+    /// <returns>Los tipos de entrega válidos para el programa</returns>
+    public async Task<dynamic> GetDeliveryTypesByProgram(int programId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@programId", programId, DbType.Int32);
+
+            var result = await db.QueryAsync<DeliveryTypeResponse>("100_GetDeliveryTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de entrega para el programa {ProgramId}", programId);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Invalida el cache para el tipo de entrega.
     /// </summary>
     /// <param name="deliveryTypeId">El ID del tipo de entrega a invalidar.</param>

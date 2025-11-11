@@ -1,24 +1,28 @@
+-- Insertar todos los valores de SponsorType
+-- Eliminar todos los valores actuales y recrear según especificación
+
+TRUNCATE TABLE SponsorType;
+
+-- Gobierno (para PDAM)
 INSERT INTO SponsorType
-    (Name, NameEN, IsActive, DisplayOrder)
+    (Name, NameEN, IsActive, DisplayOrder, SelectionNotification)
 VALUES
-    ('N/A', 'N/A', 1, 1);
+    ('Gobierno', 'Government', 1, 10, 0);
+
+-- Privado (para PDAM y PACNA)
 INSERT INTO SponsorType
-    (Name, NameEN, IsActive, DisplayOrder)
+    (Name, NameEN, IsActive, DisplayOrder, SelectionNotification)
 VALUES
-    ('Auspiciador Entrega', 'Delivery Sponsor', 1, 2);
+    ('Privado', 'Private', 1, 20, 0);
+
+-- Público Estatal (para PACNA)
 INSERT INTO SponsorType
-    (Name, NameEN, IsActive, DisplayOrder)
+    (Name, NameEN, IsActive, DisplayOrder, SelectionNotification)
 VALUES
-    ('Centro Comunal', 'Community Center', 1, 3);
+    ('Público Estatal', 'State Public', 1, 30, 0);
+
+-- Público Federal (para PACNA)
 INSERT INTO SponsorType
-    (Name, NameEN, IsActive, DisplayOrder)
+    (Name, NameEN, IsActive, DisplayOrder, SelectionNotification)
 VALUES
-    ('Domicilio', 'Home', 1, 4);
-INSERT INTO SponsorType
-    (Name, NameEN, IsActive, DisplayOrder)
-VALUES
-    ('Servi-Expreso/Carro', 'Express Train/Car', 1, 5);
-INSERT INTO SponsorType
-    (Name, NameEN, IsActive, DisplayOrder)
-VALUES
-    ('Sitio Recoge', 'Pickup Site', 1, 6);
+    ('Público Federal', 'Federal Public', 1, 40, 0);

@@ -42,4 +42,11 @@ public interface IDeliveryTypeRepository
     /// <param name="id">El ID del tipo a eliminar.</param>
     /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
     Task<bool> DeleteDeliveryType(int id);
+
+    /// <summary>
+    /// Obtiene los tipos de entrega válidos para un programa específico.
+    /// </summary>
+    /// <param name="programId">El ID del programa.</param>
+    /// <returns>Los tipos de entrega válidos para el programa.</returns>
+    Task<dynamic> GetDeliveryTypesByProgram(int programId);
 }
