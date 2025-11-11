@@ -923,7 +923,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
-            
+
             // Obtener todos los días de funcionamiento creados para este sitio en el rango de fechas
             var operatingDays = await dbConnection.QueryAsync<dynamic>(
                 @"SELECT Id, OperatingDate, StartTime, EndTime, IsExcluded 

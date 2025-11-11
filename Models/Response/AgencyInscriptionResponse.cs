@@ -1,10 +1,10 @@
-namespace Api.Models;
+namespace Api.Models.Response;
 
 /// <summary>
-/// DTO para transferir datos de inscripción de agencia
+/// Modelo de respuesta para datos de inscripción de agencia
 /// Incluye todos los campos específicos del proceso de inscripción de una agencia
 /// </summary>
-public class DTOAgencyInscription
+public class AgencyInscriptionResponse
 {
     public int Id { get; set; }
 
@@ -56,7 +56,6 @@ public class DTOAgencyInscription
     /// ¿Desde cuándo su Entidad ofrece servicios? (Solo para programa PACNA)
     /// </summary>
     public DateTime? ServicesOfferedSince { get; set; }
-
 
     /// <summary>
     /// Justificación de rechazo de la agencia
@@ -115,8 +114,9 @@ public class DTOAgencyInscription
 
     /// <summary>
     /// Si es una Agencia Auspiciadora de Hogares (Solo para programa PACNA)
+    /// Ahora usa OptionSelection con opciones: No, Sí, Ambos
     /// </summary>
-    public bool? IsDayCareHome { get; set; }
+    public int? IsDayCareHomeId { get; set; }
 
     /// <summary>
     /// Fecha límite para completar la inscripción de los Sitios
@@ -153,4 +153,22 @@ public class DTOAgencyInscription
     /// Modalidad de contrato público alianza (relación)
     /// </summary>
     public DTOOptionSelection? PublicAllianceContract { get; set; }
+
+    /// <summary>
+    /// Si es una Agencia Auspiciadora de Hogares (relación)
+    /// </summary>
+    public DTOOptionSelection? IsDayCareHome { get; set; }
+
+    /// <summary>
+    /// ¿Su Entidad participa actualmente en alguno de los siguientes programas? (Solo para PSAV)
+    /// Does your Entity currently participate in any of the following programs? (Only for PSAV)
+    /// Early Head Start, Head Start, N/A
+    /// </summary>
+    public int? ParticipatesInHeadStartProgramId { get; set; }
+
+    /// <summary>
+    /// Participa en programa Head Start (relación)
+    /// </summary>
+    public DTOOptionSelection? ParticipatesInHeadStartProgram { get; set; }
 }
+

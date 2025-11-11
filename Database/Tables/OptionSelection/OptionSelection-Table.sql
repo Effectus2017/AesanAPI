@@ -231,7 +231,25 @@ VALUES
 
 -- Insertar valores de Site Location en OptionSelection
 INSERT INTO OptionSelection
-    (Name, NameEN, OptionKey, IsActive, DisplayOrder)
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
 VALUES
-    ('Fijo', 'Fixed', 'siteLocation', 1, 1, 910),
-    ('Móvil', 'Mobile', 'siteLocation', 1, 2, 920);
+    ('Fijo', 'Fixed', 'siteLocation', 0, 1, 910),
+    ('Móvil', 'Mobile', 'siteLocation', 0, 1, 920);
+
+-- Opciones para IsDayCareHome (¿Es usted una Entidad Auspiciadora de Hogares?)
+-- Solo para programa PACNA
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('No', 'No', 'isDayCareHome', 0, 1, 950),
+    ('Sí', 'Yes', 'isDayCareHome', 1, 1, 960),
+    ('Ambos', 'Both', 'isDayCareHome', NULL, 1, 970);
+
+-- Opciones para ParticipatesInHeadStartProgram (¿Su Entidad participa actualmente en alguno de los siguientes programas?)
+-- Solo para programa PSAV
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Early Head Start', 'Early Head Start', 'headStartProgram', 0, 1, 980),
+    ('Head Start', 'Head Start', 'headStartProgram', 0, 1, 990),
+    ('N/A', 'N/A', 'headStartProgram', 0, 1, 1000);

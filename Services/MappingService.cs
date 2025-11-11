@@ -31,11 +31,11 @@ public class MappingService
     }
 
     /// <summary>
-    /// Mapea los datos de inscripción de agencia desde un resultado dinámico a un DTOAgencyInscription
+    /// Mapea los datos de inscripción de agencia desde un resultado dinámico a un AgencyInscriptionResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOAgencyInscription</returns>
-    public DTOAgencyInscription? MapAgencyInscription(dynamic item)
+    /// <returns>AgencyInscriptionResponse</returns>
+    public AgencyInscriptionResponse? MapAgencyInscription(dynamic item)
     {
         return AgencyMapper.MapInscriptionFromResult(item);
     }

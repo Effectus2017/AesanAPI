@@ -79,7 +79,7 @@ BEGIN
         ai.TypeOfApplicantId,
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
-        ai.IsDayCareHome,
+        ai.IsDayCareHomeId,
         ai.DeadlineToCompleteRegistration,
         ai.CompletedRegistrationDate,
         a.IsActive,

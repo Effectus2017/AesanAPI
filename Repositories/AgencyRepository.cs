@@ -360,7 +360,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.TaxExemptionTypeId,
                 agencyRequest.PublicAllianceContractId,
                 agencyRequest.NationalYouthProgram,
-                agencyRequest.IsDayCareHome
+                agencyRequest.IsDayCareHomeId,
+                agencyRequest.ParticipatesInHeadStartProgramId
             );
 
             // Asignar programas a la agencia
@@ -396,7 +397,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, bool isDayCareHome)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int publicAllianceContractId, bool nationalYouthProgram, int isDayCareHomeId, int? participatesInHeadStartProgramId = null)
     {
         try
         {
@@ -414,7 +415,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@taxExemptionTypeId", taxExemptionTypeId);
             parameters.Add("@publicAllianceContractId", publicAllianceContractId);
             parameters.Add("@nationalYouthProgram", nationalYouthProgram);
-            parameters.Add("@isDayCareHome", isDayCareHome);
+            parameters.Add("@isDayCareHomeId", isDayCareHomeId);
+            parameters.Add("@participatesInHeadStartProgramId", participatesInHeadStartProgramId);
 
             // Deadline to complete the registration of the Sites
             // Tomar valor desde AppSettings que es un numero de días y convertir a date-time

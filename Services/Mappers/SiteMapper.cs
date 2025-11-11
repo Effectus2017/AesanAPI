@@ -189,7 +189,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
 
             return new EducationLevelResponse
             {
-                Id = item.Id,
+                Id = item.EducationLevelId, // Usar EducationLevelId (FK a EducationLevel) en lugar de Id (PK de SiteEducationLevel)
                 Name = item.EducationLevelName ?? string.Empty,
                 NameEN = item.EducationLevelNameEN ?? string.Empty
             };

@@ -122,6 +122,8 @@ builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffTypeRepository, StaffTypeRepository>();
 builder.Services.AddScoped<IStaffClassificationRepository, StaffClassificationRepository>();
 builder.Services.AddScoped<IStaffRelationshipRepository, StaffRelationshipRepository>();
+builder.Services.AddScoped<IProgramPeriodRepository, ProgramPeriodRepository>();
+builder.Services.AddScoped<ISiteProgramRepository, SiteProgramRepository>();
 // Registrar servicios Lazy
 builder.Services.AddScoped<Lazy<IUserRepository>>(sp => new Lazy<IUserRepository>(() => sp.GetRequiredService<IUserRepository>()));
 builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyRepository>(() => sp.GetRequiredService<IAgencyRepository>()));
@@ -137,6 +139,8 @@ builder.Services.AddScoped<ISiteOperatingDayServiceRepository, SiteOperatingDayS
 builder.Services.AddScoped<IAesanDashboardRepository, AesanDashboardRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IProgramPeriodService, ProgramPeriodService>();
+builder.Services.AddScoped<ISiteProgramService, SiteProgramService>();
 
 // Registrar mappers
 builder.Services.AddScoped<AgencyMapper>();

@@ -1,5 +1,5 @@
 -- Insertar una inscripción de agencia
--- 1.1.8 - Removido organizedAthleticPrograms y atRiskService (ahora están en Site)
+-- 1.1.9 - Agregado ParticipatesInHeadStartProgramId (Solo para PSAV)
 CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @agencyId int,
     @nonProfit bit,
@@ -16,7 +16,8 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @taxExemptionTypeId int,
     @publicAllianceContractId int,
     @nationalYouthProgram bit,
-    @isDayCareHome bit,
+    @isDayCareHomeId int,
+    @participatesInHeadStartProgramId int = NULL,
     @deadlineToCompleteRegistration datetime,
     @id int OUTPUT
 AS
@@ -30,7 +31,8 @@ BEGIN
         StateFundsDenied, StateFundsDeniedReason,
         BasicEducationRegistry, ExtendedHours, ServicesOfferedSince,
         TaxExemptionStatusId, TaxExemptionTypeId,
-        PublicAllianceContractId, NationalYouthProgram, IsDayCareHome, DeadlineToCompleteRegistration
+        PublicAllianceContractId, NationalYouthProgram, IsDayCareHomeId, ParticipatesInHeadStartProgramId,
+        DeadlineToCompleteRegistration
         )
     VALUES
         (
@@ -38,7 +40,8 @@ BEGIN
             @stateFundsDenied, @stateFundsDeniedReason,
             @basicEducationRegistry, @extendedHours, @servicesOfferedSince,
             @taxExemptionStatusId, @taxExemptionTypeId,
-            @publicAllianceContractId, @nationalYouthProgram, @isDayCareHome, @deadlineToCompleteRegistration
+            @publicAllianceContractId, @nationalYouthProgram, @isDayCareHomeId, @participatesInHeadStartProgramId,
+            @deadlineToCompleteRegistration
         );
         SET @id = SCOPE_IDENTITY();
         COMMIT TRANSACTION;

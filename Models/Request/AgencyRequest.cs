@@ -107,8 +107,12 @@ public class AgencyRequest
     public bool NationalYouthProgram { get; set; } = false;
     // ¿Es usted una Agencia Auspiciadora de Hogares? (Solo para programa PACNA)
     // Are you a Day Care Homes? (Only for PACNA program)
-    // Si (1) y No (2)
-    public bool IsDayCareHome { get; set; } = false;
+    // No (ID), Sí (ID), Ambos (ID) - Ahora usa OptionSelection
+    public int IsDayCareHomeId { get; set; } = 0;
+    // ¿Su Entidad participa actualmente en alguno de los siguientes programas? (Solo para PSAV)
+    // Does your Entity currently participate in any of the following programs? (Only for PSAV)
+    // Early Head Start, Head Start, N/A
+    public int? ParticipatesInHeadStartProgramId { get; set; } = null;
 
     // ¿Es la agencia recurrente?
     // Is the agency recurrent?

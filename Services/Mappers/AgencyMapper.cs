@@ -1,11 +1,12 @@
 using Api.Models;
+using Api.Models.Response;
 using Api.Services;
 
 namespace Api.Services.Mappers;
 
 /// <summary>
 /// Mapper para entidades relacionadas con Agency
-/// Contiene todos los métodos de mapeo para DTOAgency y DTOAgencyInscription
+/// Contiene todos los métodos de mapeo para DTOAgency y AgencyInscriptionResponse
 /// </summary>
 public class AgencyMapper(Lazy<MappingService> mappingService)
 {
@@ -89,11 +90,11 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
-    /// Mapea los datos de inscripción de agencia desde un resultado dinámico a un DTOAgencyInscription
+    /// Mapea los datos de inscripción de agencia desde un resultado dinámico a un AgencyInscriptionResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOAgencyInscription</returns>
-    public static DTOAgencyInscription? MapInscriptionFromResult(dynamic item)
+    /// <returns>AgencyInscriptionResponse</returns>
+    public static AgencyInscriptionResponse? MapInscriptionFromResult(dynamic item)
     {
         try
         {
@@ -109,7 +110,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 return null;
             }
 
-            return new DTOAgencyInscription
+            return new AgencyInscriptionResponse
             {
                 Id = item.AgencyInscriptionId ?? 0,
                 AgencyId = item.Id ?? 0,
@@ -121,7 +122,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 StateFundsDenied = item.StateFundsDenied,
                 StateFundsDeniedReason = item.StateFundsDeniedReason,
                 NationalYouthProgram = item.NationalYouthProgram,
-                IsDayCareHome = item.IsDayCareHome,
+                IsDayCareHomeId = item.IsDayCareHomeId,
 
                 // Campos de ID de opciones
                 BasicEducationRegistry = item.BasicEducationRegistry,
@@ -131,6 +132,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 TypeOfEntityId = item.TypeOfEntityId,
                 TypeOfApplicantId = item.TypeOfApplicantId,
                 PublicAllianceContractId = item.PublicAllianceContractId,
+                ParticipatesInHeadStartProgramId = item.ParticipatesInHeadStartProgramId,
 
                 // Campos de fecha y texto
                 RejectionJustification = item.RejectionJustification,
@@ -179,6 +181,22 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                     Name = item.PublicAllianceContractName ?? string.Empty,
                     NameEN = item.PublicAllianceContractNameEN ?? string.Empty,
                     OptionKey = item.PublicAllianceContractOptionKey ?? string.Empty
+                } : null,
+
+                IsDayCareHome = item.IsDayCareHomeId != null ? new DTOOptionSelection
+                {
+                    Id = item.IsDayCareHomeId,
+                    Name = item.IsDayCareHomeName ?? string.Empty,
+                    NameEN = item.IsDayCareHomeNameEN ?? string.Empty,
+                    OptionKey = item.IsDayCareHomeOptionKey ?? string.Empty
+                } : null,
+
+                ParticipatesInHeadStartProgram = item.ParticipatesInHeadStartProgramId != null ? new DTOOptionSelection
+                {
+                    Id = item.ParticipatesInHeadStartProgramId,
+                    Name = item.ParticipatesInHeadStartProgramName ?? string.Empty,
+                    NameEN = item.ParticipatesInHeadStartProgramNameEN ?? string.Empty,
+                    OptionKey = item.ParticipatesInHeadStartProgramOptionKey ?? string.Empty
                 } : null
             };
         }
@@ -280,7 +298,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 item.FederalFundsDenied,
                 item.StateFundsDenied,
                 item.NationalYouthProgram,
-                item.IsDayCareHome,
+                item.IsDayCareHomeId,
                 item.BasicEducationRegistry,
                 item.ExtendedHours,
                 item.TaxExemptionStatusId,

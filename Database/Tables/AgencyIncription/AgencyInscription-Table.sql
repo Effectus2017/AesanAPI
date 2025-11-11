@@ -55,8 +55,8 @@ CREATE TABLE AgencyInscription
     NationalYouthProgram bit NULL DEFAULT (0),
     -- ¿Es usted una Agencia Auspiciadora de Hogares? (Solo para programa PACNA)
     -- Are you a Day Care Homes? (Only for PACNA program)
-    -- Si (1) y No (2)
-    IsDayCareHome bit NULL DEFAULT (0),
+    -- Si (1) y No (2) y Ambos (3) - Ahora usa OptionSelection
+    IsDayCareHomeId int NULL,
     -- Fecha limite para completar la inscripción de los Sitios
     -- Deadline to complete the registration of the Sites
     -- 10 minutos (10), 30 minutos (30), 1 hora (60), 2 horas (120), 3 horas (180), 4 horas (240), 5 horas (300), 6 horas (360), 7 horas (420), 8 horas (480), 9 horas (540), 10 horas (600)
@@ -91,7 +91,7 @@ ADD TaxExemptionStatusId int NULL,
     TypeOfApplicantId int NULL,
     PublicAllianceContractId int NULL,
     NationalYouthProgram bit NULL DEFAULT (0),
-    IsDayCareHome bit NULL DEFAULT (0);
+    IsDayCareHomeId int NULL;
 GO
 
 -- Add foreign key constraints for OptionSelection fields
@@ -100,7 +100,8 @@ ADD FOREIGN KEY (TaxExemptionStatusId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (TaxExemptionTypeId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (TypeOfEntityId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (TypeOfApplicantId) REFERENCES OptionSelection(Id),
-    FOREIGN KEY (PublicAllianceContractId) REFERENCES OptionSelection(Id);
+    FOREIGN KEY (PublicAllianceContractId) REFERENCES OptionSelection(Id),
+    FOREIGN KEY (IsDayCareHomeId) REFERENCES OptionSelection(Id);
 GO
 
 -- Agregar columna para la fecha limite para completar la inscripción de los Sitios
@@ -119,5 +120,19 @@ IF COL_LENGTH('AgencyInscription', 'ServicesOfferedSince') IS NULL
 BEGIN
     ALTER TABLE AgencyInscription
     ADD ServicesOfferedSince datetime NULL;
+END
+GO
+
+-- Agregar columna ParticipatesInHeadStartProgramId (Solo para PSAV)
+-- ¿Su Entidad participa actualmente en alguno de los siguientes programas?
+-- Does your Entity currently participate in any of the following programs?
+-- Early Head Start, Head Start, N/A
+IF COL_LENGTH('AgencyInscription', 'ParticipatesInHeadStartProgramId') IS NULL
+BEGIN
+    ALTER TABLE AgencyInscription
+    ADD ParticipatesInHeadStartProgramId int NULL;
+    
+    ALTER TABLE AgencyInscription
+    ADD FOREIGN KEY (ParticipatesInHeadStartProgramId) REFERENCES OptionSelection(Id);
 END
 GO

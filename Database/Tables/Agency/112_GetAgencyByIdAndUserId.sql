@@ -43,7 +43,7 @@ BEGIN
         ai.TypeOfApplicantId,
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
-        ai.IsDayCareHome,
+        ai.IsDayCareHomeId,
         ai.ServicesOfferedSince,
         ai.RejectionJustification,
         ai.AppointmentCoordinated,
@@ -82,6 +82,11 @@ BEGIN
         os_pac.NameEN AS PublicAllianceContractNameEN,
         os_pac.OptionKey AS PublicAllianceContractOptionKey,
 
+        -- Datos de OptionSelection para IsDayCareHome
+        os_idch.Name AS IsDayCareHomeName,
+        os_idch.NameEN AS IsDayCareHomeNameEN,
+        os_idch.OptionKey AS IsDayCareHomeOptionKey,
+
         -- Datos adicionales de la agencia
         a.IsPropietary,
         c.Name as CityName,
@@ -118,6 +123,7 @@ BEGIN
         LEFT JOIN OptionSelection os_toe ON ai.TypeOfEntityId = os_toe.Id
         LEFT JOIN OptionSelection os_toa ON ai.TypeOfApplicantId = os_toa.Id
         LEFT JOIN OptionSelection os_pac ON ai.PublicAllianceContractId = os_pac.Id
+        LEFT JOIN OptionSelection os_idch ON ai.IsDayCareHomeId = os_idch.Id
     WHERE a.Id = @agencyId;
 
     -- Segunda consulta: Obtener los programas asociados a las agencias del usuario
