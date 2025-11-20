@@ -212,9 +212,6 @@ public class StaffRepository(
         {
             _logger.LogInformation("Actualizando miembro del staff con ID {StaffId}", staffRequest.Id);
 
-            // Obtener el registro actual para auditoría
-            var currentStaff = await GetStaffById(staffRequest.Id.Value);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
@@ -243,33 +240,20 @@ public class StaffRepository(
             parameters.Add("@userId", staffRequest.UserId, DbType.String);
             parameters.Add("@isActive", staffRequest.IsActive, DbType.Boolean);
             parameters.Add("@reviewResultId", staffRequest.ReviewResultId);
-
             // Fecha de revisión segura
             parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime);
-
             parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
+
+            int rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
             {
-                // Registrar en auditoría
-                await _auditLogger.LogChangeAsync(
-                    "Staff",
-                    staffRequest.Id.Value.ToString(),
-                    "UPDATE",
-                    staffRequest.UserId ?? "SYSTEM",
-                    currentStaff, // oldEntity
-                    staffRequest, // newEntity
-                    "Miembro del staff actualizado",
-                    "StaffUpdate"
-                );
-
                 InvalidateCache(staffRequest.Id.Value);
-
                 // Manejar la asignación de sitio
                 await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SiteId, staffRequest.IsPrimary);
-
                 return true;
             }
 

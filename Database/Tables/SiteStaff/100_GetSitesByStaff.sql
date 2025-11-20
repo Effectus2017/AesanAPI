@@ -28,6 +28,7 @@ BEGIN
 
         -- Información del Sitio
         site.Name AS SiteName,
+        site.AgencyId AS AgencyId,
         site.Address AS SiteAddress,
         site.CityId AS SiteCityId,
         site.RegionId AS SiteRegionId,

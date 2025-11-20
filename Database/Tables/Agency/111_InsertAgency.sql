@@ -5,7 +5,7 @@ CREATE OR ALTER PROCEDURE [111_InsertAgency]
     @postalCityId int,
     @regionId int,
     @postalRegionId int,
-    @uieNumber int,
+    @uieNumber nvarchar(12),
     @einNumber int,
     @sdrNumber int,
     @address nvarchar(255),

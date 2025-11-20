@@ -23,3 +23,6 @@ END
 GO
 
 EXEC [100_GetAgencyProgramsByUserId] @userId = '1db1104b-6c97-4f64-93e1-929296dea7bf';
+
+
+--Insert into AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt) values ('1db1104b-6c97-4f64-93e1-929296dea7bf', 'e2f3g4h5-6789-0123-4567-890123456789', 1, GETDATE());

@@ -20,7 +20,8 @@ public class UnitOfWork(ApplicationDbContext context,
     IStaffClassificationRepository staffClassificationRepository,
     IMessageRepository messageRepository,
     ISiteStaffRepository siteStaffRepository,
-    ISiteCalendarRepository siteCalendarRepository
+    ISiteCalendarRepository siteCalendarRepository,
+    ISiteExcursionRepository siteExcursionRepository
     ) : IUnitOfWork
 {
     private readonly ApplicationDbContext _context = context;
@@ -43,4 +44,5 @@ public class UnitOfWork(ApplicationDbContext context,
     public IMessageRepository MessageRepository { get; private set; } = messageRepository;
     public ISiteStaffRepository SiteStaffRepository { get; private set; } = siteStaffRepository;
     public ISiteCalendarRepository SiteCalendarRepository { get; private set; } = siteCalendarRepository;
+    public ISiteExcursionRepository SiteExcursionRepository { get; private set; } = siteExcursionRepository;
 }

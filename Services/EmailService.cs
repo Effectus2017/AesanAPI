@@ -3,16 +3,18 @@ using Api.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Hosting;
 using MimeKit;
 using MimeKit.Text;
 
 namespace Api.Services;
 
 
-public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<EmailService> logger) : IEmailService
+public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<EmailService> logger, IWebHostEnvironment environment) : IEmailService
 {
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly ILogger<EmailService> _logger = logger;
+    private readonly IWebHostEnvironment _environment = environment;
     public async Task SendEmailAsync(string email, string subject, string message)
     {
         await SendEmailWithGmailAsync(email, subject, message);
@@ -20,8 +22,8 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<Ema
 
     public async Task SendTemporaryPasswordEmail(string email, string temporaryPassword)
     {
-        var subject = "Tu contraseña temporal";
-        var message = $"Tu contraseña temporal es: {temporaryPassword}";
+        var subject = "Tu contraseña temporera";
+        var message = $"Tu contraseña temporera es: {temporaryPassword}";
         await SendEmailWithGmailAsync(email, subject, message);
     }
 
@@ -77,16 +79,39 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<Ema
     }
 
     /// <summary>
+    /// Obtiene la URL del Web según el ambiente actual
+    /// </summary>
+    private string GetWebUrl()
+    {
+        string webUrl = _environment.EnvironmentName.ToLower() switch
+        {
+            "development" => _appSettings.LocalWebURL,
+            "staging" => _appSettings.StagingWebURL,
+            "production" => _appSettings.ProduccionWebURL,
+            _ => _appSettings.LocalWebURL
+        };
+
+        // Asegurar que la URL termina con '/'
+        if (!string.IsNullOrEmpty(webUrl) && !webUrl.EndsWith("/"))
+        {
+            webUrl += "/";
+        }
+
+        return webUrl ?? _appSettings.LocalWebURL;
+    }
+
+    /// <summary>
     /// Envía un correo de bienvenida al auspiciador de una agencia
     /// </summary>
     /// <param name="userRequest">Datos del usuario y la agencia</param>
-    /// <param name="temporaryPassword">Contraseña temporal asignada</param>
+    /// <param name="temporaryPassword">Contraseña temporera asignada</param>
     public async Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword)
     {
         _logger.LogInformation("Enviando correo de bienvenida a la agencia");
 
         var subject = "¡Gracias por su interés en formar parte del programa de AESAN!";
         var fullName = $"{userRequest.Staff.FirstName} {userRequest.Staff.FatherLastName}";
+        var webUrl = GetWebUrl();
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
@@ -99,7 +124,7 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<Ema
                 <p>Para continuar con su proceso de registro, validación y aprobación final, le pedimos que siga los siguientes pasos:</p>
                 
                 <ul>
-                    <li>Haz clic en el botón <strong>""NUTRE""</strong> donde podrá accesar a la plataforma.</li>
+                    <li>Haz clic en el siguiente enlace para acceder a la plataforma <strong>NUTRE</strong>: <a href='{webUrl}' style='color: #0066cc; text-decoration: none; font-weight: bold;'>{webUrl}</a></li>
                     <li>Ingrese su correo electrónico como nombre de usuario: <strong>{userRequest.Staff.Email}</strong></li>
                     <li>Luego coloque la contraseña temporera <strong>{temporaryPassword}</strong></li>
                     <li>Deberá completar la sección en el menú principal llamada <strong>""Sitios""</strong>. Aquí deberá incluir todos los Sitios asociados a su Organización o Institución que estarán participando del programa de su interés.</li>
@@ -123,20 +148,21 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<Ema
     /// <summary>
     /// Envía un correo de confirmación de aprobación de auspiciador
     /// </summary>
-    /// <param name="userRequest">Datos del usuario y la agencia</param>
-    /// <param name="temporaryPassword">Contraseña temporal asignada</param>
-    public async Task SendApprovalSponsorEmail(User user, string temporaryPassword)
+    /// <param name="user">Usuario al que se le envía el correo</param>
+    /// <param name="temporaryPassword">Contraseña temporera asignada</param>
+    /// <param name="fullName">Nombre completo del usuario (opcional)</param>
+    public async Task SendApprovalSponsorEmail(User user, string temporaryPassword, string? fullName = null)
     {
         _logger.LogInformation("Enviando correo de confirmación de aprobación de auspiciador");
 
         var subject = "¡Gracias por su interés en formar parte del programa de AESAN!";
-        // Nota: Los datos personales ahora vienen de Staff, no de User
-        // Por ahora, usar solo el email del usuario
-        var fullName = "Usuario"; // Se puede actualizar cuando se implemente la relación con Staff
+        // Usar el nombre completo proporcionado, o "Usuario" como fallback
+        var userName = !string.IsNullOrWhiteSpace(fullName) ? fullName : "Usuario";
+        var webUrl = GetWebUrl();
 
         var htmlBody = $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                <p>Estimado/a {fullName},</p>
+                <p>Estimado/a {userName},</p>
                 
                 <p>Nos complace enormemente saber que está interesado/a en formar parte de nuestros programas en AESAN. 
                 Su apoyo y participación son fundamentales para continuar con nuestra misión de ofrecer servicios de alimentos 
@@ -145,7 +171,7 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<Ema
                 <p>Para continuar con su proceso de registro, validación y aprobación final, le pedimos que siga los siguientes pasos:</p>
                 
                 <ul>
-                    <li>Haz clic en el botón <strong>""NUTRE""</strong> donde podrá accesar a la plataforma.</li>
+                    <li>Haz clic en el siguiente enlace para acceder a la plataforma <strong>NUTRE</strong>: <a href='{webUrl}' style='color: #0066cc; text-decoration: none; font-weight: bold;'>{webUrl}</a></li>
                     <li>Luego coloque la contraseña temporera <strong>{temporaryPassword}</strong></li>
                     <li>Deberá completar la sección en el menú principal llamada <strong>""Sitios""</strong>. Aquí deberá incluir todos los Sitios asociados a su Organización o Institución que estarán participando del programa de su interés.</li>
                     <li>Deberá completar la sección en el menú principal llamada <strong>""Personal""</strong> donde listará todos los empleados administrativos y operacionales, así como los miembros de la junta directiva.</li>
@@ -283,21 +309,21 @@ public class EmailService(IOptions<ApplicationSettings> appSettings, ILogger<Ema
     /// Envía un correo electrónico notificando el cambio de contraseña de un usuario
     /// </summary>
     /// <param name="user">Usuario al que se le cambió la contraseña</param>
-    /// <param name="newPassword">Nueva contraseña temporal</param>
+    /// <param name="newPassword">Nueva contraseña temporera</param>
     public async Task SendPasswordChangedEmail(DTOUser user, string newPassword)
     {
-        var subject = "Tu contraseña temporal ha sido generada";
+        var subject = "Tu contraseña temporera ha sido generada";
         var fullName = $"{user.FirstName} {user.FatherLastName}";
-        var plainTextContent = $"Un administrador ha generado una contraseña temporal para tu cuenta. Tu contraseña temporal es: {newPassword}. Al ingresar con esta contraseña, el sistema te guiará para crear una nueva contraseña segura.";
+        var plainTextContent = $"Un administrador ha generado una contraseña temporera para tu cuenta. Tu contraseña temporera es: {newPassword}. Al ingresar con esta contraseña, el sistema te guiará para crear una nueva contraseña segura.";
 
         var htmlContent = $@"
-            <h2>Se ha generado una contraseña temporal para tu cuenta</h2>
+            <h2>Se ha generado una contraseña temporera para tu cuenta</h2>
             <p>Estimado/a {fullName},</p>
-            <p>Un administrador ha generado una contraseña temporal para tu cuenta en el sistema.</p>
-            <p>Tu contraseña temporal es: <strong>{newPassword}</strong></p>
+            <p>Un administrador ha generado una contraseña temporera para tu cuenta en el sistema.</p>
+            <p>Tu contraseña temporera es: <strong>{newPassword}</strong></p>
             <p><strong>Importante:</strong></p>
             <ul>
-                <li>Esta es una contraseña temporal que debes cambiar en tu próximo inicio de sesión.</li>
+                <li>Esta es una contraseña temporera que debes cambiar en tu próximo inicio de sesión.</li>
                 <li>Al ingresar con esta contraseña, el sistema te guiará automáticamente para crear una nueva contraseña segura.</li>
                 <li>Por razones de seguridad, no compartas esta contraseña con nadie.</li>
             </ul>

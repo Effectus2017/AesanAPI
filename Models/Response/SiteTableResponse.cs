@@ -13,4 +13,6 @@ public class SiteTableResponse
     public int SiteNumber { get; set; }
     public string? AgencyCode { get; set; }
     public string? SiteCode { get; set; }
+    public string? SchoolName { get; set; }
+    public int? SchoolId { get; set; }
 }

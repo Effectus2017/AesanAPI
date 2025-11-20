@@ -46,4 +46,10 @@ public interface IUserRepository
     Task<bool> GeneratePasswordResetTokenAndSendEmail(string email);
     Task<bool> ValidatePasswordResetToken(string email, string token);
     Task<bool> ResetPasswordWithToken(string email, string token, string newPassword);
+
+    /// ------------------------------------------------------------------------------------------------
+    /// Métodos para validar correo electrónico
+    /// ------------------------------------------------------------------------------------------------
+
+    Task<bool> EmailExists(string email);
 }

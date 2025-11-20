@@ -28,12 +28,17 @@ BEGIN
             WHEN a.AgencyCode IS NOT NULL AND s.SiteNumber IS NOT NULL THEN
                 SUBSTRING(a.AgencyCode, CHARINDEX('-', a.AgencyCode) + 1, LEN(a.AgencyCode)) + '-' + CAST(s.SiteNumber AS VARCHAR(10))
             ELSE NULL
-        END AS SiteCode
+        END AS SiteCode,
+        -- Información de la escuela relacionada
+        sch.Name AS SchoolName,
+        sch.Id AS SchoolId
     FROM Site s
         INNER JOIN City c ON s.CityId = c.Id
         INNER JOIN Region r ON s.RegionId = r.Id
         LEFT JOIN Agency a ON s.AgencyId = a.Id
         LEFT JOIN GroupType gt ON s.GroupTypeId = gt.Id
+        LEFT JOIN SchoolSite ss ON s.Id = ss.SiteId AND ss.IsActive = 1
+        LEFT JOIN School sch ON ss.SchoolId = sch.Id AND sch.IsActive = 1
     WHERE s.IsActive = 1
         AND (
             @alls = 1

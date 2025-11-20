@@ -4,6 +4,7 @@
 -- NOTA: Los servicios se crean desde el código C# usando los datos del frontend
 -- Fecha: 2025-03-14
 -- Versión: 3.0
+-- DEPRECATED: Usar el procedimiento 100_InsertSiteOperatingDays en SiteOperatingDays/100_InsertSiteOperatingDays.sql
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertSiteOperatingDays]
     @siteId INT,
     @operatingFromDate DATE,

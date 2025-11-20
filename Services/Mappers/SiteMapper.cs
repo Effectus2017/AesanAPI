@@ -135,6 +135,36 @@ public class SiteMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
+    /// Mapea un resultado dinámico a un SiteListItemResponse para elementos de lista simples
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SiteListItemResponse</returns>
+    public static SiteListItemResponse MapListItemFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            return new SiteListItemResponse
+            {
+                Id = item.Id ?? 0,
+                Name = item.Name ?? string.Empty
+            };
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        {
+            throw new InvalidOperationException($"Error al mapear el sitio: Propiedad no encontrada o inválida. {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error inesperado al mapear el sitio: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// Mapea un resultado dinámico a un SiteTableResponse optimizado para tablas
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
@@ -160,7 +190,9 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 GeneralEnrollment = item.GeneralEnrollment,
                 SiteNumber = item.SiteNumber ?? 0,
                 AgencyCode = item.AgencyCode,
-                SiteCode = item.SiteCode
+                SiteCode = item.SiteCode,
+                SchoolName = item.SchoolName,
+                SchoolId = item.SchoolId
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

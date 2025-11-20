@@ -182,7 +182,7 @@ public static class StaffMapper
                 SiteId = item.SiteId,
                 IsPrimary = item.IsPrimary,
 
-                Site = item.SiteId != null ? mappingService.MapSiteListItem(new { Id = item.SiteId, Name = item.SiteName }) : null,
+                Site = item.SiteId != null ? mappingService.MapSiteListItem(new { Id = item.SiteId, Name = item.SiteName, AgencyId = item.SiteAgencyId ?? 0 }) : null,
 
                 City = mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }),
                 Region = mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }),

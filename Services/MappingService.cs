@@ -280,7 +280,7 @@ public class MappingService
     /// <returns>SiteListItemResponse para listas</returns>
     public SiteListItemResponse MapSiteListItem(dynamic item)
     {
-        return SiteMapper.MapResponseListFromResult(item);
+        return SiteMapper.MapListItemFromResult(item);
     }
 
     /// <summary>

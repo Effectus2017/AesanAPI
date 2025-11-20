@@ -22,4 +22,5 @@ public interface IUnitOfWork
     IMessageRepository MessageRepository { get; }
     ISiteStaffRepository SiteStaffRepository { get; }
     ISiteCalendarRepository SiteCalendarRepository { get; }
+    ISiteExcursionRepository SiteExcursionRepository { get; }
 }

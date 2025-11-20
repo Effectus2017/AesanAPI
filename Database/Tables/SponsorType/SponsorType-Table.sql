@@ -8,4 +8,6 @@ CREATE TABLE [dbo].[SponsorType]
     [SelectionNotification] BIT NOT NULL DEFAULT 0,
     [CreatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] DATETIME NULL
-); 
+);
+
+ALTER TABLE SponsorType ADD SelectionNotification BIT NOT NULL DEFAULT 0;

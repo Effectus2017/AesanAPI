@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Api.Models;
 
 /// ------------------------------------------------------------------------------------------------
@@ -11,7 +13,12 @@ public class AgencyRequest
 
     // Datos de la Agencia
     public int SdrNumber { get; set; } = 0;
-    public int UieNumber { get; set; } = 0;
+    
+    [MaxLength(12, ErrorMessage = "El número UIE debe tener máximo 12 caracteres")]
+    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "El número UIE solo puede contener letras y números")]
+    public string UieNumber { get; set; } = "";
+    
+    [Range(0, 999999999, ErrorMessage = "El número EIN debe tener máximo 9 dígitos")]
     public int EinNumber { get; set; } = 0;
 
     // Dirección Física

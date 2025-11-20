@@ -234,7 +234,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 Id = item.Id ?? 0,
                 Name = item.Name ?? string.Empty,
                 SdrNumber = item.SdrNumber ?? 0,
-                UieNumber = item.UieNumber ?? 0,
+                UieNumber = item.UieNumber ?? string.Empty,
                 EinNumber = item.EinNumber ?? 0,
                 Address = item.Address ?? string.Empty,
                 Phone = item.Phone ?? string.Empty,

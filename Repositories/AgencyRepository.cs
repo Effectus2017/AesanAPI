@@ -636,6 +636,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         // Add a null check before sending the email
                         if (!string.IsNullOrEmpty(password))
                         {
+                            // Construir el nombre completo del staff (igual que en el caso de rechazo)
+                            var fullName = $"{agency.User?.FirstName} {agency.User?.FatherLastName}".Trim();
+
+                            if (string.IsNullOrEmpty(fullName))
+                            {
+                                fullName = "Usuario";
+                            }
+
                             // Crear un User temporal para SendApprovalSponsorEmail
                             var User = new User
                             {
@@ -643,7 +651,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                                 Email = agency.Email
                             };
 
-                            await _emailService.SendApprovalSponsorEmail(User, password);
+                            await _emailService.SendApprovalSponsorEmail(User, password, fullName);
                             _logger.LogInformation($"Correo de aprobación enviado a la agencia {agencyId}");
                         }
                         else

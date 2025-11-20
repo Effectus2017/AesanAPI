@@ -316,7 +316,7 @@ public class UserRepository(UserManager<User> userManager,
             // Si la contraseña temporal está activa, se debe cambiar
             if (_user.IsTemporalPasswordActived)
             {
-                return new ConflictObjectResult(new { Message = "La contraseña temporal es válida." });
+                return new ConflictObjectResult(new { Message = "La contraseña temporera es válida." });
             }
 
 #if !DEBUG
@@ -342,6 +342,18 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
             }
 
+            // Obtener los roles del usuario
+            var roles = await _userManager.GetRolesAsync(_user);
+
+            // Validar que el usuario tenga al menos un rol asignado
+            if (roles == null || roles.Count == 0)
+            {
+                _loggingService.LogWarning($"Usuario {_user.UserName} intentó iniciar sesión sin roles asignados");
+                return new BadRequestObjectResult(new { Message = "El usuario no tiene un rol asignado. Por favor, contacte al administrador del sistema." });
+            }
+
+            var permissions = await GetPermissionsByUserId(_user.Id);
+
             // Generar el token de acceso
             var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -349,10 +361,6 @@ public class UserRepository(UserManager<User> userManager,
             var days = 2;
             var issuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
             var audience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
-
-            // Obtener los roles del usuario
-            var roles = await _userManager.GetRolesAsync(_user);
-            var permissions = await GetPermissionsByUserId(_user.Id);
 
             _loggingService.LogInformation("Obteniendo la agencia del usuario");
 
@@ -454,6 +462,16 @@ public class UserRepository(UserManager<User> userManager,
 
         try
         {
+            // Verificar si el email ya existe ANTES de intentar crear el usuario
+            var emailExists = await EmailExists(model.Staff.Email);
+            if (emailExists)
+            {
+                _loggingService.LogWarning("Intento de registro con email existente", new Dictionary<string, string>
+                {
+                    { "Email", model.Staff.Email }
+                });
+                return new BadRequestObjectResult(new { Message = "El correo electrónico ya está registrado en el sistema." });
+            }
 
 #if !DEBUG
             // Generar una contraseña temporal
@@ -482,7 +500,12 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!result.Succeeded)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                // Solo eliminar si el usuario fue creado (aunque falló la operación)
+                // Si el email ya existe, CreateAsync falla pero no crea el usuario, así que no hay nada que eliminar
+                if (user != null && !string.IsNullOrEmpty(user.Id))
+                {
+                    await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
+                }
                 return new BadRequestObjectResult(result.Errors);
             }
 
@@ -512,7 +535,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!staffInserted || staffId == 0)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
             }
 
@@ -521,7 +544,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!resultRole.Succeeded)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(resultRole.Errors);
             }
 
@@ -550,7 +573,7 @@ public class UserRepository(UserManager<User> userManager,
             if (agencyId == 0)
             {
                 // Si falla la inserción, eliminar el usuario creado en Identity
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
@@ -582,16 +605,17 @@ public class UserRepository(UserManager<User> userManager,
             }
             else
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
             // Enviar correo con la contraseña temporal y bienvenida
             await _emailService.SendWelcomeAgencyEmail(model, temporaryPassword);
 
-            // Asignar permisos CRUD de escuelas y staff al usuario
+            // Asignar permisos CRUD de escuelas, staff y sitios al usuario
             await AssignSchoolCrudPermissionsToUserAsync(user.Id);
             await AssignStaffCrudPermissionsToUserAsync(user.Id);
+            await AssignSiteCrudPermissionsToUserAsync(user.Id);
 
             return new OkObjectResult(new { Message = "Usuario registrado exitosamente" });
         }
@@ -599,9 +623,9 @@ public class UserRepository(UserManager<User> userManager,
         {
             _loggingService.LogError(ex, "Error al registrar usuario");
 
-            if (user != null)
+            if (user != null && !string.IsNullOrEmpty(user.Id))
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Staff.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
             }
 
             return new BadRequestObjectResult(new { Message = "Error al registrar usuario", Error = ex.Message });
@@ -669,7 +693,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!staffInserted)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
             }
 
@@ -678,7 +702,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!resultRole.Succeeded)
             {
-                await RemoveUserAndAgencyRelatedDataByEmail(model.Email);
+                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(resultRole.Errors);
             }
 
@@ -1190,23 +1214,28 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
-    /// Elimina un usuario y todos sus datos relacionados por correo electrónico
+    /// Elimina un usuario y todos sus datos relacionados por UserId
+    /// Método más seguro para rollback durante el registro
     /// </summary>
-    /// <param name="email">El correo electrónico del usuario</param>
+    /// <param name="userId">El ID del usuario</param>
     /// <returns>El resultado de la operación</returns>
-    public async Task<dynamic> RemoveUserAndAgencyRelatedDataByEmail(string email)
+    public async Task<dynamic> RemoveUserAndAgencyRelatedDataByUserId(string userId)
     {
         try
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByIdAsync(userId);
 
             if (user == null)
             {
                 return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-            // Eliminar el usuario de su rol de Administrador
-            await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
+            // Eliminar el usuario de su rol de Administrador (solo si tiene el rol)
+            var userRoles = await _userManager.GetRolesAsync(user);
+            if (userRoles.Contains("Agency-Administrator"))
+            {
+                await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
+            }
 
             // Eliminar la contraseña temporal del usuario
             await DeleteTemporaryPassword(user.Id);
@@ -1227,7 +1256,79 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            await _loggingService.LogError(ex, "Error al eliminar el usuario y sus datos asociados por correo electrónico");
+            await _loggingService.LogError(ex, "Error al eliminar el usuario y sus datos asociados por UserId", new Dictionary<string, string>
+            {
+                { "UserId", userId }
+            });
+            return new BadRequestObjectResult(new { Message = "Error al eliminar el usuario", Error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Elimina un usuario y todos sus datos relacionados por correo electrónico
+    /// SOLO debe usarse para limpiar usuarios recién creados durante el registro
+    /// NOTA: Este método está deprecado en favor de RemoveUserAndAgencyRelatedDataByUserId
+    /// </summary>
+    /// <param name="email">El correo electrónico del usuario</param>
+    /// <returns>El resultado de la operación</returns>
+    public async Task<dynamic> RemoveUserAndAgencyRelatedDataByEmail(string email)
+    {
+        try
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { Message = "Usuario no encontrado" });
+            }
+
+            // Verificar si el usuario fue creado recientemente (en los últimos 5 minutos)
+            // Esto previene eliminar usuarios existentes accidentalmente
+            // Nota: IdentityUser no tiene CreatedAt en el modelo, pero la tabla sí lo tiene
+            // Por seguridad, solo eliminamos si el usuario no tiene agencias asignadas o roles establecidos
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var agency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
+
+            // Si el usuario tiene roles establecidos o agencias asignadas, puede ser un usuario existente
+            // Solo proceder si parece ser un usuario recién creado (sin agencias y solo con el rol Agency-Administrator)
+            if (userRoles.Count > 1 || (agency != null && agency.Id > 0))
+            {
+                _loggingService.LogWarning("Intento de eliminar usuario existente durante rollback", new Dictionary<string, string>
+                {
+                    { "Email", email },
+                    { "UserId", user.Id },
+                    { "RolesCount", userRoles.Count.ToString() },
+                    { "HasAgency", (agency != null).ToString() }
+                });
+                return new BadRequestObjectResult(new { Message = "No se puede eliminar un usuario existente durante el rollback" });
+            }
+
+            // Eliminar el usuario de su rol de Administrador (solo si tiene el rol)
+            if (userRoles.Contains("Agency-Administrator"))
+            {
+                await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
+            }
+
+            // Eliminar la contraseña temporal del usuario
+            await DeleteTemporaryPassword(user.Id);
+
+            // Si el usuario tiene una agencia asignada, eliminarla
+            if (agency != null)
+            {
+                await _agencyRepository.DeleteAgency(agency.Id);
+            }
+
+            // Finalmente, eliminar el usuario
+            await _userManager.DeleteAsync(user);
+
+            return new OkObjectResult(new { Message = "Usuario y datos asociados eliminados exitosamente" });
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al eliminar el usuario y sus datos asociados por correo electrónico", new Dictionary<string, string>
+            {
+                { "Email", email }
+            });
             return new BadRequestObjectResult(new { Message = "Error al eliminar el usuario", Error = ex.Message });
         }
     }
@@ -1555,6 +1656,19 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
+    /// Asigna permisos CRUD de sitios a un usuario
+    /// </summary>
+    /// <param name="userId">El ID del usuario</param>
+    private async Task AssignSiteCrudPermissionsToUserAsync(string userId)
+    {
+        using var db = _context.CreateConnection();
+        // Llama al SP que asigna los permisos CRUD de sitios
+        var parameters = new DynamicParameters();
+        parameters.Add("@userId", userId, DbType.String, size: 450);
+        await db.ExecuteAsync("100_AssignSiteCrudPermissionsToUser", parameters, commandType: CommandType.StoredProcedure);
+    }
+
+    /// <summary>
     /// Obtiene todos los códigos de agencias existentes
     /// </summary>
     /// <returns>Lista de códigos de agencias</returns>
@@ -1570,6 +1684,66 @@ public class UserRepository(UserManager<User> userManager,
         {
             await _loggingService.LogError(ex, "Error al obtener códigos de agencias existentes");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Verifica si un correo electrónico ya existe en el sistema
+    /// </summary>
+    /// <param name="email">El correo electrónico a verificar</param>
+    /// <returns>True si el correo existe, False si no existe</returns>
+    public async Task<bool> EmailExists(string email)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return false;
+            }
+
+            // Normalizar el email para comparación (case-insensitive)
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+
+            // 1. Verificar en AspNetUsers (Identity)
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user != null)
+            {
+                _loggingService.LogInformation("Correo encontrado en AspNetUsers", new Dictionary<string, string>
+                {
+                    { "Email", email }
+                });
+                return true;
+            }
+
+            // 2. Verificar en Staff table usando Stored Procedure
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@email", normalizedEmail, DbType.String);
+            parameters.Add("@exists", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            await db.ExecuteAsync("100_CheckStaffEmailExists", parameters, commandType: CommandType.StoredProcedure);
+
+            var staffExists = parameters.Get<bool>("@exists");
+
+            if (staffExists)
+            {
+                _loggingService.LogInformation("Correo encontrado en Staff", new Dictionary<string, string>
+                {
+                    { "Email", email }
+                });
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al verificar si el correo existe", new Dictionary<string, string>
+            {
+                { "Email", email }
+            });
+            // En caso de error, retornar false para no bloquear el registro
+            return false;
         }
     }
 

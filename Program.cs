@@ -17,8 +17,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Api.Telemetry;
-// using ElmahCore.Mvc;
-// using ElmahCore.Sql;
+using ElmahCore.Mvc;
+using ElmahCore.Sql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
@@ -136,6 +136,7 @@ builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
 builder.Services.AddScoped<ISiteStaffRepository, SiteStaffRepository>();
 builder.Services.AddScoped<ISiteCalendarRepository, SiteCalendarRepository>();
+builder.Services.AddScoped<ISiteExcursionRepository, SiteExcursionRepository>();
 builder.Services.AddScoped<ISiteOperatingDayServiceRepository, SiteOperatingDayServiceRepository>();
 builder.Services.AddScoped<IAesanDashboardRepository, AesanDashboardRepository>();
 
@@ -253,12 +254,12 @@ builder.Services.Configure<TelemetryConfiguration>((config) =>
 });
 
 // Configuración de ELMAH con SQL Server
-// builder.Services.AddElmah<SqlErrorLog>(options =>
-// {
-//     options.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // Usa la misma conexión que la aplicación
-//     options.Path = "/elmah"; // Ruta para acceder al dashboard de ELMAH
-//     options.OnPermissionCheck = context => context.User.Identity.IsAuthenticated; // Solo usuarios autenticados pueden ver el dashboard
-// });
+builder.Services.AddElmah<SqlErrorLog>(options =>
+{
+    options.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // Usa la misma conexión que la aplicación
+    options.Path = "/elmah"; // Ruta para acceder al dashboard de ELMAH
+    options.OnPermissionCheck = context => context.User.Identity?.IsAuthenticated ?? false; // Solo usuarios autenticados pueden ver el dashboard
+});
 
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 
@@ -351,7 +352,7 @@ else
             var exception = exceptionHandlerPathFeature?.Error;
 
             // Registrar en ELMAH
-            // await context.RaiseError(exception);
+            await context.RaiseError(exception);
 
             logger.LogError(
                 exception,
@@ -377,9 +378,6 @@ else
 var corsPolicy = app.Environment.IsDevelopment() ? "AllowDevOrigin" : app.Environment.IsStaging() ? "AllowStagingOrigin" : "AllowProdOrigin";
 app.UseCors(corsPolicy);
 
-// Habilitar ELMAH
-// app.UseElmah();
-
 app.UseHttpsRedirection();
 
 // Configuración global
@@ -402,6 +400,9 @@ app.UseStaticFiles(new StaticFileOptions
 // Restaurando autenticación y autorización para el resto de la API
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Habilitar ELMAH - Debe ir después de Routing y Authentication
+app.UseElmah();
 
 // Habilitar Swagger
 if (app.Environment.IsDevelopment())
@@ -450,6 +451,12 @@ app.Use(async (context, next) =>
 
         memoryStream.Position = 0;
         await memoryStream.CopyToAsync(originalBodyStream);
+    }
+    catch (Exception ex)
+    {
+        // Registrar errores no capturados en Elmah
+        await context.RaiseError(ex);
+        throw;
     }
     finally
     {

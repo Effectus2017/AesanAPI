@@ -603,6 +603,34 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
     }
 
+    /// <summary>
+    /// Verifica si un correo electrónico ya existe en el sistema
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el email a verificar</param>
+    /// <returns>True si el correo existe, False si no existe</returns>
+    [HttpGet("check-email-exists")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Verifica si un correo electrónico existe", Description = "Verifica si un correo electrónico ya está registrado en el sistema (AspNetUsers o Staff).")]
+    public async Task<IActionResult> CheckEmailExists([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(queryParameters.Email))
+            {
+                return BadRequest(new { Message = "El correo electrónico es requerido." });
+            }
+
+            var exists = await _unitOfWork.UserRepository.EmailExists(queryParameters.Email);
+
+            return Ok(new { exists = exists });
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al verificar si el correo existe", new Dictionary<string, string> { { "Email", queryParameters.Email } });
+            return StatusCode(500, new { Message = "Error al verificar el correo electrónico." });
+        }
+    }
+
     [HttpPut("update-user-avatar")]
     [SwaggerOperation(Summary = "Actualiza el avatar del usuario", Description = "Actualiza la imagen de perfil del usuario.")]
     public async Task<IActionResult> UpdateUserAvatar([FromBody] UserAvatarRequest request)

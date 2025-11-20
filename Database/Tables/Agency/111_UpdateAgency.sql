@@ -10,7 +10,7 @@ CREATE OR ALTER PROCEDURE [111_UpdateAgency]
     @agencyStatusId INT,
     -- Datos de la agencia
     @sdrNumber INT,
-    @uieNumber INT,
+    @uieNumber NVARCHAR(12),
     @einNumber INT,
     -- Dirección fisica
     @address NVARCHAR(255),

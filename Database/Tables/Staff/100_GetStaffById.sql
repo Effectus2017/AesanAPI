@@ -52,6 +52,7 @@ BEGIN
         -- Datos de la relación SiteStaff
         ss.SiteId,
         site.Name AS SiteName,
+        site.AgencyId AS SiteAgencyId,
         ss.AssignmentTypeId,
         os_assignment.Name AS AssignmentTypeName,
         os_assignment.NameEN AS AssignmentTypeNameEN,
