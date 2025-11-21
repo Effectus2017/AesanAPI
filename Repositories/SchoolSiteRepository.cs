@@ -85,11 +85,14 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
     /// <summary>
     /// Asigna un Site a una School
     /// </summary>
-    public async Task<bool> InsertSchoolSite(SchoolSiteRequest request)
+    public async Task<bool> InsertSchoolSite(SchoolSiteRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        IDbConnection? dbConnection = null;
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
+            dbConnection = connection ?? _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@schoolId", request.SchoolId, DbType.Int32);
             parameters.Add("@siteId", request.SiteId, DbType.Int32);
@@ -97,7 +100,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
             parameters.Add("@isActive", request.IsActive, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            var rowsAffected = await dbConnection.ExecuteAsync("100_InsertSchoolSite", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = await dbConnection.ExecuteAsync("100_InsertSchoolSite", parameters, transaction, commandType: CommandType.StoredProcedure);
 
             int id = parameters.Get<int>("@id");
 
@@ -115,6 +118,13 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         {
             _logger.LogError(ex, "Error al insertar la asignación School-Site: {Message}", ex.Message);
             throw new Exception($"Error al insertar la asignación School-Site: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection && dbConnection != null)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 

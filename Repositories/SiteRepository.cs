@@ -13,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -22,6 +22,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly Lazy<ISchoolSiteRepository> _schoolSiteRepository = schoolSiteRepository ?? throw new ArgumentNullException(nameof(schoolSiteRepository));
     private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
+    private readonly Lazy<ISiteOperatingDayServiceRepository> _siteOperatingDayServiceRepository = siteOperatingDayServiceRepository ?? throw new ArgumentNullException(nameof(siteOperatingDayServiceRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -74,8 +75,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="agencyId">ID de la agencia para filtrar.</param>
     /// <param name="alls">Si se deben obtener todos los sitios.</param>
     /// <param name="isList">Si es para lista o paginación.</param>
+    /// <param name="isDayCareHomeId">ID de la opción IsDayCareHome para filtrar sitios (Sí, No, Ambos).</param>
     /// <returns>Los sitios encontrados como SiteTableResponse.</returns>
-    public async Task<dynamic> GetAllSitesFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool isList)
+    public async Task<dynamic> GetAllSitesFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool isList, int? isDayCareHomeId = null)
     {
         try
         {
@@ -88,29 +90,19 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@regionId", regionId == 0 ? null : regionId, DbType.Int32);
             parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             parameters.Add("@alls", alls, DbType.Boolean);
+            parameters.Add("@isDayCareHomeId", isDayCareHomeId == 0 ? null : isDayCareHomeId, DbType.Int32);
 
             if (isList)
             {
-                string cacheKey = string.Format(_appSettings.Cache.Keys.Sites, take, skip, name, cityId, regionId, agencyId, alls);
+                using var result = await dbConnection.QueryMultipleAsync("104_GetSites", parameters, commandType: CommandType.StoredProcedure);
 
-                return await _cache.CacheQuery(
-                    cacheKey,
-                    async () =>
-                    {
-                        using var result = await dbConnection.QueryMultipleAsync("104_GetSites", parameters, commandType: CommandType.StoredProcedure);
+                if (result == null)
+                {
+                    return new List<object>();
+                }
 
-                        if (result == null)
-                        {
-                            return [];
-                        }
-
-                        var data = result.Read<dynamic>().Select(_mappingService.MapSiteTable).ToList();
-                        return data;
-                    },
-                    _logger,
-                    _appSettings,
-                    TimeSpan.FromMinutes(1) // Cache for 10 minutes
-                );
+                var data = result.Read<dynamic>().Select(_mappingService.MapSiteTable).ToList();
+                return data;
             }
             else
             {
@@ -131,8 +123,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting sites with parameters: take={Take}, skip={Skip}, name={Name}, cityId={CityId}, regionId={RegionId}, agencyId={AgencyId}, alls={Alls}: {Message}",
-                take, skip, name, cityId, regionId, agencyId, alls, ex.Message);
+            _logger.LogError(ex, "Error getting sites with parameters: take={Take}, skip={Skip}, name={Name}, cityId={CityId}, regionId={RegionId}, agencyId={AgencyId}, alls={Alls}, isDayCareHomeId={IsDayCareHomeId}: {Message}",
+                take, skip, name, cityId, regionId, agencyId, alls, isDayCareHomeId, ex.Message);
             throw new Exception($"Error al obtener los sitios: {ex.Message}", ex);
         }
     }
@@ -144,6 +136,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <returns>El ID del sitio insertado.</returns>
     public async Task<bool> InsertSite(SiteRequest request)
     {
+        IDbConnection? dbConnection = null;
+        IDbTransaction? transaction = null;
+
         try
         {
             // Generar código único de sitio automáticamente si no se proporciona
@@ -154,7 +149,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 request.SiteCode = Utilities.GenerateSiteCode(agencySequenceNumber, existingSiteCodes);
             }
 
-            using IDbConnection dbConnection = _context.CreateConnection();
+            dbConnection = _context.CreateConnection();
+            if (dbConnection.State != ConnectionState.Open)
+            {
+                dbConnection.Open();
+            }
+
+            transaction = dbConnection.BeginTransaction();
             var parameters = new DynamicParameters();
 
             parameters.Add("@agencyId", request.AgencyId, DbType.Int32, ParameterDirection.Input);
@@ -209,6 +210,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@publicAllianceContractId", request.PublicAllianceContractId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isDayCareHomeId", request.IsDayCareHomeId, DbType.Int32, ParameterDirection.Input);
 
             // Estado de actividad
             parameters.Add("@inactiveJustification", request.InactiveJustification, DbType.String, ParameterDirection.Input);
@@ -220,7 +222,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("104_InsertSite", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("104_InsertSite", parameters, transaction, commandType: CommandType.StoredProcedure);
 
             int siteId = parameters.Get<int>("@id");
 
@@ -228,35 +230,53 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             if (request.EducationLevels != null && request.EducationLevels.Count != 0)
             {
                 var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
-                await InsertSiteEducationLevels(siteId, educationLevelIds);
+                await InsertSiteEducationLevels(siteId, educationLevelIds, dbConnection, transaction);
             }
 
             // // Insertar servicios de alimentación9
-            await InsertSiteService(siteId, request);
+            await InsertSiteService(siteId, request, dbConnection, transaction);
 
-            // Insertar información de Day Care Home solo si la agencia es Day Care Home
-            if (request.IsDayCareHome == true)
+            // Insertar información de Day Care Home solo si el sitio es un Hogar (IsDayCareHomeId = "Sí")
+            // Determinar si es un hogar basándose en IsDayCareHomeId
+            bool isDayCareHome = false;
+            if (request.IsDayCareHomeId.HasValue)
             {
-                await InsertSiteDayCareHome(siteId, request);
+                // Necesitamos verificar si el IsDayCareHomeId corresponde a "Sí"
+                // Esto se puede hacer consultando OptionSelection o pasando un flag desde el frontend
+                // Por ahora, asumimos que si IsDayCareHomeId tiene valor y DayCareHome no es null, es un hogar
+                isDayCareHome = request.DayCareHome != null;
+            }
+
+            if (isDayCareHome)
+            {
+                await InsertSiteDayCareHome(siteId, request, dbConnection, transaction);
             }
 
             // Insertar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
             if (request.DayCareHome?.OffersServiceToDifferentGroups == true && request.ChildGroups != null && request.ChildGroups.Count != 0)
             {
-                await InsertSiteChildGroups(siteId, request.ChildGroups);
+                await InsertSiteChildGroups(siteId, request.ChildGroups, dbConnection, transaction);
             }
 
             // Insertar tipos de participantes
             if (request.Participants != null && request.Participants.Count != 0)
             {
                 var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
-                await InsertSiteParticipants(siteId, participantTypeIds);
+                await InsertSiteParticipants(siteId, participantTypeIds, dbConnection, transaction);
             }
 
             // Insertar días de funcionamiento si se proporcionan fechas
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue)
             {
-                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services, request.ProgramIds, request.CenterTypeId, request.IsDayCareHome);
+                // Convertir IsDayCareHomeId a bool para compatibilidad con InsertSiteOperatingDays
+                bool? isDayCareHomeBool = null;
+                if (request.IsDayCareHomeId.HasValue)
+                {
+                    // Si IsDayCareHomeId corresponde a "Sí" (booleanValue = true), entonces isDayCareHome = true
+                    // Esto se puede determinar consultando OptionSelection, pero por ahora usamos DayCareHome como indicador
+                    isDayCareHomeBool = request.DayCareHome != null;
+                }
+                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services, request.ProgramIds, request.CenterTypeId, isDayCareHomeBool, dbConnection, transaction);
             }
 
             // Crear relación SchoolSite si se proporciona SchoolId
@@ -271,13 +291,15 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 };
 
                 // Usar Lazy<ISchoolSiteRepository> para evitar dependencia circular
-                var schoolSiteResult = await _schoolSiteRepository.Value.InsertSchoolSite(schoolSiteRequest);
+                var schoolSiteResult = await _schoolSiteRepository.Value.InsertSchoolSite(schoolSiteRequest, dbConnection, transaction);
 
                 if (!schoolSiteResult)
                 {
                     _logger.LogWarning("No se pudo crear la relación SchoolSite para el sitio {SiteId} y escuela {SchoolId}", siteId, request.SchoolId);
                 }
             }
+
+            transaction.Commit();
 
             // Invalidar caché
             //InvalidateCache(siteId);
@@ -286,8 +308,14 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
+            transaction?.Rollback();
             _logger.LogError(ex, "Error al insertar el sitio: {Message}", ex.Message);
             throw new Exception($"Error al insertar el sitio: {ex.Message}", ex);
+        }
+        finally
+        {
+            transaction?.Dispose();
+            dbConnection?.Dispose();
         }
     }
 
@@ -361,6 +389,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@publicAllianceContractId", request.PublicAllianceContractId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isDayCareHomeId", request.IsDayCareHomeId, DbType.Int32, ParameterDirection.Input);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -375,7 +404,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 if (request.EducationLevels != null && request.EducationLevels.Count != 0)
                 {
                     var educationLevelIds = request.EducationLevels.Select(e => e.EducationLevelId).ToList();
-                    await UpdateSiteEducationLevels(request.Id.Value, educationLevelIds);
+                    await UpdateSiteEducationLevels(request.Id.Value, educationLevelIds, dbConnection);
                 }
 
                 // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
@@ -387,7 +416,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 // Actualizar servicios de alimentación
                 if (request.Services != null && request.Services.Count != 0)
                 {
-                    await UpdateSiteService(request.Id.Value, request.Services);
+                    await UpdateSiteService(request.Id.Value, request.Services, dbConnection);
                 }
 
                 // // Actualizar información de Day Care Home solo si la agencia es Day Care Home
@@ -468,22 +497,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="educationLevelIds">Lista de IDs de niveles educativos</param>
     /// <returns>True si se insertaron correctamente</returns>
-    private async Task<bool> InsertSiteEducationLevels(int siteId, List<int> educationLevelIds)
+    private async Task<bool> InsertSiteEducationLevels(int siteId, List<int> educationLevelIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
             parameters.Add("@educationLevelIds", string.Join(",", educationLevelIds), DbType.String);
 
-            await dbConnection.ExecuteAsync("100_InsertSiteEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSiteEducationLevels", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar niveles educativos para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -493,22 +531,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="educationLevelIds">Lista de IDs de niveles educativos</param>
     /// <returns>True si se actualizaron correctamente</returns>
-    private async Task<bool> UpdateSiteEducationLevels(int siteId, List<int> educationLevelIds)
+    private async Task<bool> UpdateSiteEducationLevels(int siteId, List<int> educationLevelIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
             parameters.Add("@educationLevelIds", string.Join(",", educationLevelIds), DbType.String);
 
-            await dbConnection.ExecuteAsync("100_UpdateSiteEducationLevels", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_UpdateSiteEducationLevels", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar niveles educativos para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -603,17 +650,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="request">Request con datos de servicios</param>
     /// <returns>True si se insertó correctamente</returns>
-    private async Task<bool> InsertSiteService(int siteId, SiteRequest request)
+    private async Task<bool> InsertSiteService(int siteId, SiteRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
             if (request.Services == null || request.Services.Count == 0)
             {
                 // Si no hay servicios, insertar un registro vacío
-                return await InsertEmptySiteService(siteId);
+                return await InsertEmptySiteService(siteId, dbConnection, transaction);
             }
-
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             foreach (var service in request.Services)
             {
@@ -640,7 +688,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@snackNightTo", service.SnackNightTo, DbType.Time);
                 parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, commandType: CommandType.StoredProcedure);
+                await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
             }
 
             return true;
@@ -650,6 +698,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogError(ex, "Error al insertar servicios para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
         }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
     /// <summary>
@@ -657,11 +712,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
     /// <returns>True si se insertó correctamente</returns>
-    private async Task<bool> InsertEmptySiteService(int siteId)
+    private async Task<bool> InsertEmptySiteService(int siteId, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
             parameters.Add("@siteId", siteId, DbType.Int32);
@@ -686,13 +743,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@snackNightTo", null, DbType.Time);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar servicios vacíos para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -702,17 +766,19 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="request">Request con datos de Day Care Home</param>
     /// <returns>True si se insertó correctamente</returns>
-    private async Task<bool> InsertSiteDayCareHome(int siteId, SiteRequest request)
+    private async Task<bool> InsertSiteDayCareHome(int siteId, SiteRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
             if (request.DayCareHome == null)
             {
                 // Si no hay información de Day Care Home, insertar un registro vacío
-                return await InsertEmptySiteDayCareHome(siteId);
+                return await InsertEmptySiteDayCareHome(siteId, dbConnection, transaction);
             }
 
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
             parameters.Add("@siteId", siteId, DbType.Int32);
@@ -730,13 +796,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@offersServiceToDifferentGroups", request.DayCareHome.OffersServiceToDifferentGroups, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertSiteDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSiteDayCareHome", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar información de Day Care Home para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -745,11 +818,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
     /// <returns>True si se insertó correctamente</returns>
-    private async Task<bool> InsertEmptySiteDayCareHome(int siteId)
+    private async Task<bool> InsertEmptySiteDayCareHome(int siteId, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
             parameters.Add("@siteId", siteId, DbType.Int32);
@@ -768,13 +843,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@offersServiceToDifferentGroups", null, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertSiteDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSiteDayCareHome", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar información vacía de Day Care Home para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -784,22 +866,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="participantTypeIds">Lista de IDs de tipos de participantes</param>
     /// <returns>True si se insertaron correctamente</returns>
-    private async Task<bool> InsertSiteParticipants(int siteId, List<int> participantTypeIds)
+    private async Task<bool> InsertSiteParticipants(int siteId, List<int> participantTypeIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
             parameters.Add("@participantTypeIds", string.Join(",", participantTypeIds), DbType.String);
 
-            await dbConnection.ExecuteAsync("100_InsertSiteParticipants", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSiteParticipants", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar tipos de participantes para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -809,11 +900,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="childGroups">Lista de grupos de niños</param>
     /// <returns>True si se insertaron correctamente</returns>
-    private async Task<bool> InsertSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups)
+    private async Task<bool> InsertSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             foreach (var childGroup in childGroups)
             {
@@ -823,7 +916,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
                 parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, commandType: CommandType.StoredProcedure);
+                await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, transaction, commandType: CommandType.StoredProcedure);
             }
 
             return true;
@@ -833,6 +926,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogError(ex, "Error al insertar grupos de niños para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
         }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
     /// <summary>
@@ -841,16 +941,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="childGroups">Lista de grupos de niños</param>
     /// <returns>True si se actualizaron correctamente</returns>
-    private async Task<bool> UpdateSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups)
+    private async Task<bool> UpdateSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             // Primero eliminar todos los grupos existentes para este sitio
             var deleteParameters = new DynamicParameters();
             deleteParameters.Add("@siteId", siteId, DbType.Int32);
-            await dbConnection.ExecuteAsync("100_DeleteSiteChildGroupsBySiteId", deleteParameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_DeleteSiteChildGroupsBySiteId", deleteParameters, transaction, commandType: CommandType.StoredProcedure);
 
             // Luego insertar los nuevos grupos
             foreach (var childGroup in childGroups)
@@ -861,7 +963,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
                 parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, commandType: CommandType.StoredProcedure);
+                await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, transaction, commandType: CommandType.StoredProcedure);
             }
 
             return true;
@@ -870,6 +972,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al actualizar grupos de niños para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -880,14 +989,25 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="operatingFromDate">Fecha desde</param>
     /// <param name="operatingToDate">Fecha hasta</param>
     /// <returns>Número de días insertados</returns>
-    private async Task<int> InsertSiteOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest>? services, List<int>? programIds = null, int? centerTypeId = null, bool? isDayCareHome = null)
+    private async Task<int> InsertSiteOperatingDays(
+        int siteId,
+        DateTime operatingFromDate,
+        DateTime operatingToDate,
+        List<SiteServiceRequest>? services,
+        List<int>? programIds = null,
+        int? centerTypeId = null,
+        bool? isDayCareHome = null,
+        IDbConnection? connection = null,
+        IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
             // Determinar configuración de días de funcionamiento según programa y tipo de sitio
             var includeWeekends = await DetermineOperatingDaysConfiguration(programIds, centerTypeId, isDayCareHome);
 
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
             parameters.Add("@siteId", siteId, DbType.Int32);
@@ -898,7 +1018,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@defaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
             parameters.Add("@includeWeekends", includeWeekends, DbType.Boolean);
 
-            var result = await dbConnection.QuerySingleAsync<dynamic>("100_InsertSiteOperatingDays", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QuerySingleAsync<dynamic>("100_InsertSiteOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
 
             var daysInserted = (int)result.DaysInserted;
 
@@ -908,7 +1028,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Después de crear los días, crear los servicios para cada día
             if (services != null && services.Count > 0)
             {
-                await InsertServicesForOperatingDays(siteId, operatingFromDate, operatingToDate, services);
+                await InsertServicesForOperatingDays(siteId, operatingFromDate, operatingToDate, services, dbConnection, transaction);
             }
 
             return daysInserted;
@@ -918,6 +1038,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogError(ex, "Error al insertar días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -1040,13 +1167,15 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Inserta servicios para todos los días de funcionamiento creados
+    /// Inserta servicios para todos los días de funcionamiento creados (OPTIMIZADO CON BATCH INSERT)
     /// </summary>
-    private async Task InsertServicesForOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest> services)
+    private async Task InsertServicesForOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest> services, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             // Obtener todos los días de funcionamiento creados para este sitio en el rango de fechas
             var operatingDays = await dbConnection.QueryAsync<dynamic>(
@@ -1058,7 +1187,14 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     AND IsExcluded = 0",
                 new { siteId, fromDate = operatingFromDate.Date, toDate = operatingToDate.Date });
 
-            int totalServicesCreated = 0;
+            if (operatingDays == null || !operatingDays.Any())
+            {
+                _logger.LogWarning("No se encontraron días de funcionamiento para crear servicios para el sitio {SiteId}", siteId);
+                return;
+            }
+
+            // Preparar lista de servicios para batch insert
+            var servicesToInsert = new List<SiteOperatingDayServiceRequest>();
 
             foreach (var day in operatingDays)
             {
@@ -1069,112 +1205,60 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 // Para cada servicio en la lista
                 foreach (var service in services)
                 {
-                    // Breakfast (ServiceTypeId = 1)
-                    if (service.Breakfast == true && service.BreakfastFrom.HasValue && service.BreakfastTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.BreakfastFrom.Value, service.BreakfastTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, ServiceTypeIds.Breakfast, service.ChildGroupId, service.BreakfastFrom.Value, service.BreakfastTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    // Helper method para agregar servicio si es válido
+                    AddServiceIfValid(servicesToInsert, operatingDayId, ServiceTypeIds.Breakfast,
+                        service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // Lunch (ServiceTypeId = 2)
-                    if (service.Lunch == true && service.LunchFrom.HasValue && service.LunchTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.LunchFrom.Value, service.LunchTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.Lunch, service.ChildGroupId, service.LunchFrom.Value, service.LunchTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.Lunch,
+                        service.Lunch, service.LunchFrom, service.LunchTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // SnackAM (ServiceTypeId = 3)
-                    if (service.SnackAM == true && service.SnackAMFrom.HasValue && service.SnackAMTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.SnackAMFrom.Value, service.SnackAMTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackAM, service.ChildGroupId, service.SnackAMFrom.Value, service.SnackAMTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackAM,
+                        service.SnackAM, service.SnackAMFrom, service.SnackAMTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // Dinner (ServiceTypeId = 4)
-                    if (service.Dinner == true && service.DinnerFrom.HasValue && service.DinnerTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.DinnerFrom.Value, service.DinnerTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.Dinner, service.ChildGroupId, service.DinnerFrom.Value, service.DinnerTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.Dinner,
+                        service.Dinner, service.DinnerFrom, service.DinnerTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // SnackPM (ServiceTypeId = 5)
-                    if (service.SnackPM == true && service.SnackPMFrom.HasValue && service.SnackPMTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.SnackPMFrom.Value, service.SnackPMTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackPM, service.ChildGroupId, service.SnackPMFrom.Value, service.SnackPMTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackPM,
+                        service.SnackPM, service.SnackPMFrom, service.SnackPMTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // SnackNight (ServiceTypeId = 6)
-                    if (service.SnackNight == true && service.SnackNightFrom.HasValue && service.SnackNightTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.SnackNightFrom.Value, service.SnackNightTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackNight, service.ChildGroupId, service.SnackNightFrom.Value, service.SnackNightTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackNight,
+                        service.SnackNight, service.SnackNightFrom, service.SnackNightTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // DinnerExtended (ServiceTypeId = 7)
-                    if (service.DinnerExtended == true && service.DinnerExtendedFrom.HasValue && service.DinnerExtendedTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.DinnerExtendedFrom.Value, service.DinnerExtendedTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.DinnerExtended, service.ChildGroupId, service.DinnerExtendedFrom.Value, service.DinnerExtendedTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.DinnerExtended,
+                        service.DinnerExtended, service.DinnerExtendedFrom, service.DinnerExtendedTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // DinnerAtRisk (ServiceTypeId = 8)
-                    if (service.DinnerAtRisk == true && service.DinnerAtRiskFrom.HasValue && service.DinnerAtRiskTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.DinnerAtRiskFrom.Value, service.DinnerAtRiskTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.DinnerAtRisk, service.ChildGroupId, service.DinnerAtRiskFrom.Value, service.DinnerAtRiskTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.DinnerAtRisk,
+                        service.DinnerAtRisk, service.DinnerAtRiskFrom, service.DinnerAtRiskTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // SnackExtended (ServiceTypeId = 9)
-                    if (service.SnackExtended == true && service.SnackExtendedFrom.HasValue && service.SnackExtendedTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.SnackExtendedFrom.Value, service.SnackExtendedTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackExtended, service.ChildGroupId, service.SnackExtendedFrom.Value, service.SnackExtendedTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackExtended,
+                        service.SnackExtended, service.SnackExtendedFrom, service.SnackExtendedTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
 
-                    // SnackAtRisk (ServiceTypeId = 10)
-                    if (service.SnackAtRisk == true && service.SnackAtRiskFrom.HasValue && service.SnackAtRiskTo.HasValue)
-                    {
-                        if (IsTimeWithinRange(service.SnackAtRiskFrom.Value, service.SnackAtRiskTo.Value, dayStartTime, dayEndTime))
-                        {
-                            await InsertServiceForDay(dbConnection, operatingDayId, Models.ServiceTypeIds.SnackAtRisk, service.ChildGroupId, service.SnackAtRiskFrom.Value, service.SnackAtRiskTo.Value);
-                            totalServicesCreated++;
-                        }
-                    }
+                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackAtRisk,
+                        service.SnackAtRisk, service.SnackAtRiskFrom, service.SnackAtRiskTo,
+                        service.ChildGroupId, dayStartTime, dayEndTime);
                 }
             }
 
-            if (totalServicesCreated > 0)
+            // Insertar todos en batch
+            if (servicesToInsert.Count > 0)
             {
-                _logger.LogInformation("Se crearon {TotalServicesCreated} servicios para los días de funcionamiento del sitio {SiteId}",
-                    totalServicesCreated, siteId);
+                var rowsInserted = await _siteOperatingDayServiceRepository.Value.CreateServicesBatch(servicesToInsert, dbConnection, transaction);
+
+                _logger.LogInformation("Se crearon {RowsInserted} servicios en batch para los días de funcionamiento del sitio {SiteId} (de {TotalPrepared} preparados)",
+                    rowsInserted, siteId, servicesToInsert.Count);
+            }
+            else
+            {
+                _logger.LogInformation("No se prepararon servicios válidos para insertar para el sitio {SiteId}", siteId);
             }
         }
         catch (Exception ex)
@@ -1182,25 +1266,69 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId}", siteId);
             throw;
         }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
     /// <summary>
-    /// Inserta un servicio para un día específico usando el SP existente
+    /// Helper method para agregar un servicio a la lista si es válido
     /// </summary>
-    private async Task InsertServiceForDay(IDbConnection dbConnection, int operatingDayId, int serviceTypeId, int? childGroupId, TimeSpan startTime, TimeSpan endTime)
+    private void AddServiceIfValid(
+        List<SiteOperatingDayServiceRequest> servicesList,
+        int operatingDayId,
+        int serviceTypeId,
+        bool? isEnabled,
+        TimeSpan? startTime,
+        TimeSpan? endTime,
+        int? childGroupId,
+        TimeSpan dayStartTime,
+        TimeSpan dayEndTime)
     {
-        var parameters = new DynamicParameters();
-        parameters.Add("@operatingDayId", operatingDayId, DbType.Int32);
-        parameters.Add("@serviceTypeId", serviceTypeId, DbType.Int32);
-        parameters.Add("@childGroupId", childGroupId, DbType.Int32);
-        parameters.Add("@startTime", startTime, DbType.Time);
-        parameters.Add("@endTime", endTime, DbType.Time);
-        parameters.Add("@isEnabled", true, DbType.Boolean);
-        parameters.Add("@comment", (string?)null, DbType.String);
-        parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-        await dbConnection.ExecuteAsync("100_InsertSiteOperatingDayService", parameters, commandType: CommandType.StoredProcedure);
+        if (isEnabled == true && startTime.HasValue && endTime.HasValue)
+        {
+            if (IsTimeWithinRange(startTime.Value, endTime.Value, dayStartTime, dayEndTime))
+            {
+                servicesList.Add(new SiteOperatingDayServiceRequest
+                {
+                    OperatingDayId = operatingDayId,
+                    ServiceTypeId = serviceTypeId,
+                    ChildGroupId = childGroupId,
+                    StartTime = startTime.Value,
+                    EndTime = endTime.Value,
+                    IsEnabled = true,
+                    Comment = null
+                });
+            }
+        }
     }
+
+    // ===== MIGRACIÓN COMPLETADA =====
+    // Este método ya no se usa. Se reemplazó por batch insert para optimizar performance.
+    // Se mantiene comentado por referencia durante la transición.
+    //
+    // /// <summary>
+    // /// Inserta un servicio para un día específico usando el repositorio
+    // /// </summary>
+    // private async Task InsertServiceForDay(int operatingDayId, int serviceTypeId, int? childGroupId, TimeSpan startTime, TimeSpan endTime)
+    // {
+    //     var request = new SiteOperatingDayServiceRequest
+    //     {
+    //         OperatingDayId = operatingDayId,
+    //         ServiceTypeId = serviceTypeId,
+    //         ChildGroupId = childGroupId,
+    //         StartTime = startTime,
+    //         EndTime = endTime,
+    //         IsEnabled = true,
+    //         Comment = null
+    //     };
+    //
+    //     await _siteOperatingDayServiceRepository.Value.CreateService(request);
+    // }
 
     /// <summary>
     /// Valida que los horarios del servicio estén dentro del rango del día
@@ -1238,11 +1366,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="services">Lista de servicios</param>
     /// <returns>True si se actualizaron correctamente</returns>
-    private async Task<bool> UpdateSiteService(int siteId, List<SiteServiceRequest> services)
+    private async Task<bool> UpdateSiteService(int siteId, List<SiteServiceRequest> services, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             if (services.Count > 0)
             {
@@ -1281,7 +1411,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
                 parameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
 
-                await dbConnection.ExecuteAsync("100_UpdateSiteService", parameters, commandType: CommandType.StoredProcedure);
+                await dbConnection.ExecuteAsync("100_UpdateSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
             }
 
             return true;
@@ -1291,6 +1421,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogError(ex, "Error al actualizar servicios para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
         }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
     /// <summary>
@@ -1299,11 +1436,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="dayCareHome">Datos de Day Care Home</param>
     /// <returns>True si se actualizó correctamente</returns>
-    private async Task<bool> UpdateSiteDayCareHome(int siteId, SiteDayCareHomeRequest dayCareHome)
+    private async Task<bool> UpdateSiteDayCareHome(int siteId, SiteDayCareHomeRequest dayCareHome, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             // Actualizar registro existente usando SiteId directamente
             var parameters = new DynamicParameters();
@@ -1322,7 +1461,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@offersServiceToDifferentGroups", dayCareHome.OffersServiceToDifferentGroups, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_UpdateSiteDayCareHome", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_UpdateSiteDayCareHome", parameters, transaction, commandType: CommandType.StoredProcedure);
             var rowsAffected = parameters.Get<int>("@rowsAffected");
             return rowsAffected > 0;
         }
@@ -1330,6 +1469,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al actualizar información de Day Care Home para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 
@@ -1340,22 +1486,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="participantTypeIds">Lista de IDs de tipos de participantes</param>
     /// <returns>True si se actualizaron correctamente</returns>
-    private async Task<bool> UpdateSiteParticipants(int siteId, List<int> participantTypeIds)
+    private async Task<bool> UpdateSiteParticipants(int siteId, List<int> participantTypeIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
             parameters.Add("@participantTypeIds", string.Join(",", participantTypeIds), DbType.String);
 
-            await dbConnection.ExecuteAsync("100_UpdateSiteParticipants", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_UpdateSiteParticipants", parameters, transaction, commandType: CommandType.StoredProcedure);
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar tipos de participantes para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 

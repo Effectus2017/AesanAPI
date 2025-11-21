@@ -59,7 +59,7 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
         {
             if (ModelState.IsValid)
             {
-                var result = await _unitOfWork.SiteRepository.GetAllSitesFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList);
+                var result = await _unitOfWork.SiteRepository.GetAllSitesFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList, queryParameters.IsDayCareHomeId);
 
                 if (result == null)
                 {

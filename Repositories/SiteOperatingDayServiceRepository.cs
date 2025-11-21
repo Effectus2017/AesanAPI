@@ -117,6 +117,83 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
     }
 
     /// <summary>
+    /// Crea múltiples servicios en batch para optimizar performance
+    /// </summary>
+    public async Task<int> CreateServicesBatch(List<SiteOperatingDayServiceRequest> requests, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var shouldDisposeConnection = connection == null;
+        IDbConnection? dbConnection = null;
+
+        try
+        {
+            if (requests == null || requests.Count == 0)
+            {
+                return 0;
+            }
+
+            // Validaciones básicas antes de enviar a BD
+            foreach (var request in requests)
+            {
+                if (request.OperatingDayId == null || request.OperatingDayId <= 0)
+                {
+                    throw new ArgumentException($"OperatingDayId es requerido para todos los servicios");
+                }
+            }
+
+            dbConnection = connection ?? _context.CreateConnection();
+
+            // Crear DataTable para Table-Valued Parameter
+            var dataTable = new DataTable();
+            dataTable.Columns.Add("OperatingDayId", typeof(int));
+            dataTable.Columns.Add("ServiceTypeId", typeof(int));
+            dataTable.Columns.Add("ChildGroupId", typeof(int));
+            dataTable.Columns.Add("StartTime", typeof(TimeSpan));
+            dataTable.Columns.Add("EndTime", typeof(TimeSpan));
+            dataTable.Columns.Add("IsEnabled", typeof(bool));
+            dataTable.Columns.Add("Comment", typeof(string));
+
+            // Llenar DataTable
+            foreach (var request in requests)
+            {
+                dataTable.Rows.Add(
+                    request.OperatingDayId!.Value,
+                    request.ServiceTypeId,
+                    request.ChildGroupId ?? (object)DBNull.Value,
+                    request.StartTime,
+                    request.EndTime,
+                    request.IsEnabled,
+                    request.Comment ?? (object)DBNull.Value
+                );
+            }
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@services", dataTable.AsTableValuedParameter("SiteOperatingDayServiceBatchType"));
+            parameters.Add("@rowsInserted", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_InsertSiteOperatingDayServicesBatch", parameters, transaction, commandType: CommandType.StoredProcedure);
+
+            var rowsInserted = parameters.Get<int>("@rowsInserted");
+
+            _logger.LogInformation("Se crearon {RowsInserted} servicios en batch de {TotalRequests} solicitados",
+                rowsInserted, requests.Count);
+
+            return rowsInserted;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al crear servicios en batch");
+            throw;
+        }
+        finally
+        {
+            if (shouldDisposeConnection && dbConnection != null)
+            {
+                dbConnection.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
     /// Actualiza un servicio existente
     /// </summary>
     public async Task<bool> UpdateService(int id, SiteOperatingDayServiceRequest request)

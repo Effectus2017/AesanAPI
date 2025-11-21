@@ -135,8 +135,8 @@ public class StaffRepository(
             parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@positionId", staffRequest.PositionId == 0 ? null : staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@staffTypeId", staffRequest.StaffTypeId == 0 ? null : staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
             // Fechas seguras para SQL Server
             parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
@@ -197,9 +197,6 @@ public class StaffRepository(
             throw new Exception(ex.Message);
         }
     }
-
-
-
 
     /// <summary>
     /// Actualiza un miembro del staff existente en la base de datos

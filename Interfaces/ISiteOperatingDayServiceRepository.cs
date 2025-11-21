@@ -1,3 +1,4 @@
+using System.Data;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
@@ -30,6 +31,13 @@ public interface ISiteOperatingDayServiceRepository
     /// <param name="request">Datos del servicio a crear</param>
     /// <returns>ID del servicio creado</returns>
     Task<int> CreateService(SiteOperatingDayServiceRequest request);
+
+    /// <summary>
+    /// Crea múltiples servicios en batch para optimizar performance
+    /// </summary>
+    /// <param name="requests">Lista de servicios a crear</param>
+    /// <returns>Número de servicios creados</returns>
+    Task<int> CreateServicesBatch(List<SiteOperatingDayServiceRequest> requests, IDbConnection? connection = null, IDbTransaction? transaction = null);
 
     /// <summary>
     /// Actualiza un servicio existente

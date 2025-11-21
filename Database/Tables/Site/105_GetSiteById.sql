@@ -33,7 +33,7 @@ BEGIN
         s.HasDiningRoom, s.AdministratorAuthorizedName, s.SitePhone, s.Extension, s.MobilePhone, s.CommunityId, s.WalkersId,
         s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
-        s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsMainSite, a.AgencyCode,
+        s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
         CASE 
             WHEN a.AgencyCode IS NOT NULL AND s.SiteNumber IS NOT NULL THEN
                 SUBSTRING(a.AgencyCode, CHARINDEX('-', a.AgencyCode) + 1, LEN(a.AgencyCode)) + '-' + CAST(s.SiteNumber AS VARCHAR(10))
@@ -59,6 +59,7 @@ BEGIN
         LEFT JOIN AreaType ltype ON s.LocationTypeId = ltype.Id
         LEFT JOIN OptionSelection sl ON s.SiteLocationId = sl.Id
         LEFT JOIN OptionSelection pac ON s.PublicAllianceContractId = pac.Id
+        LEFT JOIN OptionSelection os_idch ON s.IsDayCareHomeId = os_idch.Id
     WHERE s.Id = @id;
 
     -- Obtener niveles educativos del sitio

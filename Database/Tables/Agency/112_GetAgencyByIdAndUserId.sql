@@ -86,6 +86,7 @@ BEGIN
         os_idch.Name AS IsDayCareHomeName,
         os_idch.NameEN AS IsDayCareHomeNameEN,
         os_idch.OptionKey AS IsDayCareHomeOptionKey,
+        os_idch.BooleanValue AS IsDayCareHomeBooleanValue,
 
         -- Datos adicionales de la agencia
         a.IsPropietary,

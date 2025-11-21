@@ -113,7 +113,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
                 if (success)
                 {
                     _logger.LogInformation("Miembro del staff insertado con ID: {Id}", staffId);
-                    return Ok(new { success = true, staffId = staffId });
+                    return Ok(success);
                 }
 
                 _logger.LogWarning("No se pudo insertar el miembro del staff");

@@ -61,6 +61,7 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @organizedAthleticPrograms BIT = 0,
     @atRiskService BIT = 0,
     @publicAllianceContractId INT = NULL,
+    @isDayCareHomeId INT = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -75,7 +76,7 @@ BEGIN
         HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
         CommunityId, WalkersId, SiteTypeId, SiteLocationId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
         SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, InactiveJustification, InactiveDate,
-        OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, CreatedAt
+        OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, IsDayCareHomeId, CreatedAt
         )
     VALUES
         (
@@ -86,7 +87,7 @@ BEGIN
             @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
             @communityId, @walkersId, @siteTypeId, @siteLocationId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
             @siteCode, @generalEnrollment, @siteNumber, @serviceTime, 1, @inactiveJustification, @inactiveDate,
-            @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, GETDATE()
+            @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, @isDayCareHomeId, GETDATE()
     );
 
     SET @id = SCOPE_IDENTITY();

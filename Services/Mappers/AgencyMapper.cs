@@ -188,7 +188,8 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                     Id = item.IsDayCareHomeId,
                     Name = item.IsDayCareHomeName ?? string.Empty,
                     NameEN = item.IsDayCareHomeNameEN ?? string.Empty,
-                    OptionKey = item.IsDayCareHomeOptionKey ?? string.Empty
+                    OptionKey = item.IsDayCareHomeOptionKey ?? string.Empty,
+                    BooleanValue = item.IsDayCareHomeBooleanValue
                 } : null,
 
                 ParticipatesInHeadStartProgram = item.ParticipatesInHeadStartProgramId != null ? new DTOOptionSelection

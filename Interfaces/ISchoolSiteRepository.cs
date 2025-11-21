@@ -28,7 +28,7 @@ public interface ISchoolSiteRepository
     /// <summary>
     /// Asigna un Site a una School
     /// </summary>
-    Task<bool> InsertSchoolSite(SchoolSiteRequest request);
+    Task<bool> InsertSchoolSite(SchoolSiteRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null);
 
     /// <summary>
     /// Actualiza una asignación School-Site

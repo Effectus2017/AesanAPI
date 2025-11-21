@@ -125,6 +125,9 @@ public class CacheKeys
     // Claves para SchoolSite
     public string SchoolSites { get; set; } = "SchoolSites_{0}_{1}_{2}_{3}";
 
+    // Claves para EmailTemplate
+    public string EmailTemplateByKey { get; set; } = "EmailTemplate_{0}";
+
 }
 
 public class GmailSettings

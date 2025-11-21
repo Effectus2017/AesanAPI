@@ -125,6 +125,19 @@ public class SiteResponse
     /// </summary>
     public bool? AtRiskService { get; set; }
 
+    /// <summary>
+    /// ID que indica si el sitio es un Centro (No) o un Hogar (Sí)
+    /// ID indicating if the site is a Center (No) or a Home (Yes)
+    /// Solo para sitios de agencias con programa PACNA
+    /// </summary>
+    public int? IsDayCareHomeId { get; set; }
+
+    /// <summary>
+    /// Objeto OptionSelection que contiene información sobre si el sitio es Centro o Hogar
+    /// OptionSelection object containing information about whether the site is a Center or Home
+    /// </summary>
+    public DTOOptionSelection? IsDayCareHome { get; set; }
+
     // Propiedades de conveniencia para operaciones que necesiten IDs
     public int CityId => City?.Id ?? 0;
     public int RegionId => Region?.Id ?? 0;

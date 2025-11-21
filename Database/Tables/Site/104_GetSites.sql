@@ -3,7 +3,7 @@
 -- Descripción: Obtiene todos los sitios con paginación y filtros
 -- Reemplaza: 104_GetSchools
 -- Fecha: 2025-01-15
--- Versión: 1.0
+-- Versión: 1.1
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[104_GetSites]
@@ -13,7 +13,8 @@ CREATE OR ALTER PROCEDURE [dbo].[104_GetSites]
     @cityId INT = NULL,
     @regionId INT = NULL,
     @agencyId INT = NULL,
-    @alls BIT = 0
+    @alls BIT = 0,
+    @isDayCareHomeId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -42,14 +43,17 @@ BEGIN
     WHERE s.IsActive = 1
         AND (
             @alls = 1
-        OR ((@name IS NULL OR s.Name LIKE '%' + @name + '%')
+        OR (
+                (@name IS NULL OR s.Name LIKE '%' + @name + '%')
         AND (@cityId IS NULL OR s.CityId = @cityId)
         AND (@regionId IS NULL OR s.RegionId = @regionId)
         AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+        AND (@isDayCareHomeId IS NULL OR s.IsDayCareHomeId = @isDayCareHomeId)
+                )
             )
-        )
     ORDER BY s.SiteNumber DESC, s.Name
-    OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+    OFFSET @skip ROWS
+    FETCH NEXT @take ROWS ONLY;
 
     -- Retorna el conteo total para paginación
     SELECT COUNT(*)
@@ -57,10 +61,14 @@ BEGIN
     WHERE s.IsActive = 1
         AND (
             @alls = 1
-        OR ((@name IS NULL OR s.Name LIKE '%' + @name + '%')
+        OR (
+                (@name IS NULL OR s.Name LIKE '%' + @name + '%')
         AND (@cityId IS NULL OR s.CityId = @cityId)
         AND (@regionId IS NULL OR s.RegionId = @regionId)
         AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+        AND (@isDayCareHomeId IS NULL OR s.IsDayCareHomeId = @isDayCareHomeId)
+                )
             )
-        );
 END;
+
+--EXEC [104_GetSites] @take = 10, @skip = 0, @name = NULL, @cityId = NULL, @regionId = NULL, @agencyId = NULL, @alls = 0, @isDayCareHomeId = 1;

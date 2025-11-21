@@ -117,11 +117,11 @@ public class SiteRequest
     public bool? AtRiskService { get; set; } = false;
 
     /// <summary>
-    /// Indica si la agencia es Day Care Home
-    /// Indicates if the agency is Day Care Home
-    /// Se obtiene de la inscripción de la agencia
+    /// ID que indica si el sitio es un Centro (No) o un Hogar (Sí)
+    /// ID indicating if the site is a Center (No) or a Home (Yes)
+    /// Solo para sitios de agencias con programa PACNA
     /// </summary>
-    public bool? IsDayCareHome { get; set; } = false;
+    public int? IsDayCareHomeId { get; set; }
 
     /// <summary>
     /// IDs de programas de la agencia

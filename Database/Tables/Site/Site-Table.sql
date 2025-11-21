@@ -64,6 +64,7 @@ CREATE TABLE [dbo].[Site]
     [OrganizedAthleticPrograms] [bit] NULL,
     [AtRiskService] [bit] NULL,
     [PublicAllianceContractId] [int] NULL,
+    [IsDayCareHomeId] [int] NULL,
     [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] [datetime] NULL,
     CONSTRAINT [PK_Site] PRIMARY KEY CLUSTERED ([Id] ASC)
@@ -84,6 +85,7 @@ CREATE INDEX [IX_Site_IsActive] ON [Site]([IsActive]);
 CREATE INDEX [IX_Site_SiteNumber] ON [Site]([SiteNumber]);
 CREATE INDEX [IX_Site_OrganizationTypeId] ON [Site]([OrganizationTypeId]);
 CREATE INDEX [IX_Site_PublicAllianceContractId] ON [Site]([PublicAllianceContractId]);
+CREATE INDEX [IX_Site_IsDayCareHomeId] ON [Site]([IsDayCareHomeId]);
 CREATE INDEX [IX_Site_CreatedAt] ON [Site]([CreatedAt]);
 
 -- =============================================
@@ -113,3 +115,4 @@ ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_Experience] FOREIGN KEY([ExperienceId
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_ReviewResult] FOREIGN KEY([ReviewResultId]) REFERENCES [ReviewResult]([Id]);
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_SiteLocation] FOREIGN KEY([SiteLocationId]) REFERENCES [OptionSelection]([Id]);
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_PublicAllianceContract] FOREIGN KEY([PublicAllianceContractId]) REFERENCES [OptionSelection]([Id]);
+ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_IsDayCareHome] FOREIGN KEY([IsDayCareHomeId]) REFERENCES [OptionSelection]([Id]);
