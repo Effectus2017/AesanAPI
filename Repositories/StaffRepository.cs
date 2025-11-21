@@ -160,8 +160,6 @@ public class StaffRepository(
             await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
 
             int staffId = parameters.Get<int>("@id");
-
-            if (staffId > 0)
             {
                 // Si se proporcionó una sitio, crear la asociación
                 if (staffRequest.SiteId.HasValue && staffRequest.SiteId.Value > 0)
