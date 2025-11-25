@@ -9,6 +9,7 @@ public class EmailTemplateResponse
     public required string BodyES { get; set; }
     public required string BodyEN { get; set; }
     public string? Description { get; set; }
+    public string? DescriptionEN { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

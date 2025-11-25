@@ -1,24 +1,28 @@
-CREATE OR ALTER PROCEDURE [dbo].[100_GetEmailTemplateByKey]
+CREATE OR ALTER PROCEDURE [dbo].[100_GetMessageTemplateByKey]
     @templateKey NVARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
+    SELECT
         Id,
         TemplateKey,
-        SubjectES,
-        SubjectEN,
+        TitleES,
+        TitleEN,
         BodyES,
         BodyEN,
-        Description,
-        DescriptionEN,
+        Icon,
+        Image,
+        Link,
+        UseRouter,
+        PurposeES,
+        PurposeEN,
         IsActive,
         CreatedAt,
         UpdatedAt,
         CreatedBy,
         UpdatedBy
-    FROM [dbo].[EmailTemplate]
+    FROM [dbo].[MessageTemplate]
     WHERE TemplateKey = @templateKey
         AND IsActive = 1;
 END;

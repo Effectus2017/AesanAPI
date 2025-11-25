@@ -5,6 +5,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateEmailTemplate]
     @bodyES NVARCHAR(MAX),
     @bodyEN NVARCHAR(MAX),
     @description NVARCHAR(500) = NULL,
+    @descriptionEN NVARCHAR(500) = NULL,
     @isActive BIT,
     @updatedBy NVARCHAR(450) = NULL
 AS
@@ -21,6 +22,7 @@ BEGIN
             BodyES = @bodyES,
             BodyEN = @bodyEN,
             Description = @description,
+            DescriptionEN = @descriptionEN,
             IsActive = @isActive,
             UpdatedAt = GETDATE(),
             UpdatedBy = @updatedBy

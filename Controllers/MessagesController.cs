@@ -6,6 +6,7 @@ using Dapper;
 using System.Security.Claims;
 using Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Api.Services;
 
 namespace Api.Controllers;
 
@@ -107,12 +108,33 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
 
                 if (!string.IsNullOrEmpty(created.UserId))
                 {
-                    await _hub.Clients.Group($"user:{created.UserId}").MessageCreated(created);
-                    var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(created.UserId);
-                    await _hub.Clients.Group($"user:{created.UserId}").UnreadCountChanged(unread);
+                    var groupName = $"user:{created.UserId}";
+                    SignalRLogger.LogToFile($"[MessagesController] ========== ENVIANDO MENSAJE ==========");
+                    SignalRLogger.LogToFile($"[MessagesController] Mensaje ID: {created.Id}");
+                    SignalRLogger.LogToFile($"[MessagesController] Mensaje UserId (destinatario): {created.UserId}");
+                    SignalRLogger.LogToFile($"[MessagesController] Mensaje Title: {created.Title}");
+                    SignalRLogger.LogToFile($"[MessagesController] Grupo destino: {groupName}");
+
+                    try
+                    {
+                        await _hub.Clients.Group(groupName).MessageCreated(created);
+                        SignalRLogger.LogToFile($"[MessagesController] ✅ MessageCreated enviado al grupo {groupName}");
+
+                        var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(created.UserId);
+                        SignalRLogger.LogToFile($"[MessagesController] Unread count obtenido: {unread}");
+
+                        await _hub.Clients.Group(groupName).UnreadCountChanged(unread);
+                        SignalRLogger.LogToFile($"[MessagesController] ✅ UnreadCountChanged enviado al grupo {groupName} con count: {unread}");
+                    }
+                    catch (Exception ex)
+                    {
+                        SignalRLogger.LogToFile($"[MessagesController] ❌ ERROR al enviar mensaje: {ex.Message}");
+                        SignalRLogger.LogToFile($"[MessagesController] ❌ StackTrace: {ex.StackTrace}");
+                    }
                 }
                 else
                 {
+                    SignalRLogger.LogToFile("[MessagesController] Enviando mensaje al grupo broadcast (sin userId)");
                     await _hub.Clients.Group("broadcast").MessageCreated(created);
                 }
 
@@ -161,9 +183,16 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
                     if (updated is Message msg)
                     {
                         if (!string.IsNullOrEmpty(msg.UserId))
-                            await _hub.Clients.Group($"user:{msg.UserId}").MessageUpdated(msg);
+                        {
+                            var groupName = $"user:{msg.UserId}";
+                            SignalRLogger.LogToFile($"[MessagesController] Enviando MessageUpdated al grupo: {groupName}, MessageId: {msg.Id}");
+                            await _hub.Clients.Group(groupName).MessageUpdated(msg);
+                        }
                         else
+                        {
+                            SignalRLogger.LogToFile($"[MessagesController] Enviando MessageUpdated al grupo broadcast, MessageId: {msg.Id}");
                             await _hub.Clients.Group("broadcast").MessageUpdated(msg);
+                        }
                     }
                 }
 
@@ -203,9 +232,16 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
                 if (existing is Message msg)
                 {
                     if (!string.IsNullOrEmpty(msg.UserId))
-                        await _hub.Clients.Group($"user:{msg.UserId}").MessageDeleted(msg.Id);
+                    {
+                        var groupName = $"user:{msg.UserId}";
+                        SignalRLogger.LogToFile($"[MessagesController] Enviando MessageDeleted al grupo: {groupName}, MessageId: {msg.Id}");
+                        await _hub.Clients.Group(groupName).MessageDeleted(msg.Id);
+                    }
                     else
+                    {
+                        SignalRLogger.LogToFile($"[MessagesController] Enviando MessageDeleted al grupo broadcast, MessageId: {msg.Id}");
                         await _hub.Clients.Group("broadcast").MessageDeleted(msg.Id);
+                    }
                 }
 
                 _logger.LogInformation("Mensaje eliminado con ID: {Id}", queryParameters.Id);
@@ -242,7 +278,9 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
 
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    await _hub.Clients.Group($"user:{userId}").UnreadCountChanged(0);
+                    var groupName = $"user:{userId}";
+                    SignalRLogger.LogToFile($"[MessagesController] Enviando UnreadCountChanged al grupo: {groupName}, Count: 0");
+                    await _hub.Clients.Group(groupName).UnreadCountChanged(0);
                 }
 
                 _logger.LogInformation("Todos los mensajes marcados como leídos para usuario: {UserId}", queryParameters.UserId);
@@ -282,12 +320,16 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
                 {
                     if (!string.IsNullOrEmpty(msg.UserId))
                     {
-                        await _hub.Clients.Group($"user:{msg.UserId}").MessageRead(msg.Id);
+                        var groupName = $"user:{msg.UserId}";
+                        SignalRLogger.LogToFile($"[MessagesController] Enviando MessageRead al grupo: {groupName}, MessageId: {msg.Id}");
+                        await _hub.Clients.Group(groupName).MessageRead(msg.Id);
                         var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(msg.UserId);
-                        await _hub.Clients.Group($"user:{msg.UserId}").UnreadCountChanged(unread);
+                        SignalRLogger.LogToFile($"[MessagesController] Enviando UnreadCountChanged al grupo: {groupName}, Count: {unread}");
+                        await _hub.Clients.Group(groupName).UnreadCountChanged(unread);
                     }
                     else
                     {
+                        SignalRLogger.LogToFile($"[MessagesController] Enviando MessageRead al grupo broadcast, MessageId: {msg.Id}");
                         await _hub.Clients.Group("broadcast").MessageRead(msg.Id);
                     }
                 }

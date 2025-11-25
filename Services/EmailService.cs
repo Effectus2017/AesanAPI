@@ -54,15 +54,18 @@ public class EmailService(
     /// <param name="message">El mensaje del correo electrónico</param>
     public async Task SendEmailWithGmailAsync(string email, string subject, string message)
     {
-        _logger.LogInformation("Enviando correo electrónico con Gmail");
+        _logger.LogInformation("Enviando correo electrónico con Gmail a {Email}", email);
 
         var emailMessage = new MimeMessage();
         emailMessage.From.Add(new MailboxAddress("AESAN", _appSettings.Gmail.EmailFrom));
 
 #if DEBUG || LOCAL
-        emailMessage.To.Add(new MailboxAddress("", _appSettings.Gmail.EmailToDev));
+        var actualRecipient = _appSettings.Gmail.EmailToDev;
+        emailMessage.To.Add(new MailboxAddress("", actualRecipient));
+        _logger.LogInformation("Modo DEBUG/LOCAL: Redirigiendo correo de {OriginalEmail} a {DevEmail}", email, actualRecipient);
 #else
         emailMessage.To.Add(new MailboxAddress("", email));
+        _logger.LogInformation("Enviando correo a {Email}", email);
 #endif
 
         emailMessage.Subject = subject;
@@ -84,18 +87,26 @@ public class EmailService(
 
             client.AuthenticationMechanisms.Remove("XOAUTH2");
 
+            _logger.LogInformation("Conectando a servidor SMTP: {Server}:{Port}", _appSettings.Gmail.SmtpServer, _appSettings.Gmail.SmtpServerPort);
             await client.ConnectAsync(_appSettings.Gmail.SmtpServer, _appSettings.Gmail.SmtpServerPort, MailKit.Security.SecureSocketOptions.Auto);
+            
+            _logger.LogInformation("Autenticando con usuario: {EmailFrom}", _appSettings.Gmail.EmailFrom);
             await client.AuthenticateAsync(_appSettings.Gmail.EmailFrom, _appSettings.Gmail.SmtpPass);
 
+            _logger.LogInformation("Enviando correo...");
             await client.SendAsync(emailMessage);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation("Correo electrónico enviado con Gmail");
+#if DEBUG || LOCAL
+            _logger.LogInformation("Correo electrónico enviado con Gmail exitosamente a {Recipient} (originalmente destinado a {OriginalEmail})", actualRecipient, email);
+#else
+            _logger.LogInformation("Correo electrónico enviado con Gmail exitosamente a {Recipient}", email);
+#endif
 
         }
         catch (Exception ex) //todo add another try to send email
         {
-            _logger.LogError(ex, "Error al enviar correo electrónico");
+            _logger.LogError(ex, "Error al enviar correo electrónico. Detalles: {Message}. StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
             throw new Exception("Error al enviar correo electrónico", ex);
         }
     }

@@ -66,24 +66,14 @@ public class EmailTemplateRepository(
     {
         try
         {
-            string cacheKey = string.Format(_appSettings.Cache.Keys.EmailTemplateByKey, templateKey);
-            return await _cache.CacheQuery(
-                cacheKey,
-                async () =>
-                {
-                    using IDbConnection db = _context.CreateConnection();
-                    var parameters = new DynamicParameters();
-                    parameters.Add("@templateKey", templateKey, DbType.String);
-                    var result = await db.QueryFirstOrDefaultAsync<EmailTemplateResponse>(
-                        "100_GetEmailTemplateByKey",
-                        parameters,
-                        commandType: CommandType.StoredProcedure);
-                    return result;
-                },
-                _logger,
-                _appSettings,
-                TimeSpan.FromMinutes(30)
-            );
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@templateKey", templateKey, DbType.String);
+            var result = await db.QueryFirstOrDefaultAsync<EmailTemplateResponse>(
+                "100_GetEmailTemplateByKey",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+            return result;
         }
         catch (Exception ex)
         {
@@ -151,6 +141,7 @@ public class EmailTemplateRepository(
             parameters.Add("@bodyES", emailTemplate.BodyES, DbType.String);
             parameters.Add("@bodyEN", emailTemplate.BodyEN, DbType.String);
             parameters.Add("@description", emailTemplate.Description, DbType.String);
+            parameters.Add("@descriptionEN", emailTemplate.DescriptionEN, DbType.String);
             parameters.Add("@isActive", emailTemplate.IsActive, DbType.Boolean);
             parameters.Add("@createdBy", createdBy, DbType.String);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
@@ -197,6 +188,7 @@ public class EmailTemplateRepository(
             parameters.Add("@bodyES", emailTemplate.BodyES, DbType.String);
             parameters.Add("@bodyEN", emailTemplate.BodyEN, DbType.String);
             parameters.Add("@description", emailTemplate.Description, DbType.String);
+            parameters.Add("@descriptionEN", emailTemplate.DescriptionEN, DbType.String);
             parameters.Add("@isActive", emailTemplate.IsActive, DbType.Boolean);
             parameters.Add("@updatedBy", updatedBy, DbType.String);
             var rowsAffected = await db.ExecuteAsync("100_UpdateEmailTemplate", parameters, commandType: CommandType.StoredProcedure);
@@ -222,7 +214,21 @@ public class EmailTemplateRepository(
     private void InvalidateCache()
     {
         _cache.Remove("EmailTemplates");
+        // Invalidar todos los caches por key usando patrón
+        _cache.RemoveByPattern("EmailTemplate_", _logger);
         _logger.LogInformation("Cache invalidado para EmailTemplate Repository");
+    }
+
+    /// <summary>
+    /// Invalidates the cache for a specific email template by key
+    /// Invalida el cache para un template de email específico por su clave
+    /// </summary>
+    /// <param name="templateKey">The template key to invalidate/La clave del template a invalidar</param>
+    public void InvalidateCacheByKey(string templateKey)
+    {
+        string cacheKey = string.Format(_appSettings.Cache.Keys.EmailTemplateByKey, templateKey);
+        _cache.Remove(cacheKey);
+        _logger.LogInformation("Cache invalidado para EmailTemplate con key: {TemplateKey}", templateKey);
     }
 }
 

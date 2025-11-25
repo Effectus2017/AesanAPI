@@ -4,6 +4,10 @@ using Api.Models;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Api.Services;
+using Api.Data;
+using Dapper;
+using System.Data;
 
 namespace Api.Controllers;
 
@@ -14,10 +18,12 @@ namespace Api.Controllers;
 /// </summary>
 [Route("site")]
 [ApiController]
-public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWork) : Controller
+public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService, DapperContext dapperContext) : Controller
 {
     private readonly ILogger<SiteController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly MessageTemplateService _messageTemplateService = messageTemplateService ?? throw new ArgumentNullException(nameof(messageTemplateService));
+    private readonly DapperContext _dapperContext = dapperContext ?? throw new ArgumentNullException(nameof(dapperContext));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -186,29 +192,175 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
     [SwaggerOperation(Summary = "Actualiza el estado activo/inactivo de un sitio", Description = "Permite activar o inactiva un sitio. Requiere justificación al inactiva.")]
     public async Task<IActionResult> UpdateSiteActiveStatus([FromQuery] QueryParameters queryParameters)
     {
+        SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - INICIO - SiteId: {queryParameters.SiteId}, IsActive: {queryParameters.IsActive}");
+        _logger.LogInformation("UpdateSiteActiveStatus - INICIO - SiteId: {SiteId}, IsActive: {IsActive}", 
+            queryParameters.SiteId, queryParameters.IsActive);
+
         try
         {
             if (queryParameters.IsActive == false && string.IsNullOrWhiteSpace(queryParameters.InactiveJustification))
             {
+                SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - ERROR: Se requiere justificación para inactivar el sitio");
                 return BadRequest("Se requiere justificación para inactiva el sitio");
             }
 
             if (!queryParameters.SiteId.HasValue)
             {
+                SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - ERROR: El ID del sitio es requerido");
                 return BadRequest("El ID del sitio es requerido");
             }
 
+            SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Actualizando estado en BD para SiteId: {queryParameters.SiteId.Value}");
             var result = await _unitOfWork.SiteRepository.UpdateSiteActiveStatus(queryParameters.SiteId.Value, queryParameters.IsActive, queryParameters.InactiveJustification);
+            SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Estado actualizado. Result: {result}");
+            _logger.LogInformation("UpdateSiteActiveStatus - Estado actualizado para SiteId: {SiteId}, Result: {Result}", queryParameters.SiteId.Value, result);
 
-            if (result)
+            // Si se inactivó el sitio, enviar notificación al evaluador asignado
+            if (result && queryParameters.IsActive == false)
             {
-                return Ok(result);
+                SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Sitio inactivado, obteniendo información del sitio con ID: {queryParameters.SiteId.Value}");
+                
+                // Obtener información del sitio
+                var site = await _unitOfWork.SiteRepository.GetSiteById(queryParameters.SiteId.Value);
+                
+                if (site != null)
+                {
+                    SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - Sitio obtenido correctamente");
+                    _logger.LogInformation("UpdateSiteActiveStatus - Sitio {SiteId} obtenido correctamente", queryParameters.SiteId.Value);
+                    
+                    // Obtener información de la agencia del sitio
+                    var agencyId = ((dynamic)site).AgencyId;
+                    if (agencyId != null)
+                    {
+                        SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Obteniendo agencia con ID: {agencyId}");
+                        var agency = await _unitOfWork.AgencyRepository.GetAgencyById((int)agencyId);
+                        
+                        if (agency != null)
+                        {
+                            SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - Agencia obtenida correctamente");
+                            
+                            // NOTA: FORMA TEMPORAL DE OBTENER USUARIO ASIGNADO A SPONSOR
+                            // Esta lógica será modificada en el futuro cuando se actualice la estructura de AgencyUsers
+                            // Por ahora, consultamos directamente AgencyUsers para obtener el UserId del evaluador (monitor)
+                            string? evaluatorUserId = null;
+                            
+                            // Intentar obtener desde el objeto Monitor primero
+                            var monitor = ((dynamic)agency).Monitor;
+                            if (monitor != null)
+                            {
+                                evaluatorUserId = monitor.UserId?.ToString();
+                                SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - EvaluatorUserId desde Monitor: {(evaluatorUserId ?? "NULL")}");
+                                _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId desde Monitor: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
+                            }
+                            
+                            // Si no se encontró, consultar directamente AgencyUsers
+                            if (string.IsNullOrEmpty(evaluatorUserId))
+                            {
+                                var agencyIdInt = (int)agencyId;
+                                SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Consultando AgencyUsers directamente para AgencyId: {agencyIdInt}");
+                                _logger.LogInformation("UpdateSiteActiveStatus - Consultando AgencyUsers directamente para AgencyId: {AgencyId}", agencyIdInt);
+                                try
+                                {
+                                    using IDbConnection dbConnection = _dapperContext.CreateConnection();
+                                    var parameters = new DynamicParameters();
+                                    parameters.Add("@agencyId", agencyIdInt, DbType.Int32);
+                                    
+                                    evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
+                                        "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND IsMonitor = 1 AND IsActive = 1",
+                                        parameters
+                                    );
+                                    
+                                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - EvaluatorUserId desde AgencyUsers: {(evaluatorUserId ?? "NULL")}");
+                                    _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId desde AgencyUsers: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
+                                }
+                                catch (Exception ex)
+                                {
+                                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - ERROR consultando AgencyUsers: {ex.Message}");
+                                    _logger.LogError(ex, "Error obteniendo UserId del monitor desde AgencyUsers para agencia {AgencyId}", agencyIdInt);
+                                }
+                            }
+                            
+                            SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - EvaluatorUserId final: {(evaluatorUserId ?? "NULL")}");
+                            _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId final: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
+                            
+                            if (!string.IsNullOrEmpty(evaluatorUserId))
+                            {
+                                // Preparar variables para los templates
+                                var siteName = ((dynamic)site).Name?.ToString() ?? "";
+                                var siteCode = ((dynamic)site).SiteCode?.ToString() ?? ((dynamic)site).SiteNumber?.ToString() ?? "";
+                                var agencyName = ((dynamic)agency).Name?.ToString() ?? "";
+                                var inactiveJustification = queryParameters.InactiveJustification ?? "";
+                                var inactiveDate = DateTime.Now.ToString("dd/MM/yyyy");
+                                
+                                SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Variables preparadas: SiteName={siteName}, SiteCode={siteCode}, AgencyName={agencyName}, InactiveDate={inactiveDate}");
+                                _logger.LogInformation("UpdateSiteActiveStatus - Variables preparadas: SiteName={SiteName}, SiteCode={SiteCode}, AgencyName={AgencyName}, InactiveDate={InactiveDate}", 
+                                    (string)siteName, (string)siteCode, (string)agencyName, (string)inactiveDate);
+                                
+                                var variables = new Dictionary<string, string>
+                                {
+                                    { "SiteName", siteName },
+                                    { "SiteCode", siteCode },
+                                    { "AgencyName", agencyName },
+                                    { "InactiveJustification", inactiveJustification },
+                                    { "InactiveDate", inactiveDate }
+                                };
+
+                                // Enviar mensaje interno Y email usando templates separados
+                                try
+                                {
+                                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Llamando a SendMessageAndEmailFromTemplate para UserId: {evaluatorUserId}");
+                                    _logger.LogInformation("UpdateSiteActiveStatus - Llamando a SendMessageAndEmailFromTemplate para UserId: {EvaluatorUserId}", evaluatorUserId);
+                                    await _messageTemplateService.SendMessageAndEmailFromTemplate(
+                                        messageTemplateKey: "SiteInactivated",
+                                        emailTemplateKey: "SiteInactivated",
+                                        recipientUserId: evaluatorUserId,
+                                        variables: variables,
+                                        language: "es"
+                                    );
+                                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - SendMessageAndEmailFromTemplate completado exitosamente");
+                                    _logger.LogInformation("UpdateSiteActiveStatus - SendMessageAndEmailFromTemplate completado exitosamente");
+                                }
+                                catch (Exception ex)
+                                {
+                                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - ERROR en SendMessageAndEmailFromTemplate: {ex.Message}");
+                                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - StackTrace: {ex.StackTrace}");
+                                    _logger.LogError(ex, "Error al enviar mensaje y email al evaluador {EvaluatorUserId}: {Message}", evaluatorUserId, ex.Message);
+                                    // No fallar la operación principal si falla el envío de mensaje/email
+                                }
+                            }
+                            else
+                            {
+                                var agencyIdForLog = (int)agencyId;
+                                SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - WARNING: No se encontró evaluador asignado (evaluatorUserId es null o vacío)");
+                                _logger.LogWarning("UpdateSiteActiveStatus - No se encontró evaluador asignado para la agencia {AgencyId}", agencyIdForLog);
+                            }
+                        }
+                        else
+                        {
+                            var agencyIdForLog = (int)agencyId;
+                            SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - WARNING: Agencia con ID {agencyIdForLog} no encontrada");
+                            _logger.LogWarning("UpdateSiteActiveStatus - Agencia con ID {AgencyId} no encontrada", agencyIdForLog);
+                        }
+                    }
+                    else
+                    {
+                        SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - WARNING: Site no tiene AgencyId");
+                        _logger.LogWarning("UpdateSiteActiveStatus - Site {SiteId} no tiene AgencyId", queryParameters.SiteId.Value);
+                    }
+                }
+                else
+                {
+                    SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - WARNING: Sitio con ID {queryParameters.SiteId.Value} no encontrado después de actualizar");
+                    _logger.LogWarning("UpdateSiteActiveStatus - Sitio con ID {SiteId} no encontrado después de actualizar", queryParameters.SiteId.Value);
+                }
             }
 
-            return NotFound($"Sitio con ID {queryParameters.SiteId} no encontrado");
+            return Ok(result);
         }
         catch (Exception ex)
         {
+            SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - ERROR FATAL: {ex.Message}");
+            SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - StackTrace: {ex.StackTrace}");
             _logger.LogError(ex, "Error al actualizar el estado activo del sitio {SiteId}: {Message}", queryParameters.SiteId, ex.Message);
             return StatusCode(500, ex.Message);
         }

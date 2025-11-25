@@ -22,6 +22,7 @@ using ElmahCore.Sql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,6 +77,57 @@ builder.Services
 
         // Habilitar detalles de error para debugging
         options.IncludeErrorDetails = true;
+
+        // Configurar SignalR para leer el token desde query string
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"].ToString();
+                var path = context.HttpContext.Request.Path;
+
+                SignalRLogger.LogToFile($"[JWT] OnMessageReceived - Path: {path}");
+                SignalRLogger.LogToFile($"[JWT] OnMessageReceived - Token presente: {!string.IsNullOrEmpty(accessToken)}");
+
+                // Si la ruta es del hub de mensajes y hay token en query string
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/messages"))
+                {
+                    context.Token = accessToken;
+                    var tokenPreview = accessToken.Length > 20 ? accessToken.Substring(0, 20) + "..." : accessToken;
+                    SignalRLogger.LogToFile($"[JWT] Token establecido para SignalR: {tokenPreview}");
+                }
+                else
+                {
+                    SignalRLogger.LogToFile($"[JWT] Token NO establecido - Path: {path}, Token vacío: {string.IsNullOrEmpty(accessToken)}");
+                }
+
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? context.Principal?.FindFirst("nameid")?.Value
+                             ?? context.Principal?.FindFirst("sub")?.Value;
+                SignalRLogger.LogToFile($"[JWT] Token validado - UserId: {userId ?? "NULL"}");
+                SignalRLogger.LogToFile($"[JWT] Token validado - Claims Count: {context.Principal?.Claims?.Count() ?? 0}");
+
+                if (context.Principal?.Claims != null)
+                {
+                    foreach (var claim in context.Principal.Claims)
+                    {
+                        SignalRLogger.LogToFile($"[JWT] Claim validado: {claim.Type} = {claim.Value}");
+                    }
+                }
+
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                SignalRLogger.LogToFile($"[JWT] Error de autenticación: {context.Exception?.Message}");
+                SignalRLogger.LogToFile($"[JWT] Error de autenticación - InnerException: {context.Exception?.InnerException?.Message}");
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services
@@ -141,8 +193,10 @@ builder.Services.AddScoped<ISiteExcursionRepository, SiteExcursionRepository>();
 builder.Services.AddScoped<ISiteOperatingDayServiceRepository, SiteOperatingDayServiceRepository>();
 builder.Services.AddScoped<IAesanDashboardRepository, AesanDashboardRepository>();
 builder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
+builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<MessageTemplateService>();
 builder.Services.AddScoped<IProgramPeriodService, ProgramPeriodService>();
 builder.Services.AddScoped<ISiteProgramService, SiteProgramService>();
 
@@ -187,7 +241,11 @@ builder.Services.AddAutoMapper(cfg =>
 });
 
 // SignalR
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.MaximumReceiveMessageSize = 1024000; // 1MB
+});
 
 // Configuración de CORS
 builder.Services.AddCors(options =>

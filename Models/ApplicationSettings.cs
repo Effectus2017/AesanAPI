@@ -128,6 +128,9 @@ public class CacheKeys
     // Claves para EmailTemplate
     public string EmailTemplateByKey { get; set; } = "EmailTemplate_{0}";
 
+    // Claves para MessageTemplate
+    public string MessageTemplateByKey { get; set; } = "MessageTemplate_{0}";
+
 }
 
 public class GmailSettings

@@ -8,7 +8,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
+    SELECT
         Id,
         TemplateKey,
         SubjectES,
@@ -16,6 +16,7 @@ BEGIN
         BodyES,
         BodyEN,
         Description,
+        DescriptionEN,
         IsActive,
         CreatedAt,
         UpdatedAt,

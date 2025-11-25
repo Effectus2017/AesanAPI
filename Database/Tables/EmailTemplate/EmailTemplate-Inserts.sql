@@ -338,5 +338,67 @@ VALUES
         1
     );
 
+-- 10. SponsorRegistrationCompleted - Email cuando un auspiciador completa su registro
+INSERT INTO [dbo].[EmailTemplate]
+    (TemplateKey, SubjectES, SubjectEN, BodyES, BodyEN, Description, IsActive)
+VALUES
+    (
+        'SponsorRegistrationCompleted',
+        'Registro de Auspiciador Completado - {SponsorName}',
+        'Sponsor Registration Completed - {SponsorName}',
+        '<div style=''font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;''>
+            <h2>Registro Completado</h2>
+            <p>Estimado/a Evaluador,</p>
+            <p>Le informamos que el auspiciador <strong>{SponsorName}</strong> (Código: {SponsorCode}) ha completado su registro el {CompletionDate}.</p>
+            <p>Por favor, revise la información en el sistema para continuar con el proceso de evaluación.</p>
+            <p>Puede acceder a la información del auspiciador a través de su cuenta en el sistema.</p>
+            <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+            <p>Atentamente,<br>El equipo de NUTRE</p>
+        </div>',
+        '<div style=''font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;''>
+            <h2>Registration Completed</h2>
+            <p>Dear Evaluator,</p>
+            <p>We inform you that sponsor <strong>{SponsorName}</strong> (Code: {SponsorCode}) has completed their registration on {CompletionDate}.</p>
+            <p>Please review the information in the system to continue with the evaluation process.</p>
+            <p>You can access the sponsor information through your account in the system.</p>
+            <p>If you have any questions or need assistance, do not hesitate to contact us.</p>
+            <p>Sincerely,<br>The NUTRE team</p>
+        </div>',
+        'Email enviado al evaluador cuando un auspiciador completa su registro',
+        1
+    );
+
+-- 11. SiteInactivated - Email cuando un sitio es inactivado
+INSERT INTO [dbo].[EmailTemplate]
+    (TemplateKey, SubjectES, SubjectEN, BodyES, BodyEN, Description, IsActive)
+VALUES
+    (
+        'SiteInactivated',
+        'Sitio Inactivado - {SiteName}',
+        'Site Inactivated - {SiteName}',
+        '<div style=''font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;''>
+            <h2>Sitio Inactivado</h2>
+            <p>Estimado/a Evaluador,</p>
+            <p>Le informamos que el sitio <strong>{SiteName}</strong> (Código: {SiteCode}) de la agencia <strong>{AgencyName}</strong> ha sido inactivado el {InactiveDate}.</p>
+            <p><strong>Justificación:</strong> {InactiveJustification}</p>
+            <p>Por favor, revise la información en el sistema para continuar con el proceso correspondiente.</p>
+            <p>Puede acceder a la información del sitio a través de su cuenta en el sistema.</p>
+            <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+            <p>Atentamente,<br>El equipo de NUTRE</p>
+        </div>',
+        '<div style=''font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;''>
+            <h2>Site Inactivated</h2>
+            <p>Dear Evaluator,</p>
+            <p>We inform you that site <strong>{SiteName}</strong> (Code: {SiteCode}) from agency <strong>{AgencyName}</strong> has been inactivated on {InactiveDate}.</p>
+            <p><strong>Justification:</strong> {InactiveJustification}</p>
+            <p>Please review the information in the system to continue with the corresponding process.</p>
+            <p>You can access the site information through your account in the system.</p>
+            <p>If you have any questions or need assistance, do not hesitate to contact us.</p>
+            <p>Sincerely,<br>The NUTRE team</p>
+        </div>',
+        'Email enviado al evaluador cuando un sitio es inactivado',
+        1
+    );
+
 GO
 

@@ -12,6 +12,7 @@ BEGIN
         BodyES,
         BodyEN,
         Description,
+        DescriptionEN,
         IsActive,
         CreatedAt,
         UpdatedAt,
