@@ -672,6 +672,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             foreach (var service in request.Services)
             {
+                // Validar que si un servicio está habilitado, tenga horarios
+                ValidateServiceTimes(service);
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
@@ -693,6 +696,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@snackNight", service.SnackNight, DbType.Boolean);
                 parameters.Add("@snackNightFrom", service.SnackNightFrom, DbType.Time);
                 parameters.Add("@snackNightTo", service.SnackNightTo, DbType.Time);
+                parameters.Add("@dinnerExtended", service.DinnerExtended, DbType.Boolean);
+                parameters.Add("@dinnerExtendedFrom", service.DinnerExtendedFrom, DbType.Time);
+                parameters.Add("@dinnerExtendedTo", service.DinnerExtendedTo, DbType.Time);
+                parameters.Add("@dinnerAtRisk", service.DinnerAtRisk, DbType.Boolean);
+                parameters.Add("@dinnerAtRiskFrom", service.DinnerAtRiskFrom, DbType.Time);
+                parameters.Add("@dinnerAtRiskTo", service.DinnerAtRiskTo, DbType.Time);
+                parameters.Add("@snackExtended", service.SnackExtended, DbType.Boolean);
+                parameters.Add("@snackExtendedFrom", service.SnackExtendedFrom, DbType.Time);
+                parameters.Add("@snackExtendedTo", service.SnackExtendedTo, DbType.Time);
+                parameters.Add("@snackAtRisk", service.SnackAtRisk, DbType.Boolean);
+                parameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
+                parameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
                 parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
@@ -1190,6 +1205,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 return;
             }
 
+            // Log detallado de los servicios recibidos
+            _logger.LogInformation("Preparando {ServiceCount} servicios para insertar en días de funcionamiento del sitio {SiteId}",
+                services.Count, siteId);
+
+            foreach (var service in services)
+            {
+                _logger.LogDebug("Servicio recibido - ChildGroupId: {ChildGroupId}, Breakfast: {Breakfast} (From: {BreakfastFrom}, To: {BreakfastTo}), " +
+                    "Lunch: {Lunch} (From: {LunchFrom}, To: {LunchTo}), Dinner: {Dinner} (From: {DinnerFrom}, To: {DinnerTo})",
+                    service.ChildGroupId,
+                    service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
+                    service.Lunch, service.LunchFrom, service.LunchTo,
+                    service.Dinner, service.DinnerFrom, service.DinnerTo);
+            }
+
             // Crear DataTable para Table-Valued Parameter (SiteServiceForOperatingDaysType)
             var dataTable = new DataTable();
             dataTable.Columns.Add("ChildGroupId", typeof(int));
@@ -1237,14 +1266,22 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Llenar DataTable con los servicios
             foreach (var service in services)
             {
+                // Log de cada servicio antes de agregarlo al DataTable
+                var breakfastValue = service.Breakfast ?? (object)DBNull.Value;
+                var lunchValue = service.Lunch ?? (object)DBNull.Value;
+                var dinnerValue = service.Dinner ?? (object)DBNull.Value;
+
+                _logger.LogDebug("Agregando servicio al DataTable - ChildGroupId: {ChildGroupId}, Breakfast: {Breakfast}, Lunch: {Lunch}, Dinner: {Dinner}",
+                    service.ChildGroupId, breakfastValue, lunchValue, dinnerValue);
+
                 dataTable.Rows.Add(
                     service.ChildGroupId ?? (object)DBNull.Value,
                     // Breakfast
-                    service.Breakfast ?? (object)DBNull.Value,
+                    breakfastValue,
                     service.BreakfastFrom ?? (object)DBNull.Value,
                     service.BreakfastTo ?? (object)DBNull.Value,
                     // Lunch
-                    service.Lunch ?? (object)DBNull.Value,
+                    lunchValue,
                     service.LunchFrom ?? (object)DBNull.Value,
                     service.LunchTo ?? (object)DBNull.Value,
                     // SnackAM
@@ -1252,7 +1289,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     service.SnackAMFrom ?? (object)DBNull.Value,
                     service.SnackAMTo ?? (object)DBNull.Value,
                     // Dinner
-                    service.Dinner ?? (object)DBNull.Value,
+                    dinnerValue,
                     service.DinnerFrom ?? (object)DBNull.Value,
                     service.DinnerTo ?? (object)DBNull.Value,
                     // SnackPM
@@ -1282,6 +1319,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 );
             }
 
+            // Log del DataTable antes de enviarlo
+            _logger.LogInformation("DataTable creado con {RowCount} filas para el sitio {SiteId}",
+                dataTable.Rows.Count, siteId);
+
             // Preparar parámetros para el stored procedure
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
@@ -1291,12 +1332,21 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@rowsInserted", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             // Llamar al stored procedure
+            _logger.LogInformation("Llamando al stored procedure 100_InsertServicesForOperatingDays para el sitio {SiteId}", siteId);
             await dbConnection.ExecuteAsync("100_InsertServicesForOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
 
             var rowsInserted = parameters.Get<int>("@rowsInserted");
 
             _logger.LogInformation("Se crearon {RowsInserted} servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 rowsInserted, siteId, operatingFromDate.Date, operatingToDate.Date);
+
+            // Si no se insertaron servicios, log de advertencia
+            if (rowsInserted == 0)
+            {
+                _logger.LogWarning("No se insertaron servicios para el sitio {SiteId}. Verificar que los días de funcionamiento existan y que los servicios tengan horarios válidos. " +
+                    "DataTable tenía {RowCount} filas.",
+                    siteId, dataTable.Rows.Count);
+            }
         }
         catch (Exception ex)
         {
@@ -1415,6 +1465,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             if (services.Count > 0)
             {
                 var service = services[0]; // Solo hay un servicio por sitio
+
+                // Validar que si un servicio está habilitado, tenga horarios
+                ValidateServiceTimes(service);
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
@@ -1465,6 +1519,64 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             {
                 dbConnection.Dispose();
             }
+        }
+    }
+
+    /// <summary>
+    /// Valida que si un servicio está habilitado, tenga horarios de inicio y fin
+    /// </summary>
+    /// <param name="service">Servicio a validar</param>
+    /// <exception cref="ArgumentException">Lanza excepción si un servicio habilitado no tiene horarios</exception>
+    private void ValidateServiceTimes(SiteServiceRequest service)
+    {
+        if (service.Breakfast == true && (!service.BreakfastFrom.HasValue || !service.BreakfastTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de desayuno (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.Lunch == true && (!service.LunchFrom.HasValue || !service.LunchTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de almuerzo (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.SnackAM == true && (!service.SnackAMFrom.HasValue || !service.SnackAMTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de merienda AM (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.Dinner == true && (!service.DinnerFrom.HasValue || !service.DinnerTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de cena (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.SnackPM == true && (!service.SnackPMFrom.HasValue || !service.SnackPMTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de merienda PM (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.SnackNight == true && (!service.SnackNightFrom.HasValue || !service.SnackNightTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de merienda nocturna (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.DinnerExtended == true && (!service.DinnerExtendedFrom.HasValue || !service.DinnerExtendedTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de cena extendida (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.DinnerAtRisk == true && (!service.DinnerAtRiskFrom.HasValue || !service.DinnerAtRiskTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de cena en riesgo (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.SnackExtended == true && (!service.SnackExtendedFrom.HasValue || !service.SnackExtendedTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de merienda extendida (desde y hasta) son requeridos cuando el servicio está habilitado");
+        }
+
+        if (service.SnackAtRisk == true && (!service.SnackAtRiskFrom.HasValue || !service.SnackAtRiskTo.HasValue))
+        {
+            throw new ArgumentException("Los horarios de merienda en riesgo (desde y hasta) son requeridos cuando el servicio está habilitado");
         }
     }
 

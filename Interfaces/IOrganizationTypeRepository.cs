@@ -42,4 +42,11 @@ public interface IOrganizationTypeRepository
     /// <param name="id">El ID del tipo de organización a eliminar.</param>
     /// <returns>True si la eliminación es exitosa, false en caso contrario.</returns>
     Task<bool> DeleteOrganizationType(int id);
+
+    /// <summary>
+    /// Obtiene los tipos de organización válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">El ID del programa</param>
+    /// <returns>Los tipos de organización válidos para el programa</returns>
+    Task<dynamic> GetOrganizationTypesByProgram(int programId);
 }

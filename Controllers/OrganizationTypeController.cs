@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.DTO;
+using Api.Models.Response;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -189,6 +190,40 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
         {
             _logger.LogError(ex, "Error al eliminar el tipo de organización con ID {Id}", queryParameters.Id);
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de organización");
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los tipos de organización válidos para un programa específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de tipos de organización válidos para el programa</returns>
+    [HttpGet("get-organization-types-by-program")]
+    [SwaggerOperation(Summary = "Obtiene tipos de organización por programa", Description = "Devuelve los tipos de organización válidos para un programa específico.")]
+    public async Task<ActionResult> GetOrganizationTypesByProgram([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de organización para el programa: {ProgramId}", queryParameters.ProgramId);
+
+                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
+                {
+                    return BadRequest("El ID del programa es requerido");
+                }
+
+                var result = await _organizationTypeRepository.GetOrganizationTypesByProgram(queryParameters.ProgramId.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de organización para el programa {ProgramId}", queryParameters.ProgramId);
+            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de organización", ex.Message));
         }
     }
 }

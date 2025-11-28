@@ -189,4 +189,27 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         }
     }
 
+    /// <summary>
+    /// Obtiene los tipos de organización válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">El ID del programa</param>
+    /// <returns>Los tipos de organización válidos para el programa</returns>
+    public async Task<dynamic> GetOrganizationTypesByProgram(int programId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@programId", programId, DbType.Int32);
+
+            var result = await db.QueryAsync<OrganizationTypeResponse>("100_GetOrganizationTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de organización para el programa {ProgramId}", programId);
+            throw new Exception(ex.Message);
+        }
+    }
+
 }
