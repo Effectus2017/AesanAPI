@@ -115,7 +115,7 @@ public class AgencyRequest
     // ¿Es usted una Agencia Auspiciadora de Hogares? (Solo para programa PACNA)
     // Are you a Day Care Homes? (Only for PACNA program)
     // No (ID), Sí (ID), Ambos (ID) - Ahora usa OptionSelection
-    public int IsDayCareHomeId { get; set; } = 0;
+    public int? IsDayCareHomeId { get; set; } = null;
     // ¿Su Entidad participa actualmente en alguno de los siguientes programas? (Solo para PSAV)
     // Does your Entity currently participate in any of the following programs? (Only for PSAV)
     // Early Head Start, Head Start, N/A
