@@ -18,7 +18,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_InsertSiteOperatingDays]
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     -- Establecer Lunes como primer día de la semana para consistencia
     SET DATEFIRST 1;
 
@@ -32,7 +32,7 @@ BEGIN
         -- Obtener el día de la semana (1 = Lunes, 7 = Domingo)
         -- Con SET DATEFIRST 1, DATEPART(WEEKDAY) devuelve: 1=Lunes, 2=Martes, ..., 7=Domingo
         SET @DayOfWeek = DATEPART(WEEKDAY, @CurrentDate);
-        
+
         -- Si @includeWeekends = 0, solo insertar Lunes a Viernes (días 1-5)
         -- Si @includeWeekends = 1, insertar todos los días
         IF (@includeWeekends = 1) OR (@includeWeekends = 0 AND @DayOfWeek BETWEEN 1 AND 5)
@@ -53,5 +53,5 @@ BEGIN
     END
 
     -- Retornar el número de días insertados
-    RETURN @DaysInserted;
+    SELECT @DaysInserted AS DaysInserted;
 END;

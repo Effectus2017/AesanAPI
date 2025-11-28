@@ -20,13 +20,16 @@ public class SitePersonInChargeRepository(DapperContext context, ILoggingService
     /// <summary>
     /// Inserta información de Persona a Cargo para un sitio
     /// </summary>
-    public async Task<int> InsertSitePersonInCharge(int siteId, SitePersonInChargeRequest request)
+    public async Task<int> InsertSitePersonInCharge(int siteId, SitePersonInChargeRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
+        IDbConnection? dbConnection = null;
+        var shouldDisposeConnection = connection == null;
+
         try
         {
             _logger.LogInformation($"Insertando información de Persona a Cargo para el sitio {siteId}");
 
-            using var connection = _context.CreateConnection();
+            dbConnection = connection ?? _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
             parameters.Add("@firstName", request.FirstName, DbType.String);
@@ -38,7 +41,7 @@ public class SitePersonInChargeRepository(DapperContext context, ILoggingService
             parameters.Add("@mobilePhone", request.MobilePhone, DbType.String);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await connection.ExecuteAsync("100_InsertSitePersonInCharge", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSitePersonInCharge", parameters, transaction, commandType: CommandType.StoredProcedure);
 
             int id = parameters.Get<int>("@id");
 
@@ -54,6 +57,13 @@ public class SitePersonInChargeRepository(DapperContext context, ILoggingService
                 { "ErrorMessage", ex.Message }
             });
             throw new Exception($"Error al insertar información de Persona a Cargo: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection && dbConnection != null)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 

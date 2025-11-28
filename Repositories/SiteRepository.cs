@@ -280,7 +280,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Insertar información de Persona a Cargo
             if (request.PersonInCharge != null)
             {
-                await _sitePersonInChargeRepository.Value.InsertSitePersonInCharge(siteId, request.PersonInCharge);
+                await _sitePersonInChargeRepository.Value.InsertSitePersonInCharge(siteId, request.PersonInCharge, dbConnection, transaction);
             }
 
             // Crear relación SchoolSite si se proporciona SchoolId
@@ -429,7 +429,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     }
                     else
                     {
-                        await _sitePersonInChargeRepository.Value.InsertSitePersonInCharge(request.Id.Value, request.PersonInCharge);
+                        await _sitePersonInChargeRepository.Value.InsertSitePersonInCharge(request.Id.Value, request.PersonInCharge, dbConnection);
                     }
                 }
 
@@ -1174,7 +1174,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Inserta servicios para todos los días de funcionamiento creados (OPTIMIZADO CON BATCH INSERT)
+    /// Inserta servicios para todos los días de funcionamiento creados usando stored procedure
     /// </summary>
     private async Task InsertServicesForOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest> services, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
@@ -1183,94 +1183,125 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
         try
         {
-
-            // Obtener todos los días de funcionamiento creados para este sitio en el rango de fechas
-            var operatingDays = await dbConnection.QueryAsync<dynamic>(
-                @"SELECT Id, OperatingDate, StartTime, EndTime, IsExcluded 
-                  FROM SiteOperatingDays 
-                  WHERE SiteId = @siteId 
-                    AND OperatingDate >= @fromDate 
-                    AND OperatingDate <= @toDate
-                    AND IsExcluded = 0",
-                new { siteId, fromDate = operatingFromDate.Date, toDate = operatingToDate.Date });
-
-            if (operatingDays == null || !operatingDays.Any())
+            // Validar que hay servicios para procesar
+            if (services == null || services.Count == 0)
             {
-                _logger.LogWarning("No se encontraron días de funcionamiento para crear servicios para el sitio {SiteId}", siteId);
+                _logger.LogInformation("No hay servicios para insertar para el sitio {SiteId}", siteId);
                 return;
             }
 
-            // Preparar lista de servicios para batch insert
-            var servicesToInsert = new List<SiteOperatingDayServiceRequest>();
+            // Crear DataTable para Table-Valued Parameter (SiteServiceForOperatingDaysType)
+            var dataTable = new DataTable();
+            dataTable.Columns.Add("ChildGroupId", typeof(int));
+            // Breakfast
+            dataTable.Columns.Add("Breakfast", typeof(bool));
+            dataTable.Columns.Add("BreakfastFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("BreakfastTo", typeof(TimeSpan));
+            // Lunch
+            dataTable.Columns.Add("Lunch", typeof(bool));
+            dataTable.Columns.Add("LunchFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("LunchTo", typeof(TimeSpan));
+            // SnackAM
+            dataTable.Columns.Add("SnackAM", typeof(bool));
+            dataTable.Columns.Add("SnackAMFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackAMTo", typeof(TimeSpan));
+            // Dinner
+            dataTable.Columns.Add("Dinner", typeof(bool));
+            dataTable.Columns.Add("DinnerFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerTo", typeof(TimeSpan));
+            // SnackPM
+            dataTable.Columns.Add("SnackPM", typeof(bool));
+            dataTable.Columns.Add("SnackPMFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackPMTo", typeof(TimeSpan));
+            // SnackNight
+            dataTable.Columns.Add("SnackNight", typeof(bool));
+            dataTable.Columns.Add("SnackNightFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackNightTo", typeof(TimeSpan));
+            // DinnerExtended (PACNA)
+            dataTable.Columns.Add("DinnerExtended", typeof(bool));
+            dataTable.Columns.Add("DinnerExtendedFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerExtendedTo", typeof(TimeSpan));
+            // DinnerAtRisk (PACNA)
+            dataTable.Columns.Add("DinnerAtRisk", typeof(bool));
+            dataTable.Columns.Add("DinnerAtRiskFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerAtRiskTo", typeof(TimeSpan));
+            // SnackExtended (PACNA)
+            dataTable.Columns.Add("SnackExtended", typeof(bool));
+            dataTable.Columns.Add("SnackExtendedFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackExtendedTo", typeof(TimeSpan));
+            // SnackAtRisk (PACNA)
+            dataTable.Columns.Add("SnackAtRisk", typeof(bool));
+            dataTable.Columns.Add("SnackAtRiskFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackAtRiskTo", typeof(TimeSpan));
 
-            foreach (var day in operatingDays)
+            // Llenar DataTable con los servicios
+            foreach (var service in services)
             {
-                int operatingDayId = day.Id;
-                TimeSpan dayStartTime = day.StartTime;
-                TimeSpan dayEndTime = day.EndTime;
-
-                // Para cada servicio en la lista
-                foreach (var service in services)
-                {
-                    // Helper method para agregar servicio si es válido
-                    AddServiceIfValid(servicesToInsert, operatingDayId, ServiceTypeIds.Breakfast,
-                        service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.Lunch,
-                        service.Lunch, service.LunchFrom, service.LunchTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackAM,
-                        service.SnackAM, service.SnackAMFrom, service.SnackAMTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.Dinner,
-                        service.Dinner, service.DinnerFrom, service.DinnerTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackPM,
-                        service.SnackPM, service.SnackPMFrom, service.SnackPMTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackNight,
-                        service.SnackNight, service.SnackNightFrom, service.SnackNightTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.DinnerExtended,
-                        service.DinnerExtended, service.DinnerExtendedFrom, service.DinnerExtendedTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.DinnerAtRisk,
-                        service.DinnerAtRisk, service.DinnerAtRiskFrom, service.DinnerAtRiskTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackExtended,
-                        service.SnackExtended, service.SnackExtendedFrom, service.SnackExtendedTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-
-                    AddServiceIfValid(servicesToInsert, operatingDayId, Models.ServiceTypeIds.SnackAtRisk,
-                        service.SnackAtRisk, service.SnackAtRiskFrom, service.SnackAtRiskTo,
-                        service.ChildGroupId, dayStartTime, dayEndTime);
-                }
+                dataTable.Rows.Add(
+                    service.ChildGroupId ?? (object)DBNull.Value,
+                    // Breakfast
+                    service.Breakfast ?? (object)DBNull.Value,
+                    service.BreakfastFrom ?? (object)DBNull.Value,
+                    service.BreakfastTo ?? (object)DBNull.Value,
+                    // Lunch
+                    service.Lunch ?? (object)DBNull.Value,
+                    service.LunchFrom ?? (object)DBNull.Value,
+                    service.LunchTo ?? (object)DBNull.Value,
+                    // SnackAM
+                    service.SnackAM ?? (object)DBNull.Value,
+                    service.SnackAMFrom ?? (object)DBNull.Value,
+                    service.SnackAMTo ?? (object)DBNull.Value,
+                    // Dinner
+                    service.Dinner ?? (object)DBNull.Value,
+                    service.DinnerFrom ?? (object)DBNull.Value,
+                    service.DinnerTo ?? (object)DBNull.Value,
+                    // SnackPM
+                    service.SnackPM ?? (object)DBNull.Value,
+                    service.SnackPMFrom ?? (object)DBNull.Value,
+                    service.SnackPMTo ?? (object)DBNull.Value,
+                    // SnackNight
+                    service.SnackNight ?? (object)DBNull.Value,
+                    service.SnackNightFrom ?? (object)DBNull.Value,
+                    service.SnackNightTo ?? (object)DBNull.Value,
+                    // DinnerExtended
+                    service.DinnerExtended ?? (object)DBNull.Value,
+                    service.DinnerExtendedFrom ?? (object)DBNull.Value,
+                    service.DinnerExtendedTo ?? (object)DBNull.Value,
+                    // DinnerAtRisk
+                    service.DinnerAtRisk ?? (object)DBNull.Value,
+                    service.DinnerAtRiskFrom ?? (object)DBNull.Value,
+                    service.DinnerAtRiskTo ?? (object)DBNull.Value,
+                    // SnackExtended
+                    service.SnackExtended ?? (object)DBNull.Value,
+                    service.SnackExtendedFrom ?? (object)DBNull.Value,
+                    service.SnackExtendedTo ?? (object)DBNull.Value,
+                    // SnackAtRisk
+                    service.SnackAtRisk ?? (object)DBNull.Value,
+                    service.SnackAtRiskFrom ?? (object)DBNull.Value,
+                    service.SnackAtRiskTo ?? (object)DBNull.Value
+                );
             }
 
-            // Insertar todos en batch
-            if (servicesToInsert.Count > 0)
-            {
-                var rowsInserted = await _siteOperatingDayServiceRepository.Value.CreateServicesBatch(servicesToInsert, dbConnection, transaction);
+            // Preparar parámetros para el stored procedure
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@operatingFromDate", operatingFromDate.Date, DbType.Date);
+            parameters.Add("@operatingToDate", operatingToDate.Date, DbType.Date);
+            parameters.Add("@services", dataTable.AsTableValuedParameter("SiteServiceForOperatingDaysType"));
+            parameters.Add("@rowsInserted", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                _logger.LogInformation("Se crearon {RowsInserted} servicios en batch para los días de funcionamiento del sitio {SiteId} (de {TotalPrepared} preparados)",
-                    rowsInserted, siteId, servicesToInsert.Count);
-            }
-            else
-            {
-                _logger.LogInformation("No se prepararon servicios válidos para insertar para el sitio {SiteId}", siteId);
-            }
+            // Llamar al stored procedure
+            await dbConnection.ExecuteAsync("100_InsertServicesForOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
+
+            var rowsInserted = parameters.Get<int>("@rowsInserted");
+
+            _logger.LogInformation("Se crearon {RowsInserted} servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
+                rowsInserted, siteId, operatingFromDate.Date, operatingToDate.Date);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId}", siteId);
+            _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
+                siteId, operatingFromDate.Date, operatingToDate.Date);
             throw;
         }
         finally

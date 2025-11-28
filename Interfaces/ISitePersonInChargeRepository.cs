@@ -1,5 +1,6 @@
 using Api.Models.Request;
 using Api.Models.Response;
+using System.Data;
 
 namespace Api.Interfaces;
 
@@ -14,8 +15,10 @@ public interface ISitePersonInChargeRepository
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
     /// <param name="request">Datos de la Persona a Cargo</param>
+    /// <param name="connection">Conexión opcional a la base de datos</param>
+    /// <param name="transaction">Transacción opcional</param>
     /// <returns>ID del registro insertado</returns>
-    Task<int> InsertSitePersonInCharge(int siteId, SitePersonInChargeRequest request);
+    Task<int> InsertSitePersonInCharge(int siteId, SitePersonInChargeRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null);
 
     /// <summary>
     /// Actualiza información de Persona a Cargo para un sitio
