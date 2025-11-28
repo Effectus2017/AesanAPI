@@ -13,11 +13,11 @@ public class AgencyRequest
 
     // Datos de la Agencia
     public int SdrNumber { get; set; } = 0;
-    
+
     [MaxLength(12, ErrorMessage = "El número UIE debe tener máximo 12 caracteres")]
     [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "El número UIE solo puede contener letras y números")]
     public string UieNumber { get; set; } = "";
-    
+
     [Range(0, 999999999, ErrorMessage = "El número EIN debe tener máximo 9 dígitos")]
     public int EinNumber { get; set; } = 0;
 
@@ -107,7 +107,7 @@ public class AgencyRequest
     // De poseer un contrato Público Alianza, especifique su modalidad
     // If you have a Public Alliance contract, please specify the type of contract
     // Socio-Económico (17), Híbrido (18)
-    public int PublicAllianceContractId { get; set; } = 0;
+    public int? PublicAllianceContractId { get; set; } = null;
     // ¿Su Institución es un Programa Nacional de Juventud?
     // Is your institution a National Youth Program?
     // Si (1) y No (2)

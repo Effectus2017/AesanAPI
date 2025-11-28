@@ -14,7 +14,7 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @servicesOfferedSince datetime = NULL,
     @taxExemptionStatusId int,
     @taxExemptionTypeId int,
-    @publicAllianceContractId int,
+    @publicAllianceContractId int = NULL,
     @nationalYouthProgram bit,
     @isDayCareHomeId int,
     @participatesInHeadStartProgramId int = NULL,
