@@ -255,4 +255,38 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
             return StatusCode(500, "Error interno del servidor al obtener la ubicación del sitio");
         }
     }
+
+    /// <summary>
+    /// Obtiene los tipos de grupo válidos para un programa específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de tipos de grupo válidos para el programa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-group-types-by-program")]
+    [SwaggerOperation(Summary = "Obtiene tipos de grupo por programa", Description = "Devuelve los tipos de grupo válidos para un programa específico.")]
+    public async Task<ActionResult> GetGroupTypesByProgram([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de grupo para el programa: {ProgramId}", queryParameters.ProgramId);
+
+                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
+                {
+                    return BadRequest("El ID del programa es requerido");
+                }
+
+                var result = await _groupTypeRepository.GetGroupTypesByProgram(queryParameters.ProgramId.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de grupo para el programa {ProgramId}", queryParameters.ProgramId);
+            return StatusCode(500, "Error interno del servidor al obtener los tipos de grupo");
+        }
+    }
 }

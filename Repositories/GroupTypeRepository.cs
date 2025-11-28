@@ -260,6 +260,29 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
     }
 
     /// <summary>
+    /// Obtiene los tipos de grupo válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">El ID del programa</param>
+    /// <returns>Los tipos de grupo válidos para el programa</returns>
+    public async Task<dynamic> GetGroupTypesByProgram(int programId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@programId", programId, DbType.Int32);
+
+            var result = await db.QueryAsync<DTOGroupType>("100_GetGroupTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de grupo para el programa {ProgramId}", programId);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Invalida el caché para el tipo de grupo
     /// </summary>
     /// <param name="groupTypeId">ID del tipo de grupo</param>

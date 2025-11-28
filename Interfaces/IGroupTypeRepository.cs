@@ -54,4 +54,11 @@ public interface IGroupTypeRepository
     /// <param name="groupTypeId">ID del tipo de grupo</param>
     /// <returns>Ubicación del sitio</returns>
     Task<dynamic> GetSiteLocationByGroupType(int groupTypeId);
+
+    /// <summary>
+    /// Obtiene los tipos de grupo válidos para un programa específico
+    /// </summary>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>Lista de tipos de grupo válidos para el programa</returns>
+    Task<dynamic> GetGroupTypesByProgram(int programId);
 }

@@ -34,3 +34,15 @@ INSERT INTO "GroupType"
     ("name", "nameEN", "isActive", "displayOrder")
 VALUES
     ('Servicio en Camiones', 'Truck Service', 1, 9);
+INSERT INTO "GroupType"
+    ("name", "nameEN", "isActive", "displayOrder")
+VALUES
+    ('Salón de Clases', 'Classroom', 1, 10);
+INSERT INTO "GroupType"
+    ("name", "nameEN", "isActive", "displayOrder")
+VALUES
+    ('Salones', 'Lounges', 1, 11);
+INSERT INTO "GroupType"
+    ("name", "nameEN", "isActive", "displayOrder")
+VALUES
+    ('Servi-Carro', 'Service Car', 1, 12);
