@@ -9,7 +9,8 @@
 CREATE OR ALTER PROCEDURE [dbo].[103_UpdateSiteActiveStatus]
     @id INT,
     @isActive BIT,
-    @inactiveJustification NVARCHAR(500) = NULL
+    @inactiveJustification NVARCHAR(500) = NULL,
+    @inactiveDate DATETIME = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -21,7 +22,7 @@ BEGIN
         SET 
             IsActive = @isActive,
             InactiveJustification = @inactiveJustification,
-            InactiveDate = CASE WHEN @isActive = 0 THEN GETDATE() ELSE NULL END,
+            InactiveDate = CASE WHEN @isActive = 0 THEN ISNULL(@inactiveDate, GETDATE()) ELSE NULL END,
             UpdatedAt = GETDATE()
         WHERE Id = @id;
 

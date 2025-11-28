@@ -580,7 +580,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
     /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
     /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
-    public async Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null)
+    public async Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null, DateTime? inactiveDate = null)
     {
         try
         {
@@ -589,18 +589,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@id", siteId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@isActive", isActive, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@inactiveJustification", inactiveJustification, DbType.String, ParameterDirection.Input);
+            parameters.Add("@inactiveDate", inactiveDate, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await dbConnection.ExecuteAsync("103_UpdateSiteActiveStatus", parameters, commandType: CommandType.StoredProcedure);
-
             var rowsAffected = parameters.Get<int>("@rowsAffected");
-
-            if (rowsAffected > 0)
-            {
-                // Invalidar caché
-                InvalidateCache(siteId);
-            }
-
             return rowsAffected > 0;
         }
         catch (Exception ex)

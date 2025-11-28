@@ -190,10 +190,10 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
     /// <returns>True si se actualizó correctamente</returns>
     [HttpPut("update-active-status")]
     [SwaggerOperation(Summary = "Actualiza el estado activo/inactivo de un sitio", Description = "Permite activar o inactiva un sitio. Requiere justificación al inactiva.")]
-    public async Task<IActionResult> UpdateSiteActiveStatus([FromQuery] QueryParameters queryParameters)
+    public async Task<IActionResult> UpdateSiteActiveStatus([FromBody] QueryParameters queryParameters)
     {
         SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - INICIO - SiteId: {queryParameters.SiteId}, IsActive: {queryParameters.IsActive}");
-        _logger.LogInformation("UpdateSiteActiveStatus - INICIO - SiteId: {SiteId}, IsActive: {IsActive}", 
+        _logger.LogInformation("UpdateSiteActiveStatus - INICIO - SiteId: {SiteId}, IsActive: {IsActive}",
             queryParameters.SiteId, queryParameters.IsActive);
 
         try
@@ -211,7 +211,11 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
             }
 
             SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Actualizando estado en BD para SiteId: {queryParameters.SiteId.Value}");
-            var result = await _unitOfWork.SiteRepository.UpdateSiteActiveStatus(queryParameters.SiteId.Value, queryParameters.IsActive, queryParameters.InactiveJustification);
+            var result = await _unitOfWork.SiteRepository.UpdateSiteActiveStatus(
+                queryParameters.SiteId.Value,
+                queryParameters.IsActive,
+                queryParameters.InactiveJustification,
+                queryParameters.InactiveDate);
             SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Estado actualizado. Result: {result}");
             _logger.LogInformation("UpdateSiteActiveStatus - Estado actualizado para SiteId: {SiteId}, Result: {Result}", queryParameters.SiteId.Value, result);
 
@@ -219,31 +223,31 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
             if (result && queryParameters.IsActive == false)
             {
                 SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Sitio inactivado, obteniendo información del sitio con ID: {queryParameters.SiteId.Value}");
-                
+
                 // Obtener información del sitio
                 var site = await _unitOfWork.SiteRepository.GetSiteById(queryParameters.SiteId.Value);
-                
+
                 if (site != null)
                 {
                     SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - Sitio obtenido correctamente");
                     _logger.LogInformation("UpdateSiteActiveStatus - Sitio {SiteId} obtenido correctamente", queryParameters.SiteId.Value);
-                    
+
                     // Obtener información de la agencia del sitio
                     var agencyId = ((dynamic)site).AgencyId;
                     if (agencyId != null)
                     {
                         SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Obteniendo agencia con ID: {agencyId}");
                         var agency = await _unitOfWork.AgencyRepository.GetAgencyById((int)agencyId);
-                        
+
                         if (agency != null)
                         {
                             SignalRLogger.LogToFile("[SiteController] UpdateSiteActiveStatus - Agencia obtenida correctamente");
-                            
+
                             // NOTA: FORMA TEMPORAL DE OBTENER USUARIO ASIGNADO A SPONSOR
                             // Esta lógica será modificada en el futuro cuando se actualice la estructura de AgencyUsers
                             // Por ahora, consultamos directamente AgencyUsers para obtener el UserId del evaluador (monitor)
                             string? evaluatorUserId = null;
-                            
+
                             // Intentar obtener desde el objeto Monitor primero
                             var monitor = ((dynamic)agency).Monitor;
                             if (monitor != null)
@@ -252,7 +256,7 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                                 SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - EvaluatorUserId desde Monitor: {(evaluatorUserId ?? "NULL")}");
                                 _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId desde Monitor: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
                             }
-                            
+
                             // Si no se encontró, consultar directamente AgencyUsers
                             if (string.IsNullOrEmpty(evaluatorUserId))
                             {
@@ -264,12 +268,12 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                                     using IDbConnection dbConnection = _dapperContext.CreateConnection();
                                     var parameters = new DynamicParameters();
                                     parameters.Add("@agencyId", agencyIdInt, DbType.Int32);
-                                    
+
                                     evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
                                         "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND IsMonitor = 1 AND IsActive = 1",
                                         parameters
                                     );
-                                    
+
                                     SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - EvaluatorUserId desde AgencyUsers: {(evaluatorUserId ?? "NULL")}");
                                     _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId desde AgencyUsers: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
                                 }
@@ -279,10 +283,10 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                                     _logger.LogError(ex, "Error obteniendo UserId del monitor desde AgencyUsers para agencia {AgencyId}", agencyIdInt);
                                 }
                             }
-                            
+
                             SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - EvaluatorUserId final: {(evaluatorUserId ?? "NULL")}");
                             _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId final: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
-                            
+
                             if (!string.IsNullOrEmpty(evaluatorUserId))
                             {
                                 // Preparar variables para los templates
@@ -291,11 +295,11 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                                 var agencyName = ((dynamic)agency).Name?.ToString() ?? "";
                                 var inactiveJustification = queryParameters.InactiveJustification ?? "";
                                 var inactiveDate = DateTime.Now.ToString("dd/MM/yyyy");
-                                
+
                                 SignalRLogger.LogToFile($"[SiteController] UpdateSiteActiveStatus - Variables preparadas: SiteName={siteName}, SiteCode={siteCode}, AgencyName={agencyName}, InactiveDate={inactiveDate}");
-                                _logger.LogInformation("UpdateSiteActiveStatus - Variables preparadas: SiteName={SiteName}, SiteCode={SiteCode}, AgencyName={AgencyName}, InactiveDate={InactiveDate}", 
+                                _logger.LogInformation("UpdateSiteActiveStatus - Variables preparadas: SiteName={SiteName}, SiteCode={SiteCode}, AgencyName={AgencyName}, InactiveDate={InactiveDate}",
                                     (string)siteName, (string)siteCode, (string)agencyName, (string)inactiveDate);
-                                
+
                                 var variables = new Dictionary<string, string>
                                 {
                                     { "SiteName", siteName },

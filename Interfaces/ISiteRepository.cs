@@ -37,7 +37,8 @@ public interface ISiteRepository
     /// <param name="siteId">ID del sitio</param>
     /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
     /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
+    /// <param name="inactiveDate">Fecha de inactivación (opcional, si no se proporciona se usa GETDATE())</param>
     /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
-    Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null);
+    Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null, DateTime? inactiveDate = null);
 
 }
