@@ -42,12 +42,6 @@ public class SiteResponse
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
 
-    // Administrador/Representante Autorizado
-    public string AdministratorAuthorizedName { get; set; }
-    public string SitePhone { get; set; }
-    public string Extension { get; set; }
-    public string MobilePhone { get; set; }
-
     // Campos adicionales
     public int? CommunityId { get; set; }
     public int? WalkersId { get; set; }
@@ -102,6 +96,9 @@ public class SiteResponse
 
     // Información específica de Day Care Home
     public SiteDayCareHomeResponse? DayCareHome { get; set; }
+
+    // Información de Persona a Cargo
+    public SitePersonInChargeResponse? PersonInCharge { get; set; }
 
     // Tipos de participantes
     public List<SiteParticipantResponse>? Participants { get; set; }

@@ -30,7 +30,11 @@ BEGIN
         opol.Name AS OperatingPolicyName, opol.NameEN AS OperatingPolicyNameEN, s.AreaTypeId,
         atype.Name AS AreaTypeName, atype.NameEN AS AreaTypeNameEN, s.LocationTypeId,
         ltype.Name AS LocationTypeName, ltype.NameEN AS LocationTypeNameEN, s.HasWarehouse,
-        s.HasDiningRoom, s.AdministratorAuthorizedName, s.SitePhone, s.Extension, s.MobilePhone, s.CommunityId, s.WalkersId,
+        s.HasDiningRoom, s.CommunityId, s.WalkersId,
+        spic.FirstName AS PersonInChargeFirstName, spic.MiddleName AS PersonInChargeMiddleName, 
+        spic.FatherLastName AS PersonInChargeFatherLastName, spic.MotherLastName AS PersonInChargeMotherLastName,
+        spic.SitePhone AS PersonInChargeSitePhone, spic.Extension AS PersonInChargeExtension, 
+        spic.MobilePhone AS PersonInChargeMobilePhone,
         s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
         s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
@@ -60,6 +64,7 @@ BEGIN
         LEFT JOIN OptionSelection sl ON s.SiteLocationId = sl.Id
         LEFT JOIN OptionSelection pac ON s.PublicAllianceContractId = pac.Id
         LEFT JOIN OptionSelection os_idch ON s.IsDayCareHomeId = os_idch.Id
+        LEFT JOIN SitePersonInCharge spic ON s.Id = spic.SiteId
     WHERE s.Id = @id;
 
     -- Obtener niveles educativos del sitio

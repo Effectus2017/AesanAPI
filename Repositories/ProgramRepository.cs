@@ -352,9 +352,9 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             parameters.Add("@locationTypeId", siteRequest.LocationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", siteRequest.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", siteRequest.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@sitePhone", siteRequest.SitePhone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@extension", siteRequest.Extension, DbType.String, ParameterDirection.Input);
-            parameters.Add("@mobilePhone", siteRequest.MobilePhone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@sitePhone", siteRequest.PersonInCharge?.SitePhone, DbType.String, ParameterDirection.Input);
+            parameters.Add("@extension", siteRequest.PersonInCharge?.Extension, DbType.String, ParameterDirection.Input);
+            parameters.Add("@mobilePhone", siteRequest.PersonInCharge?.MobilePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@communityId", siteRequest.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", siteRequest.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", siteRequest.SiteTypeId, DbType.Int32, ParameterDirection.Input);

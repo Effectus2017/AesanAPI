@@ -13,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -23,6 +23,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly Lazy<ISchoolSiteRepository> _schoolSiteRepository = schoolSiteRepository ?? throw new ArgumentNullException(nameof(schoolSiteRepository));
     private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
     private readonly Lazy<ISiteOperatingDayServiceRepository> _siteOperatingDayServiceRepository = siteOperatingDayServiceRepository ?? throw new ArgumentNullException(nameof(siteOperatingDayServiceRepository));
+    private readonly Lazy<ISitePersonInChargeRepository> _sitePersonInChargeRepository = sitePersonInChargeRepository ?? throw new ArgumentNullException(nameof(sitePersonInChargeRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -191,9 +192,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@locationTypeId", request.LocationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
-            parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
@@ -277,6 +275,12 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     isDayCareHomeBool = request.DayCareHome != null;
                 }
                 await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services, request.ProgramIds, request.CenterTypeId, isDayCareHomeBool, dbConnection, transaction);
+            }
+
+            // Insertar información de Persona a Cargo
+            if (request.PersonInCharge != null)
+            {
+                await _sitePersonInChargeRepository.Value.InsertSitePersonInCharge(siteId, request.PersonInCharge);
             }
 
             // Crear relación SchoolSite si se proporciona SchoolId
@@ -365,10 +369,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@sitePhone", request.SitePhone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@extension", request.Extension, DbType.String, ParameterDirection.Input);
-            parameters.Add("@mobilePhone", request.MobilePhone, DbType.String, ParameterDirection.Input);
-            parameters.Add("@administratorAuthorizedName", request.AdministratorAuthorizedName, DbType.String, ParameterDirection.Input);
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
@@ -417,6 +417,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 if (request.Services != null && request.Services.Count != 0)
                 {
                     await UpdateSiteService(request.Id.Value, request.Services, dbConnection);
+                }
+
+                // Actualizar o insertar información de Persona a Cargo
+                if (request.PersonInCharge != null)
+                {
+                    var existingPersonInCharge = await _sitePersonInChargeRepository.Value.GetSitePersonInChargeBySiteId(request.Id.Value);
+                    if (existingPersonInCharge != null)
+                    {
+                        await _sitePersonInChargeRepository.Value.UpdateSitePersonInCharge(request.Id.Value, request.PersonInCharge);
+                    }
+                    else
+                    {
+                        await _sitePersonInChargeRepository.Value.InsertSitePersonInCharge(request.Id.Value, request.PersonInCharge);
+                    }
                 }
 
                 // // Actualizar información de Day Care Home solo si la agencia es Day Care Home

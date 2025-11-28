@@ -40,10 +40,6 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @locationTypeId INT = NULL,
     @hasWarehouse BIT = NULL,
     @hasDiningRoom BIT = NULL,
-    @administratorAuthorizedName NVARCHAR(255) = NULL,
-    @sitePhone NVARCHAR(20) = NULL,
-    @extension NVARCHAR(10) = NULL,
-    @mobilePhone NVARCHAR(20) = NULL,
     @communityId INT = NULL,
     @walkersId INT = NULL,
     @siteTypeId INT = NULL,
@@ -73,7 +69,7 @@ BEGIN
         PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
         OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingFromDate, OperatingToDate, OperatingDaysCalculated,
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
-        HasWarehouse, HasDiningRoom, AdministratorAuthorizedName, SitePhone, Extension, MobilePhone,
+        HasWarehouse, HasDiningRoom,
         CommunityId, WalkersId, SiteTypeId, SiteLocationId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
         SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, InactiveJustification, InactiveDate,
         OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, IsDayCareHomeId, CreatedAt
@@ -84,7 +80,7 @@ BEGIN
             @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
             @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingFromDate, @operatingToDate, @operatingDaysCalculated,
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
-            @hasWarehouse, @hasDiningRoom, @administratorAuthorizedName, @sitePhone, @extension, @mobilePhone,
+            @hasWarehouse, @hasDiningRoom,
             @communityId, @walkersId, @siteTypeId, @siteLocationId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
             @siteCode, @generalEnrollment, @siteNumber, @serviceTime, 1, @inactiveJustification, @inactiveDate,
             @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, @isDayCareHomeId, GETDATE()

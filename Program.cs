@@ -182,6 +182,7 @@ builder.Services.AddScoped<Lazy<IAgencyRepository>>(sp => new Lazy<IAgencyReposi
 builder.Services.AddScoped<Lazy<ISchoolSiteRepository>>(sp => new Lazy<ISchoolSiteRepository>(() => sp.GetRequiredService<ISchoolSiteRepository>()));
 builder.Services.AddScoped<Lazy<ICenterTypeRepository>>(sp => new Lazy<ICenterTypeRepository>(() => sp.GetRequiredService<ICenterTypeRepository>()));
 builder.Services.AddScoped<Lazy<ISiteOperatingDayServiceRepository>>(sp => new Lazy<ISiteOperatingDayServiceRepository>(() => sp.GetRequiredService<ISiteOperatingDayServiceRepository>()));
+builder.Services.AddScoped<Lazy<ISitePersonInChargeRepository>>(sp => new Lazy<ISitePersonInChargeRepository>(() => sp.GetRequiredService<ISitePersonInChargeRepository>()));
 builder.Services.AddScoped<Lazy<MappingService>>(sp => new Lazy<MappingService>(() => sp.GetRequiredService<MappingService>()));
 
 // Registrar AgencyUsersRepository después de los servicios Lazy
@@ -191,12 +192,14 @@ builder.Services.AddScoped<ISiteStaffRepository, SiteStaffRepository>();
 builder.Services.AddScoped<ISiteCalendarRepository, SiteCalendarRepository>();
 builder.Services.AddScoped<ISiteExcursionRepository, SiteExcursionRepository>();
 builder.Services.AddScoped<ISiteOperatingDayServiceRepository, SiteOperatingDayServiceRepository>();
+builder.Services.AddScoped<ISitePersonInChargeRepository, SitePersonInChargeRepository>();
 builder.Services.AddScoped<IAesanDashboardRepository, AesanDashboardRepository>();
 builder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
 builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<MessageTemplateService>();
+builder.Services.AddScoped<TemplateVariableService>();
 builder.Services.AddScoped<IProgramPeriodService, ProgramPeriodService>();
 builder.Services.AddScoped<ISiteProgramService, SiteProgramService>();
 

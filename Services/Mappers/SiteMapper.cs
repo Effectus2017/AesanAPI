@@ -48,10 +48,6 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 OperatingDaysCalculated = item.OperatingDaysCalculated,
                 HasWarehouse = item.HasWarehouse ?? false,
                 HasDiningRoom = item.HasDiningRoom ?? false,
-                AdministratorAuthorizedName = item.AdministratorAuthorizedName ?? string.Empty,
-                SitePhone = item.SitePhone ?? string.Empty,
-                Extension = item.Extension ?? string.Empty,
-                MobilePhone = item.MobilePhone ?? string.Empty,
                 CommunityId = item.CommunityId,
                 WalkersId = item.WalkersId,
                 SiteTypeId = item.SiteTypeId,
@@ -99,6 +95,17 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 {
                     Id = item.AgencyId,
                     Name = item.AgencyName ?? string.Empty
+                } : null,
+                PersonInCharge = item.PersonInChargeFirstName != null || item.PersonInChargeFatherLastName != null ? new SitePersonInChargeResponse
+                {
+                    SiteId = item.Id ?? 0,
+                    FirstName = item.PersonInChargeFirstName,
+                    MiddleName = item.PersonInChargeMiddleName,
+                    FatherLastName = item.PersonInChargeFatherLastName,
+                    MotherLastName = item.PersonInChargeMotherLastName,
+                    SitePhone = item.PersonInChargeSitePhone,
+                    Extension = item.PersonInChargeExtension,
+                    MobilePhone = item.PersonInChargeMobilePhone
                 } : null
             };
         }

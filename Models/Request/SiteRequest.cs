@@ -57,13 +57,8 @@ public class SiteRequest
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
 
-    // Administrador/Representante Autorizado
-    public string? AdministratorAuthorizedName { get; set; }
-    public string? SitePhone { get; set; }
-    public string? Extension { get; set; }
-    public string? MobilePhone { get; set; }
-
     // ===== RELACIONES CON MODELOS REQUEST =====
+    public SitePersonInChargeRequest? PersonInCharge { get; set; }
     public List<SiteServiceRequest> Services { get; set; } = new();
     public SiteDayCareHomeRequest? DayCareHome { get; set; }
     public List<SiteParticipantRequest> Participants { get; set; } = new();
