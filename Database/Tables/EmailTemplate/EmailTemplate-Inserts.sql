@@ -400,5 +400,35 @@ VALUES
         1
     );
 
+-- 12. StaffInactivated - Email cuando un personal es inactivado
+INSERT INTO [dbo].[EmailTemplate]
+    (TemplateKey, SubjectES, SubjectEN, BodyES, BodyEN, Description, IsActive)
+VALUES
+    (
+        'StaffInactivated',
+        'Personal Inactivado - {StaffName}',
+        'Staff Inactivated - {StaffName}',
+        '<div style=''font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;''>
+            <h2>Personal Inactivado</h2>
+            <p>Estimado/a Evaluador,</p>
+            <p>Le informamos que el personal <strong>{StaffName}</strong> de la agencia <strong>{AgencyName}</strong> ha sido inactivado el {InactiveDate}.</p>
+            <p>Por favor, revise la información en el sistema para continuar con el proceso correspondiente.</p>
+            <p>Puede acceder a la información del personal a través de su cuenta en el sistema.</p>
+            <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+            <p>Atentamente,<br>El equipo de NUTRE</p>
+        </div>',
+        '<div style=''font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;''>
+            <h2>Staff Inactivated</h2>
+            <p>Dear Evaluator,</p>
+            <p>We inform you that staff member <strong>{StaffName}</strong> from agency <strong>{AgencyName}</strong> has been inactivated on {InactiveDate}.</p>
+            <p>Please review the information in the system to continue with the corresponding process.</p>
+            <p>You can access the staff information through your account in the system.</p>
+            <p>If you have any questions or need assistance, do not hesitate to contact us.</p>
+            <p>Sincerely,<br>The NUTRE team</p>
+        </div>',
+        'Email enviado al evaluador cuando un personal es inactivado',
+        1
+    );
+
 GO
 

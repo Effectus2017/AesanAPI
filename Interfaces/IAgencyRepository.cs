@@ -33,4 +33,14 @@ public interface IAgencyRepository
     /// Eliminar
     /// ------------------------------------------------------------------------------------------------
     Task<bool> DeleteAgency(int agencyId);
+
+    /// ------------------------------------------------------------------------------------------------
+    /// Helpers
+    /// ------------------------------------------------------------------------------------------------
+    /// <summary>
+    /// Obtiene el UserId del evaluador (monitor) asignado a una agencia
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>UserId del evaluador o null si no se encuentra</returns>
+    Task<string?> GetEvaluatorUserIdByAgencyId(int agencyId);
 }

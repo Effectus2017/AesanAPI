@@ -3,6 +3,7 @@ using Api.Models.Request;
 using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
 using Api.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.Services;
 
@@ -17,7 +18,7 @@ public class MessageTemplateService
     private readonly IMessageRepository _messageRepository;
     private readonly IEmailService _emailService;
     private readonly IHubContext<MessageHub> _hubContext;
-    private readonly IUserRepository _userRepository;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MessageTemplateService> _logger;
 
     public MessageTemplateService(
@@ -26,7 +27,7 @@ public class MessageTemplateService
         IMessageRepository messageRepository,
         IEmailService emailService,
         IHubContext<MessageHub> hubContext,
-        IUserRepository userRepository,
+        IServiceProvider serviceProvider,
         ILogger<MessageTemplateService> logger)
     {
         _messageTemplateRepository = messageTemplateRepository;
@@ -34,7 +35,7 @@ public class MessageTemplateService
         _messageRepository = messageRepository;
         _emailService = emailService;
         _hubContext = hubContext;
-        _userRepository = userRepository;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -56,7 +57,7 @@ public class MessageTemplateService
         try
         {
             SignalRLogger.LogToFile($"[MessageTemplateService] SendMessageAndEmailFromTemplate - INICIO - MessageTemplateKey: {messageTemplateKey}, EmailTemplateKey: {emailTemplateKey}, RecipientUserId: {recipientUserId}");
-            _logger.LogInformation("Iniciando envío de mensaje y email usando templates. MessageTemplateKey: {MessageTemplateKey}, EmailTemplateKey: {EmailTemplateKey}, RecipientUserId: {RecipientUserId}", 
+            _logger.LogInformation("Iniciando envío de mensaje y email usando templates. MessageTemplateKey: {MessageTemplateKey}, EmailTemplateKey: {EmailTemplateKey}, RecipientUserId: {RecipientUserId}",
                 messageTemplateKey, emailTemplateKey, recipientUserId);
 
             // 1. Obtener MessageTemplate
@@ -68,7 +69,7 @@ public class MessageTemplateService
                 _logger.LogError("MessageTemplate {TemplateKey} no encontrado en la base de datos. Verificar que el template existe.", messageTemplateKey);
                 return;
             }
-            
+
             SignalRLogger.LogToFile($"[MessageTemplateService] MessageTemplate encontrado: {messageTemplateKey}, TitleES: {messageTemplate.TitleES}");
             _logger.LogInformation("MessageTemplate encontrado: {TemplateKey}, TitleES: {TitleES}", messageTemplateKey, messageTemplate.TitleES);
 
@@ -87,16 +88,17 @@ public class MessageTemplateService
                 _logger.LogInformation("EmailTemplate encontrado: {TemplateKey}, SubjectES: {SubjectES}", emailTemplateKey, emailTemplate.SubjectES);
             }
 
-            // 3. Obtener email del usuario destinatario
+            // 3. Obtener email del usuario destinatario (usando inyección lazy para evitar dependencia circular)
             SignalRLogger.LogToFile($"[MessageTemplateService] Buscando usuario con UserId: {recipientUserId}");
-            var user = await _userRepository.GetUserByIdWithSP(recipientUserId);
+            var userRepository = _serviceProvider.GetRequiredService<IUserRepository>();
+            var user = await userRepository.GetUserByIdWithSP(recipientUserId);
             if (user == null)
             {
                 SignalRLogger.LogToFile($"[MessageTemplateService] ERROR: Usuario {recipientUserId} no encontrado en la base de datos");
                 _logger.LogError("Usuario {UserId} no encontrado en la base de datos. No se puede enviar el mensaje.", recipientUserId);
                 return;
             }
-            
+
             SignalRLogger.LogToFile($"[MessageTemplateService] Usuario encontrado: {recipientUserId}, Email: {user.Email}");
             _logger.LogInformation("Usuario encontrado: {UserId}, Email: {Email}", recipientUserId, user.Email);
 
@@ -125,24 +127,24 @@ public class MessageTemplateService
             SignalRLogger.LogToFile($"[MessageTemplateService] Insertando mensaje en BD. Title: {messageTitle}, UserId: {recipientUserId}");
             _logger.LogInformation("Insertando mensaje en la base de datos. Title: {Title}, UserId: {UserId}", messageTitle, recipientUserId);
             var createdMessage = await _messageRepository.InsertMessage(message);
-            
+
             if (createdMessage == null)
             {
                 SignalRLogger.LogToFile("[MessageTemplateService] ERROR: El mensaje no se creó (createdMessage es null)");
                 _logger.LogError("Error al insertar mensaje en la base de datos. El mensaje no se creó.");
                 return;
             }
-            
+
             SignalRLogger.LogToFile($"[MessageTemplateService] Mensaje insertado exitosamente. MessageId: {createdMessage.Id}");
             _logger.LogInformation("Mensaje insertado exitosamente. MessageId: {MessageId}", createdMessage.Id);
-            
+
             // Enviar via SignalR
             var groupName = $"user:{recipientUserId}";
             SignalRLogger.LogToFile($"[MessageTemplateService] Enviando mensaje via SignalR al grupo: {groupName}");
             _logger.LogInformation("Enviando mensaje via SignalR al grupo: {GroupName}", groupName);
             await _hubContext.Clients.Group(groupName).SendAsync("MessageCreated", createdMessage);
             SignalRLogger.LogToFile($"[MessageTemplateService] Mensaje enviado via SignalR exitosamente. MessageId: {createdMessage.Id}");
-            _logger.LogInformation("Mensaje interno enviado a usuario {UserId} usando template {TemplateKey}. MessageId: {MessageId}", 
+            _logger.LogInformation("Mensaje interno enviado a usuario {UserId} usando template {TemplateKey}. MessageId: {MessageId}",
                 recipientUserId, messageTemplateKey, createdMessage.Id);
 
             // 6. Enviar email si existe template

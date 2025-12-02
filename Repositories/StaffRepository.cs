@@ -18,7 +18,9 @@ public class StaffRepository(
     IOptions<ApplicationSettings> appSettings,
     MappingService mappingService,
     IAuditLogger auditLogger,
-    ISiteStaffRepository siteStaffRepository) : IStaffRepository
+    ISiteStaffRepository siteStaffRepository,
+    IAgencyRepository agencyRepository,
+    MessageTemplateService messageTemplateService) : IStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -27,6 +29,8 @@ public class StaffRepository(
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly IAuditLogger _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
     private readonly ISiteStaffRepository _siteStaffRepository = siteStaffRepository ?? throw new ArgumentNullException(nameof(siteStaffRepository));
+    private readonly IAgencyRepository _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
+    private readonly MessageTemplateService _messageTemplateService = messageTemplateService ?? throw new ArgumentNullException(nameof(messageTemplateService));
 
     /// <summary>
     /// Obtiene un miembro del staff por su ID
@@ -53,7 +57,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el miembro del staff con ID {StaffId}", id);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al obtener el miembro del staff con ID {id}: {ex.Message}", ex);
         }
     }
 
@@ -112,7 +116,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los miembros del staff");
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al obtener los miembros del staff: {ex.Message}", ex);
         }
     }
 
@@ -192,7 +196,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el miembro del staff");
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al insertar el miembro del staff: {ex.Message}", ex);
         }
     }
 
@@ -257,7 +261,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el miembro del staff con ID {StaffId}", staffRequest.Id);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al actualizar el miembro del staff con ID {staffRequest.Id}: {ex.Message}", ex);
         }
     }
 
@@ -308,7 +312,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el miembro del staff con ID {StaffId}", id);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al eliminar el miembro del staff con ID {id}: {ex.Message}", ex);
         }
     }
 
@@ -349,7 +353,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", staffId);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al actualizar la imagen del staff con ID {staffId}: {ex.Message}", ex);
         }
     }
 
@@ -383,7 +387,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al convertir miembro del staff con ID {StaffId} a usuario", staffId);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al convertir miembro del staff con ID {staffId} a usuario: {ex.Message}", ex);
         }
     }
 
@@ -408,7 +412,12 @@ public class StaffRepository(
 
             if (rowsAffected > 0)
             {
-                InvalidateCache(staffId);
+                // Si se inactivó el personal, enviar notificación al evaluador asignado
+                if (!isActive)
+                {
+                    await NotifyEvaluatorOnStaffInactivation(staffId);
+                }
+
                 return true;
             }
 
@@ -417,7 +426,85 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar estado activo del miembro del staff con ID {StaffId}", staffId);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al actualizar estado activo del miembro del staff con ID {staffId}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Notifica al evaluador cuando un personal es inactivado
+    /// </summary>
+    /// <param name="staffId">ID del personal inactivado</param>
+    private async Task NotifyEvaluatorOnStaffInactivation(int staffId)
+    {
+        try
+        {
+            // Obtener información del staff usando tipos específicos
+            var staffResult = await GetStaffById(staffId);
+            if (staffResult == null)
+            {
+                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - Staff con ID {StaffId} no encontrado", staffId);
+                return;
+            }
+
+            // Convertir a DTOStaff (GetStaffById ya retorna DTOStaff mapeado)
+            if (staffResult is not DTOStaff staff)
+            {
+                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - No se pudo convertir el staff con ID {StaffId} a DTOStaff", staffId);
+                return;
+            }
+
+            if (!staff.AgencyId.HasValue)
+            {
+                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - Staff {StaffId} no tiene AgencyId", staffId);
+                return;
+            }
+
+            // Obtener evaluador de la agencia
+            var evaluatorUserId = await _agencyRepository.GetEvaluatorUserIdByAgencyId(staff.AgencyId.Value);
+            if (string.IsNullOrEmpty(evaluatorUserId))
+            {
+                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - No se encontró evaluador asignado para la agencia {AgencyId}", staff.AgencyId.Value);
+                return;
+            }
+
+            // Construir nombre completo del staff
+            var staffNameParts = new List<string> { staff.FirstName };
+            if (!string.IsNullOrWhiteSpace(staff.MiddleName))
+            {
+                staffNameParts.Add(staff.MiddleName);
+            }
+            staffNameParts.Add(staff.FatherLastName);
+            if (!string.IsNullOrWhiteSpace(staff.MotherLastName))
+            {
+                staffNameParts.Add(staff.MotherLastName);
+            }
+            var staffName = string.Join(" ", staffNameParts);
+
+            // Preparar variables para los templates
+            var variables = new Dictionary<string, string>
+            {
+                { "StaffName", staffName },
+                { "AgencyName", staff.AgencyName ?? "" },
+                { "InactiveDate", DateTime.Now.ToString("dd/MM/yyyy") }
+            };
+
+            // Enviar mensaje interno Y email usando templates separados
+            _logger.LogInformation("NotifyEvaluatorOnStaffInactivation - Enviando notificación al evaluador {EvaluatorUserId} para staff {StaffId}", evaluatorUserId, staffId);
+
+            await _messageTemplateService.SendMessageAndEmailFromTemplate(
+                messageTemplateKey: "StaffInactivated",
+                emailTemplateKey: "StaffInactivated",
+                recipientUserId: evaluatorUserId,
+                variables: variables,
+                language: "es"
+            );
+
+            _logger.LogInformation("NotifyEvaluatorOnStaffInactivation - Notificación enviada exitosamente para staff {StaffId}", staffId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al enviar notificación al evaluador para staff {StaffId}: {Message}", staffId, ex.Message);
+            // No lanzar excepción para no fallar la operación principal
         }
     }
 
@@ -451,7 +538,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el AgencyId del staff con ID {StaffId}", staffId);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al actualizar el AgencyId del staff con ID {staffId}: {ex.Message}", ex);
         }
     }
 
@@ -492,7 +579,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", agencyId);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al obtener los miembros del staff de la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -517,7 +604,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", staffId);
-            throw new Exception(ex.Message);
+            throw new Exception($"Error al obtener historial de auditoría para staff {staffId}: {ex.Message}", ex);
         }
     }
 

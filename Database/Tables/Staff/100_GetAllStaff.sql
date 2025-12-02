@@ -58,10 +58,21 @@ BEGIN
             a.Name AS AgencyName,
             s.Comments,
             s.UserId,
-            u.FirstName + ' ' + u.FatherLastName AS UserName,
+            u.UserName,
             s.CreatedAt,
             s.UpdatedAt,
-            s.IsActive
+            s.IsActive,
+            CAST(
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1
+            FROM StaffRelationship sr
+            WHERE (sr.StaffId = s.Id OR sr.RelatedStaffId = s.Id)
+                AND sr.IsActive = 1
+                    ) THEN 1 
+                    ELSE 0 
+                END AS BIT
+            ) AS HasRelationships
         FROM Staff s
             LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
             LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -83,7 +94,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                                                                        SELECT DISTINCT sr.StaffId
+                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -130,10 +141,21 @@ BEGIN
             a.Name AS AgencyName,
             s.Comments,
             s.UserId,
-            u.FirstName + ' ' + u.FatherLastName AS UserName,
+            u.UserName,
             s.CreatedAt,
             s.UpdatedAt,
-            s.IsActive
+            s.IsActive,
+            CAST(
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1
+            FROM StaffRelationship sr
+            WHERE (sr.StaffId = s.Id OR sr.RelatedStaffId = s.Id)
+                AND sr.IsActive = 1
+                    ) THEN 1 
+                    ELSE 0 
+                END AS BIT
+            ) AS HasRelationships
         FROM Staff s
             LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
             LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -155,7 +177,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                                                                        SELECT DISTINCT sr.StaffId
+                                                                 SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -184,7 +206,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                                                                        SELECT DISTINCT sr.StaffId
+                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -198,4 +220,4 @@ BEGIN
 END
 
 
-EXEC [dbo].[100_GetAllStaff] @excludeRelated = 1, @alls = 1, @name = 'Juan', @staffTypeId = 2, @agencyId = 3, @take = 10, @skip = 0;
+--EXEC [dbo].[100_GetAllStaff] @excludeRelated = 1, @alls = 1, @name = 'Juan', @staffTypeId = 2, @agencyId = 3, @take = 10, @skip = 0;

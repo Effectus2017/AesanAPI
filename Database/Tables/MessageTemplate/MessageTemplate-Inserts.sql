@@ -36,3 +36,22 @@ VALUES
     );
 GO
 
+-- Template para cuando un personal es inactivado
+INSERT INTO [dbo].[MessageTemplate]
+    (TemplateKey, TitleES, TitleEN, BodyES, BodyEN, Icon, Link, UseRouter, PurposeES, PurposeEN, IsActive)
+VALUES
+    (
+        'StaffInactivated',
+        'Personal Inactivado',
+        'Staff Inactivated',
+        'El personal {StaffName} de la agencia {AgencyName} ha sido inactivado el {InactiveDate}.',
+        'Staff member {StaffName} from agency {AgencyName} has been inactivated on {InactiveDate}.',
+        'heroicons_outline:exclamation-triangle',
+        '/staff',
+        1,
+        'Mensaje enviado al evaluador cuando un personal es inactivado',
+        'Message sent to evaluator when a staff member is inactivated',
+        1
+    );
+GO
+

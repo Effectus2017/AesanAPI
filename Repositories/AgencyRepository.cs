@@ -871,5 +871,57 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
+    /// <summary>
+    /// Obtiene el UserId del evaluador (monitor) asignado a una agencia
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>UserId del evaluador o null si no se encuentra</returns>
+    public async Task<string?> GetEvaluatorUserIdByAgencyId(int agencyId)
+    {
+        try
+        {
+            // Intentar obtener desde el objeto Monitor primero
+            var agency = await GetAgencyById(agencyId);
+            if (agency != null)
+            {
+                var monitor = agency.Monitor;
+                if (monitor != null)
+                {
+                    var userId = monitor.UserId?.ToString();
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        _logger.LogInformation($"EvaluatorUserId obtenido desde Monitor para agencia {agencyId}: {userId}");
+                        return userId;
+                    }
+                }
+            }
+
+            // Si no se encontró, consultar directamente AgencyUsers
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId, DbType.Int32);
+
+            var evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
+                "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND IsMonitor = 1 AND IsActive = 1",
+                parameters
+            );
+
+            if (!string.IsNullOrEmpty(evaluatorUserId))
+            {
+                _logger.LogInformation($"EvaluatorUserId obtenido desde AgencyUsers para agencia {agencyId}: {evaluatorUserId}");
+            }
+            else
+            {
+                _logger.LogWarning($"No se encontró evaluador asignado para la agencia {agencyId}");
+            }
+
+            return evaluatorUserId;
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error obteniendo UserId del monitor desde AgencyUsers para agencia {agencyId}: {ex.Message}");
+            return null;
+        }
+    }
 
 }

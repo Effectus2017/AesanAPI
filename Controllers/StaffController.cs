@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Api.Models.Request;
-using Dapper;
 
 namespace Api.Controllers;
 
@@ -49,7 +48,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el miembro del staff con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el miembro del staff");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -125,7 +124,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el miembro del staff");
-            return StatusCode(500, "Error al insertar el miembro del staff");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -164,7 +163,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el miembro del staff");
-            return StatusCode(500, "Error al actualizar el miembro del staff");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -200,7 +199,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el miembro del staff con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error al eliminar el miembro del staff");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -249,7 +248,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", request?.StaffId);
-            return StatusCode(500, "Error al actualizar la imagen del staff");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -285,7 +284,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al convertir miembro del staff a usuario. StaffId: {StaffId}", queryParameters.StaffId);
-            return StatusCode(500, "Error interno del servidor al convertir miembro del staff a usuario");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -302,9 +301,12 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Actualizando estado activo del miembro del staff: {StaffId}, isActive: {IsActive}", queryParameters.StaffId, queryParameters.IsActive);
+                _logger.LogInformation("Actualizando estado activo del miembro del staff: {StaffId}, isActive: {IsActive}",
+                    queryParameters.StaffId, queryParameters.IsActive);
 
-                var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(queryParameters.StaffId, queryParameters.IsActive);
+                var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(
+                    queryParameters.StaffId,
+                    queryParameters.IsActive);
 
                 if (result)
                 {
@@ -319,7 +321,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el estado activo del miembro del staff");
-            return StatusCode(500, "Error al actualizar el estado activo");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -359,7 +361,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", queryParameters.AgencyId);
-            return StatusCode(500, "Error interno del servidor al obtener los miembros del staff de la agencia");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -391,7 +393,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", queryParameters.StaffId);
-            return StatusCode(500, "Error interno del servidor al obtener el historial de auditoría");
+            return StatusCode(500, ex.Message);
         }
     }
 }

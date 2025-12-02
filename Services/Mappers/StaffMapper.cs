@@ -47,7 +47,8 @@ public static class StaffMapper
                 result.AgencyId,
                 result.AgencyName,
                 result.UserName,
-                result.IsActive
+                result.IsActive,
+                result.HasRelationships
             };
         }
         catch (Exception ex)
@@ -108,6 +109,7 @@ public static class StaffMapper
                 result.CreatedAt,
                 result.UpdatedAt,
                 result.IsActive,
+                result.HasRelationships,
                 result.ReviewResultId,
                 result.ReviewDate,
                 result.ReviewJustification,
