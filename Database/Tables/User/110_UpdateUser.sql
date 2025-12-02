@@ -83,11 +83,34 @@ BEGIN
         -- Eliminar asignaciones existentes
         DELETE FROM AgencyUsers WHERE UserId = @userId;
 
+            -- Determinar IsOwner e IsMonitor según el rol
+            DECLARE @isOwner BIT = 0;
+            DECLARE @isMonitor BIT = 0;
+            
+            -- Roles que pueden ser owners (según validación en 101_AssignAgencyToUser)
+            IF @roleName IN ('Agency-Administrator', 'Agency-User')
+            BEGIN
+                SET @isOwner = 1;
+                SET @isMonitor = 0;
+            END
+            -- Roles que pueden ser monitores (roles internos de AESAN/NUTRE)
+            ELSE IF @roleName LIKE 'NUTRE_%' OR @roleName IN ('Monitor', 'Coordinador', 'Evaluador', 'Especialista', 'Nutrición', 'Contable', 'Director Contable', 'Abogado')
+            BEGIN
+                SET @isOwner = 0;
+                SET @isMonitor = 1;
+            END
+            -- Para otros roles (Administrator, SuperAdministrator, etc.), no son ni owner ni monitor
+            ELSE
+            BEGIN
+                SET @isOwner = 0;
+                SET @isMonitor = 0;
+            END
+
         -- Insertar nueva asignación
         INSERT INTO AgencyUsers
             (UserId, AgencyId, IsOwner, IsMonitor, IsActive, AssignedBy, CreatedAt)
         VALUES
-            (@userId, @agencyId, 0, 0, 1, @assignedBy, GETDATE());
+                (@userId, @agencyId, @isOwner, @isMonitor, 1, @assignedBy, GETDATE());
     END
 
         COMMIT TRANSACTION;

@@ -205,7 +205,13 @@ public class MappingService
             SiteCode = item.SiteCode,
             SiteNumber = item.SiteNumber,
             Address = item.Address,
-            SiteIsActive = item.IsActive
+            SiteIsActive = item.IsActive,
+            GroupTypeId = item.GroupTypeId,
+            GroupTypeName = item.GroupTypeName,
+            GroupTypeNameEN = item.GroupTypeNameEN,
+            OperatingFromDate = item.OperatingFromDate,
+            OperatingToDate = item.OperatingToDate,
+            ApprovalDate = item.ApprovalDate
         };
     }
 

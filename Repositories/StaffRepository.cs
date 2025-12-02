@@ -408,7 +408,11 @@ public class StaffRepository(
             parameters.Add("@staffId", staffId, DbType.Int32);
             parameters.Add("@isActive", isActive, DbType.Boolean);
 
-            var rowsAffected = await dbConnection.ExecuteAsync("100_UpdateStaffActiveStatus", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("100_UpdateStaffActiveStatus", parameters, commandType: CommandType.StoredProcedure);
+
+            int rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
             {

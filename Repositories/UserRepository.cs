@@ -137,10 +137,10 @@ public class UserRepository(UserManager<User> userManager,
                 IsActive = userFromDb.IsActive,
                 IsTemporalPasswordActived = userFromDb.IsTemporalPasswordActived,
                 EmailConfirmed = userFromDb.EmailConfirmed,
-                AgencyId = userFromDb.AgencyId,
+                AgencyId = userFromDb.AgencyId ?? 0,
                 AgencyName = userFromDb.AgencyName,
                 Role = userRoles.FirstOrDefault(), // Rol completo (un solo rol por usuario)
-                Agency = userFromDb.AgencyId != 0 ? new DTOAgency { Id = userFromDb.AgencyId, Name = userFromDb.AgencyName } : null
+                Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new DTOAgency { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
             };
 
             _loggingService.LogInformation("Usuario obtenido exitosamente con SP", new Dictionary<string, string>
@@ -757,7 +757,24 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@agencyId", entity.AgencyId, DbType.Int32);
 
             // Parámetro de rol
-            var roleName = entity.Role?.Name ?? "Monitor";
+            var roleName = entity.Role?.Name 
+                ?? (entity.Roles != null && entity.Roles.Any() ? entity.Roles.First() : null);
+            
+            if (string.IsNullOrEmpty(roleName))
+            {
+                // Si no hay rol, obtener el rol actual del usuario
+                var user = await _userManager.FindByIdAsync(entity.Id);
+                if (user != null)
+                {
+                    var currentRoles = await _userManager.GetRolesAsync(user);
+                    roleName = currentRoles.FirstOrDefault() ?? "Monitor";
+                }
+                else
+                {
+                    roleName = "Monitor";
+                }
+            }
+            
             parameters.Add("@roleName", roleName, DbType.String);
 
             // Parámetro de usuario que realiza la asignación

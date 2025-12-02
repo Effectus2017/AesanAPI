@@ -18,7 +18,7 @@ public interface ISchoolSiteRepository
     /// <summary>
     /// Obtiene todos los Sites asignados a una School específica
     /// </summary>
-    Task<dynamic> GetSchoolSitesBySchoolId(int schoolId, int take = 50, int skip = 0);
+    Task<dynamic> GetSchoolSitesBySchoolId(int schoolId, int take = 50, int skip = 0, string? name = null);
 
     /// <summary>
     /// Obtiene la School asignada a un Site específico

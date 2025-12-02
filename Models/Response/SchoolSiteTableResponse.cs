@@ -21,4 +21,16 @@ public class SchoolSiteTableResponse
     public int? SiteNumber { get; set; }
     public string Address { get; set; } = string.Empty;
     public bool SiteIsActive { get; set; }
+
+    // Tipo de Grupo
+    public int? GroupTypeId { get; set; }
+    public string? GroupTypeName { get; set; }
+    public string? GroupTypeNameEN { get; set; }
+
+    // Días de Funcionamiento
+    public DateTime? OperatingFromDate { get; set; }
+    public DateTime? OperatingToDate { get; set; }
+
+    // Fecha de Aprobación
+    public DateTime? ApprovalDate { get; set; }
 }

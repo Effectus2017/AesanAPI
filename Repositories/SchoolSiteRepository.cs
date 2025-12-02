@@ -26,7 +26,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
     /// <summary>
     /// Obtiene todos los Sites asignados a una School específica con paginación
     /// </summary>
-    public async Task<dynamic> GetSchoolSitesBySchoolId(int schoolId, int take = 50, int skip = 0)
+    public async Task<dynamic> GetSchoolSitesBySchoolId(int schoolId, int take = 50, int skip = 0, string? name = null)
     {
         try
         {
@@ -35,6 +35,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
             parameters.Add("@schoolId", schoolId, DbType.Int32);
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", string.IsNullOrWhiteSpace(name) ? null : name?.Trim(), DbType.String);
 
             using var result = await dbConnection.QueryMultipleAsync("100_GetSchoolSitesBySchoolId", parameters, commandType: CommandType.StoredProcedure);
 

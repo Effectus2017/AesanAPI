@@ -37,7 +37,8 @@ public class SchoolSiteController(ILogger<SchoolSiteController> logger, IUnitOfW
             var result = await _unitOfWork.SchoolSiteRepository.GetSchoolSitesBySchoolId(
                 queryParameters.SchoolId.Value,
                 queryParameters.Take,
-                queryParameters.Skip);
+                queryParameters.Skip,
+                queryParameters.Name);
 
             if (result == null)
             {

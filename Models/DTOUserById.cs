@@ -26,7 +26,7 @@ public class DTOUserById
     public int StaffTypeId { get; set; }
     public int StatusId { get; set; }
     public int PositionId { get; set; }
-    public int AgencyId { get; set; }
+    public int? AgencyId { get; set; }
     public DateTime? StaffCreatedAt { get; set; }
     public DateTime? StaffUpdatedAt { get; set; }
 
