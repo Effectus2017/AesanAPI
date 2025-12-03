@@ -18,7 +18,7 @@ public class Staff
     public string PostalAddress { get; set; } = "";
     public int CityId { get; set; } = 0;
     public int RegionId { get; set; } = 0;
-    public string AreaCode { get; set; } = "";
+    public string ZipCode { get; set; } = "";
     public int? AgencyId { get; set; } = null; // Referencia a la agencia a la que pertenece el personal
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null; // Para convertir staff en usuario

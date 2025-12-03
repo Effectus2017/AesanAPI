@@ -44,4 +44,37 @@ public interface IProgramRepository
     /// <param name="programId">El ID del programa</param>
     /// <returns>Las inscripciones de programas</returns>
     Task<dynamic> GetAllProgramInscriptions(int take, int skip, int? agencyId = null, int? programId = null);
+
+    /// <summary>
+    /// Asigna un evaluador a un programa
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="programId">ID del programa</param>
+    /// <param name="assignedBy">ID del usuario que realiza la asignación</param>
+    /// <returns>True si la asignación fue exitosa</returns>
+    Task<bool> AssignEvaluatorToProgram(string userId, int programId, string assignedBy);
+
+    /// <summary>
+    /// Remueve la asignación de un evaluador a un programa
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>True si la remoción fue exitosa</returns>
+    Task<bool> RemoveEvaluatorFromProgram(string userId, int programId);
+
+    /// <summary>
+    /// Obtiene todos los evaluadores asignados a un programa
+    /// </summary>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>Lista de UserIds de los evaluadores</returns>
+    Task<List<string>> GetEvaluatorsByProgramId(int programId);
+
+    /// <summary>
+    /// Agrega un evaluador a todos los programas activos automáticamente
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="assignedBy">ID del usuario que realiza la asignación</param>
+    /// <param name="evaluatorRoleId">RoleId del rol Evaluador (GUID)</param>
+    /// <returns>Número de programas a los que se agregó el evaluador</returns>
+    Task<int> AddEvaluatorToAllActivePrograms(string userId, string assignedBy, string evaluatorRoleId);
 }

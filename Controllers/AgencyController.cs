@@ -369,7 +369,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                 var result = await _unitOfWork.AgencyRepository.UpdateCompletedRegistrationDate(queryParameters.AgencyId, queryParameters.CompletedRegistrationDate.Value);
                 SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Fecha actualizada. Result: {result}");
 
-                // Obtener la agencia para obtener el evaluador asignado
+                // Obtener la agencia para obtener los evaluadores asignados
                 SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Obteniendo agencia con ID: {queryParameters.AgencyId}");
                 var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
                 
@@ -377,46 +377,21 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                 {
                     SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - Agencia obtenida correctamente");
                     
-                    // NOTA: FORMA TEMPORAL DE OBTENER USUARIO ASIGNADO A SPONSOR
-                    // Esta lógica será modificada en el futuro cuando se actualice la estructura de AgencyUsers
-                    // Por ahora, consultamos directamente AgencyUsers para obtener el UserId del evaluador (monitor)
-                    string? evaluatorUserId = null;
-                    
-                    // Intentar obtener desde el objeto Monitor primero
-                    var monitor = ((dynamic)agency).Monitor;
-                    if (monitor != null)
+                    // Obtener todos los evaluadores relacionados (agencia + programas)
+                    List<string> evaluatorUserIds = new List<string>();
+                    try
                     {
-                        evaluatorUserId = monitor.UserId?.ToString();
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - EvaluatorUserId desde Monitor: {(evaluatorUserId ?? "NULL")}");
+                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Obteniendo todos los evaluadores para AgencyId: {queryParameters.AgencyId}");
+                        evaluatorUserIds = await _unitOfWork.AgencyRepository.GetAllEvaluatorUserIdsByAgencyId(queryParameters.AgencyId);
+                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Se encontraron {evaluatorUserIds.Count} evaluadores");
+                    }
+                    catch (Exception ex)
+                    {
+                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR obteniendo evaluadores: {ex.Message}");
+                        _logger.LogError(ex, "Error obteniendo todos los evaluadores para agencia {AgencyId}", queryParameters.AgencyId);
                     }
                     
-                    // Si no se encontró, consultar directamente AgencyUsers
-                    if (string.IsNullOrEmpty(evaluatorUserId))
-                    {
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Consultando AgencyUsers directamente para AgencyId: {queryParameters.AgencyId}");
-                        try
-                        {
-                            using IDbConnection dbConnection = _dapperContext.CreateConnection();
-                            var parameters = new DynamicParameters();
-                            parameters.Add("@agencyId", queryParameters.AgencyId, DbType.Int32);
-                            
-                            evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
-                                "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND IsMonitor = 1 AND IsActive = 1",
-                                parameters
-                            );
-                            
-                            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - EvaluatorUserId desde AgencyUsers: {(evaluatorUserId ?? "NULL")}");
-                        }
-                        catch (Exception ex)
-                        {
-                            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR consultando AgencyUsers: {ex.Message}");
-                            _logger.LogError(ex, "Error obteniendo UserId del monitor desde AgencyUsers para agencia {AgencyId}", queryParameters.AgencyId);
-                        }
-                    }
-                    
-                    SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - EvaluatorUserId final: {(evaluatorUserId ?? "NULL")}");
-                    
-                    if (!string.IsNullOrEmpty(evaluatorUserId))
+                    if (evaluatorUserIds != null && evaluatorUserIds.Any())
                     {
                         // Preparar variables para los templates
                         var agencyName = ((dynamic)agency).Name?.ToString() ?? "";
@@ -432,30 +407,47 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                             { "CompletionDate", completionDate }
                         };
 
-                        // Enviar mensaje interno Y email usando templates separados
-                        try
+                        // Enviar mensaje y email a cada evaluador
+                        int successCount = 0;
+                        int errorCount = 0;
+                        
+                        foreach (var evaluatorUserId in evaluatorUserIds)
                         {
-                            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Llamando a SendMessageAndEmailFromTemplate para UserId: {evaluatorUserId}");
-                            await _messageTemplateService.SendMessageAndEmailFromTemplate(
-                                messageTemplateKey: "SponsorRegistrationCompleted",
-                                emailTemplateKey: "SponsorRegistrationCompleted",
-                                recipientUserId: evaluatorUserId,
-                                variables: variables,
-                                language: "es"
-                            );
-                            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - SendMessageAndEmailFromTemplate completado exitosamente");
+                            if (string.IsNullOrEmpty(evaluatorUserId))
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Enviando mensaje a evaluador UserId: {evaluatorUserId}");
+                                await _messageTemplateService.SendMessageAndEmailFromTemplate(
+                                    messageTemplateKey: "SponsorRegistrationCompleted",
+                                    emailTemplateKey: "SponsorRegistrationCompleted",
+                                    recipientUserId: evaluatorUserId,
+                                    variables: variables,
+                                    language: "es"
+                                );
+                                successCount++;
+                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Mensaje enviado exitosamente a evaluador {evaluatorUserId}");
+                            }
+                            catch (Exception ex)
+                            {
+                                errorCount++;
+                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR enviando mensaje a evaluador {evaluatorUserId}: {ex.Message}");
+                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - StackTrace: {ex.StackTrace}");
+                                _logger.LogError(ex, "Error al enviar mensaje y email al evaluador {EvaluatorUserId}: {Message}", evaluatorUserId, ex.Message);
+                                // Continuar con el siguiente evaluador sin interrumpir el proceso
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR en SendMessageAndEmailFromTemplate: {ex.Message}");
-                            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - StackTrace: {ex.StackTrace}");
-                            _logger.LogError(ex, "Error al enviar mensaje y email al evaluador: {Message}", ex.Message);
-                            // No fallar la operación principal si falla el envío de mensaje/email
-                        }
+                        
+                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Resumen: {successCount} mensajes enviados exitosamente, {errorCount} errores");
+                        _logger.LogInformation("Notificaciones enviadas a {SuccessCount} de {TotalCount} evaluadores para agencia {AgencyId}", successCount, evaluatorUserIds.Count, queryParameters.AgencyId);
                     }
                     else
                     {
-                        SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - WARNING: No se encontró evaluador asignado (evaluatorUserId es null o vacío)");
+                        SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - WARNING: No se encontraron evaluadores asignados (lista vacía o null)");
+                        _logger.LogWarning("No se encontraron evaluadores asignados para la agencia {AgencyId}", queryParameters.AgencyId);
                     }
                 }
                 else

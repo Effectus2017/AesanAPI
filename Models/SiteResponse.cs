@@ -46,6 +46,7 @@ public class SiteResponse
     public int? CommunityId { get; set; }
     public int? WalkersId { get; set; }
     public int? SiteTypeId { get; set; }
+    public int? SiteLocationId { get; set; }
     public int? ExperienceId { get; set; }
     public int? ReviewResultId { get; set; }
     public DateTime? ReviewDate { get; set; }
@@ -71,6 +72,9 @@ public class SiteResponse
     public DTOAreaType? AreaType { get; set; }
     public DTOAreaType? LocationType { get; set; }
     public DTOAgency? Agency { get; set; }
+    
+    // Site Location
+    public DTOOptionSelection? SiteLocation { get; set; }
     
     // Contrato de Alianza Pública
     public int? PublicAllianceContractId { get; set; }

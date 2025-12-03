@@ -197,4 +197,152 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
         }
     }
 
+    /// <summary>
+    /// Asigna un evaluador a un programa
+    /// </summary>
+    /// <param name="request">Request con userId, programId y assignedBy</param>
+    /// <returns>True si la asignación fue exitosa</returns>
+    [HttpPost("assign-evaluator")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [SwaggerOperation(Summary = "Asigna un evaluador a un programa", Description = "Asigna un usuario con rol 'Evaluador' a un programa específico.")]
+    public async Task<IActionResult> AssignEvaluatorToProgram([FromBody] AssignEvaluatorToProgramRequest request)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (request == null || string.IsNullOrEmpty(request.UserId) || request.ProgramId <= 0)
+                {
+                    return BadRequest("UserId y ProgramId son requeridos");
+                }
+
+                // Obtener el usuario que realiza la asignación (desde el token JWT)
+                var assignedBy = User?.Identity?.Name ?? request.AssignedBy ?? "System";
+                if (string.IsNullOrEmpty(assignedBy))
+                {
+                    assignedBy = "System";
+                }
+
+                _logger.LogInformation("Asignando evaluador {UserId} al programa {ProgramId} por {AssignedBy}", request.UserId, request.ProgramId, assignedBy);
+
+                var result = await _unitOfWork.ProgramRepository.AssignEvaluatorToProgram(request.UserId, request.ProgramId, assignedBy);
+
+                if (result)
+                {
+                    _logger.LogInformation("Evaluador {UserId} asignado exitosamente al programa {ProgramId}", request.UserId, request.ProgramId);
+                    return Ok(new { success = true, message = "Evaluador asignado exitosamente" });
+                }
+
+                _logger.LogWarning("No se pudo asignar el evaluador {UserId} al programa {ProgramId}", request.UserId, request.ProgramId);
+                return BadRequest(new { success = false, message = "No se pudo asignar el evaluador al programa" });
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al asignar evaluador {UserId} al programa {ProgramId}", request?.UserId, request?.ProgramId);
+            return StatusCode(500, new { success = false, message = "Error interno del servidor al asignar evaluador al programa" });
+        }
+    }
+
+    /// <summary>
+    /// Remueve la asignación de un evaluador a un programa
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>True si la remoción fue exitosa</returns>
+    [HttpDelete("remove-evaluator")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [SwaggerOperation(Summary = "Remueve la asignación de un evaluador a un programa", Description = "Remueve la asignación de un evaluador a un programa específico.")]
+    public async Task<IActionResult> RemoveEvaluatorFromProgram([FromQuery] string userId, [FromQuery] int programId)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (string.IsNullOrEmpty(userId) || programId <= 0)
+                {
+                    return BadRequest("UserId y ProgramId son requeridos");
+                }
+
+                _logger.LogInformation("Removiendo evaluador {UserId} del programa {ProgramId}", userId, programId);
+
+                var result = await _unitOfWork.ProgramRepository.RemoveEvaluatorFromProgram(userId, programId);
+
+                if (result)
+                {
+                    _logger.LogInformation("Evaluador {UserId} removido exitosamente del programa {ProgramId}", userId, programId);
+                    return Ok(new { success = true, message = "Evaluador removido exitosamente" });
+                }
+
+                _logger.LogWarning("No se pudo remover el evaluador {UserId} del programa {ProgramId}", userId, programId);
+                return BadRequest(new { success = false, message = "No se pudo remover el evaluador del programa" });
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al remover evaluador {UserId} del programa {ProgramId}", userId, programId);
+            return StatusCode(500, new { success = false, message = "Error interno del servidor al remover evaluador del programa" });
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los evaluadores asignados a un programa
+    /// </summary>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>Lista de UserIds de los evaluadores</returns>
+    [HttpGet("{programId}/evaluators")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [SwaggerOperation(Summary = "Obtiene todos los evaluadores asignados a un programa", Description = "Devuelve una lista de UserIds de los evaluadores asignados a un programa específico.")]
+    public async Task<IActionResult> GetEvaluatorsByProgramId(int programId)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (programId <= 0)
+                {
+                    return BadRequest("ProgramId debe ser mayor a 0");
+                }
+
+                _logger.LogInformation("Obteniendo evaluadores del programa {ProgramId}", programId);
+
+                var evaluators = await _unitOfWork.ProgramRepository.GetEvaluatorsByProgramId(programId);
+
+                return Ok(new { success = true, data = evaluators, count = evaluators.Count });
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener evaluadores del programa {ProgramId}", programId);
+            return StatusCode(500, new { success = false, message = "Error interno del servidor al obtener evaluadores del programa" });
+        }
+    }
+
+}
+
+/// <summary>
+/// Request para asignar un evaluador a un programa
+/// </summary>
+public class AssignEvaluatorToProgramRequest
+{
+    /// <summary>
+    /// ID del usuario evaluador
+    /// </summary>
+    public string UserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ID del programa
+    /// </summary>
+    public int ProgramId { get; set; }
+
+    /// <summary>
+    /// ID del usuario que realiza la asignación (opcional, se puede obtener del token JWT)
+    /// </summary>
+    public string? AssignedBy { get; set; }
 }

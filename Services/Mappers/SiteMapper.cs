@@ -46,11 +46,13 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 OperatingFromDate = item.OperatingFromDate,
                 OperatingToDate = item.OperatingToDate,
                 OperatingDaysCalculated = item.OperatingDaysCalculated,
+                ServiceTime = item.ServiceTime,
                 HasWarehouse = item.HasWarehouse ?? false,
                 HasDiningRoom = item.HasDiningRoom ?? false,
                 CommunityId = item.CommunityId,
                 WalkersId = item.WalkersId,
                 SiteTypeId = item.SiteTypeId,
+                SiteLocationId = item.SiteLocationId,
                 ExperienceId = item.ExperienceId,
                 ReviewResultId = item.ReviewResultId,
                 ReviewDate = item.ReviewDate,
@@ -91,6 +93,13 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 CenterType = _mappingService.Value.MapCenterType(item.CenterTypeId, item.CenterName, item.CenterNameEN),
                 AreaType = _mappingService.Value.MapAreaType(item.AreaTypeId, item.AreaTypeName, item.AreaTypeNameEN),
                 LocationType = _mappingService.Value.MapAreaType(item.LocationTypeId, item.LocationTypeName, item.LocationTypeNameEN),
+                SiteLocation = item.SiteLocationId != null ? new DTOOptionSelection
+                {
+                    Id = item.SiteLocationId,
+                    Name = item.SiteLocationName ?? string.Empty,
+                    NameEN = item.SiteLocationNameEN ?? string.Empty,
+                    OptionKey = item.SiteLocationOptionKey ?? string.Empty
+                } : null,
                 Agency = item.AgencyId != null ? new DTOAgency
                 {
                     Id = item.AgencyId,

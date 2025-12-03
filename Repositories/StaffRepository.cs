@@ -151,7 +151,7 @@ public class StaffRepository(
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String, ParameterDirection.Input);
+            parameters.Add("@zipCode", staffRequest.ZipCode ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@agencyId", staffRequest.AgencyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@userId", staffRequest.UserId, DbType.String, ParameterDirection.Input);
@@ -233,7 +233,7 @@ public class StaffRepository(
             parameters.Add("@postalAddress", staffRequest.PostalAddress ?? "", DbType.String);
             parameters.Add("@cityId", staffRequest.CityId, DbType.Int32);
             parameters.Add("@regionId", staffRequest.RegionId, DbType.Int32);
-            parameters.Add("@areaCode", staffRequest.AreaCode ?? "", DbType.String);
+            parameters.Add("@zipCode", staffRequest.ZipCode ?? "", DbType.String);
             parameters.Add("@agencyId", staffRequest.AgencyId, DbType.Int32);
             parameters.Add("@comments", staffRequest.Comments ?? "", DbType.String);
             parameters.Add("@userId", staffRequest.UserId, DbType.String);

@@ -18,7 +18,7 @@ public class StaffRequest
     public string? PostalAddress { get; set; } = "";
     public int? CityId { get; set; } = 0;
     public int? RegionId { get; set; } = 0;
-    public string? AreaCode { get; set; } = "";
+    public string? ZipCode { get; set; } = "";
     public int? AgencyId { get; set; } = null;
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null;

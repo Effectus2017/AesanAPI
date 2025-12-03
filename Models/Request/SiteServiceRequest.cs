@@ -4,6 +4,7 @@ namespace Api.Models.Request;
 
 public class SiteServiceRequest
 {
+    public int? Id { get; set; }
     public int? ChildGroupId { get; set; }
     public bool? Breakfast { get; set; }
     public TimeSpan? BreakfastFrom { get; set; }

@@ -54,7 +54,7 @@ BEGIN
         c.Name AS CityName,
         s.RegionId,
         r.Name AS RegionName,
-        s.AreaCode,
+        s.ZipCode,
         s.AgencyId,
         a.Name AS AgencyName,
         s.Comments,

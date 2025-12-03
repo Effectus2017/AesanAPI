@@ -46,8 +46,8 @@ CREATE TABLE Staff
     -- Referencia a la tabla City
     RegionId INT NOT NULL DEFAULT 0,
     -- Referencia a la tabla Region
-    AreaCode NVARCHAR(10) NOT NULL,
-    -- Código de área
+    ZipCode NVARCHAR(10) NOT NULL,
+    -- Código postal
 
     -- Relación con Agencia
     AgencyId INT NULL,

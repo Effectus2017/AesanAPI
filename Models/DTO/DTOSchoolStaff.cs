@@ -33,7 +33,7 @@ public class DTOSchoolStaff
     public string PostalAddress { get; set; } = "";
     public int StaffCityId { get; set; }
     public int StaffRegionId { get; set; }
-    public string AreaCode { get; set; } = "";
+    public string StaffZipCode { get; set; } = "";
     public string? StaffComments { get; set; }
     public string? StaffUserId { get; set; }
     public bool StaffIsActive { get; set; }
@@ -43,7 +43,7 @@ public class DTOSchoolStaff
     public string Address { get; set; } = "";
     public int SchoolCityId { get; set; }
     public int SchoolRegionId { get; set; }
-    public string ZipCode { get; set; } = "";
+    public string SchoolZipCode { get; set; } = "";
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public int? PostalCityId { get; set; }

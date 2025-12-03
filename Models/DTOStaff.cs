@@ -28,7 +28,7 @@ public class DTOStaff
     public string CityName { get; set; } = "";
     public int RegionId { get; set; } = 0;
     public string RegionName { get; set; } = "";
-    public string AreaCode { get; set; } = "";
+    public string ZipCode { get; set; } = "";
     public int? AgencyId { get; set; } = null;
     public string AgencyName { get; set; } = "";
     public string? Comments { get; set; } = "";

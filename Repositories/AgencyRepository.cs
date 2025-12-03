@@ -1,4 +1,5 @@
 using System.Data;
+using System.Linq;
 using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
@@ -921,6 +922,101 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         {
             await _logger.LogError(ex, $"Error obteniendo UserId del monitor desde AgencyUsers para agencia {agencyId}: {ex.Message}");
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los UserIds de evaluadores relacionados a una agencia
+    /// Incluye evaluadores asignados directamente a la agencia y evaluadores asignados a los programas de la agencia
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>Lista de UserIds únicos de evaluadores</returns>
+    public async Task<List<string>> GetAllEvaluatorUserIdsByAgencyId(int agencyId)
+    {
+        try
+        {
+            var evaluatorUserIds = new HashSet<string>();
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            // 1. Obtener evaluadores asignados directamente a la agencia
+            // Desde AgencyUsers con IsMonitor = 1 y rol "Evaluador"
+            var agencyEvaluatorsQuery = @"
+                SELECT DISTINCT au.UserId
+                FROM AgencyUsers au
+                    INNER JOIN AspNetUserRoles ur ON au.UserId = ur.UserId
+                    INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE au.AgencyId = @agencyId
+                    AND au.IsMonitor = 1
+                    AND au.IsActive = 1
+                    AND r.Name = 'Evaluador'";
+
+            var agencyEvaluators = await dbConnection.QueryAsync<string>(
+                agencyEvaluatorsQuery,
+                new { agencyId }
+            );
+
+            foreach (var userId in agencyEvaluators)
+            {
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    evaluatorUserIds.Add(userId);
+                }
+            }
+
+            _logger.LogInformation($"Se encontraron {evaluatorUserIds.Count} evaluadores asignados directamente a la agencia {agencyId}");
+
+            // 2. Obtener todos los programas de la agencia
+            var programsQuery = @"
+                SELECT DISTINCT ProgramId
+                FROM AgencyProgram
+                WHERE AgencyId = @agencyId
+                    AND IsActive = 1";
+
+            var programIds = await dbConnection.QueryAsync<int>(programsQuery, new { agencyId });
+            var programIdList = programIds.ToList();
+
+            _logger.LogInformation($"La agencia {agencyId} tiene {programIdList.Count} programas activos");
+
+            // 3. Para cada programa, obtener evaluadores asignados
+            // Desde UserProgram con IsActive = 1 y rol "Evaluador"
+            if (programIdList.Any())
+            {
+                var programEvaluatorsQuery = @"
+                    SELECT DISTINCT up.UserId
+                    FROM UserProgram up
+                        INNER JOIN AspNetUsers u ON up.UserId = u.Id
+                        INNER JOIN AspNetUserRoles ur ON u.Id = ur.UserId
+                        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                    WHERE up.ProgramId IN @programIds
+                        AND up.IsActive = 1
+                        AND r.Name = 'Evaluador'";
+
+                var programEvaluators = await dbConnection.QueryAsync<string>(
+                    programEvaluatorsQuery,
+                    new { programIds = programIdList }
+                );
+
+                foreach (var userId in programEvaluators)
+                {
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        evaluatorUserIds.Add(userId);
+                    }
+                }
+
+                _logger.LogInformation($"Se encontraron {evaluatorUserIds.Count} evaluadores totales (agencia + programas) para la agencia {agencyId}");
+            }
+
+            var result = evaluatorUserIds.ToList();
+            _logger.LogInformation($"Total de evaluadores únicos para la agencia {agencyId}: {result.Count}");
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error obteniendo todos los evaluadores para la agencia {agencyId}: {ex.Message}");
+            throw;
         }
     }
 

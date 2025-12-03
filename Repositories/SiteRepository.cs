@@ -268,6 +268,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             {
                 // Convertir IsDayCareHomeId a bool para compatibilidad con InsertSiteOperatingDays
                 bool? isDayCareHomeBool = null;
+
                 if (request.IsDayCareHomeId.HasValue)
                 {
                     // Si IsDayCareHomeId corresponde a "Sí" (booleanValue = true), entonces isDayCareHome = true
@@ -1266,54 +1267,54 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Llenar DataTable con los servicios
             foreach (var service in services)
             {
-                // Log de cada servicio antes de agregarlo al DataTable
-                var breakfastValue = service.Breakfast ?? (object)DBNull.Value;
-                var lunchValue = service.Lunch ?? (object)DBNull.Value;
-                var dinnerValue = service.Dinner ?? (object)DBNull.Value;
+                // Helper para convertir bool? a object: solo enviar true (1) si es true, DBNull.Value si es false o null
+                // Esto asegura que el stored procedure solo procese servicios con valor true
+                object ConvertBoolToDbValue(bool? value) => value == true ? (object)true : DBNull.Value;
 
+                // Log de cada servicio antes de agregarlo al DataTable
                 _logger.LogDebug("Agregando servicio al DataTable - ChildGroupId: {ChildGroupId}, Breakfast: {Breakfast}, Lunch: {Lunch}, Dinner: {Dinner}",
-                    service.ChildGroupId, breakfastValue, lunchValue, dinnerValue);
+                    service.ChildGroupId, service.Breakfast, service.Lunch, service.Dinner);
 
                 dataTable.Rows.Add(
                     service.ChildGroupId ?? (object)DBNull.Value,
-                    // Breakfast
-                    breakfastValue,
+                    // Breakfast - Solo enviar true (1) si es true, DBNull.Value si es false o null
+                    ConvertBoolToDbValue(service.Breakfast),
                     service.BreakfastFrom ?? (object)DBNull.Value,
                     service.BreakfastTo ?? (object)DBNull.Value,
                     // Lunch
-                    lunchValue,
+                    ConvertBoolToDbValue(service.Lunch),
                     service.LunchFrom ?? (object)DBNull.Value,
                     service.LunchTo ?? (object)DBNull.Value,
                     // SnackAM
-                    service.SnackAM ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackAM),
                     service.SnackAMFrom ?? (object)DBNull.Value,
                     service.SnackAMTo ?? (object)DBNull.Value,
                     // Dinner
-                    dinnerValue,
+                    ConvertBoolToDbValue(service.Dinner),
                     service.DinnerFrom ?? (object)DBNull.Value,
                     service.DinnerTo ?? (object)DBNull.Value,
                     // SnackPM
-                    service.SnackPM ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackPM),
                     service.SnackPMFrom ?? (object)DBNull.Value,
                     service.SnackPMTo ?? (object)DBNull.Value,
                     // SnackNight
-                    service.SnackNight ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackNight),
                     service.SnackNightFrom ?? (object)DBNull.Value,
                     service.SnackNightTo ?? (object)DBNull.Value,
                     // DinnerExtended
-                    service.DinnerExtended ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.DinnerExtended),
                     service.DinnerExtendedFrom ?? (object)DBNull.Value,
                     service.DinnerExtendedTo ?? (object)DBNull.Value,
                     // DinnerAtRisk
-                    service.DinnerAtRisk ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.DinnerAtRisk),
                     service.DinnerAtRiskFrom ?? (object)DBNull.Value,
                     service.DinnerAtRiskTo ?? (object)DBNull.Value,
                     // SnackExtended
-                    service.SnackExtended ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackExtended),
                     service.SnackExtendedFrom ?? (object)DBNull.Value,
                     service.SnackExtendedTo ?? (object)DBNull.Value,
                     // SnackAtRisk
-                    service.SnackAtRisk ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackAtRisk),
                     service.SnackAtRiskFrom ?? (object)DBNull.Value,
                     service.SnackAtRiskTo ?? (object)DBNull.Value
                 );
@@ -1469,7 +1470,15 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 // Validar que si un servicio está habilitado, tenga horarios
                 ValidateServiceTimes(service);
 
+                // Al actualizar, el ID debe estar presente
+                if (!service.Id.HasValue)
+                {
+                    _logger.LogError("No se proporcionó el ID del SiteService para actualizar el sitio {SiteId}", siteId);
+                    throw new ArgumentException("El ID del servicio es requerido para actualizar.");
+                }
+
                 var parameters = new DynamicParameters();
+                parameters.Add("@id", service.Id.Value, DbType.Int32);
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
                 parameters.Add("@breakfast", service.Breakfast, DbType.Boolean);

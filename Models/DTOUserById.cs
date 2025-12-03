@@ -22,7 +22,7 @@ public class DTOUserById
     public string PostalAddress { get; set; } = "";
     public int CityId { get; set; }
     public int RegionId { get; set; }
-    public string AreaCode { get; set; } = "";
+    public string ZipCode { get; set; } = "";
     public int StaffTypeId { get; set; }
     public int StatusId { get; set; }
     public int PositionId { get; set; }

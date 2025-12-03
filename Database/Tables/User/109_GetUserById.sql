@@ -24,7 +24,7 @@ BEGIN
         s.PostalAddress,
         s.CityId,
         s.RegionId,
-        s.AreaCode,
+        s.ZipCode,
         s.StaffTypeId,
         s.StatusId,
         s.PositionId,
@@ -40,7 +40,21 @@ BEGIN
         -- Datos de la agencia desde AgencyUsers (relación correcta usuario-agencia)
         a.Id AS AgencyId,
         a.Name AS AgencyName,
-        a.AgencyCode
+        a.AgencyCode,
+        -- Información de UserProgram para saber si tiene asignaciones
+        CASE 
+            WHEN EXISTS (
+                SELECT 1
+        FROM UserProgram up
+        WHERE up.UserId = u.Id
+            AND up.IsActive = 1
+            ) THEN 1 
+            ELSE 0 
+        END AS HasProgramAssignments,
+        (SELECT COUNT(*)
+        FROM UserProgram up
+        WHERE up.UserId = u.Id
+            AND up.IsActive = 1) AS ProgramAssignmentsCount
     FROM AspNetUsers u
         LEFT JOIN Staff s ON u.Id = s.UserId
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -92,4 +106,4 @@ BEGIN
 END;
 GO
 
-EXEC [109_GetUserById] 'dd56a451-42e0-4965-aa48-2980dd310b36';
+--EXEC [109_GetUserById] 'dd56a451-42e0-4965-aa48-2980dd310b36';

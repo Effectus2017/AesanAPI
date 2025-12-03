@@ -28,6 +28,7 @@ public class UserRepository(UserManager<User> userManager,
     IAgencyRepository agencyRepository,
     IAgencyUsersRepository agencyUsersRepository,
     IStaffRepository staffRepository,
+    IProgramRepository programRepository,
     MappingService mappingService) : IUserRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -41,6 +42,7 @@ public class UserRepository(UserManager<User> userManager,
     private readonly IAgencyRepository _agencyRepository = agencyRepository;
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository;
     private readonly IStaffRepository _staffRepository = staffRepository;
+    private readonly IProgramRepository _programRepository = programRepository;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     /// <summary>
     /// Obtiene un usuario por su ID
@@ -522,7 +524,7 @@ public class UserRepository(UserManager<User> userManager,
                 PostalAddress = model.Staff.PostalAddress,
                 CityId = model.Staff.CityId,
                 RegionId = model.Staff.RegionId,
-                AreaCode = model.Staff.AreaCode,
+                ZipCode = model.Staff.ZipCode,
                 StaffTypeId = model.Staff.StaffTypeId,
                 StatusId = model.Staff.StatusId,
                 PositionId = model.Staff.PositionId,
@@ -547,6 +549,10 @@ public class UserRepository(UserManager<User> userManager,
                 await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(resultRole.Errors);
             }
+
+            // Si el rol es "Evaluador", agregar automáticamente a todos los programas activos
+            // (Nota: En este caso el rol es fijo "Agency-Administrator", pero si puede variar, verificar aquí)
+            // Por ahora, este método solo crea usuarios con rol "Agency-Administrator"
 
             _loggingService.LogInformation("Insertando la contraseña temporal en la base de datos", new Dictionary<string, string> { { "temporaryPassword", temporaryPassword } });
             await InsertTemporaryPassword(user.Id, temporaryPassword);
@@ -640,13 +646,10 @@ public class UserRepository(UserManager<User> userManager,
     /// <returns>El resultado de la operación</returns>
     public async Task<dynamic> RegisterUser(DTOUser model, string role, int agencyId)
     {
-        User? user = null;
-        Staff? staff = null;
-
         try
         {
             // 1. Crear usuario en Identity (solo datos de login)
-            user = new User
+            User? user = new()
             {
                 UserName = model.Email,
                 Email = model.Email,
@@ -680,7 +683,7 @@ public class UserRepository(UserManager<User> userManager,
                 PostalAddress = "Dirección por definir",
                 CityId = 0, // Por defecto
                 RegionId = 0, // Por defecto
-                AreaCode = "787", // Código de área por defecto para PR
+                ZipCode = "00901", // Código postal por defecto para PR
                 StaffTypeId = 1, // Empleado por defecto
                 StatusId = 1, // Activo por defecto
                 PositionId = 0, // Sin posición específica por defecto - se puede actualizar después
@@ -757,9 +760,9 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@agencyId", entity.AgencyId, DbType.Int32);
 
             // Parámetro de rol
-            var roleName = entity.Role?.Name 
+            var roleName = entity.Role?.Name
                 ?? (entity.Roles != null && entity.Roles.Any() ? entity.Roles.First() : null);
-            
+
             if (string.IsNullOrEmpty(roleName))
             {
                 // Si no hay rol, obtener el rol actual del usuario
@@ -774,7 +777,7 @@ public class UserRepository(UserManager<User> userManager,
                     roleName = "Monitor";
                 }
             }
-            
+
             parameters.Add("@roleName", roleName, DbType.String);
 
             // Parámetro de usuario que realiza la asignación

@@ -43,4 +43,12 @@ public interface IAgencyRepository
     /// <param name="agencyId">ID de la agencia</param>
     /// <returns>UserId del evaluador o null si no se encuentra</returns>
     Task<string?> GetEvaluatorUserIdByAgencyId(int agencyId);
+
+    /// <summary>
+    /// Obtiene todos los UserIds de evaluadores relacionados a una agencia
+    /// Incluye evaluadores asignados directamente a la agencia y evaluadores asignados a los programas de la agencia
+    /// </summary>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <returns>Lista de UserIds únicos de evaluadores</returns>
+    Task<List<string>> GetAllEvaluatorUserIdsByAgencyId(int agencyId);
 }

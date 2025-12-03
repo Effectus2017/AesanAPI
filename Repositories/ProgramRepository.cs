@@ -6,17 +6,19 @@ using Api.Models;
 using Api.Models.Request;
 using Api.Services;
 using Dapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IProgramRepository
+public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, RoleManager<Role> roleManager) : IProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<ProgramRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+    private readonly RoleManager<Role> _roleManager = roleManager;
 
     /// <summary>
     /// Obtiene un programa por su ID
@@ -408,6 +410,159 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         {
             _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
             throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Asigna un evaluador a un programa
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="programId">ID del programa</param>
+    /// <param name="assignedBy">ID del usuario que realiza la asignación</param>
+    /// <returns>True si la asignación fue exitosa</returns>
+    public async Task<bool> AssignEvaluatorToProgram(string userId, int programId, string assignedBy)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+            parameters.Add("@programId", programId, DbType.Int32);
+            parameters.Add("@assignedBy", assignedBy, DbType.String);
+            parameters.Add("@Id", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("100_AssignEvaluatorToProgram", parameters, commandType: CommandType.StoredProcedure);
+
+            var id = parameters.Get<int>("@Id");
+
+            if (id > 0)
+            {
+                _logger.LogInformation($"Evaluador {userId} asignado exitosamente al programa {programId}");
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al asignar evaluador {UserId} al programa {ProgramId}", userId, programId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Remueve la asignación de un evaluador a un programa
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>True si la remoción fue exitosa</returns>
+    public async Task<bool> RemoveEvaluatorFromProgram(string userId, int programId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+            parameters.Add("@programId", programId, DbType.Int32);
+            parameters.Add("@Success", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("102_RemoveEvaluatorFromProgram", parameters, commandType: CommandType.StoredProcedure);
+
+            var success = parameters.Get<int>("@Success");
+
+            if (success > 0)
+            {
+                _logger.LogInformation($"Evaluador {userId} removido exitosamente del programa {programId}");
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al remover evaluador {UserId} del programa {ProgramId}", userId, programId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los evaluadores asignados a un programa
+    /// </summary>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>Lista de UserIds de los evaluadores</returns>
+    public async Task<List<string>> GetEvaluatorsByProgramId(int programId)
+    {
+        try
+        {
+            // Obtener el RoleId del rol "Evaluador" (sin usar nombre para validar en el stored procedure)
+            var evaluatorRole = await _roleManager.FindByNameAsync("Evaluador");
+            if (evaluatorRole == null)
+            {
+                _logger.LogWarning("Rol 'Evaluador' no encontrado en el sistema");
+                return [];
+            }
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@programId", programId, DbType.Int32);
+            parameters.Add("@evaluatorRoleId", evaluatorRole.Id, DbType.String);
+
+            var result = await dbConnection.QueryAsync<dynamic>(
+                "100_GetEvaluatorsByProgramId",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            var evaluatorUserIds = result
+                .Select(r => r.UserId?.ToString() ?? "")
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Cast<string>()
+                .ToList();
+
+            return evaluatorUserIds;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener evaluadores del programa {ProgramId}", programId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Agrega un evaluador a todos los programas activos automáticamente
+    /// </summary>
+    /// <param name="userId">ID del usuario evaluador</param>
+    /// <param name="assignedBy">ID del usuario que realiza la asignación</param>
+    /// <param name="evaluatorRoleId">RoleId del rol Evaluador (GUID)</param>
+    /// <returns>Número de programas a los que se agregó el evaluador</returns>
+    public async Task<int> AddEvaluatorToAllActivePrograms(string userId, string assignedBy, string evaluatorRoleId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+            parameters.Add("@assignedBy", assignedBy, DbType.String);
+            parameters.Add("@evaluatorRoleId", evaluatorRoleId, DbType.String);
+
+            var programsAssigned = await dbConnection.QueryFirstOrDefaultAsync<int>(
+                "100_AddEvaluatorToAllActivePrograms",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (programsAssigned > 0)
+            {
+                _logger.LogInformation($"Evaluador {userId} agregado a {programsAssigned} programas activos");
+                return programsAssigned;
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al agregar evaluador {UserId} a todos los programas activos", userId);
+            throw;
         }
     }
 
