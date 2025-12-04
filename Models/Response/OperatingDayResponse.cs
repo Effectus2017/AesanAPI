@@ -41,6 +41,11 @@ public class OperatingDayResponse
     public bool IsExcluded { get; set; }
 
     /// <summary>
+    /// Indica si el día es feriado
+    /// </summary>
+    public bool IsHoliday { get; set; }
+
+    /// <summary>
     /// Comentario opcional sobre el día de funcionamiento
     /// </summary>
     public string? Comment { get; set; }

@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_ToggleSiteOperatingDay]
     @endTime TIME = NULL,
     @isWeekendOverride BIT = 0,
     @isExcluded BIT = 0,
+    @isHoliday BIT = 0,
     @comment NVARCHAR(500) = NULL
 AS
 BEGIN
@@ -65,11 +66,13 @@ BEGIN
         BEGIN
         IF @isExcluded = 1
                 SET @comment = CASE 
+                    WHEN @isHoliday = 1 THEN 'Feriado - No funciona'
                     WHEN @IsWeekend = 1 THEN 'Fin de semana - No funciona'
                     ELSE 'Día excluido - No funciona'
                 END
             ELSE
                 SET @comment = CASE 
+                    WHEN @isHoliday = 1 THEN 'Feriado - Funciona por excepción'
                     WHEN @isWeekendOverride = 1 THEN 'Fin de semana - Funciona por excepción'
                     ELSE 'Día de funcionamiento'
                 END
@@ -84,6 +87,7 @@ BEGIN
                 EndTime = @endTime,
                 IsWeekendOverride = @isWeekendOverride,
                 IsExcluded = @isExcluded,
+                IsHoliday = @isHoliday,
                 Comment = @comment,
                 UpdatedAt = GETDATE()
             WHERE Id = @ExistingId;
@@ -100,6 +104,7 @@ BEGIN
             EndTime,
             IsWeekendOverride,
             IsExcluded,
+            IsHoliday,
             Comment,
             CreatedAt,
             UpdatedAt
@@ -112,6 +117,7 @@ BEGIN
                 @endTime,
                 @isWeekendOverride,
                 @isExcluded,
+                @isHoliday,
                 @comment,
                 GETDATE(),
                 GETDATE()

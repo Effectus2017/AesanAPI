@@ -1210,11 +1210,76 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogInformation("Preparando {ServiceCount} servicios para insertar en días de funcionamiento del sitio {SiteId}",
                 services.Count, siteId);
 
-            foreach (var service in services)
+            // Helper para verificar si un servicio tiene al menos un servicio activo con horarios válidos
+            bool HasValidService(SiteServiceRequest service)
             {
-                _logger.LogDebug("Servicio recibido - ChildGroupId: {ChildGroupId}, Breakfast: {Breakfast} (From: {BreakfastFrom}, To: {BreakfastTo}), " +
-                    "Lunch: {Lunch} (From: {LunchFrom}, To: {LunchTo}), Dinner: {Dinner} (From: {DinnerFrom}, To: {DinnerTo})",
-                    service.ChildGroupId,
+                return (service.Breakfast == true && service.BreakfastFrom.HasValue && service.BreakfastTo.HasValue) ||
+                       (service.Lunch == true && service.LunchFrom.HasValue && service.LunchTo.HasValue) ||
+                       (service.SnackAM == true && service.SnackAMFrom.HasValue && service.SnackAMTo.HasValue) ||
+                       (service.Dinner == true && service.DinnerFrom.HasValue && service.DinnerTo.HasValue) ||
+                       (service.SnackPM == true && service.SnackPMFrom.HasValue && service.SnackPMTo.HasValue) ||
+                       (service.SnackNight == true && service.SnackNightFrom.HasValue && service.SnackNightTo.HasValue) ||
+                       (service.DinnerExtended == true && service.DinnerExtendedFrom.HasValue && service.DinnerExtendedTo.HasValue) ||
+                       (service.DinnerAtRisk == true && service.DinnerAtRiskFrom.HasValue && service.DinnerAtRiskTo.HasValue) ||
+                       (service.SnackExtended == true && service.SnackExtendedFrom.HasValue && service.SnackExtendedTo.HasValue) ||
+                       (service.SnackAtRisk == true && service.SnackAtRiskFrom.HasValue && service.SnackAtRiskTo.HasValue);
+            }
+
+            // Filtrar servicios que tengan al menos un servicio activo con horarios válidos
+            var validServices = services.Where(HasValidService).ToList();
+
+            if (validServices.Count == 0)
+            {
+                _logger.LogWarning("No hay servicios válidos para insertar para el sitio {SiteId}. Todos los servicios están desactivados o no tienen horarios válidos. " +
+                    "Total de servicios recibidos: {TotalCount}",
+                    siteId, services.Count);
+
+                // Log detallado de cada servicio para diagnóstico
+                foreach (var service in services)
+                {
+                    _logger.LogDebug("Servicio inválido - ChildGroupId: {ChildGroupId}, " +
+                        "Breakfast: {Breakfast} (From: {BreakfastFrom}, To: {BreakfastTo}), " +
+                        "Lunch: {Lunch} (From: {LunchFrom}, To: {LunchTo}), " +
+                        "Dinner: {Dinner} (From: {DinnerFrom}, To: {DinnerTo}), " +
+                        "SnackAM: {SnackAM} (From: {SnackAMFrom}, To: {SnackAMTo}), " +
+                        "SnackPM: {SnackPM} (From: {SnackPMFrom}, To: {SnackPMTo}), " +
+                        "SnackNight: {SnackNight} (From: {SnackNightFrom}, To: {SnackNightTo})",
+                        service.ChildGroupId,
+                        service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
+                        service.Lunch, service.LunchFrom, service.LunchTo,
+                        service.Dinner, service.DinnerFrom, service.DinnerTo,
+                        service.SnackAM, service.SnackAMFrom, service.SnackAMTo,
+                        service.SnackPM, service.SnackPMFrom, service.SnackPMTo,
+                        service.SnackNight, service.SnackNightFrom, service.SnackNightTo);
+                }
+                return;
+            }
+
+            _logger.LogInformation("Se encontraron {ValidCount} servicios válidos de {TotalCount} servicios recibidos para el sitio {SiteId}",
+                validServices.Count, services.Count, siteId);
+
+            foreach (var service in validServices)
+            {
+                // Contar servicios activos en este servicio
+                var activeServicesCount = new[]
+                {
+                    (service.Breakfast == true && service.BreakfastFrom.HasValue && service.BreakfastTo.HasValue) ? 1 : 0,
+                    (service.Lunch == true && service.LunchFrom.HasValue && service.LunchTo.HasValue) ? 1 : 0,
+                    (service.SnackAM == true && service.SnackAMFrom.HasValue && service.SnackAMTo.HasValue) ? 1 : 0,
+                    (service.Dinner == true && service.DinnerFrom.HasValue && service.DinnerTo.HasValue) ? 1 : 0,
+                    (service.SnackPM == true && service.SnackPMFrom.HasValue && service.SnackPMTo.HasValue) ? 1 : 0,
+                    (service.SnackNight == true && service.SnackNightFrom.HasValue && service.SnackNightTo.HasValue) ? 1 : 0,
+                    (service.DinnerExtended == true && service.DinnerExtendedFrom.HasValue && service.DinnerExtendedTo.HasValue) ? 1 : 0,
+                    (service.DinnerAtRisk == true && service.DinnerAtRiskFrom.HasValue && service.DinnerAtRiskTo.HasValue) ? 1 : 0,
+                    (service.SnackExtended == true && service.SnackExtendedFrom.HasValue && service.SnackExtendedTo.HasValue) ? 1 : 0,
+                    (service.SnackAtRisk == true && service.SnackAtRiskFrom.HasValue && service.SnackAtRiskTo.HasValue) ? 1 : 0
+                }.Sum();
+
+                _logger.LogDebug("Servicio válido - ChildGroupId: {ChildGroupId}, Servicios activos: {ActiveCount}, " +
+                    "Breakfast: {Breakfast} (From: {BreakfastFrom}, To: {BreakfastTo}), " +
+                    "Lunch: {Lunch} (From: {LunchFrom}, To: {LunchTo}), " +
+                    "Dinner: {Dinner} (From: {DinnerFrom}, To: {DinnerTo})",
+                    service.ChildGroupId, activeServicesCount,
                     service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
                     service.Lunch, service.LunchFrom, service.LunchTo,
                     service.Dinner, service.DinnerFrom, service.DinnerTo);
@@ -1264,8 +1329,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             dataTable.Columns.Add("SnackAtRiskFrom", typeof(TimeSpan));
             dataTable.Columns.Add("SnackAtRiskTo", typeof(TimeSpan));
 
-            // Llenar DataTable con los servicios
-            foreach (var service in services)
+            // Llenar DataTable solo con servicios válidos
+            foreach (var service in validServices)
             {
                 // Helper para convertir bool? a object: solo enviar true (1) si es true, DBNull.Value si es false o null
                 // Esto asegura que el stored procedure solo procese servicios con valor true
@@ -1341,12 +1406,30 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             _logger.LogInformation("Se crearon {RowsInserted} servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 rowsInserted, siteId, operatingFromDate.Date, operatingToDate.Date);
 
-            // Si no se insertaron servicios, log de advertencia
+            // Si no se insertaron servicios, log de advertencia con más detalles
             if (rowsInserted == 0)
             {
-                _logger.LogWarning("No se insertaron servicios para el sitio {SiteId}. Verificar que los días de funcionamiento existan y que los servicios tengan horarios válidos. " +
-                    "DataTable tenía {RowCount} filas.",
-                    siteId, dataTable.Rows.Count);
+                _logger.LogWarning("No se insertaron servicios para el sitio {SiteId}. " +
+                    "DataTable tenía {RowCount} filas con servicios válidos. " +
+                    "Verificar que: " +
+                    "1) Los días de funcionamiento existan en el rango {FromDate} a {ToDate}, " +
+                    "2) Los días de funcionamiento estén activos (IsActive=1) y no excluidos (IsExcluded=0), " +
+                    "3) Los servicios tengan valores true (1) y horarios no nulos en el stored procedure.",
+                    siteId, dataTable.Rows.Count, operatingFromDate.Date, operatingToDate.Date);
+
+                // Log adicional: verificar si existen días de funcionamiento
+                var daysCount = await dbConnection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM SiteOperatingDays WHERE SiteId = @siteId AND OperatingDate >= @fromDate AND OperatingDate <= @toDate AND IsExcluded = 0 AND IsActive = 1",
+                    new { siteId, fromDate = operatingFromDate.Date, toDate = operatingToDate.Date },
+                    transaction);
+
+                _logger.LogWarning("Días de funcionamiento encontrados para el sitio {SiteId} en el rango {FromDate} a {ToDate}: {DaysCount}",
+                    siteId, operatingFromDate.Date, operatingToDate.Date, daysCount);
+            }
+            else
+            {
+                _logger.LogInformation("✓ Éxito: Se insertaron {RowsInserted} servicios en SiteOperatingDayService para el sitio {SiteId}",
+                    rowsInserted, siteId);
             }
         }
         catch (Exception ex)

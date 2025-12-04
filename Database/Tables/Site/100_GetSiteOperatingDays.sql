@@ -57,6 +57,7 @@ BEGIN
         sod.EndTime,
         sod.IsWeekendOverride,
         sod.IsExcluded,
+        sod.IsHoliday,
         sod.Comment,
         sod.CreatedAt,
         sod.UpdatedAt

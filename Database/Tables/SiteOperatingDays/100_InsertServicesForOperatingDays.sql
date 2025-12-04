@@ -97,8 +97,6 @@ BEGIN
             AND s.Breakfast = 1
             AND s.BreakfastFrom IS NOT NULL
             AND s.BreakfastTo IS NOT NULL
-            AND s.BreakfastFrom >= sod.StartTime
-            AND s.BreakfastTo <= sod.EndTime
             AND s.BreakfastFrom < s.BreakfastTo
 
     UNION ALL
@@ -122,8 +120,6 @@ BEGIN
             AND s.Lunch = 1
             AND s.LunchFrom IS NOT NULL
             AND s.LunchTo IS NOT NULL
-            AND s.LunchFrom >= sod.StartTime
-            AND s.LunchTo <= sod.EndTime
             AND s.LunchFrom < s.LunchTo
 
     UNION ALL
@@ -147,8 +143,6 @@ BEGIN
             AND s.SnackAM = 1
             AND s.SnackAMFrom IS NOT NULL
             AND s.SnackAMTo IS NOT NULL
-            AND s.SnackAMFrom >= sod.StartTime
-            AND s.SnackAMTo <= sod.EndTime
             AND s.SnackAMFrom < s.SnackAMTo
 
     UNION ALL
@@ -172,8 +166,6 @@ BEGIN
             AND s.Dinner = 1
             AND s.DinnerFrom IS NOT NULL
             AND s.DinnerTo IS NOT NULL
-            AND s.DinnerFrom >= sod.StartTime
-            AND s.DinnerTo <= sod.EndTime
             AND s.DinnerFrom < s.DinnerTo
 
     UNION ALL
@@ -197,8 +189,6 @@ BEGIN
             AND s.SnackPM = 1
             AND s.SnackPMFrom IS NOT NULL
             AND s.SnackPMTo IS NOT NULL
-            AND s.SnackPMFrom >= sod.StartTime
-            AND s.SnackPMTo <= sod.EndTime
             AND s.SnackPMFrom < s.SnackPMTo
 
     UNION ALL
@@ -222,8 +212,6 @@ BEGIN
             AND s.SnackNight = 1
             AND s.SnackNightFrom IS NOT NULL
             AND s.SnackNightTo IS NOT NULL
-            AND s.SnackNightFrom >= sod.StartTime
-            AND s.SnackNightTo <= sod.EndTime
             AND s.SnackNightFrom < s.SnackNightTo
 
     UNION ALL
@@ -247,8 +235,6 @@ BEGIN
             AND s.DinnerExtended = 1
             AND s.DinnerExtendedFrom IS NOT NULL
             AND s.DinnerExtendedTo IS NOT NULL
-            AND s.DinnerExtendedFrom >= sod.StartTime
-            AND s.DinnerExtendedTo <= sod.EndTime
             AND s.DinnerExtendedFrom < s.DinnerExtendedTo
 
     UNION ALL
@@ -272,8 +258,6 @@ BEGIN
             AND s.DinnerAtRisk = 1
             AND s.DinnerAtRiskFrom IS NOT NULL
             AND s.DinnerAtRiskTo IS NOT NULL
-            AND s.DinnerAtRiskFrom >= sod.StartTime
-            AND s.DinnerAtRiskTo <= sod.EndTime
             AND s.DinnerAtRiskFrom < s.DinnerAtRiskTo
 
     UNION ALL
@@ -297,8 +281,6 @@ BEGIN
             AND s.SnackExtended = 1
             AND s.SnackExtendedFrom IS NOT NULL
             AND s.SnackExtendedTo IS NOT NULL
-            AND s.SnackExtendedFrom >= sod.StartTime
-            AND s.SnackExtendedTo <= sod.EndTime
             AND s.SnackExtendedFrom < s.SnackExtendedTo
 
     UNION ALL
@@ -322,8 +304,6 @@ BEGIN
             AND s.SnackAtRisk = 1
             AND s.SnackAtRiskFrom IS NOT NULL
             AND s.SnackAtRiskTo IS NOT NULL
-            AND s.SnackAtRiskFrom >= sod.StartTime
-            AND s.SnackAtRiskTo <= sod.EndTime
             AND s.SnackAtRiskFrom < s.SnackAtRiskTo;
 
         -- Si no hay servicios válidos para insertar, retornar 0

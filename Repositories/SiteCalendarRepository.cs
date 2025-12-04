@@ -143,6 +143,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@endTime", request.EndTime, DbType.Time);
             parameters.Add("@isWeekendOverride", request.IsWeekendOverride, DbType.Boolean);
             parameters.Add("@isExcluded", request.IsExcluded, DbType.Boolean);
+            parameters.Add("@isHoliday", request.IsHoliday, DbType.Boolean);
             parameters.Add("@comment", request.Comment, DbType.String);
 
             var result = await dbConnection.QuerySingleAsync<int>("100_ToggleSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
@@ -177,6 +178,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@endTime", request.EndTime, DbType.Time);
             parameters.Add("@isWeekendOverride", request.IsWeekendOverride, DbType.Boolean);
             parameters.Add("@isExcluded", request.IsExcluded, DbType.Boolean);
+            parameters.Add("@isHoliday", request.IsHoliday, DbType.Boolean);
             parameters.Add("@comment", request.Comment, DbType.String);
 
             var result = await dbConnection.QuerySingleAsync<int>("100_UpdateSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);

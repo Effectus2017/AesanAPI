@@ -12,6 +12,9 @@ ADD [IsWeekendOverride] [bit] NOT NULL DEFAULT 0;
 ALTER TABLE [dbo].[SiteOperatingDays]
 ADD [IsExcluded] [bit] NOT NULL DEFAULT 0;
 
+ALTER TABLE [dbo].[SiteOperatingDays]
+ADD [IsHoliday] [bit] NOT NULL DEFAULT 0;
+
 -- Cambiar tamaño de Comment para compatibilidad
 ALTER TABLE [dbo].[SiteOperatingDays]
 ALTER COLUMN [Comment] [nvarchar](500) NULL;
@@ -34,7 +37,14 @@ EXEC sys.sp_addextendedproperty
 
 EXEC sys.sp_addextendedproperty 
     @name = N'MS_Description', 
-    @value = N'true si es día hábil pero no funciona', 
+    @value = N'Excluir día (no operativo)', 
     @level0type = N'SCHEMA', @level0name = N'dbo', 
     @level1type = N'TABLE', @level1name = N'SiteOperatingDays', 
     @level2type = N'COLUMN', @level2name = N'IsExcluded';
+
+EXEC sys.sp_addextendedproperty 
+    @name = N'MS_Description', 
+    @value = N'true si es día feriado', 
+    @level0type = N'SCHEMA', @level0name = N'dbo', 
+    @level1type = N'TABLE', @level1name = N'SiteOperatingDays', 
+    @level2type = N'COLUMN', @level2name = N'IsHoliday';

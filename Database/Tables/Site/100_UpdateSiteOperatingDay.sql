@@ -6,6 +6,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSiteOperatingDay]
     @endTime TIME = NULL,
     @isWeekendOverride BIT = NULL,
     @isExcluded BIT = NULL,
+    @isHoliday BIT = NULL,
     @comment NVARCHAR(500) = NULL
 AS
 BEGIN
@@ -37,6 +38,7 @@ BEGIN
             EndTime = CASE WHEN @endTime IS NOT NULL THEN @endTime ELSE EndTime END,
             IsWeekendOverride = CASE WHEN @isWeekendOverride IS NOT NULL THEN @isWeekendOverride ELSE IsWeekendOverride END,
             IsExcluded = CASE WHEN @isExcluded IS NOT NULL THEN @isExcluded ELSE IsExcluded END,
+            IsHoliday = CASE WHEN @isHoliday IS NOT NULL THEN @isHoliday ELSE IsHoliday END,
             Comment = CASE WHEN @comment IS NOT NULL THEN @comment ELSE Comment END,
             UpdatedAt = GETDATE()
         WHERE Id = @id;

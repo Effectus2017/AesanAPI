@@ -47,6 +47,11 @@ public class SiteOperatingDayRequest
     public bool IsExcluded { get; set; } = false;
 
     /// <summary>
+    /// Indica si el día es feriado
+    /// </summary>
+    public bool IsHoliday { get; set; } = false;
+
+    /// <summary>
     /// Comentario opcional sobre el día de funcionamiento
     /// </summary>
     [MaxLength(500, ErrorMessage = "El comentario no puede exceder 500 caracteres")]
