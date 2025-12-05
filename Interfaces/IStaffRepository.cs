@@ -13,6 +13,13 @@ public interface IStaffRepository
     Task<dynamic> GetStaffById(int id);
 
     /// <summary>
+    /// Obtiene un miembro del staff por su UserId
+    /// </summary>
+    /// <param name="userId">El UserId del usuario asociado al staff</param>
+    /// <returns>El miembro del staff o null si no existe</returns>
+    Task<Staff?> GetStaffByUserId(string userId);
+
+    /// <summary>
     /// Obtiene todos los miembros del staff de la base de datos
     /// </summary>
     /// <param name="take">El número de miembros del staff a obtener</param>

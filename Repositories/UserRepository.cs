@@ -370,9 +370,21 @@ public class UserRepository(UserManager<User> userManager,
             var agency = await _agencyUsersRepository.GetUserAssignedAgency(_user.Id);
             var userPrograms = await _agencyRepository.GetAgencyProgramsByUserId(_user.Id);
 
+            // Obtener los datos de Staff asociados al usuario
+            Staff? staff = null;
+            try
+            {
+                staff = await _staffRepository.GetStaffByUserId(_user.Id);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.LogWarning($"No se pudo obtener Staff para el usuario {_user.Id}: {ex.Message}");
+                // Continuar sin Staff si hay error
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = GetClaims(_user, roles, agency, userPrograms, permissions),
+                Subject = GetClaims(_user, roles, agency, userPrograms, permissions, staff),
                 Expires = DateTime.UtcNow.AddDays(days),
                 Issuer = issuer,
                 Audience = audience,
@@ -397,8 +409,12 @@ public class UserRepository(UserManager<User> userManager,
     /// </summary>
     /// <param name="user">El usuario</param>
     /// <param name="roles">Los roles del usuario</param>
+    /// <param name="agency">La agencia del usuario</param>
+    /// <param name="userPrograms">Los programas del usuario</param>
+    /// <param name="permissions">Los permisos del usuario</param>
+    /// <param name="staff">Los datos de Staff asociados al usuario (opcional)</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null)
     {
         try
         {
@@ -409,12 +425,28 @@ public class UserRepository(UserManager<User> userManager,
                 claims.AddClaim(new Claim(ClaimTypes.Role, role));
             }
 
+            // Obtener name y lastName de Staff si existe
+            var name = staff?.FirstName ?? "";
+            var lastName = "";
+            if (staff != null)
+            {
+                var lastNameParts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(staff.FatherLastName))
+                {
+                    lastNameParts.Add(staff.FatherLastName);
+                }
+                if (!string.IsNullOrWhiteSpace(staff.MotherLastName))
+                {
+                    lastNameParts.Add(staff.MotherLastName);
+                }
+                lastName = string.Join(" ", lastNameParts);
+            }
+
             if (roles.Contains("Monitor"))
             {
                 claims.AddClaim(new Claim("userId", user.Id));
-                // Los datos personales ahora vienen de Staff, no de User
-                claims.AddClaim(new Claim("name", "")); // Se puede actualizar después cuando se implemente la relación con Staff
-                claims.AddClaim(new Claim("lastName", "")); // Se puede actualizar después cuando se implemente la relación con Staff
+                claims.AddClaim(new Claim("name", name));
+                claims.AddClaim(new Claim("lastName", lastName));
                 claims.AddClaim(new Claim("email", user.Email ?? ""));
                 claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
                 claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
@@ -423,8 +455,8 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Los datos personales ahora vienen de Staff, no de User
-            claims.AddClaim(new Claim("name", "")); // Se puede actualizar después cuando se implemente la relación con Staff
-            claims.AddClaim(new Claim("lastName", "")); // Se puede actualizar después cuando se implemente la relación con Staff
+            claims.AddClaim(new Claim("name", name));
+            claims.AddClaim(new Claim("lastName", lastName));
             claims.AddClaim(new Claim("email", user.Email ?? ""));
             claims.AddClaim(new Claim("agency", agency.Name ?? ""));
             claims.AddClaim(new Claim("agencyId", agency.Id.ToString()));

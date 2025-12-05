@@ -62,6 +62,30 @@ public class StaffRepository(
     }
 
     /// <summary>
+    /// Obtiene un miembro del staff por su UserId
+    /// </summary>
+    /// <param name="userId">El UserId del usuario asociado al staff</param>
+    /// <returns>El miembro del staff o null si no existe</returns>
+    public async Task<Staff?> GetStaffByUserId(string userId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@userId", userId, DbType.String);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<Staff>("100_GetStaffByUserId", param, commandType: CommandType.StoredProcedure);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el miembro del staff con UserId {UserId}", userId);
+            throw new Exception($"Error al obtener el miembro del staff con UserId {userId}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// Obtiene todos los miembros del staff de la base de datos
     /// </summary>
     /// <param name="take">El número de miembros del staff a obtener</param>

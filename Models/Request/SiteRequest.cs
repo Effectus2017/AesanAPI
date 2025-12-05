@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Api.Models.Request;
 
@@ -34,8 +35,19 @@ public class SiteRequest
     public int? BaseYear { get; set; }
     public int? RenewalYear { get; set; }
     public List<SiteEducationLevelRequest> EducationLevels { get; set; } = new();
+    
+    /// <summary>
+    /// Fecha desde cuando inicia el funcionamiento del sitio
+    /// </summary>
+    [Required(ErrorMessage = "La fecha desde es requerida")]
     public DateTime? OperatingFromDate { get; set; }
+    
+    /// <summary>
+    /// Fecha hasta cuando finaliza el funcionamiento del sitio
+    /// </summary>
+    [Required(ErrorMessage = "La fecha hasta es requerida")]
     public DateTime? OperatingToDate { get; set; }
+    
     public int? OperatingDaysCalculated { get; set; }
 
     /// <summary>
