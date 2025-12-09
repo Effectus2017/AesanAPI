@@ -20,6 +20,7 @@ BEGIN
     DECLARE @ownerUserId NVARCHAR(450) = NULL;
     DECLARE @tranCount INT = @@TRANCOUNT;
     DECLARE @deletedCount INT = 0;
+    DECLARE @currentRows INT = 0;
 
     -- Solo iniciar transacción si no hay una activa
     IF @tranCount = 0
@@ -28,6 +29,11 @@ BEGIN
     END
 
     BEGIN TRY
+        PRINT '========================================';
+        PRINT 'INICIANDO ELIMINACIÓN DE AGENCIA ID: ' + CAST(@agencyId AS NVARCHAR(10));
+        PRINT '========================================';
+        PRINT '';
+
         -- Verificar que la agencia existe
         IF NOT EXISTS (SELECT 1
     FROM Agency
@@ -37,6 +43,7 @@ BEGIN
             BEGIN
             ROLLBACK TRANSACTION;
         END
+        PRINT 'ERROR: Agencia con ID ' + CAST(@agencyId AS NVARCHAR(10)) + ' no encontrada.';
         RETURN 0;
     -- Agencia no encontrada
     END
@@ -52,6 +59,9 @@ BEGIN
             INNER JOIN SiteExcursion se ON sees.SiteExcursionId = se.Id
             INNER JOIN Site s ON se.SiteId = s.Id
             WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteExcursionExcludedService';
     END
         
         -- =============================================
@@ -63,6 +73,9 @@ BEGIN
             FROM SiteExcursion se
             INNER JOIN Site s ON se.SiteId = s.Id
             WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteExcursion';
     END
         
         -- =============================================
@@ -74,6 +87,9 @@ BEGIN
             FROM SchoolSite ss
             INNER JOIN Site s ON ss.SiteId = s.Id
             WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SchoolSite';
     END
         
         -- =============================================
@@ -85,6 +101,9 @@ BEGIN
             FROM SiteStaff sst
             INNER JOIN Site s ON sst.SiteId = s.Id
             WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteStaff';
     END
         
         -- =============================================
@@ -96,43 +115,64 @@ BEGIN
             FROM SitePersonInCharge spic
             INNER JOIN Site s ON spic.SiteId = s.Id
             WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SitePersonInCharge';
     END
         
         -- =============================================
         -- 6. Eliminar Site (sitios de la agencia)
         -- =============================================
         DELETE FROM Site WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de Site';
         
         -- =============================================
         -- 7. Eliminar School (escuelas de la agencia)
         -- =============================================
         DELETE FROM School WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de School';
         
         -- =============================================
         -- 8. Eliminar Staff (personal de la agencia)
         -- =============================================
         DELETE FROM Staff WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de Staff';
         
         -- =============================================
         -- 9. Eliminar AgencyFiles (archivos de la agencia)
         -- =============================================
         DELETE FROM AgencyFiles WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyFiles';
         
         -- =============================================
         -- 10. Eliminar AgencyProgram (programas de la agencia)
         -- =============================================
         DELETE FROM AgencyProgram WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyProgram';
         
         -- =============================================
         -- 11. Eliminar AgencyInscription (inscripción de la agencia)
         -- =============================================
         DELETE FROM AgencyInscription WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyInscription';
         
         -- =============================================
         -- 12. Obtener TODOS los UserIds relacionados con la agencia desde AgencyUsers ANTES de eliminar
@@ -162,7 +202,10 @@ BEGIN
         -- 13. Eliminar AgencyUsers (usuarios asignados a la agencia)
         -- =============================================
         DELETE FROM AgencyUsers WHERE AgencyId = @agencyId;
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers';
         
         -- =============================================
         -- 14. Eliminar UserAgencyAssignment (asignaciones de usuarios)
@@ -170,6 +213,9 @@ BEGIN
         IF OBJECT_ID('UserAgencyAssignment', 'U') IS NOT NULL
         BEGIN
         DELETE FROM UserAgencyAssignment WHERE AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserAgencyAssignment';
     END
         
         -- =============================================
@@ -178,6 +224,9 @@ BEGIN
         IF OBJECT_ID('AgencyUserAssignment', 'U') IS NOT NULL
         BEGIN
         DELETE FROM AgencyUserAssignment WHERE AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUserAssignment';
     END
         
         -- =============================================
@@ -186,19 +235,80 @@ BEGIN
         -- Eliminar Staff que tiene UserId de los usuarios relacionados con la agencia
         DELETE s FROM Staff s
         INNER JOIN #UserIdsFromAgencyUsers u ON s.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros adicionales de Staff (por UserId)';
         
         -- =============================================
         -- 17. Eliminar usuarios de AspNetUsers relacionados con la agencia (obtenidos de AgencyUsers)
         -- =============================================
+        PRINT '';
+        PRINT '--- Eliminando datos relacionados con usuarios ---';
+        
+        -- Eliminar UserPermission (permisos de usuarios)
+        IF OBJECT_ID('UserPermission', 'U') IS NOT NULL
+        BEGIN
+        DELETE up FROM UserPermission up
+            INNER JOIN #UserIdsFromAgencyUsers u ON up.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserPermission';
+    END
+
+        -- Eliminar UserProgram (programas asignados a usuarios)
+        IF OBJECT_ID('UserProgram', 'U') IS NOT NULL
+        BEGIN
+        DELETE up FROM UserProgram up
+            INNER JOIN #UserIdsFromAgencyUsers u ON up.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserProgram';
+    END
+
+        -- Eliminar TemporaryPasswords (contraseñas temporales)
+        IF OBJECT_ID('TemporaryPasswords', 'U') IS NOT NULL
+        BEGIN
+        DELETE tp FROM TemporaryPasswords tp
+            INNER JOIN #UserIdsFromAgencyUsers u ON tp.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de TemporaryPasswords';
+    END
+
+        -- Eliminar AspNetUserClaims (claims de usuarios)
+        IF OBJECT_ID('AspNetUserClaims', 'U') IS NOT NULL
+        BEGIN
+        DELETE auc FROM AspNetUserClaims auc
+            INNER JOIN #UserIdsFromAgencyUsers u ON auc.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserClaims';
+    END
+
+        -- Eliminar AspNetUserLogins (logins externos de usuarios)
+        IF OBJECT_ID('AspNetUserLogins', 'U') IS NOT NULL
+        BEGIN
+        DELETE aul FROM AspNetUserLogins aul
+            INNER JOIN #UserIdsFromAgencyUsers u ON aul.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserLogins';
+    END
+
         -- Eliminar relaciones de todos los usuarios identificados desde AgencyUsers
         DELETE ur FROM AspNetUserRoles ur
         INNER JOIN #UserIdsFromAgencyUsers u ON ur.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserRoles';
 
         -- Eliminar los usuarios de AspNetUsers
         DELETE u FROM AspNetUsers u
         INNER JOIN #UserIdsFromAgencyUsers uid ON u.Id = uid.UserId;
-        
-        SET @deletedCount = @deletedCount + @@ROWCOUNT;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUsers';
 
         -- Limpiar tabla temporal
         DROP TABLE #UserIdsFromAgencyUsers;
@@ -206,6 +316,9 @@ BEGIN
         -- =============================================
         -- 18. Eliminar Agency (finalmente, la agencia misma)
         -- =============================================
+        PRINT '';
+        PRINT '--- Eliminando la agencia ---';
+        
         -- Verificar si la agencia todavía existe antes de intentar eliminarla
         IF EXISTS (SELECT 1
     FROM Agency
@@ -220,6 +333,13 @@ BEGIN
         -- Verificar si se eliminó correctamente
         IF @rowsAffected > 0
             BEGIN
+            PRINT '✓ Eliminada la agencia con ID ' + CAST(@agencyId AS NVARCHAR(10));
+            PRINT '';
+            PRINT '========================================';
+            PRINT 'ELIMINACIÓN COMPLETADA EXITOSAMENTE';
+            PRINT 'Total de registros eliminados: ' + CAST(@deletedCount AS NVARCHAR(10));
+            PRINT '========================================';
+
             -- Solo hacer COMMIT si iniciamos la transacción
             IF @tranCount = 0
                 BEGIN
@@ -279,6 +399,13 @@ BEGIN
         ELSE
         BEGIN
         -- La agencia no existe (ya fue eliminada - posiblemente en un intento anterior)
+        PRINT '⚠ La agencia con ID ' + CAST(@agencyId AS NVARCHAR(10)) + ' ya no existe, pero se limpiaron sus relaciones.';
+        PRINT '';
+        PRINT '========================================';
+        PRINT 'ELIMINACIÓN COMPLETADA';
+        PRINT 'Total de registros eliminados: ' + CAST(@deletedCount AS NVARCHAR(10));
+        PRINT '========================================';
+
         -- Hacer COMMIT de las eliminaciones que sí se hicieron
         IF @tranCount = 0
             BEGIN
@@ -289,16 +416,26 @@ BEGIN
     END
     END TRY
     BEGIN CATCH
+        PRINT '';
+        PRINT '========================================';
+        PRINT 'ERROR DURANTE LA ELIMINACIÓN';
+        PRINT '========================================';
+        
         -- Solo hacer ROLLBACK si iniciamos la transacción
         IF @tranCount = 0 AND @@TRANCOUNT > 0
         BEGIN
         ROLLBACK TRANSACTION;
+        PRINT 'Transacción revertida (ROLLBACK).';
     END
         
         -- Registrar el error
         DECLARE @errorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @errorSeverity INT = ERROR_SEVERITY();
         DECLARE @errorState INT = ERROR_STATE();
+        
+        PRINT 'Mensaje de error: ' + @errorMessage;
+        PRINT 'Registros eliminados antes del error: ' + CAST(@deletedCount AS NVARCHAR(10));
+        PRINT '========================================';
         
         -- Relanzar el error
         RAISERROR(@errorMessage, @errorSeverity, @errorState);
@@ -307,3 +444,5 @@ BEGIN
     END CATCH
 END;
 GO
+
+EXEC [dbo].[101_BulkDeleteAgency] 1;

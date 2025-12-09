@@ -341,6 +341,47 @@ public class StaffRepository(
     }
 
     /// <summary>
+    /// Elimina completamente un miembro del staff y todas sus relaciones, incluyendo la agencia si es propietario
+    /// </summary>
+    /// <param name="id">El ID del miembro del staff a eliminar</param>
+    /// <returns>True si se eliminó correctamente</returns>
+    public async Task<bool> BulkDeleteStaff(int id)
+    {
+        try
+        {
+            _logger.LogInformation("Eliminando completamente el miembro del staff con ID {StaffId} y todas sus relaciones", id);
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffId", id, DbType.Int32);
+            parameters.Add("@returnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync(
+                "101_BulkDeleteStaff",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            var result = parameters.Get<int>("@returnValue");
+
+            if (result > 0)
+            {
+                InvalidateCache(id);
+                _logger.LogInformation("Staff {StaffId} y todas sus relaciones eliminadas exitosamente", id);
+                return true;
+            }
+
+            _logger.LogWarning("No se pudo eliminar el staff con ID {StaffId}", id);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar completamente el miembro del staff con ID {StaffId}: {Message}", id, ex.Message);
+            throw new Exception($"Error al eliminar completamente el miembro del staff con ID {id}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// Actualiza solo la imagen del staff
     /// </summary>
     /// <param name="staffId">El ID del staff</param>

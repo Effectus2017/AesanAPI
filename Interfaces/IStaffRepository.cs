@@ -56,6 +56,13 @@ public interface IStaffRepository
     Task<bool> DeleteStaff(int id);
 
     /// <summary>
+    /// Elimina completamente un miembro del staff y todas sus relaciones, incluyendo la agencia si es propietario
+    /// </summary>
+    /// <param name="id">El ID del miembro del staff a eliminar</param>
+    /// <returns>True si se eliminó correctamente</returns>
+    Task<bool> BulkDeleteStaff(int id);
+
+    /// <summary>
     /// Actualiza solo la imagen del staff
     /// </summary>
     /// <param name="staffId">El ID del staff</param>

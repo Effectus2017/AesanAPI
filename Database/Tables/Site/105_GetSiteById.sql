@@ -38,11 +38,7 @@ BEGIN
         s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
         s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
-        CASE 
-            WHEN a.AgencyCode IS NOT NULL AND s.SiteNumber IS NOT NULL THEN
-                SUBSTRING(a.AgencyCode, CHARINDEX('-', a.AgencyCode) + 1, LEN(a.AgencyCode)) + '-' + CAST(s.SiteNumber AS VARCHAR(10))
-            ELSE NULL
-        END AS SiteCode,
+        s.SiteCode,
         s.CreatedAt, s.UpdatedAt
     FROM Site s
         LEFT JOIN Agency a ON s.AgencyId = a.Id

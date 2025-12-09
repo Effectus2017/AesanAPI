@@ -194,6 +194,7 @@ builder.Services.AddScoped<ISiteExcursionRepository, SiteExcursionRepository>();
 builder.Services.AddScoped<ISiteOperatingDayServiceRepository, SiteOperatingDayServiceRepository>();
 builder.Services.AddScoped<ISitePersonInChargeRepository, SitePersonInChargeRepository>();
 builder.Services.AddScoped<IAesanDashboardRepository, AesanDashboardRepository>();
+builder.Services.AddScoped<IAgencyDashboardRepository, AgencyDashboardRepository>();
 builder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
 builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository>();
 

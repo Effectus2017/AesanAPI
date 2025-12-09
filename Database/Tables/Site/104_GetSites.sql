@@ -24,12 +24,7 @@ BEGIN
         s.Id, s.Name, s.Address, c.Name AS CityName, r.Name AS RegionName,
         s.GeneralEnrollment, s.SiteNumber, s.IsActive,
         a.AgencyCode, gt.Name AS GroupTypeName,
-        -- Generar código completo del sitio: extraer parte numérica del AgencyCode + SiteNumber
-        CASE 
-            WHEN a.AgencyCode IS NOT NULL AND s.SiteNumber IS NOT NULL THEN
-                SUBSTRING(a.AgencyCode, CHARINDEX('-', a.AgencyCode) + 1, LEN(a.AgencyCode)) + '-' + CAST(s.SiteNumber AS VARCHAR(10))
-            ELSE NULL
-        END AS SiteCode,
+        s.SiteCode,
         -- Información de la escuela relacionada
         sch.Name AS SchoolName,
         sch.Id AS SchoolId

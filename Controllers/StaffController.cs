@@ -204,6 +204,47 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     }
 
     /// <summary>
+    /// Elimina completamente un miembro del staff y todas sus relaciones, incluyendo la agencia si es propietario
+    /// </summary>
+    /// <param name="queryParameters">Los parámetros de consulta que incluyen el ID del staff</param>
+    /// <returns>True si se eliminó correctamente</returns>
+    [HttpDelete("bulk-delete-staff")]
+    [SwaggerOperation(Summary = "Elimina completamente un miembro del staff y todas sus relaciones", Description = "Elimina permanentemente un miembro del staff, todas sus relaciones (StaffRelationship, SiteStaff), y si es propietario de una agencia, también elimina la agencia completa.")]
+    public async Task<IActionResult> BulkDeleteStaff([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                if (queryParameters.Id == 0)
+                {
+                    return BadRequest("El ID del staff es requerido");
+                }
+
+                _logger.LogInformation("Eliminando completamente el miembro del staff con ID: {Id} y todas sus relaciones", queryParameters.Id);
+
+                var result = await _unitOfWork.StaffRepository.BulkDeleteStaff(queryParameters.Id);
+
+                if (result)
+                {
+                    _logger.LogInformation("Staff {Id} y todas sus relaciones eliminadas exitosamente", queryParameters.Id);
+                    return Ok(new { success = true, message = "Staff y todas sus relaciones eliminadas exitosamente" });
+                }
+
+                _logger.LogWarning("No se pudo eliminar el miembro del staff con ID: {Id}", queryParameters.Id);
+                return BadRequest("No se pudo eliminar el miembro del staff");
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar completamente el miembro del staff con ID {Id}: {Message}", queryParameters.Id, ex.Message);
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Actualiza solo la imagen del staff
     /// </summary>
     /// <param name="request">Request con el ID del staff y la nueva imagen</param>
