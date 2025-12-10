@@ -154,7 +154,8 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Insertando nuevo miembro del staff");
+            _logger.LogInformation("Insertando nuevo miembro del staff - Email: {Email}, PositionId: {PositionId}, StaffTypeId: {StaffTypeId}, StatusId: {StatusId}, UserId: {UserId}",
+                staffRequest.Email, staffRequest.PositionId, staffRequest.StaffTypeId, staffRequest.StatusId, staffRequest.UserId);
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
@@ -163,9 +164,15 @@ public class StaffRepository(
             parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@positionId", staffRequest.PositionId == 0 ? null : staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@staffTypeId", staffRequest.StaffTypeId == 0 ? null : staffRequest.StaffTypeId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
+            // Enviar positionId directamente sin convertir a NULL
+            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
+            // StaffTypeId: usar 1 por defecto si es 0
+            var finalStaffTypeId = staffRequest.StaffTypeId == 0 ? 1 : staffRequest.StaffTypeId;
+            parameters.Add("@staffTypeId", finalStaffTypeId, DbType.Int32, ParameterDirection.Input);
+            // StaffClassificationId: usar 1 (Administrativo) por defecto si es null o 0
+            var finalStaffClassificationId = staffRequest.StaffClassificationId ?? 1;
+            if (finalStaffClassificationId == 0) finalStaffClassificationId = 1;
+            parameters.Add("@staffClassificationId", finalStaffClassificationId, DbType.Int32, ParameterDirection.Input);
             // Fechas seguras para SQL Server
             parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
@@ -215,11 +222,15 @@ public class StaffRepository(
                 }
             }
 
+            if (staffId <= 0)
+            {
+                throw new Exception($"Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
+            }
+
             return (staffId > 0, staffId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el miembro del staff");
             throw new Exception($"Error al insertar el miembro del staff: {ex.Message}", ex);
         }
     }

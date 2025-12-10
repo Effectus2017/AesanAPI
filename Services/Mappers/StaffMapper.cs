@@ -48,7 +48,8 @@ public static class StaffMapper
                 result.AgencyName,
                 result.UserName,
                 result.IsActive,
-                result.HasRelationships
+                result.HasRelationships,
+                result.IsSiteAdmin
             };
         }
         catch (Exception ex)
@@ -110,6 +111,7 @@ public static class StaffMapper
                 result.UpdatedAt,
                 result.IsActive,
                 result.HasRelationships,
+                result.IsSiteAdmin,
                 result.ReviewResultId,
                 result.ReviewDate,
                 result.ReviewJustification,
@@ -183,6 +185,7 @@ public static class StaffMapper
                 CreatedAt = item.CreatedAt ?? DateTime.Now,
                 UpdatedAt = item.UpdatedAt,
                 IsActive = item.IsActive ?? true,
+                IsSiteAdmin = item.IsSiteAdmin,
                 ReviewResultId = item.ReviewResultId,
                 ReviewDate = item.ReviewDate,
                 ReviewJustification = item.ReviewJustification,

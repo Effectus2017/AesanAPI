@@ -37,6 +37,7 @@ public class DTOStaff
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool? IsSiteAdmin { get; set; } = null;
 
     // Campos de revisión (solo para empleados)
     public int? ReviewResultId { get; set; }

@@ -79,7 +79,20 @@ BEGIN
                     ) THEN 1 
                     ELSE 0 
                 END AS BIT
-            ) AS HasRelationships
+            ) AS HasRelationships,
+            CAST(
+                CASE 
+                    WHEN (SELECT TOP 1
+                r.Name
+            FROM AspNetUserRoles ur
+                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = s.UserId
+                AND ur.IsActive = 1
+                AND r.Name = 'Agency-Administrator') = 'Agency-Administrator' 
+                    THEN 1 
+                    ELSE 0 
+                END AS BIT
+            ) AS isSiteAdmin
         FROM Staff s
             LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
             LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -103,15 +116,13 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                SELECT DISTINCT sr.StaffId
+                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
-                SELECT DISTINCT sr.RelatedStaffId
+                SELECT DISTINCT sr.RelatedStaffIds
                 FROM StaffRelationship sr
-                WHERE sr.IsActive = 1
-                    ))
-                )
+                WHERE sr.IsActive = 1)))
             )
         ORDER BY s.FirstName, s.FatherLastName;
     END
@@ -171,7 +182,20 @@ BEGIN
                     ) THEN 1 
                     ELSE 0 
                 END AS BIT
-            ) AS HasRelationships
+            ) AS HasRelationships,
+            CAST(
+                CASE 
+                    WHEN (SELECT TOP 1
+                r.Name
+            FROM AspNetUserRoles ur
+                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = s.UserId
+                AND ur.IsActive = 1
+                AND r.Name = 'Agency-Administrator') = 'Agency-Administrator' 
+                    THEN 1 
+                    ELSE 0 
+                END AS BIT
+            ) AS IsSiteAdmin
         FROM Staff s
             LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
             LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -195,15 +219,13 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                 SELECT DISTINCT sr.StaffId
+                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
                 SELECT DISTINCT sr.RelatedStaffId
                 FROM StaffRelationship sr
-                WHERE sr.IsActive = 1
-                    ))
-                )
+                WHERE sr.IsActive = 1)))
             )
         ORDER BY s.FirstName, s.FatherLastName
         OFFSET @skip ROWS
@@ -215,8 +237,7 @@ BEGIN
         WHERE s.IsActive = 1
             AND (
                 @alls = 1
-            OR (
-                    (@name IS NULL OR
+            OR ((@name IS NULL OR
             s.FirstName LIKE '%' + @name + '%' OR
             s.FatherLastName LIKE '%' + @name + '%' OR
             s.MiddleName LIKE '%' + @name + '%' OR
@@ -224,18 +245,16 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                                SELECT DISTINCT sr.StaffId
+                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
                 SELECT DISTINCT sr.RelatedStaffId
                 FROM StaffRelationship sr
-                WHERE sr.IsActive = 1
-                    ))
-                )
+                WHERE sr.IsActive = 1)))
             );
     END
 END
 
 
---EXEC [dbo].[100_GetAllStaff] @excludeRelated = 1, @alls = 1, @name = 'Juan', @staffTypeId = 2, @agencyId = 3, @take = 10, @skip = 0;
+--EXEC [100_GetAllStaff] @excludeRelated = 1, @alls = 1, @name = 'Juan', @staffTypeId = 2, @agencyId = 3, @take = 10, @skip = 0;

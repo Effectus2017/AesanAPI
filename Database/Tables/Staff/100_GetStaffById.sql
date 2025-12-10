@@ -55,6 +55,19 @@ BEGIN
         s.ReceivesProgramSalaryId,
         os_salary.Name AS ReceivesProgramSalaryName,
         os_salary.NameEN AS ReceivesProgramSalaryNameEN,
+        CAST(
+            CASE 
+                WHEN (SELECT TOP 1
+            r.Name
+        FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+        WHERE ur.UserId = s.UserId
+            AND ur.IsActive = 1
+            AND r.Name = 'Agency-Administrator') = 'Agency-Administrator' 
+                THEN 1 
+                ELSE 0 
+            END AS BIT
+        ) AS IsSiteAdmin,
 
         -- Datos de la relación SiteStaff
         ss.SiteId,
@@ -84,3 +97,5 @@ BEGIN
         LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
     WHERE s.Id = @id;
 END
+
+--EXEC [100_GetStaffById] 1;

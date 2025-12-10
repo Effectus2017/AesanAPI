@@ -35,7 +35,8 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Staff
+    BEGIN TRY
+        INSERT INTO Staff
         (
         FirstName,
         MiddleName,
@@ -75,10 +76,10 @@ BEGIN
             @statusId,
             @positionId,
             @staffTypeId,
-            @staffClassificationId,
+            ISNULL(@staffClassificationId, 1), -- Usar 1 (Administrativo) por defecto si es NULL
             @contractStartDate,
             @contractEndDate,
-            @birthDate,
+            ISNULL(@birthDate, '2000-01-01'), -- Fecha por defecto 1/1/2000 si es NULL
             @email,
             @phoneNumber,
             @postalAddress,
@@ -96,7 +97,21 @@ BEGIN
             @receivesProgramSalaryId,
             GETDATE(),
             1
-    );
+        );
 
-    SET @id = SCOPE_IDENTITY();
+        SET @id = SCOPE_IDENTITY();
+        
+        IF @id IS NULL OR @id = 0
+        BEGIN
+        RAISERROR('Error: No se pudo obtener el ID del staff insertado', 16, 1);
+    END
+    END TRY
+    BEGIN CATCH
+        SET @id = 0;
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+        
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
 END

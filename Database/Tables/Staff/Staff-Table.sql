@@ -128,9 +128,14 @@ CREATE INDEX IX_Staff_ContractEndDate ON Staff(ContractEndDate);
 
 ALTER TABLE Staff ADD PhoneNumber NVARCHAR(50) NULL;
 ALTER TABLE Staff ADD ImageURL NVARCHAR(MAX) NULL;
+ALTER TABLE Staff ADD StaffClassificationId INT NULL;
 
 CREATE INDEX IX_Staff_PhoneNumber ON Staff(PhoneNumber);
 CREATE INDEX IX_Staff_ImageURL ON Staff(ImageURL);
 CREATE INDEX IX_Staff_TenureDuration ON Staff(TenureDuration);
 CREATE INDEX IX_Staff_TenureDurationUnitId ON Staff(TenureDurationUnitId);
 CREATE INDEX IX_Staff_ReceivesProgramSalaryId ON Staff(ReceivesProgramSalaryId);
+CREATE INDEX IX_Staff_StaffClassificationId ON Staff(StaffClassificationId);
+
+-- Agregar foreign key para StaffClassificationId
+ALTER TABLE Staff ADD CONSTRAINT FK_Staff_StaffClassification FOREIGN KEY (StaffClassificationId) REFERENCES StaffClassification(Id);
