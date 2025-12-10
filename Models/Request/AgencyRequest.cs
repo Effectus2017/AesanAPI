@@ -12,11 +12,13 @@ public class AgencyRequest
     public int StatusId { get; set; } = 1;
 
     // Datos de la Agencia
-    public int SdrNumber { get; set; } = 0;
+    [Required(ErrorMessage = "El número SDR es requerido")]
+    [Range(1, 9999999999, ErrorMessage = "El número SDR debe tener entre 1 y 10 dígitos")]
+    public long SdrNumber { get; set; } = 0;
 
-    [MaxLength(12, ErrorMessage = "El número UIE debe tener máximo 12 caracteres")]
-    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "El número UIE solo puede contener letras y números")]
-    public string UieNumber { get; set; } = "";
+    [Required(ErrorMessage = "El número UIE es requerido")]
+    [Range(1, 999999999999, ErrorMessage = "El número UIE debe tener entre 1 y 12 dígitos")]
+    public long UieNumber { get; set; } = 0;
 
     [Range(0, 999999999, ErrorMessage = "El número EIN debe tener máximo 9 dígitos")]
     public int EinNumber { get; set; } = 0;

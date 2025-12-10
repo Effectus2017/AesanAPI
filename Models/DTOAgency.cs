@@ -6,8 +6,8 @@ public class DTOAgency
     public int StatusId { get; set; } = 0;
     public string Name { get; set; } = "";
     // Datos de la Agencia
-    public int SdrNumber { get; set; } = 0;
-    public string UieNumber { get; set; } = "";
+    public long SdrNumber { get; set; } = 0;
+    public long UieNumber { get; set; } = 0;
     public int EinNumber { get; set; } = 0;
 
     // Datos de la Ciudad y Región
