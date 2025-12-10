@@ -37,224 +37,227 @@ BEGIN
         PRINT '';
 
         -- Verificar que el Staff existe y obtener información relevante
-        IF NOT EXISTS (SELECT 1 FROM Staff WHERE Id = @staffId)
+        IF NOT EXISTS (SELECT 1
+    FROM Staff
+    WHERE Id = @staffId)
         BEGIN
-            IF @tranCount = 0 AND @@TRANCOUNT > 0
+        IF @tranCount = 0 AND @@TRANCOUNT > 0
             BEGIN
-                ROLLBACK TRANSACTION;
-            END
-            PRINT 'ERROR: Staff con ID ' + CAST(@staffId AS NVARCHAR(10)) + ' no encontrado.';
-            RETURN 0; -- Staff no encontrado
+            ROLLBACK TRANSACTION;
         END
+        PRINT 'ERROR: Staff con ID ' + CAST(@staffId AS NVARCHAR(10)) + ' no encontrado.';
+        RETURN 0;
+    -- Staff no encontrado
+    END
 
         -- Obtener información del Staff antes de eliminarlo
-        SELECT 
-            @staffUserId = UserId,
-            @staffAgencyId = AgencyId
-        FROM Staff
-        WHERE Id = @staffId;
+        SELECT
+        @staffUserId = UserId,
+        @staffAgencyId = AgencyId
+    FROM Staff
+    WHERE Id = @staffId;
 
         -- Verificar si el Staff es propietario de la agencia
         IF @staffUserId IS NOT NULL AND @staffAgencyId IS NOT NULL
         BEGIN
-            IF EXISTS (
-                SELECT 1 
-                FROM AgencyUsers 
-                WHERE UserId = @staffUserId 
-                    AND AgencyId = @staffAgencyId 
-                    AND IsOwner = 1 
-                    AND IsActive = 1
+        IF EXISTS (
+                SELECT 1
+        FROM AgencyUsers
+        WHERE UserId = @staffUserId
+            AND AgencyId = @staffAgencyId
+            AND IsOwner = 1
+            AND IsActive = 1
             )
             BEGIN
-                SET @isAgencyOwner = 1;
-                PRINT '⚠ El Staff es propietario de la agencia ID ' + CAST(@staffAgencyId AS NVARCHAR(10)) + '. Se eliminará la agencia completa.';
-                PRINT '';
-            END
+            SET @isAgencyOwner = 1;
+            PRINT '⚠ El Staff es propietario de la agencia ID ' + CAST(@staffAgencyId AS NVARCHAR(10)) + '. Se eliminará la agencia completa.';
+            PRINT '';
         END
+    END
 
         -- =============================================
         -- 1. Eliminar StaffRelationship donde el Staff es el principal (StaffId)
         -- =============================================
         IF OBJECT_ID('StaffRelationship', 'U') IS NOT NULL
         BEGIN
-            DELETE FROM StaffRelationship 
+        DELETE FROM StaffRelationship 
             WHERE StaffId = @staffId;
-            SET @currentRows = @@ROWCOUNT;
-            SET @deletedCount = @deletedCount + @currentRows;
-            IF @currentRows > 0
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffRelationship (como StaffId)';
-        END
+    END
 
         -- =============================================
         -- 2. Eliminar StaffRelationship donde el Staff es el relacionado (RelatedStaffId)
         -- =============================================
         IF OBJECT_ID('StaffRelationship', 'U') IS NOT NULL
         BEGIN
-            DELETE FROM StaffRelationship 
+        DELETE FROM StaffRelationship 
             WHERE RelatedStaffId = @staffId;
-            SET @currentRows = @@ROWCOUNT;
-            SET @deletedCount = @deletedCount + @currentRows;
-            IF @currentRows > 0
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffRelationship (como RelatedStaffId)';
-        END
+    END
 
         -- =============================================
         -- 3. Eliminar SiteStaff (asignaciones de staff a sitios)
         -- =============================================
         IF OBJECT_ID('SiteStaff', 'U') IS NOT NULL
         BEGIN
-            DELETE FROM SiteStaff 
+        DELETE FROM SiteStaff 
             WHERE StaffId = @staffId;
-            SET @currentRows = @@ROWCOUNT;
-            SET @deletedCount = @deletedCount + @currentRows;
-            IF @currentRows > 0
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteStaff';
-        END
+    END
 
         -- =============================================
         -- 4. Si el Staff es propietario de una agencia, eliminar la agencia completa
         -- =============================================
         IF @isAgencyOwner = 1 AND @staffAgencyId IS NOT NULL
         BEGIN
-            PRINT '';
-            PRINT '--- Eliminando agencia completa (Staff es propietario) ---';
-            -- Llamar al procedimiento de eliminación de agencia
-            EXEC [dbo].[101_BulkDeleteAgency] @agencyId = @staffAgencyId;
-            SET @deletedCount = @deletedCount + 1; -- Contar la agencia eliminada
-            PRINT '✓ Agencia ID ' + CAST(@staffAgencyId AS NVARCHAR(10)) + ' eliminada completamente';
-            PRINT '';
-        END
+        PRINT '';
+        PRINT '--- Eliminando agencia completa (Staff es propietario) ---';
+        -- Llamar al procedimiento de eliminación de agencia
+        EXEC [dbo].[101_BulkDeleteAgency] @agencyId = @staffAgencyId;
+        SET @deletedCount = @deletedCount + 1;
+        -- Contar la agencia eliminada
+        PRINT '✓ Agencia ID ' + CAST(@staffAgencyId AS NVARCHAR(10)) + ' eliminada completamente';
+        PRINT '';
+    END
         ELSE
         BEGIN
-            -- Si no es propietario pero tiene agencia, solo eliminar la relación AgencyUsers
-            IF @staffUserId IS NOT NULL AND @staffAgencyId IS NOT NULL
+        -- Si no es propietario pero tiene agencia, solo eliminar la relación AgencyUsers
+        IF @staffUserId IS NOT NULL AND @staffAgencyId IS NOT NULL
             BEGIN
-                DELETE FROM AgencyUsers 
-                WHERE UserId = @staffUserId 
-                    AND AgencyId = @staffAgencyId;
-                SET @currentRows = @@ROWCOUNT;
-                SET @deletedCount = @deletedCount + @currentRows;
-                IF @currentRows > 0
-                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers (relación con agencia)';
-            END
-        END
-
-        -- =============================================
-        -- 5. Si el Staff tiene UserId y NO se eliminó la agencia, eliminar relaciones del usuario
-        -- (Si se eliminó la agencia, el usuario ya fue eliminado por 101_BulkDeleteAgency)
-        -- =============================================
-        IF @staffUserId IS NOT NULL AND @isAgencyOwner = 0
-        BEGIN
-            PRINT '';
-            PRINT '--- Eliminando datos relacionados con el usuario del Staff ---';
-            
-            -- Eliminar relaciones de roles del usuario
-            IF OBJECT_ID('AspNetUserRoles', 'U') IS NOT NULL
-            BEGIN
-                DELETE FROM AspNetUserRoles 
-                WHERE UserId = @staffUserId;
-                SET @currentRows = @@ROWCOUNT;
-                SET @deletedCount = @deletedCount + @currentRows;
-                IF @currentRows > 0
-                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserRoles';
-            END
-
-            -- Eliminar otras relaciones de AgencyUsers (si no se eliminó la agencia)
             DELETE FROM AgencyUsers 
-            WHERE UserId = @staffUserId;
+                WHERE UserId = @staffUserId
+                AND AgencyId = @staffAgencyId;
             SET @currentRows = @@ROWCOUNT;
             SET @deletedCount = @deletedCount + @currentRows;
             IF @currentRows > 0
-                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers';
-
-            -- Eliminar el usuario de AspNetUsers
-            IF OBJECT_ID('AspNetUsers', 'U') IS NOT NULL
-            BEGIN
-                DELETE FROM AspNetUsers 
-                WHERE Id = @staffUserId;
-                SET @currentRows = @@ROWCOUNT;
-                SET @deletedCount = @deletedCount + @currentRows;
-                IF @currentRows > 0
-                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUsers';
-            END
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers (relación con agencia)';
         END
+    END
 
         -- =============================================
-        -- 6. Eliminar Staff (finalmente, el staff mismo)
+        -- 5. Eliminar Staff PRIMERO (antes del usuario para evitar conflictos de FK)
         -- =============================================
         PRINT '';
         PRINT '--- Eliminando el Staff ---';
         
-        IF EXISTS (SELECT 1 FROM Staff WHERE Id = @staffId)
+        IF EXISTS (SELECT 1
+    FROM Staff
+    WHERE Id = @staffId)
         BEGIN
-            DELETE FROM Staff WHERE Id = @staffId;
-            SET @rowsAffected = @@ROWCOUNT;
-            SET @deletedCount = @deletedCount + @rowsAffected;
+        DELETE FROM Staff WHERE Id = @staffId;
+        SET @rowsAffected = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @rowsAffected;
 
-            -- Verificar si se eliminó correctamente
-            IF @rowsAffected > 0
+        IF @rowsAffected = 0
             BEGIN
-                PRINT '✓ Eliminado el Staff con ID ' + CAST(@staffId AS NVARCHAR(10));
-                PRINT '';
-                PRINT '========================================';
-                PRINT 'ELIMINACIÓN COMPLETADA EXITOSAMENTE';
-                PRINT 'Total de registros eliminados: ' + CAST(@deletedCount AS NVARCHAR(10));
-                PRINT '========================================';
-                
-                -- Solo hacer COMMIT si iniciamos la transacción
-                IF @tranCount = 0
-                BEGIN
-                    COMMIT TRANSACTION;
-                END
-                RETURN 1; -- Éxito
-            END
-            ELSE
-            BEGIN
-                -- El Staff existe pero no se pudo eliminar (probablemente por foreign keys)
-                DECLARE @fkError NVARCHAR(MAX) = 'No se pudo eliminar el Staff con ID ' + CAST(@staffId AS NVARCHAR(10)) + '. ';
+            -- El Staff existe pero no se pudo eliminar (probablemente por foreign keys)
+            DECLARE @fkError NVARCHAR(MAX) = 'No se pudo eliminar el Staff con ID ' + CAST(@staffId AS NVARCHAR(10)) + '. ';
 
-                -- Verificar foreign keys comunes
-                IF EXISTS (SELECT 1 FROM StaffRelationship WHERE StaffId = @staffId OR RelatedStaffId = @staffId)
+            -- Verificar foreign keys comunes
+            IF EXISTS (SELECT 1
+            FROM StaffRelationship
+            WHERE StaffId = @staffId OR RelatedStaffId = @staffId)
                     SET @fkError = @fkError + 'Hay registros en StaffRelationship. ';
-                IF EXISTS (SELECT 1 FROM SiteStaff WHERE StaffId = @staffId)
+            IF EXISTS (SELECT 1
+            FROM SiteStaff
+            WHERE StaffId = @staffId)
                     SET @fkError = @fkError + 'Hay registros en SiteStaff. ';
 
-                SET @fkError = @fkError + 'Total de registros eliminados antes del error: ' + CAST(@deletedCount AS NVARCHAR(10));
+            SET @fkError = @fkError + 'Total de registros eliminados antes del error: ' + CAST(@deletedCount AS NVARCHAR(10));
 
-                PRINT '';
-                PRINT '========================================';
-                PRINT 'ERROR: No se pudo eliminar el Staff';
-                PRINT '========================================';
-                PRINT @fkError;
-                PRINT '========================================';
-
-                -- Hacer ROLLBACK de todo porque no se completó la operación
-                IF @tranCount = 0 AND @@TRANCOUNT > 0
-                BEGIN
-                    ROLLBACK TRANSACTION;
-                    PRINT 'Transacción revertida (ROLLBACK).';
-                END
-                RAISERROR(@fkError, 16, 1);
-                RETURN -1; -- Error
-            END
-        END
-        ELSE
-        BEGIN
-            -- El Staff no existe (ya fue eliminado - posiblemente en un intento anterior)
-            PRINT '⚠ El Staff con ID ' + CAST(@staffId AS NVARCHAR(10)) + ' ya no existe, pero se limpiaron sus relaciones.';
             PRINT '';
             PRINT '========================================';
-            PRINT 'ELIMINACIÓN COMPLETADA';
-            PRINT 'Total de registros eliminados: ' + CAST(@deletedCount AS NVARCHAR(10));
+            PRINT 'ERROR: No se pudo eliminar el Staff';
             PRINT '========================================';
-            
-            -- Hacer COMMIT de las eliminaciones que sí se hicieron
-            IF @tranCount = 0
-            BEGIN
-                COMMIT TRANSACTION;
+            PRINT @fkError;
+            PRINT '========================================';
+
+            -- Hacer ROLLBACK de todo porque no se completó la operación
+            IF @tranCount = 0 AND @@TRANCOUNT > 0
+                BEGIN
+                ROLLBACK TRANSACTION;
+                PRINT 'Transacción revertida (ROLLBACK).';
             END
-            RETURN 1; -- Éxito (aunque el Staff ya no existía, se limpiaron sus relaciones)
+            RAISERROR(@fkError, 16, 1);
+            RETURN -1;
+        -- Error
         END
+            ELSE
+            BEGIN
+            PRINT '✓ Eliminado el Staff con ID ' + CAST(@staffId AS NVARCHAR(10));
+        END
+    END
+        ELSE
+        BEGIN
+        -- El Staff no existe (ya fue eliminado - posiblemente en un intento anterior)
+        PRINT '⚠ El Staff con ID ' + CAST(@staffId AS NVARCHAR(10)) + ' ya no existe, pero se limpiaron sus relaciones.';
+    END
+
+        -- =============================================
+        -- 6. Si el Staff tenía UserId y NO se eliminó la agencia, eliminar relaciones del usuario
+        -- (Si se eliminó la agencia, el usuario ya fue eliminado por 101_BulkDeleteAgency)
+        -- IMPORTANTE: Eliminar el Staff antes del usuario evita conflictos de FK
+        -- =============================================
+        IF @staffUserId IS NOT NULL AND @isAgencyOwner = 0
+        BEGIN
+        PRINT '';
+        PRINT '--- Eliminando datos relacionados con el usuario del Staff ---';
+
+        -- Eliminar relaciones de roles del usuario
+        IF OBJECT_ID('AspNetUserRoles', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM AspNetUserRoles 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserRoles';
+        END
+
+        -- Eliminar otras relaciones de AgencyUsers (si no se eliminó la agencia)
+        DELETE FROM AgencyUsers 
+            WHERE UserId = @staffUserId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers';
+
+        -- Eliminar el usuario de AspNetUsers (ahora es seguro porque el Staff ya fue eliminado)
+        IF OBJECT_ID('AspNetUsers', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM AspNetUsers 
+                WHERE Id = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUsers';
+        END
+    END
+
+        -- =============================================
+        -- 7. Finalizar y hacer COMMIT
+        -- =============================================
+        PRINT '';
+        PRINT '========================================';
+        PRINT 'ELIMINACIÓN COMPLETADA EXITOSAMENTE';
+        PRINT 'Total de registros eliminados: ' + CAST(@deletedCount AS NVARCHAR(10));
+        PRINT '========================================';
+        
+        -- Solo hacer COMMIT si iniciamos la transacción
+        IF @tranCount = 0
+        BEGIN
+        COMMIT TRANSACTION;
+    END
+        RETURN 1; -- Éxito
     END TRY
     BEGIN CATCH
         PRINT '';
@@ -265,9 +268,9 @@ BEGIN
         -- Solo hacer ROLLBACK si iniciamos la transacción
         IF @tranCount = 0 AND @@TRANCOUNT > 0
         BEGIN
-            ROLLBACK TRANSACTION;
-            PRINT 'Transacción revertida (ROLLBACK).';
-        END
+        ROLLBACK TRANSACTION;
+        PRINT 'Transacción revertida (ROLLBACK).';
+    END
         
         -- Registrar el error
         DECLARE @errorMessage NVARCHAR(4000) = ERROR_MESSAGE();
@@ -285,4 +288,3 @@ BEGIN
     END CATCH
 END;
 GO
-

@@ -140,6 +140,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 AppointmentCoordinated = item.AppointmentCoordinated,
                 AppointmentDate = item.AppointmentDate,
                 DeadlineToCompleteRegistration = item.DeadlineToCompleteRegistration,
+                CompletedRegistrationDate = item.CompletedRegistrationDate,
                 ServicesOfferedSince = item.ServicesOfferedSince,
 
                 // Relaciones con OptionSelection (si están disponibles en el resultado)

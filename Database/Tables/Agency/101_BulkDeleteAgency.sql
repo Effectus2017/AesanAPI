@@ -139,7 +139,58 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de School';
         
         -- =============================================
-        -- 8. Eliminar Staff (personal de la agencia)
+        -- 8. Crear tabla temporal con todos los StaffIds de la agencia
+        -- =============================================
+        CREATE TABLE #StaffIdsFromAgency
+    (
+        StaffId INT
+    );
+        
+        -- Obtener todos los StaffIds de la agencia
+        INSERT INTO #StaffIdsFromAgency
+        (StaffId)
+    SELECT Id
+    FROM Staff
+    WHERE AgencyId = @agencyId;
+        
+        -- =============================================
+        -- 9. Eliminar StaffRelationship donde el Staff es el principal (StaffId)
+        -- =============================================
+        IF OBJECT_ID('StaffRelationship', 'U') IS NOT NULL
+        BEGIN
+        DELETE sr FROM StaffRelationship sr
+            INNER JOIN #StaffIdsFromAgency s ON sr.StaffId = s.StaffId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffRelationship (como StaffId)';
+    END
+        
+        -- =============================================
+        -- 10. Eliminar StaffRelationship donde el Staff es el relacionado (RelatedStaffId)
+        -- =============================================
+        IF OBJECT_ID('StaffRelationship', 'U') IS NOT NULL
+        BEGIN
+        DELETE sr FROM StaffRelationship sr
+            INNER JOIN #StaffIdsFromAgency s ON sr.RelatedStaffId = s.StaffId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffRelationship (como RelatedStaffId)';
+    END
+        
+        -- =============================================
+        -- 11. Eliminar Staff (personal de la agencia)
+        -- =============================================
+        DELETE FROM Staff WHERE AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de Staff';
+        
+        -- Limpiar tabla temporal
+        DROP TABLE #StaffIdsFromAgency;
+        
+        -- =============================================
+        -- 10. Eliminar Staff (personal de la agencia)
         -- =============================================
         DELETE FROM Staff WHERE AgencyId = @agencyId;
         SET @currentRows = @@ROWCOUNT;
@@ -148,7 +199,7 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de Staff';
         
         -- =============================================
-        -- 9. Eliminar AgencyFiles (archivos de la agencia)
+        -- 12. Eliminar AgencyFiles (archivos de la agencia)
         -- =============================================
         DELETE FROM AgencyFiles WHERE AgencyId = @agencyId;
         SET @currentRows = @@ROWCOUNT;
@@ -157,7 +208,7 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyFiles';
         
         -- =============================================
-        -- 10. Eliminar AgencyProgram (programas de la agencia)
+        -- 13. Eliminar AgencyProgram (programas de la agencia)
         -- =============================================
         DELETE FROM AgencyProgram WHERE AgencyId = @agencyId;
         SET @currentRows = @@ROWCOUNT;
@@ -166,7 +217,7 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyProgram';
         
         -- =============================================
-        -- 11. Eliminar AgencyInscription (inscripción de la agencia)
+        -- 14. Eliminar AgencyInscription (inscripción de la agencia)
         -- =============================================
         DELETE FROM AgencyInscription WHERE AgencyId = @agencyId;
         SET @currentRows = @@ROWCOUNT;
@@ -175,7 +226,7 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyInscription';
         
         -- =============================================
-        -- 12. Obtener TODOS los UserIds relacionados con la agencia desde AgencyUsers ANTES de eliminar
+        -- 15. Obtener TODOS los UserIds relacionados con la agencia desde AgencyUsers ANTES de eliminar
         -- =============================================
         -- Crear tabla temporal para almacenar todos los UserIds a eliminar
         CREATE TABLE #UserIdsFromAgencyUsers
@@ -199,7 +250,7 @@ BEGIN
         AND IsActive = 1;
         
         -- =============================================
-        -- 13. Eliminar AgencyUsers (usuarios asignados a la agencia)
+        -- 16. Eliminar AgencyUsers (usuarios asignados a la agencia)
         -- =============================================
         DELETE FROM AgencyUsers WHERE AgencyId = @agencyId;
         SET @currentRows = @@ROWCOUNT;
@@ -208,7 +259,7 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers';
         
         -- =============================================
-        -- 14. Eliminar UserAgencyAssignment (asignaciones de usuarios)
+        -- 17. Eliminar UserAgencyAssignment (asignaciones de usuarios)
         -- =============================================
         IF OBJECT_ID('UserAgencyAssignment', 'U') IS NOT NULL
         BEGIN
@@ -219,7 +270,7 @@ BEGIN
     END
         
         -- =============================================
-        -- 15. Eliminar AgencyUserAssignment (asignaciones de usuarios - tabla alternativa)
+        -- 18. Eliminar AgencyUserAssignment (asignaciones de usuarios - tabla alternativa)
         -- =============================================
         IF OBJECT_ID('AgencyUserAssignment', 'U') IS NOT NULL
         BEGIN
@@ -230,7 +281,7 @@ BEGIN
     END
         
         -- =============================================
-        -- 16. Eliminar Staff que tiene UserId relacionado con la agencia (ANTES de eliminar usuarios)
+        -- 19. Eliminar Staff que tiene UserId relacionado con la agencia (ANTES de eliminar usuarios)
         -- =============================================
         -- Eliminar Staff que tiene UserId de los usuarios relacionados con la agencia
         DELETE s FROM Staff s
@@ -240,7 +291,7 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros adicionales de Staff (por UserId)';
         
         -- =============================================
-        -- 17. Eliminar usuarios de AspNetUsers relacionados con la agencia (obtenidos de AgencyUsers)
+        -- 20. Eliminar usuarios de AspNetUsers relacionados con la agencia (obtenidos de AgencyUsers)
         -- =============================================
         PRINT '';
         PRINT '--- Eliminando datos relacionados con usuarios ---';
@@ -314,7 +365,7 @@ BEGIN
         DROP TABLE #UserIdsFromAgencyUsers;
         
         -- =============================================
-        -- 18. Eliminar Agency (finalmente, la agencia misma)
+        -- 21. Eliminar Agency (finalmente, la agencia misma)
         -- =============================================
         PRINT '';
         PRINT '--- Eliminando la agencia ---';
