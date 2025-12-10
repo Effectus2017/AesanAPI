@@ -28,6 +28,11 @@ public class Staff
     public string? ImageURL { get; set; } = ""; // URL de la imagen/avatar del staff
                                                 // AdministrationTitle removido - ahora se maneja a través de PositionId
 
+    // Campos específicos para Miembros de la Junta
+    public int? TenureDuration { get; set; } // Tiempo de duración del cargo (numérico)
+    public int? TenureDurationUnitId { get; set; } // Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
+    public int? ReceivesProgramSalaryId { get; set; } // Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;

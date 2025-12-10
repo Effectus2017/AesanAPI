@@ -48,6 +48,13 @@ BEGIN
         s.ReviewResultId,
         s.ReviewDate,
         s.ReviewJustification,
+        s.TenureDuration,
+        s.TenureDurationUnitId,
+        os_tenure_unit.Name AS TenureDurationUnitName,
+        os_tenure_unit.NameEN AS TenureDurationUnitNameEN,
+        s.ReceivesProgramSalaryId,
+        os_salary.Name AS ReceivesProgramSalaryName,
+        os_salary.NameEN AS ReceivesProgramSalaryNameEN,
 
         -- Datos de la relación SiteStaff
         ss.SiteId,
@@ -73,5 +80,7 @@ BEGIN
         LEFT JOIN SiteStaff ss ON s.Id = ss.StaffId AND ss.IsActive = 1
         LEFT JOIN Site site ON ss.SiteId = site.Id
         LEFT JOIN OptionSelection os_assignment ON ss.AssignmentTypeId = os_assignment.Id
+        LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
+        LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
     WHERE s.Id = @id;
 END

@@ -253,3 +253,12 @@ VALUES
     ('Early Head Start', 'Early Head Start', 'headStartProgram', 0, 1, 980),
     ('Head Start', 'Head Start', 'headStartProgram', 0, 1, 990),
     ('N/A', 'N/A', 'headStartProgram', 0, 1, 1000);
+
+-- Opciones para Unidad de Tiempo de Duración del Cargo (tenureDurationUnit)
+-- Solo para Miembros de la Junta
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('Semanas', 'Weeks', 'tenureDurationUnit', 0, 1, 1010),
+    ('Meses', 'Months', 'tenureDurationUnit', 0, 1, 1020),
+    ('Años', 'Years', 'tenureDurationUnit', 0, 1, 1030);

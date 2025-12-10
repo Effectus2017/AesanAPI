@@ -88,6 +88,14 @@ CREATE TABLE Staff
     PhoneNumber NVARCHAR(50) NULL,
     -- Número de teléfono del personal
 
+    -- Campos específicos para Miembros de la Junta
+    TenureDuration INT NULL,
+    -- Tiempo de duración del cargo (numérico)
+    TenureDurationUnitId INT NULL,
+    -- Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
+    ReceivesProgramSalaryId INT NULL,
+    -- Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
+
     -- Restricciones
     FOREIGN KEY (StatusId) REFERENCES OptionSelection(Id),
     FOREIGN KEY (PositionId) REFERENCES OptionSelection(Id),
@@ -96,7 +104,9 @@ CREATE TABLE Staff
     FOREIGN KEY (RegionId) REFERENCES Region(Id),
     FOREIGN KEY (AgencyId) REFERENCES Agency(Id),
     FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id),
-    FOREIGN KEY (ReviewResultId) REFERENCES OptionSelection(Id)
+    FOREIGN KEY (ReviewResultId) REFERENCES OptionSelection(Id),
+    FOREIGN KEY (TenureDurationUnitId) REFERENCES OptionSelection(Id),
+    FOREIGN KEY (ReceivesProgramSalaryId) REFERENCES OptionSelection(Id)
 );
 
 -- Índices para mejorar el rendimiento
@@ -121,3 +131,6 @@ ALTER TABLE Staff ADD ImageURL NVARCHAR(MAX) NULL;
 
 CREATE INDEX IX_Staff_PhoneNumber ON Staff(PhoneNumber);
 CREATE INDEX IX_Staff_ImageURL ON Staff(ImageURL);
+CREATE INDEX IX_Staff_TenureDuration ON Staff(TenureDuration);
+CREATE INDEX IX_Staff_TenureDurationUnitId ON Staff(TenureDurationUnitId);
+CREATE INDEX IX_Staff_ReceivesProgramSalaryId ON Staff(ReceivesProgramSalaryId);

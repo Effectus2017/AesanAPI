@@ -29,7 +29,10 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateStaff]
     @inactiveJustification NVARCHAR(500) = NULL,
     @reviewResultId INT = NULL,
     @reviewDate DATETIME = NULL,
-    @reviewJustification NVARCHAR(500) = NULL
+    @reviewJustification NVARCHAR(500) = NULL,
+    @tenureDuration INT = NULL,
+    @tenureDurationUnitId INT = NULL,
+    @receivesProgramSalaryId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -61,6 +64,9 @@ BEGIN
         ReviewResultId = @reviewResultId,
         ReviewDate = @reviewDate,
         ReviewJustification = @reviewJustification,
+        TenureDuration = @tenureDuration,
+        TenureDurationUnitId = @tenureDurationUnitId,
+        ReceivesProgramSalaryId = @receivesProgramSalaryId,
         UpdatedAt = GETDATE()
     WHERE Id = @id;
 

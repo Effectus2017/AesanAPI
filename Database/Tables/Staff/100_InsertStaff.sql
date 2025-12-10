@@ -27,6 +27,9 @@ CREATE OR ALTER PROCEDURE [dbo].[100_InsertStaff]
     @reviewResultId INT = NULL,
     @reviewDate DATETIME = NULL,
     @reviewJustification NVARCHAR(500) = NULL,
+    @tenureDuration INT = NULL,
+    @tenureDurationUnitId INT = NULL,
+    @receivesProgramSalaryId INT = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -57,6 +60,9 @@ BEGIN
         ReviewResultId,
         ReviewDate,
         ReviewJustification,
+        TenureDuration,
+        TenureDurationUnitId,
+        ReceivesProgramSalaryId,
         CreatedAt,
         IsActive
         )
@@ -85,6 +91,9 @@ BEGIN
             @reviewResultId,
             @reviewDate,
             @reviewJustification,
+            @tenureDuration,
+            @tenureDurationUnitId,
+            @receivesProgramSalaryId,
             GETDATE(),
             1
     );

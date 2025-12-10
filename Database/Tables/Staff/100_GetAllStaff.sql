@@ -59,6 +59,13 @@ BEGIN
             s.Comments,
             s.UserId,
             u.UserName,
+            s.TenureDuration,
+            s.TenureDurationUnitId,
+            os_tenure_unit.Name AS TenureDurationUnitName,
+            os_tenure_unit.NameEN AS TenureDurationUnitNameEN,
+            s.ReceivesProgramSalaryId,
+            os_salary.Name AS ReceivesProgramSalaryName,
+            os_salary.NameEN AS ReceivesProgramSalaryNameEN,
             s.CreatedAt,
             s.UpdatedAt,
             s.IsActive,
@@ -82,6 +89,8 @@ BEGIN
             LEFT JOIN Region r ON s.RegionId = r.Id
             LEFT JOIN Agency a ON s.AgencyId = a.Id
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
+            LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
+            LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
         WHERE s.IsActive = 1
             AND (
                 @alls = 1
@@ -94,7 +103,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                SELECT DISTINCT sr.StaffId
+                                                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -142,6 +151,13 @@ BEGIN
             s.Comments,
             s.UserId,
             u.UserName,
+            s.TenureDuration,
+            s.TenureDurationUnitId,
+            os_tenure_unit.Name AS TenureDurationUnitName,
+            os_tenure_unit.NameEN AS TenureDurationUnitNameEN,
+            s.ReceivesProgramSalaryId,
+            os_salary.Name AS ReceivesProgramSalaryName,
+            os_salary.NameEN AS ReceivesProgramSalaryNameEN,
             s.CreatedAt,
             s.UpdatedAt,
             s.IsActive,
@@ -165,6 +181,8 @@ BEGIN
             LEFT JOIN Region r ON s.RegionId = r.Id
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
             LEFT JOIN Agency a ON s.AgencyId = a.Id
+            LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
+            LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
         WHERE s.IsActive = 1
             AND (
                 @alls = 1
@@ -177,7 +195,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                 SELECT DISTINCT sr.StaffId
+                                                                                                 SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
@@ -206,7 +224,7 @@ BEGIN
             AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
             AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
             AND (@excludeRelated = 0 OR s.Id NOT IN (
-                                                                                SELECT DISTINCT sr.StaffId
+                                                                                                SELECT DISTINCT sr.StaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION

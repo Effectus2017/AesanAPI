@@ -113,6 +113,13 @@ public static class StaffMapper
                 result.ReviewResultId,
                 result.ReviewDate,
                 result.ReviewJustification,
+                result.TenureDuration,
+                result.TenureDurationUnitId,
+                result.TenureDurationUnitName,
+                result.TenureDurationUnitNameEN,
+                result.ReceivesProgramSalaryId,
+                result.ReceivesProgramSalaryName,
+                result.ReceivesProgramSalaryNameEN,
 
                 // Datos de la relación SchoolStaff
                 SchoolId = result.SchoolId,
@@ -179,6 +186,13 @@ public static class StaffMapper
                 ReviewResultId = item.ReviewResultId,
                 ReviewDate = item.ReviewDate,
                 ReviewJustification = item.ReviewJustification,
+                TenureDuration = item.TenureDuration,
+                TenureDurationUnitId = item.TenureDurationUnitId,
+                TenureDurationUnitName = item.TenureDurationUnitName,
+                TenureDurationUnitNameEN = item.TenureDurationUnitNameEN,
+                ReceivesProgramSalaryId = item.ReceivesProgramSalaryId,
+                ReceivesProgramSalaryName = item.ReceivesProgramSalaryName,
+                ReceivesProgramSalaryNameEN = item.ReceivesProgramSalaryNameEN,
 
                 // Datos de la relación SiteStaff
                 SiteId = item.SiteId,
@@ -191,7 +205,9 @@ public static class StaffMapper
                 Status = item.StatusId != null ? mappingService.MapOptionSelection(item.StatusId, item.StatusName, item.StatusNameEN) : null,
                 Position = item.PositionId != null ? mappingService.MapOptionSelection(item.PositionId, item.PositionName, item.PositionNameEN) : null,
                 StaffType = item.StaffTypeId != null ? mappingService.MapStaffType(item.StaffTypeId, item.StaffTypeName, item.StaffTypeNameEn) : null,
-                StaffClassification = item.StaffClassificationId != null ? mappingService.MapStaffClassification(item.StaffClassificationId, item.StaffClassificationName, item.StaffClassificationNameEn) : null
+                StaffClassification = item.StaffClassificationId != null ? mappingService.MapStaffClassification(item.StaffClassificationId, item.StaffClassificationName, item.StaffClassificationNameEn) : null,
+                TenureDurationUnit = item.TenureDurationUnitId != null ? mappingService.MapOptionSelection(item.TenureDurationUnitId, item.TenureDurationUnitName, item.TenureDurationUnitNameEN) : null,
+                ReceivesProgramSalary = item.ReceivesProgramSalaryId != null ? mappingService.MapOptionSelection(item.ReceivesProgramSalaryId, item.ReceivesProgramSalaryName, item.ReceivesProgramSalaryNameEN) : null
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

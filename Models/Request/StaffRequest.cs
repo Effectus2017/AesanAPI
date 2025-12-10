@@ -34,6 +34,11 @@ public class StaffRequest
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
 
+    // Campos específicos para Miembros de la Junta
+    public int? TenureDuration { get; set; } // Tiempo de duración del cargo (numérico)
+    public int? TenureDurationUnitId { get; set; } // Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
+    public int? ReceivesProgramSalaryId { get; set; } // Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
+
     // Campos de asignación de sitio (Site Assignment)
     public int? SiteId { get; set; } = null;
     public bool IsPrimary { get; set; } = false;

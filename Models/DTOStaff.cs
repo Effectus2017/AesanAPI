@@ -43,6 +43,15 @@ public class DTOStaff
     public DateTime? ReviewDate { get; set; }
     public string? ReviewJustification { get; set; }
 
+    // Campos específicos para Miembros de la Junta
+    public int? TenureDuration { get; set; } // Tiempo de duración del cargo (numérico)
+    public int? TenureDurationUnitId { get; set; } // Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
+    public string? TenureDurationUnitName { get; set; } = "";
+    public string? TenureDurationUnitNameEN { get; set; } = "";
+    public int? ReceivesProgramSalaryId { get; set; } // Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
+    public string? ReceivesProgramSalaryName { get; set; } = "";
+    public string? ReceivesProgramSalaryNameEN { get; set; } = "";
+
     // Datos de la relación SiteStaff
     public int? SiteId { get; set; }
     public bool? IsPrimary { get; set; }
@@ -54,5 +63,7 @@ public class DTOStaff
     public DTOOptionSelection? Position { get; set; }
     public DTOStaffType? StaffType { get; set; }
     public DTOStaffClassification? StaffClassification { get; set; }
+    public DTOOptionSelection? TenureDurationUnit { get; set; }
+    public DTOOptionSelection? ReceivesProgramSalary { get; set; }
     public SiteListItemResponse? Site { get; set; }
 }
