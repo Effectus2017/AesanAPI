@@ -59,7 +59,7 @@ BEGIN
         ZipCode = @zipCode,
         AgencyId = @agencyId,
         Comments = @comments,
-        UserId = @userId,
+        UserId = ISNULL(@userId, UserId),
         IsActive = ISNULL(@isActive, IsActive),
         ReviewResultId = @reviewResultId,
         ReviewDate = @reviewDate,

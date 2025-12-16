@@ -8,13 +8,16 @@
 --   3. Crea un nuevo registro Staff si no existe
 --
 -- Formato esperado del UserName: nombre.apellido o nombre_apellido o nombre apellido
+-- Parámetros:
+--   @UserId: (Opcional) Si se proporciona, procesa solo ese usuario. Si es NULL, procesa todos los usuarios activos.
 
 CREATE OR ALTER PROCEDURE [dbo].[102_SyncUsersToStaff]
+    @UserId NVARCHAR(450) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @userId NVARCHAR(450);
+    DECLARE @currentUserId NVARCHAR(450);
     DECLARE @userName NVARCHAR(256);
     DECLARE @email NVARCHAR(256);
     DECLARE @phoneNumber NVARCHAR(MAX);
@@ -29,7 +32,9 @@ BEGIN
     DECLARE @defaultPostalAddress NVARCHAR(500) = 'Dirección no especificada';
     DECLARE @defaultZipCode NVARCHAR(10) = '00000';
 
-    -- Cursor para recorrer todos los usuarios
+    -- Cursor para recorrer usuarios
+    -- Si @UserId se proporciona, procesa solo ese usuario
+    -- Si @UserId es NULL, procesa todos los usuarios activos
     -- Obtener AgencyId desde AgencyUsers (puede haber múltiples, tomamos el primero activo)
     DECLARE user_cursor CURSOR FOR
     SELECT
@@ -43,17 +48,18 @@ BEGIN
         WHERE UserId = u.Id AND IsActive = 1
         ORDER BY AssignedDate DESC) AS AgencyId
     FROM AspNetUsers u
-    WHERE u.IsActive = 1;
+    WHERE u.IsActive = 1
+        AND (@UserId IS NULL OR u.Id = @UserId);
 
     OPEN user_cursor;
-    FETCH NEXT FROM user_cursor INTO @userId, @userName, @email, @phoneNumber, @agencyId;
+    FETCH NEXT FROM user_cursor INTO @currentUserId, @userName, @email, @phoneNumber, @agencyId;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
         -- Verificar si el usuario ya tiene Staff asociado
         SELECT @staffId = Id
         FROM Staff
-        WHERE UserId = @userId;
+        WHERE UserId = @currentUserId;
 
         IF @staffId IS NULL
         BEGIN
@@ -63,14 +69,27 @@ BEGIN
             SET @fatherLastName = NULL;
             SET @motherLastName = NULL;
 
+            -- Variable para trabajar con el nombre limpio (sin @ y dominio si es email)
+            DECLARE @cleanUserName NVARCHAR(256);
+
             IF @userName IS NOT NULL AND LEN(LTRIM(RTRIM(@userName))) > 0
             BEGIN
-                -- Intentar diferentes formatos de UserName
-                -- Formato 1: nombre.apellido
-                IF CHARINDEX('.', @userName) > 0
+                -- Si el UserName es un email, extraer solo la parte antes del @
+                IF CHARINDEX('@', @userName) > 0
                 BEGIN
-                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX('.', @userName) - 1)));
-                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@userName, CHARINDEX('.', @userName) + 1, LEN(@userName))));
+                    SET @cleanUserName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX('@', @userName) - 1)));
+                END
+                ELSE
+                BEGIN
+                    SET @cleanUserName = LTRIM(RTRIM(@userName));
+                END
+
+                -- Intentar diferentes formatos de UserName (ahora limpio)
+                -- Formato 1: nombre.apellido
+                IF CHARINDEX('.', @cleanUserName) > 0
+                BEGIN
+                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@cleanUserName, 1, CHARINDEX('.', @cleanUserName) - 1)));
+                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@cleanUserName, CHARINDEX('.', @cleanUserName) + 1, LEN(@cleanUserName))));
 
                     -- Si hay más puntos, tomar solo el primer apellido
                     IF CHARINDEX('.', @parsedLastName) > 0
@@ -84,10 +103,10 @@ BEGIN
                 -- No podemos extraer el apellido materno del UserName
                 END
                 -- Formato 2: nombre_apellido
-                ELSE IF CHARINDEX('_', @userName) > 0
+                ELSE IF CHARINDEX('_', @cleanUserName) > 0
                 BEGIN
-                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX('_', @userName) - 1)));
-                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@userName, CHARINDEX('_', @userName) + 1, LEN(@userName))));
+                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@cleanUserName, 1, CHARINDEX('_', @cleanUserName) - 1)));
+                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@cleanUserName, CHARINDEX('_', @cleanUserName) + 1, LEN(@cleanUserName))));
 
                     -- Si hay más guiones bajos, tomar solo el primer apellido
                     IF CHARINDEX('_', @parsedLastName) > 0
@@ -100,10 +119,10 @@ BEGIN
                     SET @motherLastName = '';
                 END
                 -- Formato 3: nombre apellido (con espacio)
-                ELSE IF CHARINDEX(' ', @userName) > 0
+                ELSE IF CHARINDEX(' ', @cleanUserName) > 0
                 BEGIN
-                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX(' ', @userName) - 1)));
-                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@userName, CHARINDEX(' ', @userName) + 1, LEN(@userName))));
+                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@cleanUserName, 1, CHARINDEX(' ', @cleanUserName) - 1)));
+                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@cleanUserName, CHARINDEX(' ', @cleanUserName) + 1, LEN(@cleanUserName))));
 
                     -- Si hay más espacios, tomar solo el primer apellido
                     IF CHARINDEX(' ', @parsedLastName) > 0
@@ -115,10 +134,10 @@ BEGIN
                     SET @fatherLastName = @parsedLastName;
                     SET @motherLastName = '';
                 END
-                -- Si no hay separador, usar todo el UserName como nombre
+                -- Si no hay separador, usar todo el UserName limpio como nombre
                 ELSE
                 BEGIN
-                    SET @firstName = LTRIM(RTRIM(@userName));
+                    SET @firstName = LTRIM(RTRIM(@cleanUserName));
                     SET @fatherLastName = 'Usuario';
                     SET @motherLastName = '';
                 END
@@ -152,7 +171,7 @@ BEGIN
                 SELECT TOP 1
                     @agencyId = AgencyId
                 FROM AgencyUsers
-                WHERE UserId = @userId AND IsActive = 1
+                WHERE UserId = @currentUserId AND IsActive = 1
                 ORDER BY AssignedDate DESC;
             END
 
@@ -185,22 +204,22 @@ BEGIN
                     @fatherLastName,
                     @motherLastName,
                     1, -- StatusId por defecto (activo)
-                    0, -- PositionId por defecto
+                    37, -- PositionId por defecto
                     1, -- StaffTypeId por defecto (Empleado)
                     @defaultBirthDate, -- BirthDate por defecto
                     @email,
                     @phoneNumber,
                     @defaultPostalAddress,
-                    0, -- CityId por defecto
-                    0, -- RegionId por defecto
+                    1, -- CityId por defecto
+                    1, -- RegionId por defecto
                     @defaultZipCode,
                     @agencyId,
-                    @userId,
+                    @currentUserId,
                     GETDATE(),
                     1 -- IsActive
                 );
 
-            PRINT 'Staff creado para usuario: ' + @userName + ' (UserId: ' + @userId + ')';
+            PRINT 'Staff creado para usuario: ' + @userName + ' (UserId: ' + @currentUserId + ')';
         END
         ELSE
         BEGIN
@@ -226,11 +245,22 @@ BEGIN
             IF (@updateFirstName IS NULL OR LEN(LTRIM(RTRIM(@updateFirstName))) = 0)
                 AND @userName IS NOT NULL AND LEN(LTRIM(RTRIM(@userName))) > 0
             BEGIN
-                -- Parsear UserName como antes
-                IF CHARINDEX('.', @userName) > 0
+                -- Limpiar UserName: si es email, extraer solo la parte antes del @
+                DECLARE @cleanUserNameForUpdate NVARCHAR(256);
+                IF CHARINDEX('@', @userName) > 0
                 BEGIN
-                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX('.', @userName) - 1)));
-                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@userName, CHARINDEX('.', @userName) + 1, LEN(@userName))));
+                    SET @cleanUserNameForUpdate = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX('@', @userName) - 1)));
+                END
+                ELSE
+                BEGIN
+                    SET @cleanUserNameForUpdate = LTRIM(RTRIM(@userName));
+                END
+
+                -- Parsear UserName limpio
+                IF CHARINDEX('.', @cleanUserNameForUpdate) > 0
+                BEGIN
+                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@cleanUserNameForUpdate, 1, CHARINDEX('.', @cleanUserNameForUpdate) - 1)));
+                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@cleanUserNameForUpdate, CHARINDEX('.', @cleanUserNameForUpdate) + 1, LEN(@cleanUserNameForUpdate))));
 
                     IF CHARINDEX('.', @parsedLastName) > 0
                     BEGIN
@@ -243,10 +273,10 @@ BEGIN
 
                     SET @needsUpdate = 1;
                 END
-                ELSE IF CHARINDEX('_', @userName) > 0
+                ELSE IF CHARINDEX('_', @cleanUserNameForUpdate) > 0
                 BEGIN
-                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX('_', @userName) - 1)));
-                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@userName, CHARINDEX('_', @userName) + 1, LEN(@userName))));
+                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@cleanUserNameForUpdate, 1, CHARINDEX('_', @cleanUserNameForUpdate) - 1)));
+                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@cleanUserNameForUpdate, CHARINDEX('_', @cleanUserNameForUpdate) + 1, LEN(@cleanUserNameForUpdate))));
 
                     IF CHARINDEX('_', @parsedLastName) > 0
                     BEGIN
@@ -259,10 +289,10 @@ BEGIN
 
                     SET @needsUpdate = 1;
                 END
-                ELSE IF CHARINDEX(' ', @userName) > 0
+                ELSE IF CHARINDEX(' ', @cleanUserNameForUpdate) > 0
                 BEGIN
-                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@userName, 1, CHARINDEX(' ', @userName) - 1)));
-                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@userName, CHARINDEX(' ', @userName) + 1, LEN(@userName))));
+                    SET @parsedName = LTRIM(RTRIM(SUBSTRING(@cleanUserNameForUpdate, 1, CHARINDEX(' ', @cleanUserNameForUpdate) - 1)));
+                    SET @parsedLastName = LTRIM(RTRIM(SUBSTRING(@cleanUserNameForUpdate, CHARINDEX(' ', @cleanUserNameForUpdate) + 1, LEN(@cleanUserNameForUpdate))));
 
                     IF CHARINDEX(' ', @parsedLastName) > 0
                     BEGIN
@@ -277,7 +307,7 @@ BEGIN
                 END
                 ELSE
                 BEGIN
-                    SET @updateFirstName = LTRIM(RTRIM(@userName));
+                    SET @updateFirstName = LTRIM(RTRIM(@cleanUserNameForUpdate));
                     SET @needsUpdate = 1;
                 END
             END
@@ -305,7 +335,7 @@ BEGIN
                 SELECT TOP 1
                     @updateAgencyId = AgencyId
                 FROM AgencyUsers
-                WHERE UserId = @userId AND IsActive = 1
+                WHERE UserId = @currentUserId AND IsActive = 1
                 ORDER BY AssignedDate DESC;
 
                 IF @updateAgencyId IS NOT NULL
@@ -330,11 +360,11 @@ BEGIN
                     UpdatedAt = GETDATE()
                 WHERE Id = @staffId;
 
-                PRINT 'Staff actualizado para usuario: ' + @userName + ' (UserId: ' + @userId + ', StaffId: ' + CAST(@staffId AS NVARCHAR(10)) + ')';
+                PRINT 'Staff actualizado para usuario: ' + @userName + ' (UserId: ' + @currentUserId + ', StaffId: ' + CAST(@staffId AS NVARCHAR(10)) + ')';
             END
         END
 
-        FETCH NEXT FROM user_cursor INTO @userId, @userName, @email, @phoneNumber, @agencyId;
+        FETCH NEXT FROM user_cursor INTO @currentUserId, @userName, @email, @phoneNumber, @agencyId;
     END
 
     CLOSE user_cursor;
@@ -342,4 +372,3 @@ BEGIN
 
     PRINT 'Sincronización completada.';
 END
-
