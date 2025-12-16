@@ -1,7 +1,7 @@
 -- Obtener todas las agencias
 -- 1.1.7 - Versión simplificada sin datos de usuarios
 CREATE OR ALTER PROCEDURE [117_GetAgencies]
-    @take INT = 10,
+    @take INT = 10000000,
     @skip INT = 0,
     @name NVARCHAR(255) = NULL,
     @regionId INT = NULL,
