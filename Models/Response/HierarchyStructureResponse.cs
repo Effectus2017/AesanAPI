@@ -49,5 +49,6 @@ public class SiteNode
     public string Name { get; set; }
     public int? SiteNumber { get; set; }
     public string SiteCode { get; set; }
+    public bool? IsActive { get; set; }
 }
 

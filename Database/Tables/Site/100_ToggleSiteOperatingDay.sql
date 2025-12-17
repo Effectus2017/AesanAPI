@@ -55,7 +55,7 @@ BEGIN
         IF @isExcluded = 0 AND (@startTime IS NULL OR @endTime IS NULL)
         BEGIN
         SET @startTime = ISNULL(@startTime, '08:00:00');
-        SET @endTime = ISNULL(@endTime, '16:00:00');
+        SET @endTime = ISNULL(@endTime, '18:00:00');
     END
 
         -- Mantener horarios siempre, incluso si está excluido

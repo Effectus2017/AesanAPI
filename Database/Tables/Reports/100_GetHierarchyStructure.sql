@@ -33,20 +33,21 @@ BEGIN
         st.[Id] AS [SiteId],
         st.[Name] AS [SiteName],
         st.[SiteNumber],
-        st.[SiteCode]
+        st.[SiteCode],
+        st.[IsActive] AS [IsActive]
     FROM [School] s
         INNER JOIN [Agency] a ON s.[AgencyId] = a.[Id]
         LEFT JOIN [SchoolSite] ss ON s.[Id] = ss.[SchoolId] AND ss.[IsActive] = 1
-        LEFT JOIN [Site] st ON ss.[SiteId] = st.[Id] AND st.[IsActive] = 1
+        LEFT JOIN [Site] st ON ss.[SiteId] = st.[Id]
     WHERE s.[IsActive] = 1
         AND a.[IsActive] = 1
         AND (@sponsorId IS NULL OR a.[Id] = @sponsorId)
         AND (
             -- Filtrar por año: considerar sitios que tengan baseYear o renewalYear igual al año
-            st.[Id] IS NULL 
-            OR st.[BaseYear] = @year 
-            OR st.[RenewalYear] = @year
-            OR (st.[BaseYear] IS NULL AND st.[RenewalYear] IS NULL)
+            st.[Id] IS NULL
+        OR st.[BaseYear] = @year
+        OR st.[RenewalYear] = @year
+        OR (st.[BaseYear] IS NULL AND st.[RenewalYear] IS NULL)
         )
     ORDER BY s.[Name], st.[SiteNumber];
 END;

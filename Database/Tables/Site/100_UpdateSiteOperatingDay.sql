@@ -54,7 +54,7 @@ BEGIN
         UPDATE SiteOperatingDays
             SET 
                 StartTime = CASE WHEN StartTime IS NULL THEN '08:00:00' ELSE StartTime END,
-                EndTime = CASE WHEN EndTime IS NULL THEN '16:00:00' ELSE EndTime END,
+                EndTime = CASE WHEN EndTime IS NULL THEN '18:00:00' ELSE EndTime END,
                 UpdatedAt = GETDATE()
             WHERE Id = @id AND (StartTime IS NULL OR EndTime IS NULL);
     END

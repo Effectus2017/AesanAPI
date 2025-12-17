@@ -120,7 +120,8 @@ public class ReportsRepository(DapperContext context, ILoggingService loggingSer
                         Id = (int)row.SiteId,
                         Name = row.SiteName?.ToString() ?? string.Empty,
                         SiteNumber = row.SiteNumber != null ? (int?)row.SiteNumber : null,
-                        SiteCode = row.SiteCode?.ToString() ?? string.Empty
+                        SiteCode = row.SiteCode?.ToString() ?? string.Empty,
+                        IsActive = row.IsActive != null ? (bool?)row.IsActive : null
                     };
 
                     // Evitar duplicados

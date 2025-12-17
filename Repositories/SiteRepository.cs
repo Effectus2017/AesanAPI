@@ -1037,7 +1037,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingFromDate", operatingFromDate.Date, DbType.Date);
             parameters.Add("@operatingToDate", operatingToDate.Date, DbType.Date);
             parameters.Add("@defaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
-            parameters.Add("@defaultEndTime", TimeSpan.FromHours(16), DbType.Time);  // 16:00:00
+            parameters.Add("@defaultEndTime", TimeSpan.FromHours(18), DbType.Time);  // 18:00:00
             parameters.Add("@defaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
             parameters.Add("@includeWeekends", includeWeekends, DbType.Boolean);
 

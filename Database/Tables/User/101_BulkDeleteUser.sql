@@ -199,9 +199,21 @@ BEGIN
 
         -- =============================================
         -- 3. Eliminar relaciones del usuario (si NO se eliminó la agencia)
+        -- IMPORTANTE: Eliminar UserPermission PRIMERO porque tiene FK constraint a AspNetUsers
         -- =============================================
         PRINT '';
         PRINT '--- Eliminando relaciones del usuario ---';
+
+        -- Eliminar UserPermission (permisos del usuario) - PRIMERO para evitar FK constraint
+        IF OBJECT_ID('UserPermission', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM UserPermission 
+            WHERE UserId = @userId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserPermission';
+    END
 
         -- Eliminar AspNetUserRoles (roles del usuario)
         IF OBJECT_ID('AspNetUserRoles', 'U') IS NOT NULL
@@ -234,17 +246,6 @@ BEGIN
         SET @deletedCount = @deletedCount + @currentRows;
         IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserLogins';
-    END
-
-        -- Eliminar UserPermission (permisos del usuario)
-        IF OBJECT_ID('UserPermission', 'U') IS NOT NULL
-        BEGIN
-        DELETE FROM UserPermission 
-            WHERE UserId = @userId;
-        SET @currentRows = @@ROWCOUNT;
-        SET @deletedCount = @deletedCount + @currentRows;
-        IF @currentRows > 0
-                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserPermission';
     END
 
         -- Eliminar UserProgram (programas asignados al usuario)
@@ -434,3 +435,5 @@ BEGIN
     END CATCH
 END;
 GO
+
+EXEC [dbo].[101_BulkDeleteUser] '1';
