@@ -126,6 +126,9 @@ BEGIN
         SET @RowsAffected = @@ROWCOUNT;
     END
 
+        -- Recalcular días de funcionamiento del sitio
+        EXEC [dbo].[100_ReCalculateSiteOperatingDays] @siteId;
+
         -- Retornar el número de filas afectadas
         SELECT @RowsAffected as RowsAffected;
 

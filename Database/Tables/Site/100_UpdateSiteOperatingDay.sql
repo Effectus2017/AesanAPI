@@ -59,6 +59,17 @@ BEGIN
             WHERE Id = @id AND (StartTime IS NULL OR EndTime IS NULL);
     END
 
+        -- Obtener SiteId del día actualizado y recalcular
+        DECLARE @siteIdForRecalc INT;
+        SELECT @siteIdForRecalc = SiteId
+    FROM SiteOperatingDays
+    WHERE Id = @id;
+
+        IF @siteIdForRecalc IS NOT NULL
+        BEGIN
+        EXEC [dbo].[100_ReCalculateSiteOperatingDays] @siteIdForRecalc;
+    END
+
         -- Retornar el número de filas afectadas
         SELECT @RowsAffected as RowsAffected;
 

@@ -51,4 +51,11 @@ public interface ISiteCalendarRepository
     /// <returns>True si la operación fue exitosa</returns>
     Task<bool> DeleteOperatingDay(int id);
 
+    /// <summary>
+    /// Recalcula los días de funcionamiento de un sitio considerando el calendario
+    /// </summary>
+    /// <param name="siteId">ID del sitio</param>
+    /// <returns>True si la operación fue exitosa</returns>
+    Task<bool> ReCalculateOperatingDays(int siteId);
+
 }

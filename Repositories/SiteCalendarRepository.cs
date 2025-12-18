@@ -270,4 +270,32 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         }
     }
 
+    /// <summary>
+    /// Recalcula los días de funcionamiento de un sitio considerando el calendario
+    /// </summary>
+    public async Task<bool> ReCalculateOperatingDays(int siteId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", siteId, DbType.Int32);
+
+            await dbConnection.ExecuteAsync(
+                "100_ReCalculateSiteOperatingDays",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            _logger.LogInformation("Recálculo de días de funcionamiento para sitio {SiteId}: Exitoso", siteId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al recalcular días de funcionamiento para sitio {SiteId}", siteId);
+            return false;
+        }
+    }
+
 }
