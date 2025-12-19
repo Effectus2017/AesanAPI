@@ -35,19 +35,19 @@ public class SiteRequest
     public int? BaseYear { get; set; }
     public int? RenewalYear { get; set; }
     public List<SiteEducationLevelRequest> EducationLevels { get; set; } = new();
-    
+
     /// <summary>
     /// Fecha desde cuando inicia el funcionamiento del sitio
     /// </summary>
     [Required(ErrorMessage = "La fecha desde es requerida")]
     public DateTime? OperatingFromDate { get; set; }
-    
+
     /// <summary>
     /// Fecha hasta cuando finaliza el funcionamiento del sitio
     /// </summary>
     [Required(ErrorMessage = "La fecha hasta es requerida")]
     public DateTime? OperatingToDate { get; set; }
-    
+
     public int? OperatingDaysCalculated { get; set; }
 
     /// <summary>
@@ -140,7 +140,6 @@ public class SiteRequest
     /// Is it an affiliated center or institution?
     /// Solo para programa PACNA
     /// </summary>
-    [Required(ErrorMessage = "El campo '¿Es un centro o institución afiliada?' es requerido")]
     public bool? IsAffiliatedCenter { get; set; }
 
     /// <summary>
