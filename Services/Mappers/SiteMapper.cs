@@ -69,6 +69,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 // ===== CAMPOS ESPECÍFICOS PARA PACNA =====
                 OrganizedAthleticPrograms = item.OrganizedAthleticPrograms,
                 AtRiskService = item.AtRiskService,
+                IsAffiliatedCenter = item.IsAffiliatedCenter,
                 IsDayCareHomeId = item.IsDayCareHomeId,
                 IsDayCareHome = item.IsDayCareHomeId != null ? new DTOOptionSelection
                 {
