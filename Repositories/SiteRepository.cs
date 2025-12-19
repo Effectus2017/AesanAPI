@@ -278,7 +278,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     // Esto se puede determinar consultando OptionSelection, pero por ahora usamos DayCareHome como indicador
                     isDayCareHomeBool = request.DayCareHome != null;
                 }
-                await InsertSiteOperatingDays(siteId, request.OperatingFromDate.Value, request.OperatingToDate.Value, request.Services, request.ProgramIds, request.CenterTypeId, isDayCareHomeBool, dbConnection, transaction);
+                await InsertSiteOperatingDays(
+                    siteId,
+                    request.OperatingFromDate.Value,
+                    request.OperatingToDate.Value,
+                    request.Services,
+                    request.ProgramIds,
+                    request.CenterTypeId,
+                    isDayCareHomeBool,
+                    request.OperatingStartTime,  // Pasar la hora de inicio del request
+                    request.OperatingEndTime,    // Pasar la hora de fin del request
+                    dbConnection,
+                    transaction);
             }
 
             // Insertar información de Persona a Cargo
@@ -1026,6 +1037,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         List<int>? programIds = null,
         int? centerTypeId = null,
         bool? isDayCareHome = null,
+        TimeSpan? operatingStartTime = null,
+        TimeSpan? operatingEndTime = null,
         IDbConnection? connection = null,
         IDbTransaction? transaction = null)
     {

@@ -436,4 +436,4 @@ BEGIN
 END;
 GO
 
-EXEC [dbo].[101_BulkDeleteUser] '1';
+--EXEC [dbo].[101_BulkDeleteUser] '1';
