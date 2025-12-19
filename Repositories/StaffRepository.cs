@@ -190,6 +190,10 @@ public class StaffRepository(
             // Fecha de revisión segura
             parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String, ParameterDirection.Input);
+            // Agregar parámetros para miembros de la junta
+            parameters.Add("@tenureDuration", staffRequest.TenureDuration, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@tenureDurationUnitId", staffRequest.TenureDurationUnitId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@receivesProgramSalaryId", staffRequest.ReceivesProgramSalaryId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
@@ -277,6 +281,10 @@ public class StaffRepository(
             // Fecha de revisión segura
             parameters.Add("@reviewDate", staffRequest.ReviewDate?.Year >= 1753 ? staffRequest.ReviewDate : DBNull.Value, DbType.DateTime);
             parameters.Add("@reviewJustification", staffRequest.ReviewJustification ?? "", DbType.String);
+            // Agregar parámetros para miembros de la junta
+            parameters.Add("@tenureDuration", staffRequest.TenureDuration, DbType.Int32);
+            parameters.Add("@tenureDurationUnitId", staffRequest.TenureDurationUnitId, DbType.Int32);
+            parameters.Add("@receivesProgramSalaryId", staffRequest.ReceivesProgramSalaryId, DbType.Int32);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await dbConnection.ExecuteAsync("100_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
