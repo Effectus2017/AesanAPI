@@ -51,6 +51,18 @@ public class SiteRequest
     public int? OperatingDaysCalculated { get; set; }
 
     /// <summary>
+    /// Hora de inicio de funcionamiento del sitio
+    /// Operating start time of the site
+    /// </summary>
+    public TimeSpan? OperatingStartTime { get; set; }
+
+    /// <summary>
+    /// Hora de fin de funcionamiento del sitio
+    /// Operating end time of the site
+    /// </summary>
+    public TimeSpan? OperatingEndTime { get; set; }
+
+    /// <summary>
     /// ¿Desde cuándo su Entidad ofrece servicios con una matrícula establecida?
     /// Since when has your Entity offered services with an established registration?
     /// </summary>

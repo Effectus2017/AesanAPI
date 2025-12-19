@@ -31,6 +31,8 @@ CREATE TABLE [dbo].[Site]
     [OperatingFromDate] [date] NULL,
     [OperatingToDate] [date] NULL,
     [OperatingDaysCalculated] [int] NULL,
+    [OperatingStartTime] [time] NULL,
+    [OperatingEndTime] [time] NULL,
     [KitchenTypeId] [int] NULL,
     [GroupTypeId] [int] NULL,
     [DeliveryTypeId] [int] NULL,

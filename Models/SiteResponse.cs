@@ -39,6 +39,8 @@ public class SiteResponse
     public DateTime? OperatingFromDate { get; set; }
     public DateTime? OperatingToDate { get; set; }
     public int? OperatingDaysCalculated { get; set; }
+    public TimeSpan? OperatingStartTime { get; set; }
+    public TimeSpan? OperatingEndTime { get; set; }
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
 

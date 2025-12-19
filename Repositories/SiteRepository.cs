@@ -361,6 +361,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@operatingToDate", request.OperatingToDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingStartTime", request.OperatingStartTime, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@operatingEndTime", request.OperatingEndTime, DbType.Time, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);

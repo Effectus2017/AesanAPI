@@ -21,7 +21,7 @@ BEGIN
         s.OrganizationTypeId, ot.Name AS OrganizationTypeName, ot.NameEN AS OrganizationTypeNameEN,
         s.CenterTypeId, ct.Name AS CenterName, ct.NameEN AS CenterNameEN, s.NonProfit,
         s.BaseYear, s.RenewalYear, s.OperatingFromDate, s.OperatingToDate, s.OperatingDaysCalculated,
-        s.ServiceTime, s.KitchenTypeId, kt.Name AS KitchenTypeName, kt.NameEN AS KitchenTypeNameEN,
+        s.OperatingStartTime, s.OperatingEndTime, s.ServiceTime, s.KitchenTypeId, kt.Name AS KitchenTypeName, kt.NameEN AS KitchenTypeNameEN,
         s.GroupTypeId, gt.Name AS GroupTypeName, gt.NameEN AS GroupTypeNameEN, s.DeliveryTypeId,
         dt.Name AS DeliveryTypeName, dt.NameEN AS DeliveryTypeNameEN, s.SponsorTypeId,
         st.Name AS SponsorTypeName, st.NameEN AS SponsorTypeNameEN, s.ApplicantTypeId,
