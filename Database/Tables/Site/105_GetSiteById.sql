@@ -21,7 +21,7 @@ BEGIN
         s.OrganizationTypeId, ot.Name AS OrganizationTypeName, ot.NameEN AS OrganizationTypeNameEN,
         s.CenterTypeId, ct.Name AS CenterName, ct.NameEN AS CenterNameEN, s.NonProfit,
         s.BaseYear, s.RenewalYear, s.OperatingFromDate, s.OperatingToDate, s.OperatingDaysCalculated,
-        s.ServiceTime, s.KitchenTypeId, kt.Name AS KitchenTypeName, kt.NameEN AS KitchenTypeNameEN,
+        s.OperatingStartTime, s.OperatingEndTime, s.ServiceTime, s.KitchenTypeId, kt.Name AS KitchenTypeName, kt.NameEN AS KitchenTypeNameEN,
         s.GroupTypeId, gt.Name AS GroupTypeName, gt.NameEN AS GroupTypeNameEN, s.DeliveryTypeId,
         dt.Name AS DeliveryTypeName, dt.NameEN AS DeliveryTypeNameEN, s.SponsorTypeId,
         st.Name AS SponsorTypeName, st.NameEN AS SponsorTypeNameEN, s.ApplicantTypeId,
@@ -37,7 +37,7 @@ BEGIN
         spic.MobilePhone AS PersonInChargeMobilePhone,
         s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
-        s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
+        s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsAffiliatedCenter, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
         s.SiteCode,
         s.CreatedAt, s.UpdatedAt
     FROM Site s

@@ -51,6 +51,18 @@ public class SiteRequest
     public int? OperatingDaysCalculated { get; set; }
 
     /// <summary>
+    /// Hora de inicio de funcionamiento del sitio
+    /// Operating start time of the site
+    /// </summary>
+    public TimeSpan? OperatingStartTime { get; set; }
+
+    /// <summary>
+    /// Hora de fin de funcionamiento del sitio
+    /// Operating end time of the site
+    /// </summary>
+    public TimeSpan? OperatingEndTime { get; set; }
+
+    /// <summary>
     /// ¿Desde cuándo su Entidad ofrece servicios con una matrícula establecida?
     /// Since when has your Entity offered services with an established registration?
     /// </summary>
@@ -122,6 +134,14 @@ public class SiteRequest
     /// Solo para programa PACNA
     /// </summary>
     public bool? AtRiskService { get; set; } = false;
+
+    /// <summary>
+    /// ¿Es un centro o institución afiliada?
+    /// Is it an affiliated center or institution?
+    /// Solo para programa PACNA
+    /// </summary>
+    [Required(ErrorMessage = "El campo '¿Es un centro o institución afiliada?' es requerido")]
+    public bool? IsAffiliatedCenter { get; set; }
 
     /// <summary>
     /// ID que indica si el sitio es un Centro (No) o un Hogar (Sí)

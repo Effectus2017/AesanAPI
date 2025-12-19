@@ -197,6 +197,7 @@ builder.Services.AddScoped<IAesanDashboardRepository, AesanDashboardRepository>(
 builder.Services.AddScoped<IAgencyDashboardRepository, AgencyDashboardRepository>();
 builder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
 builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository>();
+builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<MessageTemplateService>();

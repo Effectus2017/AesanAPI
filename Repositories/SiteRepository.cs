@@ -208,6 +208,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@publicAllianceContractId", request.PublicAllianceContractId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isAffiliatedCenter", request.IsAffiliatedCenter, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@isDayCareHomeId", request.IsDayCareHomeId, DbType.Int32, ParameterDirection.Input);
 
             // Estado de actividad
@@ -361,6 +362,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingFromDate", request.OperatingFromDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@operatingToDate", request.OperatingToDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@operatingStartTime", request.OperatingStartTime, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@operatingEndTime", request.OperatingEndTime, DbType.Time, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
@@ -390,6 +393,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@organizedAthleticPrograms", request.OrganizedAthleticPrograms, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@atRiskService", request.AtRiskService, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@publicAllianceContractId", request.PublicAllianceContractId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@isAffiliatedCenter", request.IsAffiliatedCenter, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@isDayCareHomeId", request.IsDayCareHomeId, DbType.Int32, ParameterDirection.Input);
 
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
@@ -1037,7 +1041,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingFromDate", operatingFromDate.Date, DbType.Date);
             parameters.Add("@operatingToDate", operatingToDate.Date, DbType.Date);
             parameters.Add("@defaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
-            parameters.Add("@defaultEndTime", TimeSpan.FromHours(16), DbType.Time);  // 16:00:00
+            parameters.Add("@defaultEndTime", TimeSpan.FromHours(18), DbType.Time);  // 18:00:00
             parameters.Add("@defaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
             parameters.Add("@includeWeekends", includeWeekends, DbType.Boolean);
 

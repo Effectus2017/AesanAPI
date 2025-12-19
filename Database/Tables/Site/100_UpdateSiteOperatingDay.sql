@@ -54,9 +54,20 @@ BEGIN
         UPDATE SiteOperatingDays
             SET 
                 StartTime = CASE WHEN StartTime IS NULL THEN '08:00:00' ELSE StartTime END,
-                EndTime = CASE WHEN EndTime IS NULL THEN '16:00:00' ELSE EndTime END,
+                EndTime = CASE WHEN EndTime IS NULL THEN '18:00:00' ELSE EndTime END,
                 UpdatedAt = GETDATE()
             WHERE Id = @id AND (StartTime IS NULL OR EndTime IS NULL);
+    END
+
+        -- Obtener SiteId del día actualizado y recalcular
+        DECLARE @siteIdForRecalc INT;
+        SELECT @siteIdForRecalc = SiteId
+    FROM SiteOperatingDays
+    WHERE Id = @id;
+
+        IF @siteIdForRecalc IS NOT NULL
+        BEGIN
+        EXEC [dbo].[100_ReCalculateSiteOperatingDays] @siteIdForRecalc;
     END
 
         -- Retornar el número de filas afectadas

@@ -48,6 +48,8 @@ BEGIN
         site.OperatingFromDate,
         site.OperatingToDate,
         site.OperatingDaysCalculated,
+        site.OperatingStartTime,
+        site.OperatingEndTime,
         site.KitchenTypeId,
         site.GroupTypeId,
         site.DeliveryTypeId,

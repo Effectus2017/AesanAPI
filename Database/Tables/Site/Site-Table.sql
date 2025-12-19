@@ -31,6 +31,8 @@ CREATE TABLE [dbo].[Site]
     [OperatingFromDate] [date] NULL,
     [OperatingToDate] [date] NULL,
     [OperatingDaysCalculated] [int] NULL,
+    [OperatingStartTime] [time] NULL,
+    [OperatingEndTime] [time] NULL,
     [KitchenTypeId] [int] NULL,
     [GroupTypeId] [int] NULL,
     [DeliveryTypeId] [int] NULL,
@@ -64,6 +66,7 @@ CREATE TABLE [dbo].[Site]
     [OrganizedAthleticPrograms] [bit] NULL,
     [AtRiskService] [bit] NULL,
     [PublicAllianceContractId] [int] NULL,
+    [IsAffiliatedCenter] [bit] NULL,
     [IsDayCareHomeId] [int] NULL,
     [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] [datetime] NULL,
@@ -116,3 +119,5 @@ ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_ReviewResult] FOREIGN KEY([ReviewResu
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_SiteLocation] FOREIGN KEY([SiteLocationId]) REFERENCES [OptionSelection]([Id]);
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_PublicAllianceContract] FOREIGN KEY([PublicAllianceContractId]) REFERENCES [OptionSelection]([Id]);
 ALTER TABLE [Site] ADD CONSTRAINT [FK_Site_IsDayCareHome] FOREIGN KEY([IsDayCareHomeId]) REFERENCES [OptionSelection]([Id]);
+
+

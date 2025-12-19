@@ -29,6 +29,8 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @operatingFromDate DATE = NULL,
     @operatingToDate DATE = NULL,
     @operatingDaysCalculated INT = NULL,
+    @operatingStartTime TIME = NULL,
+    @operatingEndTime TIME = NULL,
     @kitchenTypeId INT = NULL,
     @groupTypeId INT = NULL,
     @deliveryTypeId INT = NULL,
@@ -57,6 +59,7 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @organizedAthleticPrograms BIT = 0,
     @atRiskService BIT = 0,
     @publicAllianceContractId INT = NULL,
+    @isAffiliatedCenter BIT = NULL,
     @isDayCareHomeId INT = NULL,
     @id INT OUTPUT
 AS
@@ -67,23 +70,23 @@ BEGIN
         (
         AgencyId, Name, StartDate, Address, CityId, RegionId, ZipCode, Latitude, Longitude,
         PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
-        OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingFromDate, OperatingToDate, OperatingDaysCalculated,
+        OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingFromDate, OperatingToDate, OperatingDaysCalculated, OperatingStartTime, OperatingEndTime,
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
         HasWarehouse, HasDiningRoom,
         CommunityId, WalkersId, SiteTypeId, SiteLocationId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
         SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, InactiveJustification, InactiveDate,
-        OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, IsDayCareHomeId, CreatedAt
+        OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, IsAffiliatedCenter, IsDayCareHomeId, CreatedAt
         )
     VALUES
         (
             @agencyId, @name, @startDate, @address, @cityId, @regionId, @zipCode, @latitude, @longitude,
             @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
-            @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingFromDate, @operatingToDate, @operatingDaysCalculated,
+            @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingFromDate, @operatingToDate, @operatingDaysCalculated, @operatingStartTime, @operatingEndTime,
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
             @hasWarehouse, @hasDiningRoom,
             @communityId, @walkersId, @siteTypeId, @siteLocationId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
             @siteCode, @generalEnrollment, @siteNumber, @serviceTime, 1, @inactiveJustification, @inactiveDate,
-            @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, @isDayCareHomeId, GETDATE()
+            @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, @isAffiliatedCenter, @isDayCareHomeId, GETDATE()
     );
 
     SET @id = SCOPE_IDENTITY();

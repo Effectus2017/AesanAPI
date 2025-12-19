@@ -32,6 +32,8 @@ CREATE OR ALTER PROCEDURE [dbo].[104_UpdateSite]
     @operatingFromDate DATE = NULL,
     @operatingToDate DATE = NULL,
     @operatingDaysCalculated INT = NULL,
+    @operatingStartTime TIME = NULL,
+    @operatingEndTime TIME = NULL,
     @kitchenTypeId INT = NULL,
     @groupTypeId INT = NULL,
     @deliveryTypeId INT = NULL,
@@ -59,6 +61,7 @@ CREATE OR ALTER PROCEDURE [dbo].[104_UpdateSite]
     @organizedAthleticPrograms BIT = NULL,
     @atRiskService BIT = NULL,
     @publicAllianceContractId INT = NULL,
+    @isAffiliatedCenter BIT = NULL,
     @isDayCareHomeId INT = NULL
 AS
 BEGIN
@@ -93,6 +96,8 @@ BEGIN
             OperatingFromDate = ISNULL(@operatingFromDate, OperatingFromDate),
             OperatingToDate = ISNULL(@operatingToDate, OperatingToDate),
             OperatingDaysCalculated = ISNULL(@operatingDaysCalculated, OperatingDaysCalculated),
+            OperatingStartTime = ISNULL(@operatingStartTime, OperatingStartTime),
+            OperatingEndTime = ISNULL(@operatingEndTime, OperatingEndTime),
             KitchenTypeId = ISNULL(@kitchenTypeId, KitchenTypeId),
             GroupTypeId = ISNULL(@groupTypeId, GroupTypeId),
             DeliveryTypeId = ISNULL(@deliveryTypeId, DeliveryTypeId),
@@ -120,6 +125,7 @@ BEGIN
             OrganizedAthleticPrograms = ISNULL(@organizedAthleticPrograms, OrganizedAthleticPrograms),
             AtRiskService = ISNULL(@atRiskService, AtRiskService),
             PublicAllianceContractId = ISNULL(@publicAllianceContractId, PublicAllianceContractId),
+            IsAffiliatedCenter = ISNULL(@isAffiliatedCenter, IsAffiliatedCenter),
             IsDayCareHomeId = ISNULL(@isDayCareHomeId, IsDayCareHomeId),
             UpdatedAt = GETDATE()
         WHERE Id = @id;

@@ -12,7 +12,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_InsertSiteOperatingDays]
     @operatingFromDate DATE,
     @operatingToDate DATE,
     @defaultStartTime TIME = '08:00:00',
-    @defaultEndTime TIME = '16:00:00',
+    @defaultEndTime TIME = '18:00:00',
     @defaultComment NVARCHAR(255) = 'Día de funcionamiento generado automáticamente',
     @includeWeekends BIT = 1
 AS

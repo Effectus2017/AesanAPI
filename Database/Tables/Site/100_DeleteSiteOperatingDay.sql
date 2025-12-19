@@ -28,10 +28,22 @@ BEGIN
         RETURN;
     END
 
+        -- Obtener SiteId antes de eliminar
+        DECLARE @siteIdForRecalc INT;
+        SELECT @siteIdForRecalc = SiteId
+    FROM SiteOperatingDays
+    WHERE Id = @id;
+
         -- Eliminar el día de funcionamiento
         -- CASCADE DELETE eliminará automáticamente los servicios relacionados (SiteOperatingDayService)
         DELETE FROM SiteOperatingDays
         WHERE Id = @id;
+
+        -- Recalcular días de funcionamiento
+        IF @siteIdForRecalc IS NOT NULL
+        BEGIN
+        EXEC [dbo].[100_ReCalculateSiteOperatingDays] @siteIdForRecalc;
+    END
 
         -- Retornar el número de filas afectadas
         SELECT @@ROWCOUNT AS RowsAffected;

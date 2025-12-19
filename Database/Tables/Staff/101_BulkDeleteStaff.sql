@@ -206,11 +206,23 @@ BEGIN
         -- 6. Si el Staff tenía UserId y NO se eliminó la agencia, eliminar relaciones del usuario
         -- (Si se eliminó la agencia, el usuario ya fue eliminado por 101_BulkDeleteAgency)
         -- IMPORTANTE: Eliminar el Staff antes del usuario evita conflictos de FK
+        -- IMPORTANTE: Eliminar TODAS las relaciones del usuario antes de eliminar el usuario
         -- =============================================
         IF @staffUserId IS NOT NULL AND @isAgencyOwner = 0
         BEGIN
         PRINT '';
         PRINT '--- Eliminando datos relacionados con el usuario del Staff ---';
+
+        -- Eliminar UserPermission (permisos del usuario) - PRIMERO para evitar FK constraint
+        IF OBJECT_ID('UserPermission', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM UserPermission 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserPermission';
+        END
 
         -- Eliminar relaciones de roles del usuario
         IF OBJECT_ID('AspNetUserRoles', 'U') IS NOT NULL
@@ -223,6 +235,72 @@ BEGIN
                     PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserRoles';
         END
 
+        -- Eliminar AspNetUserClaims (claims del usuario)
+        IF OBJECT_ID('AspNetUserClaims', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM AspNetUserClaims 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserClaims';
+        END
+
+        -- Eliminar AspNetUserLogins (logins externos del usuario)
+        IF OBJECT_ID('AspNetUserLogins', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM AspNetUserLogins 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AspNetUserLogins';
+        END
+
+        -- Eliminar UserProgram (programas asignados al usuario)
+        IF OBJECT_ID('UserProgram', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM UserProgram 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserProgram';
+        END
+
+        -- Eliminar TemporaryPasswords (contraseñas temporales del usuario)
+        IF OBJECT_ID('TemporaryPasswords', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM TemporaryPasswords 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de TemporaryPasswords';
+        END
+
+        -- Eliminar UserAgencyAssignment (donde UserId = @staffUserId)
+        IF OBJECT_ID('UserAgencyAssignment', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM UserAgencyAssignment 
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserAgencyAssignment (donde UserId)';
+        END
+
+        -- Eliminar UserAgencyAssignment (donde AssignedBy = @staffUserId)
+        IF OBJECT_ID('UserAgencyAssignment', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM UserAgencyAssignment 
+                WHERE AssignedBy = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserAgencyAssignment (donde AssignedBy)';
+        END
+
         -- Eliminar otras relaciones de AgencyUsers (si no se eliminó la agencia)
         DELETE FROM AgencyUsers 
             WHERE UserId = @staffUserId;
@@ -231,7 +309,15 @@ BEGIN
         IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers';
 
-        -- Eliminar el usuario de AspNetUsers (ahora es seguro porque el Staff ya fue eliminado)
+        -- Eliminar AgencyUsers (donde AssignedBy = @staffUserId)
+        DELETE FROM AgencyUsers 
+            WHERE AssignedBy = @staffUserId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers (donde AssignedBy)';
+
+        -- Eliminar el usuario de AspNetUsers (ahora es seguro porque todas las relaciones fueron eliminadas)
         IF OBJECT_ID('AspNetUsers', 'U') IS NOT NULL
             BEGIN
             DELETE FROM AspNetUsers 
@@ -288,3 +374,5 @@ BEGIN
     END CATCH
 END;
 GO
+
+EXEC [dbo].[101_BulkDeleteStaff] 1;

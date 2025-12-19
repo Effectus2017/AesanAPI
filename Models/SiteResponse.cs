@@ -39,6 +39,8 @@ public class SiteResponse
     public DateTime? OperatingFromDate { get; set; }
     public DateTime? OperatingToDate { get; set; }
     public int? OperatingDaysCalculated { get; set; }
+    public TimeSpan? OperatingStartTime { get; set; }
+    public TimeSpan? OperatingEndTime { get; set; }
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
 
@@ -125,6 +127,13 @@ public class SiteResponse
     /// Solo para programa PACNA
     /// </summary>
     public bool? AtRiskService { get; set; }
+
+    /// <summary>
+    /// ¿Es un centro o institución afiliada?
+    /// Is it an affiliated center or institution?
+    /// Solo para programa PACNA
+    /// </summary>
+    public bool? IsAffiliatedCenter { get; set; }
 
     /// <summary>
     /// ID que indica si el sitio es un Centro (No) o un Hogar (Sí)
