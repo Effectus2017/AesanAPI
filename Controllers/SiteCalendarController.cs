@@ -218,4 +218,42 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
             return StatusCode(500, ex.Message);
         }
     }
+
+    /// <summary>
+    /// Obtiene los días de la semana permitidos para un programa específico con sus nombres
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de días permitidos con sus nombres en español e inglés</returns>
+    [HttpGet("get-allowed-days-by-program-id")]
+    [SwaggerOperation(Summary = "Obtiene días permitidos por programa", Description = "Devuelve los días de la semana permitidos para operar según el programa especificado con sus nombres en español e inglés.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DayOfWeekResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetAllowedDaysByProgramId([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId.Value <= 0)
+            {
+                return BadRequest("El ID del programa debe ser mayor que cero");
+            }
+
+            _logger.LogInformation("Obteniendo días permitidos para el programa {ProgramId}", queryParameters.ProgramId.Value);
+
+            var allowedDays = await _siteCalendarRepository.GetAllowedDaysByProgramId(queryParameters.ProgramId.Value);
+
+            if (allowedDays == null || allowedDays.Count == 0)
+            {
+                return NotFound($"No se encontraron días permitidos para el programa {queryParameters.ProgramId.Value}");
+            }
+
+            return Ok(allowedDays);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener días permitidos para el programa {ProgramId}: {Message}", queryParameters.ProgramId, ex.Message);
+            return StatusCode(500, ex.Message);
+        }
+    }
 }

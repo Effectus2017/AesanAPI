@@ -9,6 +9,7 @@ public interface ISiteRepository
     /// <summary>
     /// Obtiene un sitio por su ID
     /// </summary>
+    /// <param name="id">ID del sitio</param>
     Task<SiteResponse> GetSiteById(int id);
 
     /// <summary>

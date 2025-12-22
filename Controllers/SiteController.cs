@@ -8,6 +8,7 @@ using Api.Services;
 using Api.Data;
 using Dapper;
 using System.Data;
+using System.Security.Claims;
 
 namespace Api.Controllers;
 

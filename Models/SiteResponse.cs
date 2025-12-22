@@ -164,4 +164,10 @@ public class SiteResponse
     public int? OperatingPolicyId => OperatingPolicy?.Id;
     public int? AreaTypeId => AreaType?.Id;
     public int? LocationTypeId => LocationType?.Id;
+
+    /// <summary>
+    /// Días de la semana permitidos para operar según los programas de la agencia
+    /// Allowed operating days of the week based on agency programs
+    /// </summary>
+    public List<DayOfWeekResponse>? AllowedOperatingDays { get; set; }
 }

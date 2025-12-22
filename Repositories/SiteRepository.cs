@@ -13,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -24,6 +24,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
     private readonly Lazy<ISiteOperatingDayServiceRepository> _siteOperatingDayServiceRepository = siteOperatingDayServiceRepository ?? throw new ArgumentNullException(nameof(siteOperatingDayServiceRepository));
     private readonly Lazy<ISitePersonInChargeRepository> _sitePersonInChargeRepository = sitePersonInChargeRepository ?? throw new ArgumentNullException(nameof(sitePersonInChargeRepository));
+    private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
+    private readonly Lazy<ISiteCalendarRepository> _siteCalendarRepository = siteCalendarRepository ?? throw new ArgumentNullException(nameof(siteCalendarRepository));
+    private readonly Lazy<ISiteProgramRepository> _siteProgramRepository = siteProgramRepository ?? throw new ArgumentNullException(nameof(siteProgramRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -56,6 +59,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             data.Services = services.Select(_mappingService.MapSiteService).ToList();
             data.DayCareHome = dayCareHome != null ? _mappingService.MapSiteDayCareHome(dayCareHome) : null;
             data.Participants = participants.Select(_mappingService.MapSiteParticipant).ToList();
+
+            // Obtener días permitidos según el programa del sitio
+            try
+            {
+                // Obtener programas del sitio directamente
+                var sitePrograms = await _siteProgramRepository.Value.GetSiteProgramsBySiteId(id);
+                var activeSitePrograms = sitePrograms.Where(sp => sp.IsActive).ToList();
+
+                if (activeSitePrograms.Any())
+                {
+                    // Obtener el primer programa activo del sitio (programa principal)
+                    var firstProgram = activeSitePrograms.OrderByDescending(sp => sp.StartDate).First();
+                    var programId = firstProgram.ProgramId;
+
+                    // Obtener días permitidos para ese programa
+                    var allowedDays = await _siteCalendarRepository.Value.GetAllowedDaysByProgramId(programId);
+                    data.AllowedOperatingDays = allowedDays;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error obteniendo días permitidos para sitio {Id}: {Message}", id, ex.Message);
+                // No fallar si no se pueden obtener los días permitidos, simplemente no se incluyen
+            }
+
             return data;
         }
         catch (Exception ex)
@@ -269,6 +297,12 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Insertar días de funcionamiento si se proporcionan fechas
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue)
             {
+                // Validar que OperatingDaysOfWeek no esté vacío o nulo
+                if (request.OperatingDaysOfWeek == null || request.OperatingDaysOfWeek.Count == 0)
+                {
+                    throw new ArgumentException("Los días de la semana de funcionamiento (OperatingDaysOfWeek) son requeridos y no pueden estar vacíos.");
+                }
+
                 // Convertir IsDayCareHomeId a bool para compatibilidad con InsertSiteOperatingDays
                 bool? isDayCareHomeBool = null;
 
@@ -288,6 +322,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     isDayCareHomeBool,
                     request.OperatingStartTime,  // Pasar la hora de inicio del request
                     request.OperatingEndTime,    // Pasar la hora de fin del request
+                    request.OperatingDaysOfWeek,  // Pasar los días de la semana seleccionados
                     dbConnection,
                     transaction);
             }
@@ -1028,6 +1063,15 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="operatingFromDate">Fecha desde</param>
     /// <param name="operatingToDate">Fecha hasta</param>
+    /// <param name="services">Servicios del sitio</param>
+    /// <param name="programIds">IDs de programas</param>
+    /// <param name="centerTypeId">ID del tipo de centro</param>
+    /// <param name="isDayCareHome">Si es Day Care Home</param>
+    /// <param name="operatingStartTime">Hora de inicio</param>
+    /// <param name="operatingEndTime">Hora de fin</param>
+    /// <param name="operatingDaysOfWeek">Días de la semana seleccionados (1=Lunes, 2=Martes, ..., 7=Domingo)</param>
+    /// <param name="connection">Conexión a la base de datos</param>
+    /// <param name="transaction">Transacción</param>
     /// <returns>Número de días insertados</returns>
     private async Task<int> InsertSiteOperatingDays(
         int siteId,
@@ -1039,6 +1083,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         bool? isDayCareHome = null,
         TimeSpan? operatingStartTime = null,
         TimeSpan? operatingEndTime = null,
+        List<int>? operatingDaysOfWeek = null,
         IDbConnection? connection = null,
         IDbTransaction? transaction = null)
     {
@@ -1047,25 +1092,61 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
         try
         {
-            // Determinar configuración de días de funcionamiento según programa y tipo de sitio
-            var includeWeekends = await DetermineOperatingDaysConfiguration(programIds, centerTypeId, isDayCareHome);
+            // Validar que operatingDaysOfWeek no esté vacío
+            if (operatingDaysOfWeek == null || operatingDaysOfWeek.Count == 0)
+            {
+                throw new ArgumentException("Los días de la semana de funcionamiento (OperatingDaysOfWeek) son requeridos y no pueden estar vacíos.");
+            }
 
-            var parameters = new DynamicParameters();
+            // Usar las horas proporcionadas o valores por defecto
+            var defaultStartTime = operatingStartTime ?? TimeSpan.FromHours(8); // 08:00:00
+            var defaultEndTime = operatingEndTime ?? TimeSpan.FromHours(18);   // 18:00:00
+            var defaultComment = "Día de funcionamiento generado automáticamente";
 
-            parameters.Add("@siteId", siteId, DbType.Int32);
-            parameters.Add("@operatingFromDate", operatingFromDate.Date, DbType.Date);
-            parameters.Add("@operatingToDate", operatingToDate.Date, DbType.Date);
-            parameters.Add("@defaultStartTime", TimeSpan.FromHours(8), DbType.Time); // 08:00:00
-            parameters.Add("@defaultEndTime", TimeSpan.FromHours(18), DbType.Time);  // 18:00:00
-            parameters.Add("@defaultComment", "Día de funcionamiento generado automáticamente", DbType.String);
-            parameters.Add("@includeWeekends", includeWeekends, DbType.Boolean);
+            // Establecer Lunes como primer día de la semana (DayOfWeek: 0=Domingo, 1=Lunes, ..., 6=Sábado)
+            // Convertir a formato donde 1=Lunes, 2=Martes, ..., 7=Domingo
+            int GetDayOfWeekNumber(DateTime date)
+            {
+                // DayOfWeek: 0=Domingo, 1=Lunes, 2=Martes, ..., 6=Sábado
+                // Convertir a: 1=Lunes, 2=Martes, ..., 7=Domingo
+                int dayOfWeek = (int)date.DayOfWeek;
+                return dayOfWeek == 0 ? 7 : dayOfWeek; // Domingo = 7
+            }
 
-            var result = await dbConnection.QuerySingleAsync<dynamic>("100_InsertSiteOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
+            int daysInserted = 0;
+            DateTime currentDate = operatingFromDate.Date;
 
-            var daysInserted = (int)result.DaysInserted;
+            // Iterar sobre todas las fechas en el rango
+            while (currentDate <= operatingToDate.Date)
+            {
+                int dayOfWeekNumber = GetDayOfWeekNumber(currentDate);
 
-            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}. Incluye fines de semana: {IncludeWeekends}",
-                daysInserted, siteId, operatingFromDate.Date, operatingToDate.Date, includeWeekends);
+                // Solo insertar si el día de la semana está en la lista de días seleccionados
+                if (operatingDaysOfWeek.Contains(dayOfWeekNumber))
+                {
+                    var insertSql = @"
+                        INSERT INTO SiteOperatingDays
+                            (SiteId, OperatingDate, StartTime, EndTime, Comment, IsActive, CreatedAt)
+                        VALUES
+                            (@siteId, @operatingDate, @startTime, @endTime, @comment, 1, GETDATE())";
+
+                    await dbConnection.ExecuteAsync(insertSql, new
+                    {
+                        siteId,
+                        operatingDate = currentDate,
+                        startTime = defaultStartTime,
+                        endTime = defaultEndTime,
+                        comment = defaultComment
+                    }, transaction);
+
+                    daysInserted++;
+                }
+
+                currentDate = currentDate.AddDays(1);
+            }
+
+            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}. Días de la semana seleccionados: {OperatingDaysOfWeek}",
+                daysInserted, siteId, operatingFromDate.Date, operatingToDate.Date, string.Join(", ", operatingDaysOfWeek));
 
             // Después de crear los días, crear los servicios para cada día
             if (services != null && services.Count > 0)
