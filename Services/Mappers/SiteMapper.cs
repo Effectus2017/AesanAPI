@@ -85,7 +85,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId, Name = item.RegionName ?? string.Empty }) : null,
                 PostalCity = item.PostalCityId != null ? _mappingService.Value.MapCity(new { Id = item.PostalCityId, Name = item.PostalCityName ?? string.Empty }) : null,
                 PostalRegion = item.PostalRegionId != null ? _mappingService.Value.MapRegion(new { Id = item.PostalRegionId, Name = item.PostalRegionName ?? string.Empty }) : null,
-                OrganizationType = _mappingService.Value.MapOrganizationType(item.OrganizationTypeId, item.OrganizationTypeName, item.OrganizationTypeNameEN),
+                OrganizationType = _mappingService.Value.MapOrganizationType(item.OrganizationTypeId, item.OrganizationTypeName, item.OrganizationTypeNameEN, item.OrganizationTypeRequiresCenterType),
                 KitchenType = _mappingService.Value.MapKitchenType(item.KitchenTypeId, item.KitchenTypeName, item.KitchenTypeNameEN),
                 GroupType = _mappingService.Value.MapGroupType(item.GroupTypeId, item.GroupTypeName, item.GroupTypeNameEN),
                 DeliveryType = _mappingService.Value.MapDeliveryType(item.DeliveryTypeId, item.DeliveryTypeName, item.DeliveryTypeNameEN),

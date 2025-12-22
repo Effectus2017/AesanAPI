@@ -18,7 +18,7 @@ BEGIN
         s.CityId, c.Name AS CityName, s.RegionId, r.Name AS RegionName, s.ZipCode,
         s.Latitude, s.Longitude, s.PostalAddress, s.PostalCityId, c2.Name AS PostalCityName,
         s.PostalRegionId, r2.Name AS PostalRegionName, s.PostalZipCode, s.SameAsPhysicalAddress,
-        s.OrganizationTypeId, ot.Name AS OrganizationTypeName, ot.NameEN AS OrganizationTypeNameEN,
+        s.OrganizationTypeId, ot.Name AS OrganizationTypeName, ot.NameEN AS OrganizationTypeNameEN, ot.RequiresCenterType AS OrganizationTypeRequiresCenterType,
         s.CenterTypeId, ct.Name AS CenterName, ct.NameEN AS CenterNameEN, s.NonProfit,
         s.BaseYear, s.RenewalYear, s.OperatingFromDate, s.OperatingToDate, s.OperatingDaysCalculated,
         s.OperatingStartTime, s.OperatingEndTime, s.ServiceTime, s.KitchenTypeId, kt.Name AS KitchenTypeName, kt.NameEN AS KitchenTypeNameEN,
