@@ -13,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -24,6 +24,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
     private readonly Lazy<ISiteOperatingDayServiceRepository> _siteOperatingDayServiceRepository = siteOperatingDayServiceRepository ?? throw new ArgumentNullException(nameof(siteOperatingDayServiceRepository));
     private readonly Lazy<ISitePersonInChargeRepository> _sitePersonInChargeRepository = sitePersonInChargeRepository ?? throw new ArgumentNullException(nameof(sitePersonInChargeRepository));
+    private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
+    private readonly Lazy<ISiteCalendarRepository> _siteCalendarRepository = siteCalendarRepository ?? throw new ArgumentNullException(nameof(siteCalendarRepository));
+    private readonly Lazy<ISiteProgramRepository> _siteProgramRepository = siteProgramRepository ?? throw new ArgumentNullException(nameof(siteProgramRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -56,6 +59,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             data.Services = services.Select(_mappingService.MapSiteService).ToList();
             data.DayCareHome = dayCareHome != null ? _mappingService.MapSiteDayCareHome(dayCareHome) : null;
             data.Participants = participants.Select(_mappingService.MapSiteParticipant).ToList();
+
+            // Obtener días permitidos según el programa del sitio
+            try
+            {
+                // Obtener programas del sitio directamente
+                var sitePrograms = await _siteProgramRepository.Value.GetSiteProgramsBySiteId(id);
+                var activeSitePrograms = sitePrograms.Where(sp => sp.IsActive).ToList();
+
+                if (activeSitePrograms.Any())
+                {
+                    // Obtener el primer programa activo del sitio (programa principal)
+                    var firstProgram = activeSitePrograms.OrderByDescending(sp => sp.StartDate).First();
+                    var programId = firstProgram.ProgramId;
+
+                    // Obtener días permitidos para ese programa
+                    var allowedDays = await _siteCalendarRepository.Value.GetAllowedDaysByProgramId(programId);
+                    data.AllowedOperatingDays = allowedDays;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error obteniendo días permitidos para sitio {Id}: {Message}", id, ex.Message);
+                // No fallar si no se pueden obtener los días permitidos, simplemente no se incluyen
+            }
+
             return data;
         }
         catch (Exception ex)

@@ -298,4 +298,30 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         }
     }
 
+    /// <summary>
+    /// Obtiene los días de la semana permitidos para un programa específico con sus nombres
+    /// </summary>
+    public async Task<List<DayOfWeekResponse>> GetAllowedDaysByProgramId(int programId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@ProgramId", programId, DbType.Int32);
+
+            var result = await dbConnection.QueryAsync<DayOfWeekResponse>(
+                "100_GetAllowedDaysByProgramId",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting allowed days for program {ProgramId}: {Message}", programId, ex.Message);
+            throw new Exception($"Error al obtener los días permitidos para el programa {programId}: {ex.Message}", ex);
+        }
+    }
+
 }

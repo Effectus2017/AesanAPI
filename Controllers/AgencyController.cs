@@ -158,7 +158,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
             }
 
             var programs = await _unitOfWork.AgencyRepository.GetAgencyProgramsByUserId(queryParameters.UserId);
-            if (programs == null || !programs.Any())
+
+            if (programs == null || programs.Count == 0)
             {
                 return NotFound("No se encontraron programas para el usuario especificado.");
             }
@@ -344,11 +345,11 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - INICIO");
         SignalRLogger.LogToFile($"[AgencyController] QueryParameters recibidos - AgencyId: {queryParameters.AgencyId}, CompletedRegistrationDate: {queryParameters.CompletedRegistrationDate}");
-        
+
         // Log de todos los query parameters recibidos
         var queryString = Request.QueryString.ToString();
         SignalRLogger.LogToFile($"[AgencyController] QueryString completo: {queryString}");
-        
+
         try
         {
             if (ModelState.IsValid)
@@ -372,11 +373,11 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                 // Obtener la agencia para obtener los evaluadores asignados
                 SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Obteniendo agencia con ID: {queryParameters.AgencyId}");
                 var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
-                
+
                 if (agency != null)
                 {
                     SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - Agencia obtenida correctamente");
-                    
+
                     // Obtener todos los evaluadores relacionados (agencia + programas)
                     List<string> evaluatorUserIds = new List<string>();
                     try
@@ -390,16 +391,16 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                         SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR obteniendo evaluadores: {ex.Message}");
                         _logger.LogError(ex, "Error obteniendo todos los evaluadores para agencia {AgencyId}", queryParameters.AgencyId);
                     }
-                    
-                    if (evaluatorUserIds != null && evaluatorUserIds.Any())
+
+                    if (evaluatorUserIds != null && evaluatorUserIds.Count != 0)
                     {
                         // Preparar variables para los templates
-                        var agencyName = ((dynamic)agency).Name?.ToString() ?? "";
-                        var agencyCode = ((dynamic)agency).AgencyCode?.ToString() ?? ((dynamic)agency).Code?.ToString() ?? "";
+                        var agencyName = agency.Name?.ToString() ?? "";
+                        var agencyCode = agency.AgencyCode?.ToString() ?? agency.Code?.ToString() ?? "";
                         var completionDate = queryParameters.CompletedRegistrationDate.Value.ToString("dd/MM/yyyy");
-                        
+
                         SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Variables preparadas: SponsorName={agencyName}, SponsorCode={agencyCode}, CompletionDate={completionDate}");
-                        
+
                         var variables = new Dictionary<string, string>
                         {
                             { "SponsorName", agencyName },
@@ -410,7 +411,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                         // Enviar mensaje y email a cada evaluador
                         int successCount = 0;
                         int errorCount = 0;
-                        
+
                         foreach (var evaluatorUserId in evaluatorUserIds)
                         {
                             if (string.IsNullOrEmpty(evaluatorUserId))
@@ -440,7 +441,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                                 // Continuar con el siguiente evaluador sin interrumpir el proceso
                             }
                         }
-                        
+
                         SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Resumen: {successCount} mensajes enviados exitosamente, {errorCount} errores");
                         _logger.LogInformation("Notificaciones enviadas a {SuccessCount} de {TotalCount} evaluadores para agencia {AgencyId}", successCount, evaluatorUserIds.Count, queryParameters.AgencyId);
                     }

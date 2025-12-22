@@ -58,4 +58,11 @@ public interface ISiteCalendarRepository
     /// <returns>True si la operación fue exitosa</returns>
     Task<bool> ReCalculateOperatingDays(int siteId);
 
+    /// <summary>
+    /// Obtiene los días de la semana permitidos para un programa específico con sus nombres
+    /// </summary>
+    /// <param name="programId">ID del programa</param>
+    /// <returns>Lista de días permitidos con sus nombres en español e inglés</returns>
+    Task<List<DayOfWeekResponse>> GetAllowedDaysByProgramId(int programId);
+
 }
