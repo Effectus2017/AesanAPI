@@ -170,4 +170,10 @@ public class SiteResponse
     /// Allowed operating days of the week based on agency programs
     /// </summary>
     public List<DayOfWeekResponse>? AllowedOperatingDays { get; set; }
+
+    /// <summary>
+    /// Días de la semana seleccionados para operar
+    /// Selected operating days of the week
+    /// </summary>
+    public List<DayOfWeekResponse>? OperatingDaysOfWeek { get; set; }
 }

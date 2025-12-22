@@ -262,6 +262,34 @@ public class SiteMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
+    /// Mapea un resultado dinámico a un DayOfWeekResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DayOfWeekResponse</returns>
+    public static DayOfWeekResponse MapOperatingDayOfWeekFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            return new DayOfWeekResponse
+            {
+                Id = item.DayOfWeekId,
+                Name = item.DayOfWeekName ?? string.Empty,
+                NameEN = item.DayOfWeekNameEN ?? string.Empty
+            };
+        }
+        catch (Exception)
+        {
+            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Mapea un servicio de sitio desde un resultado dinámico a un SiteServiceResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>

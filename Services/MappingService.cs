@@ -299,6 +299,26 @@ public class MappingService
         return SiteMapper.MapEducationLevelFromResult(item);
     }
 
+    /// <summary>
+    /// Mapea un día de la semana desde un resultado dinámico a un DayOfWeekResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>DayOfWeekResponse</returns>
+    public DayOfWeekResponse MapOperatingDayOfWeek(dynamic item)
+    {
+        return SiteMapper.MapOperatingDayOfWeekFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea un grupo de niños específico desde un resultado dinámico a un SiteChildGroupResponse
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SiteChildGroupResponse</returns>
+    public SiteChildGroupResponse MapSiteChildGroup(dynamic item)
+    {
+        return SiteMapper.MapSiteChildGroupFromResult(item);
+    }
+
     #endregion
 
     #region Option Selection Mappings

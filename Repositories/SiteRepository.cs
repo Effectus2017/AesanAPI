@@ -45,9 +45,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             var site = await result.ReadFirstOrDefaultAsync<dynamic>();
             var educationLevels = result.Read<dynamic>().ToList();
+            var operatingDaysOfWeek = result.Read<dynamic>().ToList();
             var services = result.Read<dynamic>().ToList();
             var dayCareHome = await result.ReadFirstOrDefaultAsync<dynamic>();
             var participants = result.Read<dynamic>().ToList();
+            var childGroups = result.Read<dynamic>().ToList();
 
             if (site == null)
             {
@@ -56,33 +58,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             var data = _mappingService.MapSite(site);
             data.EducationLevels = educationLevels.Select(_mappingService.MapEducationLevel).ToList();
+
+            // Mapear días de la semana de operación desde SiteOperatingDaysOfWeek
+            data.OperatingDaysOfWeek = operatingDaysOfWeek
+                .Select(_mappingService.MapOperatingDayOfWeek)
+                .OfType<DayOfWeekResponse>()
+                .ToList();
+
             data.Services = services.Select(_mappingService.MapSiteService).ToList();
             data.DayCareHome = dayCareHome != null ? _mappingService.MapSiteDayCareHome(dayCareHome) : null;
             data.Participants = participants.Select(_mappingService.MapSiteParticipant).ToList();
-
-            // Obtener días permitidos según el programa del sitio
-            try
-            {
-                // Obtener programas del sitio directamente
-                var sitePrograms = await _siteProgramRepository.Value.GetSiteProgramsBySiteId(id);
-                var activeSitePrograms = sitePrograms.Where(sp => sp.IsActive).ToList();
-
-                if (activeSitePrograms.Any())
-                {
-                    // Obtener el primer programa activo del sitio (programa principal)
-                    var firstProgram = activeSitePrograms.OrderByDescending(sp => sp.StartDate).First();
-                    var programId = firstProgram.ProgramId;
-
-                    // Obtener días permitidos para ese programa
-                    var allowedDays = await _siteCalendarRepository.Value.GetAllowedDaysByProgramId(programId);
-                    data.AllowedOperatingDays = allowedDays;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error obteniendo días permitidos para sitio {Id}: {Message}", id, ex.Message);
-                // No fallar si no se pueden obtener los días permitidos, simplemente no se incluyen
-            }
+            data.ChildGroups = childGroups
+                .Select(d => _mappingService.MapSiteChildGroup(d))
+                .OfType<SiteChildGroupResponse>()
+                .ToList();
 
             return data;
         }
@@ -294,6 +283,36 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteParticipants(siteId, participantTypeIds, dbConnection, transaction);
             }
 
+            // Insertar relaciones sitio-programa si se proporcionan ProgramIds
+            if (request.ProgramIds != null && request.ProgramIds.Count > 0)
+            {
+                foreach (var programId in request.ProgramIds)
+                {
+                    var startDate = request.OperatingFromDate ?? request.StartDate ?? DateTime.Now.Date;
+                    var endDate = request.OperatingToDate ?? new DateTime(2099, 12, 31); // Fecha futura si no se especifica
+
+                    var siteProgramRequest = new SiteProgramRequest
+                    {
+                        SiteId = siteId,
+                        ProgramId = programId,
+                        StartDate = startDate,
+                        EndDate = endDate,
+                        IsActive = true
+                    };
+
+                    try
+                    {
+                        await _siteProgramRepository.Value.InsertSiteProgram(siteProgramRequest, dbConnection, transaction);
+                        _logger.LogInformation("Se creó relación sitio-programa: SiteId={SiteId}, ProgramId={ProgramId}", siteId, programId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error al crear relación sitio-programa para SiteId={SiteId}, ProgramId={ProgramId}", siteId, programId);
+                        // No fallar la creación del sitio si falla la relación programa
+                    }
+                }
+            }
+
             // Insertar días de funcionamiento si se proporcionan fechas
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue)
             {
@@ -302,6 +321,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 {
                     throw new ArgumentException("Los días de la semana de funcionamiento (OperatingDaysOfWeek) son requeridos y no pueden estar vacíos.");
                 }
+
+                // Insertar días de la semana seleccionados en la tabla de relación
+                await InsertSiteOperatingDaysOfWeek(siteId, request.OperatingDaysOfWeek, dbConnection, transaction);
 
                 // Convertir IsDayCareHomeId a bool para compatibilidad con InsertSiteOperatingDays
                 bool? isDayCareHomeBool = null;
@@ -460,6 +482,12 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     await UpdateSiteEducationLevels(request.Id.Value, educationLevelIds, dbConnection);
                 }
 
+                // Actualizar días de la semana de operación
+                if (request.OperatingDaysOfWeek != null && request.OperatingDaysOfWeek.Count > 0)
+                {
+                    await UpdateSiteOperatingDaysOfWeek(request.Id.Value, request.OperatingDaysOfWeek, dbConnection);
+                }
+
                 // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
                 // if (request.DayCareHome?.OffersServiceToDifferentGroups == true && request.ChildGroups != null && request.ChildGroups.Count != 0)
                 // {
@@ -498,6 +526,52 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 //     var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
                 //     await UpdateSiteParticipants(request.Id.Value, participantTypeIds);
                 // }
+
+                // Sincronizar relaciones sitio-programa
+                if (request.ProgramIds != null)
+                {
+                    using var transaction = dbConnection.BeginTransaction();
+                    try
+                    {
+                        // Eliminar programas existentes del sitio
+                        await _siteProgramRepository.Value.DeleteSitePrograms(request.Id.Value, dbConnection, transaction);
+
+                        // Insertar nuevos programas
+                        foreach (var programId in request.ProgramIds)
+                        {
+                            var startDate = request.OperatingFromDate ?? request.StartDate ?? DateTime.Now.Date;
+                            var endDate = request.OperatingToDate ?? new DateTime(2099, 12, 31); // Fecha futura si no se especifica
+
+                            var siteProgramRequest = new SiteProgramRequest
+                            {
+                                SiteId = request.Id.Value,
+                                ProgramId = programId,
+                                StartDate = startDate,
+                                EndDate = endDate,
+                                IsActive = true
+                            };
+
+                            try
+                            {
+                                await _siteProgramRepository.Value.InsertSiteProgram(siteProgramRequest, dbConnection, transaction);
+                                _logger.LogInformation("Se actualizó relación sitio-programa: SiteId={SiteId}, ProgramId={ProgramId}", request.Id.Value, programId);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error al actualizar relación sitio-programa para SiteId={SiteId}, ProgramId={ProgramId}", request.Id.Value, programId);
+                                // Continuar con los demás programas
+                            }
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        _logger.LogError(ex, "Error al sincronizar programas del sitio {SiteId}", request.Id.Value);
+                        // No fallar la actualización del sitio si falla la sincronización de programas
+                    }
+                }
 
                 // Invalidar caché
                 //InvalidateCache(request.Id.Value);
@@ -593,6 +667,42 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
+    /// Inserta múltiples días de la semana para un sitio
+    /// </summary>
+    /// <param name="siteId">ID del sitio</param>
+    /// <param name="dayOfWeekIds">Lista de IDs de días de la semana (1=Lunes, 2=Martes, ..., 7=Domingo)</param>
+    /// <param name="connection">Conexión de base de datos (opcional)</param>
+    /// <param name="transaction">Transacción de base de datos (opcional)</param>
+    /// <returns>True si se insertaron correctamente</returns>
+    private async Task<bool> InsertSiteOperatingDaysOfWeek(int siteId, List<int> dayOfWeekIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@dayOfWeekIds", string.Join(",", dayOfWeekIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_InsertSiteOperatingDaysOfWeek", parameters, transaction, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar días de la semana para el sitio {SiteId}", siteId);
+            throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
     /// Actualiza múltiples niveles educativos para un sitio
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
@@ -615,6 +725,42 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar niveles educativos para el sitio {SiteId}", siteId);
+            throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Actualiza múltiples días de la semana para un sitio
+    /// </summary>
+    /// <param name="siteId">ID del sitio</param>
+    /// <param name="dayOfWeekIds">Lista de IDs de días de la semana (1=Lunes, 2=Martes, ..., 7=Domingo)</param>
+    /// <param name="connection">Conexión de base de datos (opcional)</param>
+    /// <param name="transaction">Transacción de base de datos (opcional)</param>
+    /// <returns>True si se actualizaron correctamente</returns>
+    private async Task<bool> UpdateSiteOperatingDaysOfWeek(int siteId, List<int> dayOfWeekIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@dayOfWeekIds", string.Join(",", dayOfWeekIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_UpdateSiteOperatingDaysOfWeek", parameters, transaction, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar días de la semana para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
         }
         finally

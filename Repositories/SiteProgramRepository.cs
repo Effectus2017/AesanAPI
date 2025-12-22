@@ -74,6 +74,66 @@ public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRep
     }
 
     /// <summary>
+    /// Inserta una nueva relación sitio-programa usando una conexión y transacción existentes
+    /// </summary>
+    public async Task<int> InsertSiteProgram(SiteProgramRequest request, IDbConnection connection, IDbTransaction transaction)
+    {
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", request.SiteId, DbType.Int32);
+            parameters.Add("@programId", request.ProgramId, DbType.Int32);
+            parameters.Add("@startDate", request.StartDate, DbType.Date);
+            parameters.Add("@endDate", request.EndDate, DbType.Date);
+            parameters.Add("@isActive", request.IsActive, DbType.Boolean);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await connection.ExecuteAsync(
+                "100_InsertSiteProgram",
+                parameters,
+                transaction,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return parameters.Get<int>("@id");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar relación sitio-programa para SiteId={SiteId}, ProgramId={ProgramId}", request.SiteId, request.ProgramId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Elimina todos los programas de un sitio
+    /// </summary>
+    public async Task<int> DeleteSitePrograms(int siteId, IDbConnection connection, IDbTransaction transaction)
+    {
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await connection.ExecuteAsync(
+                "100_DeleteSitePrograms",
+                parameters,
+                transaction,
+                commandType: CommandType.StoredProcedure
+            );
+
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            _logger.LogInformation("Se eliminaron {Count} programas del sitio {SiteId}", rowsAffected, siteId);
+            return rowsAffected;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar programas del sitio {SiteId}", siteId);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Actualiza una relación sitio-programa existente
     /// </summary>
     public async Task<bool> UpdateSiteProgram(SiteProgramRequest request)

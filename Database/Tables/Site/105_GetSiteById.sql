@@ -70,6 +70,13 @@ BEGIN
         LEFT JOIN EducationLevel el ON sel.EducationLevelId = el.Id
     WHERE sel.SiteId = @id AND sel.IsActive = 1;
 
+    -- Obtener días de la semana de operación del sitio
+    SELECT sodow.DayOfWeek AS DayOfWeekId, dow.Name AS DayOfWeekName, dow.NameEN AS DayOfWeekNameEN
+    FROM SiteOperatingDaysOfWeek sodow
+        LEFT JOIN DayOfWeek dow ON sodow.DayOfWeek = dow.Id
+    WHERE sodow.SiteId = @id AND sodow.IsActive = 1
+    ORDER BY sodow.DayOfWeek;
+
     -- Obtener servicios de alimentación del sitio
     SELECT ss.Id, ss.SiteId, ss.ChildGroupId, cg.Name AS ChildGroupName,
         cg.OptionKey AS ChildGroupOptionKey, ss.Breakfast, ss.BreakfastFrom, ss.BreakfastTo,
