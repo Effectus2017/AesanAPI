@@ -63,6 +63,12 @@ public class SiteRequest
     public TimeSpan? OperatingEndTime { get; set; }
 
     /// <summary>
+    /// Días de la semana en que opera el sitio (1=Lunes, 2=Martes, ..., 7=Domingo)
+    /// Days of the week the site operates (1=Monday, 2=Tuesday, ..., 7=Sunday)
+    /// </summary>
+    public List<int>? OperatingDaysOfWeek { get; set; }
+
+    /// <summary>
     /// ¿Desde cuándo su Entidad ofrece servicios con una matrícula establecida?
     /// Since when has your Entity offered services with an established registration?
     /// </summary>
