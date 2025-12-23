@@ -1659,13 +1659,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     "DataTable tenía {RowCount} filas con servicios válidos. " +
                     "Verificar que: " +
                     "1) Los días de funcionamiento existan en el rango {FromDate} a {ToDate}, " +
-                    "2) Los días de funcionamiento estén activos (IsActive=1) y no excluidos (IsExcluded=0), " +
+                    "2) Los días de funcionamiento estén activos (IsActive=1), " +
                     "3) Los servicios tengan valores true (1) y horarios no nulos en el stored procedure.",
                     siteId, dataTable.Rows.Count, operatingFromDate.Date, operatingToDate.Date);
 
                 // Log adicional: verificar si existen días de funcionamiento
                 var daysCount = await dbConnection.QuerySingleAsync<int>(
-                    "SELECT COUNT(*) FROM SiteOperatingDays WHERE SiteId = @siteId AND OperatingDate >= @fromDate AND OperatingDate <= @toDate AND IsExcluded = 0 AND IsActive = 1",
+                    "SELECT COUNT(*) FROM SiteOperatingDays WHERE SiteId = @siteId AND OperatingDate >= @fromDate AND OperatingDate <= @toDate AND IsActive = 1",
                     new { siteId, fromDate = operatingFromDate.Date, toDate = operatingToDate.Date },
                     transaction);
 

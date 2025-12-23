@@ -33,7 +33,6 @@ BEGIN
             WHEN @startTime >= StartTime 
                 AND @endTime <= EndTime 
                 AND @startTime < @endTime
-                AND IsExcluded = 0
                 AND IsActive = 1
             THEN 1 
             ELSE 0 

@@ -1,7 +1,7 @@
 -- =============================================
 -- Stored Procedure: 100_ReCalculateSiteOperatingDays
 -- Descripción: Recalcula los días totales de funcionamiento de un sitio considerando
---             días laborables base, días de fin de semana con override y días excluidos
+--             días laborables base, días de fin de semana con override y días feriados
 -- Fecha: 2025-01-XX
 -- Versión: 1.0
 -- =============================================
@@ -15,8 +15,8 @@ BEGIN
     DECLARE @operatingFromDate DATE;
     DECLARE @operatingToDate DATE;
     DECLARE @baseWorkingDays INT = 0;
-    DECLARE @weekendOverrides INT = 0;
-    DECLARE @excludedDays INT = 0;
+    DECLARE @weekends INT = 0;
+    DECLARE @holidayDays INT = 0;
     DECLARE @totalDays INT = 0;
     DECLARE @currentDate DATE;
     DECLARE @dayOfWeek INT;
@@ -63,15 +63,15 @@ BEGIN
         
         -- Obtener días del calendario dentro del rango
         SELECT
-        @weekendOverrides = COUNT(CASE WHEN IsWeekendOverride = 1 THEN 1 END),
-        @excludedDays = COUNT(CASE WHEN IsExcluded = 1 THEN 1 END)
+        @weekends = COUNT(CASE WHEN IsWeekend = 1 THEN 1 END),
+        @holidayDays = COUNT(CASE WHEN IsHoliday = 1 THEN 1 END)
     FROM SiteOperatingDays
     WHERE SiteId = @siteId
         AND OperatingDate >= @operatingFromDate
         AND OperatingDate <= @operatingToDate;
         
-        -- Calcular total ajustado
-        SET @totalDays = @baseWorkingDays + @weekendOverrides - @excludedDays;
+        -- Calcular total ajustado (restar días feriados)
+        SET @totalDays = @baseWorkingDays + @weekends - @holidayDays;
         
         -- Asegurar que el total no sea negativo
         IF @totalDays < 0

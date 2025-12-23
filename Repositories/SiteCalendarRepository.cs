@@ -128,9 +128,9 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
     }
 
     /// <summary>
-    /// Alterna el estado de funcionamiento de un día específico
+    /// Crea un nuevo día de funcionamiento
     /// </summary>
-    public async Task<bool> ToggleOperatingDay(SiteOperatingDayRequest request)
+    public async Task<int?> CreateOperatingDay(SiteOperatingDayRequest request)
     {
         try
         {
@@ -141,23 +141,42 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@operatingDate", request.OperatingDate.Date, DbType.Date);
             parameters.Add("@startTime", request.StartTime, DbType.Time);
             parameters.Add("@endTime", request.EndTime, DbType.Time);
-            parameters.Add("@isWeekendOverride", request.IsWeekendOverride, DbType.Boolean);
-            parameters.Add("@isExcluded", request.IsExcluded, DbType.Boolean);
+            parameters.Add("@isWeekend", request.IsWeekend, DbType.Boolean);
             parameters.Add("@isHoliday", request.IsHoliday, DbType.Boolean);
             parameters.Add("@comment", request.Comment, DbType.String);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            var result = await dbConnection.QuerySingleAsync<int>("100_ToggleSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_InsertSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
 
-            var success = result > 0;
+            var newId = parameters.Get<int?>("@id");
 
-            _logger.LogInformation("Toggle de día de funcionamiento para sitio {SiteId} en fecha {Date}: {Success}",
-                request.SiteId, request.OperatingDate.Date, success ? "Exitoso" : "Fallido");
+            // Si se marca como feriado, deshabilitar todos los servicios existentes de ese día
+            if (newId.HasValue && request.IsHoliday)
+            {
+                try
+                {
+                    var disableParameters = new DynamicParameters();
+                    disableParameters.Add("@operatingDayId", newId.Value, DbType.Int32);
 
-            return success;
+                    await dbConnection.ExecuteAsync("100_DisableServicesForHolidayDay", disableParameters, commandType: CommandType.StoredProcedure);
+
+                    _logger.LogInformation("Servicios deshabilitados para día feriado {OperatingDayId}", newId.Value);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error al deshabilitar servicios para día feriado {OperatingDayId}", newId.Value);
+                    // No lanzamos excepción para no fallar la creación del día
+                }
+            }
+
+            _logger.LogInformation("Creación de día de funcionamiento para sitio {SiteId} en fecha {Date}: {Success}",
+                request.SiteId, request.OperatingDate.Date, newId.HasValue ? "Exitosa" : "Fallida");
+
+            return newId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al alternar día de funcionamiento para el sitio {SiteId} en fecha {Date}",
+            _logger.LogError(ex, "Error al crear día de funcionamiento para el sitio {SiteId} en fecha {Date}",
                 request.SiteId, request.OperatingDate.Date);
             throw;
         }
@@ -176,14 +195,55 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@id", id, DbType.Int32);
             parameters.Add("@startTime", request.StartTime, DbType.Time);
             parameters.Add("@endTime", request.EndTime, DbType.Time);
-            parameters.Add("@isWeekendOverride", request.IsWeekendOverride, DbType.Boolean);
-            parameters.Add("@isExcluded", request.IsExcluded, DbType.Boolean);
+            parameters.Add("@isWeekend", request.IsWeekend, DbType.Boolean);
             parameters.Add("@isHoliday", request.IsHoliday, DbType.Boolean);
             parameters.Add("@comment", request.Comment, DbType.String);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            var result = await dbConnection.QuerySingleAsync<int>("100_UpdateSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("100_UpdateSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
 
-            var success = result > 0;
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var success = rowsAffected > 0;
+
+            if (success)
+            {
+                // Si NO es feriado, habilitar servicios que fueron deshabilitados por feriado
+                if (!request.IsHoliday)
+                {
+                    try
+                    {
+                        var enableParameters = new DynamicParameters();
+                        enableParameters.Add("@operatingDayId", id, DbType.Int32);
+
+                        await dbConnection.ExecuteAsync("100_EnableServicesForNonHolidayDay", enableParameters, commandType: CommandType.StoredProcedure);
+
+                        _logger.LogInformation("Servicios habilitados para día que dejó de ser feriado {OperatingDayId}", id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error al habilitar servicios para día que dejó de ser feriado {OperatingDayId}", id);
+                        // No lanzamos excepción para no fallar la actualización del día
+                    }
+                }
+                // Si es feriado, deshabilitar todos los servicios existentes de ese día
+                else
+                {
+                    try
+                    {
+                        var disableParameters = new DynamicParameters();
+                        disableParameters.Add("@operatingDayId", id, DbType.Int32);
+
+                        await dbConnection.ExecuteAsync("100_DisableServicesForHolidayDay", disableParameters, commandType: CommandType.StoredProcedure);
+
+                        _logger.LogInformation("Servicios deshabilitados para día feriado {OperatingDayId}", id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error al deshabilitar servicios para día feriado {OperatingDayId}", id);
+                        // No lanzamos excepción para no fallar la actualización del día
+                    }
+                }
+            }
 
             _logger.LogInformation("Actualización de día de funcionamiento {Id}: {Success}",
                 id, success ? "Exitosa" : "Fallida");
@@ -213,7 +273,16 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             {
                 try
                 {
-                    var success = await ToggleOperatingDay(request);
+                    bool success;
+                    if (request.Id.HasValue && request.Id.Value > 0)
+                    {
+                        success = await UpdateOperatingDay(request.Id.Value, request);
+                    }
+                    else
+                    {
+                        var newId = await CreateOperatingDay(request);
+                        success = newId.HasValue;
+                    }
                     if (success) successCount++;
                 }
                 catch (Exception ex)

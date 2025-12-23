@@ -21,12 +21,11 @@ public interface ISiteCalendarRepository
     Task<SiteCalendarResponse> GetOperatingDays(int siteId, int? month = null, int? year = null);
 
     /// <summary>
-    /// Alterna el estado de funcionamiento de un día específico
-    /// Inserta o actualiza un día de funcionamiento
+    /// Crea un nuevo día de funcionamiento
     /// </summary>
     /// <param name="request">Datos del día de funcionamiento</param>
-    /// <returns>True si la operación fue exitosa</returns>
-    Task<bool> ToggleOperatingDay(SiteOperatingDayRequest request);
+    /// <returns>ID del día creado, o null si falló</returns>
+    Task<int?> CreateOperatingDay(SiteOperatingDayRequest request);
 
     /// <summary>
     /// Actualiza un día de funcionamiento existente

@@ -4,15 +4,13 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSiteOperatingDay]
     @id INT,
     @startTime TIME = NULL,
     @endTime TIME = NULL,
-    @isWeekendOverride BIT = NULL,
-    @isExcluded BIT = NULL,
+    @isWeekend BIT = NULL,
     @isHoliday BIT = NULL,
     @comment NVARCHAR(500) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    DECLARE @RowsAffected INT = 0;
+    DECLARE @rowsAffected INT = 0;
 
     BEGIN TRY
         -- Validar parámetros
@@ -36,27 +34,23 @@ BEGIN
         SET 
             StartTime = CASE WHEN @startTime IS NOT NULL THEN @startTime ELSE StartTime END,
             EndTime = CASE WHEN @endTime IS NOT NULL THEN @endTime ELSE EndTime END,
-            IsWeekendOverride = CASE WHEN @isWeekendOverride IS NOT NULL THEN @isWeekendOverride ELSE IsWeekendOverride END,
-            IsExcluded = CASE WHEN @isExcluded IS NOT NULL THEN @isExcluded ELSE IsExcluded END,
+            IsWeekend = CASE WHEN @isWeekend IS NOT NULL THEN @isWeekend ELSE IsWeekend END,
             IsHoliday = CASE WHEN @isHoliday IS NOT NULL THEN @isHoliday ELSE IsHoliday END,
             Comment = CASE WHEN @comment IS NOT NULL THEN @comment ELSE Comment END,
             UpdatedAt = GETDATE()
         WHERE Id = @id;
 
-        SET @RowsAffected = @@ROWCOUNT;
+        SET @rowsAffected = @@ROWCOUNT;
 
-        -- Mantener horarios siempre, incluso si está excluido
-        -- Los horarios se mantienen para referencia y consistencia
-
-        -- Si se desmarcó como excluido y no tiene horarios, establecer por defecto
-        IF @isExcluded = 0 AND @RowsAffected > 0
+        -- Si no tiene horarios, establecer por defecto
+        IF @rowsAffected > 0
         BEGIN
         UPDATE SiteOperatingDays
-            SET 
-                StartTime = CASE WHEN StartTime IS NULL THEN '08:00:00' ELSE StartTime END,
-                EndTime = CASE WHEN EndTime IS NULL THEN '18:00:00' ELSE EndTime END,
-                UpdatedAt = GETDATE()
-            WHERE Id = @id AND (StartTime IS NULL OR EndTime IS NULL);
+                SET 
+                    StartTime = CASE WHEN StartTime IS NULL THEN '08:00:00' ELSE StartTime END,
+                    EndTime = CASE WHEN EndTime IS NULL THEN '18:00:00' ELSE EndTime END,
+                    UpdatedAt = GETDATE()
+                WHERE Id = @id AND (StartTime IS NULL OR EndTime IS NULL);
     END
 
         -- Obtener SiteId del día actualizado y recalcular
@@ -70,9 +64,7 @@ BEGIN
         EXEC [dbo].[100_ReCalculateSiteOperatingDays] @siteIdForRecalc;
     END
 
-        -- Retornar el número de filas afectadas
-        SELECT @RowsAffected as RowsAffected;
-
+        RETURN @rowsAffected;
     END TRY
     BEGIN CATCH
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();

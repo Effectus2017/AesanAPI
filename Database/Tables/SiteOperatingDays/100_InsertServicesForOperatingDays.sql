@@ -53,7 +53,6 @@ BEGIN
     WHERE SiteId = @siteId
         AND OperatingDate >= @operatingFromDate
         AND OperatingDate <= @operatingToDate
-        AND IsExcluded = 0
         AND IsActive = 1
         )
         BEGIN
@@ -92,7 +91,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.Breakfast = 1
             AND s.BreakfastFrom IS NOT NULL
@@ -115,7 +113,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.Lunch = 1
             AND s.LunchFrom IS NOT NULL
@@ -138,7 +135,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.SnackAM = 1
             AND s.SnackAMFrom IS NOT NULL
@@ -161,7 +157,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.Dinner = 1
             AND s.DinnerFrom IS NOT NULL
@@ -184,7 +179,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.SnackPM = 1
             AND s.SnackPMFrom IS NOT NULL
@@ -207,7 +201,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.SnackNight = 1
             AND s.SnackNightFrom IS NOT NULL
@@ -230,7 +223,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.DinnerExtended = 1
             AND s.DinnerExtendedFrom IS NOT NULL
@@ -253,7 +245,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.DinnerAtRisk = 1
             AND s.DinnerAtRiskFrom IS NOT NULL
@@ -276,7 +267,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.SnackExtended = 1
             AND s.SnackExtendedFrom IS NOT NULL
@@ -299,7 +289,6 @@ BEGIN
         WHERE sod.SiteId = @siteId
             AND sod.OperatingDate >= @operatingFromDate
             AND sod.OperatingDate <= @operatingToDate
-            AND sod.IsExcluded = 0
             AND sod.IsActive = 1
             AND s.SnackAtRisk = 1
             AND s.SnackAtRiskFrom IS NOT NULL

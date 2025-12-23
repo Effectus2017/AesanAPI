@@ -69,13 +69,13 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     }
 
     /// <summary>
-    /// Alterna el estado de funcionamiento de un día específico
+    /// Crea un nuevo día de funcionamiento
     /// </summary>
     /// <param name="request">Datos del día de funcionamiento</param>
-    /// <returns>Resultado de la operación</returns>
-    [HttpPost("toggle-operating-day")]
-    [SwaggerOperation(Summary = "Alterna estado de funcionamiento de un día", Description = "Inserta o actualiza el estado de funcionamiento de un día específico.")]
-    public async Task<IActionResult> ToggleOperatingDay([FromBody] SiteOperatingDayRequest request)
+    /// <returns>ID del día creado</returns>
+    [HttpPost("create-operating-day")]
+    [SwaggerOperation(Summary = "Crea un nuevo día de funcionamiento", Description = "Crea un nuevo día de funcionamiento para un sitio específico.")]
+    public async Task<IActionResult> CreateOperatingDay([FromBody] SiteOperatingDayRequest request)
     {
         try
         {
@@ -84,42 +84,75 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
                 return BadRequest(ModelState);
             }
 
-            _logger.LogInformation("Alternando día de funcionamiento para sitio {SiteId} en fecha {Date}",
+            _logger.LogInformation("Creando día de funcionamiento para sitio {SiteId} en fecha {Date}",
                 request.SiteId, request.OperatingDate.Date);
 
-            bool result;
+            var newId = await _siteCalendarRepository.CreateOperatingDay(request);
 
-            // Si tiene ID, actualizar el registro existente
-            if (request.Id.HasValue && request.Id.Value > 0)
+            if (newId.HasValue)
             {
-                _logger.LogInformation("Actualizando día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
-                    request.Id.Value, request.SiteId, request.OperatingDate.Date);
-                result = await _siteCalendarRepository.UpdateOperatingDay(request.Id.Value, request);
+                _logger.LogInformation("Día de funcionamiento creado exitosamente con ID {Id} para sitio {SiteId} en fecha {Date}",
+                    newId.Value, request.SiteId, request.OperatingDate.Date);
+                return Ok(new { id = newId.Value, success = true });
             }
             else
             {
-                _logger.LogInformation("Alternando día de funcionamiento para sitio {SiteId} en fecha {Date}",
-                    request.SiteId, request.OperatingDate.Date);
-                result = await _siteCalendarRepository.ToggleOperatingDay(request);
-            }
-
-            if (result)
-            {
-                _logger.LogInformation("Día de funcionamiento alternado exitosamente para sitio {SiteId} en fecha {Date}",
-                    request.SiteId, request.OperatingDate.Date);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("No se pudo alternar el día de funcionamiento para sitio {SiteId} en fecha {Date}",
+                _logger.LogWarning("No se pudo crear el día de funcionamiento para sitio {SiteId} en fecha {Date}",
                     request.SiteId, request.OperatingDate.Date);
                 return BadRequest("No se pudo procesar la solicitud");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al alternar día de funcionamiento para sitio {SiteId} en fecha {Date}",
+            _logger.LogError(ex, "Error al crear día de funcionamiento para sitio {SiteId} en fecha {Date}",
                 request.SiteId, request.OperatingDate.Date);
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza un día de funcionamiento existente
+    /// </summary>
+    /// <param name="request">Datos actualizados del día de funcionamiento</param>
+    /// <returns>Resultado de la operación</returns>
+    [HttpPut("update-operating-day")]
+    [SwaggerOperation(Summary = "Actualiza un día de funcionamiento", Description = "Actualiza un día de funcionamiento existente.")]
+    public async Task<IActionResult> UpdateOperatingDay([FromBody] SiteOperatingDayRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (!request.Id.HasValue || request.Id.Value <= 0)
+            {
+                return BadRequest("El ID del día de funcionamiento es requerido para actualizar");
+            }
+
+            _logger.LogInformation("Actualizando día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
+                request.Id.Value, request.SiteId, request.OperatingDate.Date);
+
+            var result = await _siteCalendarRepository.UpdateOperatingDay(request.Id.Value, request);
+
+            if (result)
+            {
+                _logger.LogInformation("Día de funcionamiento {Id} actualizado exitosamente para sitio {SiteId} en fecha {Date}",
+                    request.Id.Value, request.SiteId, request.OperatingDate.Date);
+                return Ok(true);
+            }
+            else
+            {
+                _logger.LogWarning("No se pudo actualizar el día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
+                    request.Id.Value, request.SiteId, request.OperatingDate.Date);
+                return BadRequest("No se pudo procesar la solicitud");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
+                request.Id ?? 0, request.SiteId, request.OperatingDate.Date);
             return StatusCode(500, ex.Message);
         }
     }

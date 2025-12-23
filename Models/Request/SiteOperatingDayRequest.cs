@@ -39,12 +39,7 @@ public class SiteOperatingDayRequest
     /// <summary>
     /// Indica si es un fin de semana que funciona por excepción
     /// </summary>
-    public bool IsWeekendOverride { get; set; } = false;
-
-    /// <summary>
-    /// Indica si el día está excluido del funcionamiento
-    /// </summary>
-    public bool IsExcluded { get; set; } = false;
+    public bool IsWeekend { get; set; } = false;
 
     /// <summary>
     /// Indica si el día es feriado

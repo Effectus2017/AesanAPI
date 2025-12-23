@@ -20,7 +20,7 @@ BEGIN
 
     DECLARE @dayStartTime TIME;
     DECLARE @dayEndTime TIME;
-    DECLARE @dayIsExcluded BIT;
+    DECLARE @dayIsHoliday BIT;
     DECLARE @dayIsActive BIT;
     DECLARE @errorMessage NVARCHAR(4000);
 
@@ -54,7 +54,7 @@ BEGIN
         SELECT
         @dayStartTime = StartTime,
         @dayEndTime = EndTime,
-        @dayIsExcluded = IsExcluded,
+        @dayIsHoliday = IsHoliday,
         @dayIsActive = IsActive
     FROM SiteOperatingDays
     WHERE Id = @operatingDayId;
@@ -65,10 +65,10 @@ BEGIN
         RETURN;
     END
 
-        -- Validar que el día no está excluido o inactivo
-        IF @dayIsExcluded = 1 OR @dayIsActive = 0
+        -- Validar que el día no es feriado o inactivo
+        IF @dayIsHoliday = 1 OR @dayIsActive = 0
         BEGIN
-        RAISERROR('No se pueden crear servicios para días excluidos o inactivos', 16, 1);
+        RAISERROR('No se pueden crear servicios para días feriados o inactivos', 16, 1);
         RETURN;
     END
 
