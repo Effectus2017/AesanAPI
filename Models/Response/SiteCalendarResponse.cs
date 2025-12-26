@@ -17,6 +17,16 @@ public class SiteCalendarResponse
     public string SiteName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Fecha de inicio de funcionamiento del sitio
+    /// </summary>
+    public DateTime? OperatingFromDate { get; set; }
+
+    /// <summary>
+    /// Fecha de fin de funcionamiento del sitio
+    /// </summary>
+    public DateTime? OperatingToDate { get; set; }
+
+    /// <summary>
     /// Lista de días de funcionamiento del sitio
     /// </summary>
     public List<OperatingDayResponse> OperatingDays { get; set; } = new();

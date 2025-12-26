@@ -64,6 +64,8 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             {
                 SiteId = siteInfo.SiteId,
                 SiteName = siteInfo.SiteName,
+                OperatingFromDate = siteInfo.OperatingFromDate,
+                OperatingToDate = siteInfo.OperatingToDate,
                 OperatingDays = operatingDaysList
             };
 

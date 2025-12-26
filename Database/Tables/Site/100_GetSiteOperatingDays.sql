@@ -44,7 +44,9 @@ BEGIN
         -- Obtener información del sitio
         SELECT
         s.Id as SiteId,
-        s.Name as SiteName
+        s.Name as SiteName,
+        s.OperatingFromDate,
+        s.OperatingToDate
     FROM Site s
     WHERE s.Id = @siteId;
 
