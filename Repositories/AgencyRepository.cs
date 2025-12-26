@@ -381,6 +381,41 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
+            // Verificar si es un error de duplicado desde el stored procedure
+            // Los stored procedures lanzan errores con códigos 50001 (IUE), 50002 (EIN), 50003 (SDR)
+            if (ex.Message.Contains("IUE") || ex.Message.Contains("EIN") || ex.Message.Contains("SDR") || 
+                ex.Message.Contains("ya está registrado"))
+            {
+                await _logger.LogWarning(ex, $"Intento de insertar agencia con identificador duplicado: {ex.Message}");
+                // Re-lanzar el mensaje original del stored procedure que ya es descriptivo
+                throw new Exception(ex.Message, ex);
+            }
+            
+            // Verificar si es una violación de constraint UNIQUE de la base de datos
+            // (por si alguien inserta directamente sin pasar por el stored procedure)
+            if (ex.Message.Contains("UNIQUE") || ex.Message.Contains("duplicate key") || 
+                ex.Message.Contains("UK_Agency_UieNumber") || ex.Message.Contains("UK_Agency_EinNumber") || 
+                ex.Message.Contains("UK_Agency_SdrNumber"))
+            {
+                string errorMessage = "El identificador proporcionado ya está registrado en el sistema.";
+                
+                if (ex.Message.Contains("UieNumber") || ex.Message.Contains("IUE"))
+                {
+                    errorMessage = $"El Identificador Único de Entidad (IUE) ya está registrado en el sistema.";
+                }
+                else if (ex.Message.Contains("EinNumber") || ex.Message.Contains("EIN"))
+                {
+                    errorMessage = $"El Número de Seguro Social Patronal (EIN) ya está registrado en el sistema.";
+                }
+                else if (ex.Message.Contains("SdrNumber") || ex.Message.Contains("SDR"))
+                {
+                    errorMessage = $"El Número de Registro del Departamento de Estado (SDR) ya está registrado en el sistema.";
+                }
+                
+                await _logger.LogWarning(ex, $"Intento de insertar agencia con identificador duplicado (constraint): {errorMessage}");
+                throw new Exception(errorMessage, ex);
+            }
+            
             await _logger.LogError(ex, $"Error inserting agency: {ex.Message}");
             throw new Exception($"Error al insertar la agencia: {ex.Message}", ex);
         }
@@ -544,6 +579,41 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
+            // Verificar si es un error de duplicado desde el stored procedure
+            // Los stored procedures lanzan errores con códigos 50001 (IUE), 50002 (EIN), 50003 (SDR)
+            if (ex.Message.Contains("IUE") || ex.Message.Contains("EIN") || ex.Message.Contains("SDR") || 
+                ex.Message.Contains("ya está registrado") || ex.Message.Contains("otra agencia"))
+            {
+                await _logger.LogWarning(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado: {ex.Message}");
+                // Re-lanzar el mensaje original del stored procedure que ya es descriptivo
+                throw new Exception(ex.Message, ex);
+            }
+            
+            // Verificar si es una violación de constraint UNIQUE de la base de datos
+            // (por si alguien actualiza directamente sin pasar por el stored procedure)
+            if (ex.Message.Contains("UNIQUE") || ex.Message.Contains("duplicate key") || 
+                ex.Message.Contains("UK_Agency_UieNumber") || ex.Message.Contains("UK_Agency_EinNumber") || 
+                ex.Message.Contains("UK_Agency_SdrNumber"))
+            {
+                string errorMessage = "El identificador proporcionado ya está registrado en otra agencia.";
+                
+                if (ex.Message.Contains("UieNumber") || ex.Message.Contains("IUE"))
+                {
+                    errorMessage = $"El Identificador Único de Entidad (IUE) ya está registrado en otra agencia.";
+                }
+                else if (ex.Message.Contains("EinNumber") || ex.Message.Contains("EIN"))
+                {
+                    errorMessage = $"El Número de Seguro Social Patronal (EIN) ya está registrado en otra agencia.";
+                }
+                else if (ex.Message.Contains("SdrNumber") || ex.Message.Contains("SDR"))
+                {
+                    errorMessage = $"El Número de Registro del Departamento de Estado (SDR) ya está registrado en otra agencia.";
+                }
+                
+                await _logger.LogWarning(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado (constraint): {errorMessage}");
+                throw new Exception(errorMessage, ex);
+            }
+            
             await _logger.LogError(ex, $"Error updating agency {agencyId}: {ex.Message}");
             throw new Exception($"Error al actualizar la agencia {agencyId}: {ex.Message}", ex);
         }

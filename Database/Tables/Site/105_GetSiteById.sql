@@ -31,13 +31,13 @@ BEGIN
         atype.Name AS AreaTypeName, atype.NameEN AS AreaTypeNameEN, s.LocationTypeId,
         ltype.Name AS LocationTypeName, ltype.NameEN AS LocationTypeNameEN, s.HasWarehouse,
         s.HasDiningRoom, s.CommunityId, s.WalkersId,
-        spic.FirstName AS PersonInChargeFirstName, spic.MiddleName AS PersonInChargeMiddleName, 
+        spic.FirstName AS PersonInChargeFirstName, spic.MiddleName AS PersonInChargeMiddleName,
         spic.FatherLastName AS PersonInChargeFatherLastName, spic.MotherLastName AS PersonInChargeMotherLastName,
-        spic.SitePhone AS PersonInChargeSitePhone, spic.Extension AS PersonInChargeExtension, 
+        spic.SitePhone AS PersonInChargeSitePhone, spic.Extension AS PersonInChargeExtension,
         spic.MobilePhone AS PersonInChargeMobilePhone,
         s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
         s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
-        s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, s.IsAffiliatedCenter, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
+        s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, pac.OptionKey AS PublicAllianceContractOptionKey, s.IsAffiliatedCenter, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
         s.SiteCode,
         s.CreatedAt, s.UpdatedAt
     FROM Site s

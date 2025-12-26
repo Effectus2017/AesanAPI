@@ -39,7 +39,43 @@ BEGIN
     BEGIN TRANSACTION;
 
     BEGIN TRY
+        -- Declarar variables para mensajes de error
+        DECLARE @uieErrorMsg NVARCHAR(500);
+        DECLARE @einErrorMsg NVARCHAR(500);
+        DECLARE @sdrErrorMsg NVARCHAR(500);
+        
+        -- =============================================
+        -- Validar duplicados antes de UPDATE
+        -- (excluyendo el registro actual)
+        -- =============================================
+        
+        -- Verificar si el UieNumber ya existe en otra agencia
+        IF EXISTS (SELECT 1 FROM Agency WHERE UieNumber = @uieNumber AND Id != @id)
+        BEGIN
+            ROLLBACK TRANSACTION;
+            SET @uieErrorMsg = CONCAT('El Identificador Único de Entidad (IUE) ', CAST(@uieNumber AS NVARCHAR(20)), ' ya está registrado en otra agencia.');
+            THROW 50001, @uieErrorMsg, 1;
+        END
+        
+        -- Verificar si el EinNumber ya existe en otra agencia
+        IF EXISTS (SELECT 1 FROM Agency WHERE EinNumber = @einNumber AND Id != @id)
+        BEGIN
+            ROLLBACK TRANSACTION;
+            SET @einErrorMsg = CONCAT('El Número de Seguro Social Patronal (EIN) ', CAST(@einNumber AS NVARCHAR(20)), ' ya está registrado en otra agencia.');
+            THROW 50002, @einErrorMsg, 1;
+        END
+        
+        -- Verificar si el SdrNumber ya existe en otra agencia
+        IF EXISTS (SELECT 1 FROM Agency WHERE SdrNumber = @sdrNumber AND Id != @id)
+        BEGIN
+            ROLLBACK TRANSACTION;
+            SET @sdrErrorMsg = CONCAT('El Número de Registro del Departamento de Estado (SDR) ', CAST(@sdrNumber AS NVARCHAR(20)), ' ya está registrado en otra agencia.');
+            THROW 50003, @sdrErrorMsg, 1;
+        END
+        
+        -- =============================================
         -- Actualizamos la agencia
+        -- =============================================
         UPDATE Agency
         SET Name = @name,
             AgencyStatusId = @agencyStatusId,
