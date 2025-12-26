@@ -170,14 +170,12 @@ public static class Utilities
     /// </summary>
     /// <param name="agencySequenceNumber">Número de secuencia de la agencia (string)</param>
     /// <param name="existingCodes">Códigos existentes para validar unicidad</param>
-    /// <returns>Código identificador único del sitio</returns>
+    /// <returns>Código identificador único del sitio en formato {agencySequenceNumber}-{secuencia}</returns>
     public static string GenerateSiteCode(string agencySequenceNumber, List<string> existingCodes)
     {
-        // Generar código con formato: S{agencySequenceNumber}-{año}-{secuencia}
-        string year = DateTime.Now.Year.ToString();
-        string sequence = GetNextSequenceNumber(existingCodes, year);
-
-        return $"S{agencySequenceNumber}-{year}-{sequence}";
+        // Generar código con formato: {agencySequenceNumber}-{secuencia} (sin prefijo "S" ni año)
+        string sequence = GetNextSiteSequenceNumber(existingCodes, agencySequenceNumber);
+        return $"{agencySequenceNumber}-{sequence}";
     }
 
     /// <summary>
@@ -291,5 +289,26 @@ public static class Utilities
 
         // Incrementar el número del sitio
         return agencySiteCodes + 1;
+    }
+
+    /// <summary>
+    /// Obtiene el siguiente número de secuencia para un código de sitio en formato {agencySequenceNumber}-{secuencia}
+    /// </summary>
+    /// <param name="existingCodes">Lista de códigos existentes</param>
+    /// <param name="agencySequenceNumber">Número de secuencia de la agencia</param>
+    /// <returns>Número de secuencia formateado con 2 dígitos (D2)</returns>
+    private static string GetNextSiteSequenceNumber(List<string> existingCodes, string agencySequenceNumber)
+    {
+        // Filtrar códigos de sitios que pertenecen a la agencia específica
+        var agencySiteCodes = existingCodes.Where(c => c.StartsWith($"{agencySequenceNumber}-"))
+                                          .Select(c => {
+                                              var parts = c.Split('-');
+                                              return parts.Length > 1 ? int.Parse(parts[^1]) : 0;
+                                          })
+                                          .DefaultIfEmpty(0)
+                                          .Max();
+
+        // Incrementar el número de secuencia y formatear con ceros a la izquierda (2 dígitos)
+        return (agencySiteCodes + 1).ToString("D2");
     }
 }

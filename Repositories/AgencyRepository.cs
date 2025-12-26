@@ -1020,4 +1020,98 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
     }
 
+    /// <summary>
+    /// Verifica si un IUE (Identificador Único de Entidad) ya existe en la tabla Agency
+    /// </summary>
+    /// <param name="uieNumber">El número IUE a verificar</param>
+    /// <returns>True si el IUE existe, False si no existe</returns>
+    public async Task<bool> UieNumberExists(long uieNumber)
+    {
+        try
+        {
+            // Log para debugging
+            _logger.LogInformation($"UieNumberExists - Verificando IUE: {uieNumber} (tipo: {uieNumber.GetType().Name})", new Dictionary<string, string> 
+            { 
+                { "UieNumber", uieNumber.ToString() },
+                { "Type", uieNumber.GetType().Name }
+            });
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@uieNumber", uieNumber, DbType.Int64);
+            parameters.Add("@exists", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_CheckUieNumberExists", parameters, commandType: CommandType.StoredProcedure);
+
+            var exists = parameters.Get<bool>("@exists");
+            
+            // Log del resultado
+            _logger.LogInformation($"UieNumberExists - Resultado para IUE {uieNumber}: {exists}", new Dictionary<string, string> 
+            { 
+                { "UieNumber", uieNumber.ToString() },
+                { "Exists", exists.ToString() }
+            });
+
+            return exists;
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error al verificar si el IUE existe: {ex.Message}");
+            // En caso de error, retornar false para no bloquear el registro
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Verifica si un SDR (Número de Registro del Departamento de Estado) ya existe en la tabla Agency
+    /// </summary>
+    /// <param name="sdrNumber">El número SDR a verificar</param>
+    /// <returns>True si el SDR existe, False si no existe</returns>
+    public async Task<bool> SdrNumberExists(long sdrNumber)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@sdrNumber", sdrNumber, DbType.Int64);
+            parameters.Add("@exists", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_CheckSdrNumberExists", parameters, commandType: CommandType.StoredProcedure);
+
+            return parameters.Get<bool>("@exists");
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error al verificar si el SDR existe: {ex.Message}");
+            // En caso de error, retornar false para no bloquear el registro
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Verifica si un EIN (Número de Seguro Social Patronal) ya existe en la tabla Agency
+    /// </summary>
+    /// <param name="einNumber">El número EIN a verificar</param>
+    /// <returns>True si el EIN existe, False si no existe</returns>
+    public async Task<bool> EinNumberExists(int einNumber)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@einNumber", einNumber, DbType.Int32);
+            parameters.Add("@exists", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_CheckEinNumberExists", parameters, commandType: CommandType.StoredProcedure);
+
+            return parameters.Get<bool>("@exists");
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error al verificar si el EIN existe: {ex.Message}");
+            // En caso de error, retornar false para no bloquear el registro
+            return false;
+        }
+    }
+
 }

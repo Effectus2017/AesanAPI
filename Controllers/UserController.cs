@@ -622,12 +622,112 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
 
             var exists = await _unitOfWork.UserRepository.EmailExists(queryParameters.Email);
 
-            return Ok(new { exists = exists });
+            return Ok(exists);
         }
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al verificar si el correo existe", new Dictionary<string, string> { { "Email", queryParameters.Email } });
             return StatusCode(500, new { Message = "Error al verificar el correo electrónico." });
+        }
+    }
+
+    /// <summary>
+    /// Verifica si un IUE (Identificador Único de Entidad) ya existe en el sistema
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el IUE a verificar</param>
+    /// <returns>True si el IUE existe, False si no existe</returns>
+    [HttpGet("check-uie-exists")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Verifica si un IUE existe", Description = "Verifica si un Identificador Único de Entidad (IUE) ya está registrado en el sistema.")]
+    public async Task<IActionResult> CheckUieExists([FromQuery(Name = "uieNumber")] long? uieNumber)
+    {
+        try
+        {
+            if (!uieNumber.HasValue)
+            {
+                return BadRequest(new { Message = "El número IUE es requerido." });
+            }
+
+            var uieNumberValue = uieNumber.Value;
+            
+            // Log para debugging
+            _loggingService.LogInformation($"Verificando IUE: {uieNumberValue}", new Dictionary<string, string> 
+            { 
+                { "UieNumber", uieNumberValue.ToString() },
+                { "UieNumberType", uieNumberValue.GetType().Name }
+            });
+
+            var exists = await _unitOfWork.AgencyRepository.UieNumberExists(uieNumberValue);
+
+            // Log del resultado
+            _loggingService.LogInformation($"Resultado verificación IUE: {exists}", new Dictionary<string, string> 
+            { 
+                { "UieNumber", uieNumberValue.ToString() },
+                { "Exists", exists.ToString() }
+            });
+
+            return Ok(exists);
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al verificar si el IUE existe", new Dictionary<string, string> { { "UieNumber", uieNumber?.ToString() ?? "null" } });
+            return StatusCode(500, new { Message = "Error al verificar el IUE." });
+        }
+    }
+
+    /// <summary>
+    /// Verifica si un SDR (Número de Registro del Departamento de Estado) ya existe en el sistema
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el SDR a verificar</param>
+    /// <returns>True si el SDR existe, False si no existe</returns>
+    [HttpGet("check-sdr-exists")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Verifica si un SDR existe", Description = "Verifica si un Número de Registro del Departamento de Estado (SDR) ya está registrado en el sistema.")]
+    public async Task<IActionResult> CheckSdrExists([FromQuery(Name = "sdrNumber")] long? sdrNumber)
+    {
+        try
+        {
+            if (!sdrNumber.HasValue)
+            {
+                return BadRequest(new { Message = "El número SDR es requerido." });
+            }
+
+            var exists = await _unitOfWork.AgencyRepository.SdrNumberExists(sdrNumber.Value);
+
+            return Ok(exists);
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al verificar si el SDR existe", new Dictionary<string, string> { { "SdrNumber", sdrNumber?.ToString() ?? "null" } });
+            return StatusCode(500, new { Message = "Error al verificar el SDR." });
+        }
+    }
+
+    /// <summary>
+    /// Verifica si un EIN (Número de Seguro Social Patronal) ya existe en el sistema
+    /// </summary>
+    /// <param name="queryParameters">Parámetros con el EIN a verificar</param>
+    /// <returns>True si el EIN existe, False si no existe</returns>
+    [HttpGet("check-ein-exists")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Verifica si un EIN existe", Description = "Verifica si un Número de Seguro Social Patronal (EIN) ya está registrado en el sistema.")]
+    public async Task<IActionResult> CheckEinExists([FromQuery(Name = "einNumber")] int? einNumber)
+    {
+        try
+        {
+            if (!einNumber.HasValue)
+            {
+                return BadRequest(new { Message = "El número EIN es requerido." });
+            }
+
+            var exists = await _unitOfWork.AgencyRepository.EinNumberExists(einNumber.Value);
+
+            return Ok(exists);
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al verificar si el EIN existe", new Dictionary<string, string> { { "EinNumber", einNumber?.ToString() ?? "null" } });
+            return StatusCode(500, new { Message = "Error al verificar el EIN." });
         }
     }
 

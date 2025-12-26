@@ -52,4 +52,7 @@ public class QueryParameters
     public int? Year { get; set; } // Año para filtrar días de funcionamiento
     public int? OperatingDayId { get; set; } // ID del día de funcionamiento
     public int? IsDayCareHomeId { get; set; } // ID de la opción IsDayCareHome para filtrar sitios (Sí, No, Ambos)
+    public long? UieNumber { get; set; } // Identificador Único de Entidad (IUE)
+    public long? SdrNumber { get; set; } // Número de Registro del Departamento de Estado (SDR)
+    public int? EinNumber { get; set; } // Número de Seguro Social Patronal (EIN)
 }

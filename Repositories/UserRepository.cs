@@ -507,6 +507,48 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "El correo electrónico ya está registrado en el sistema." });
             }
 
+            // Verificar si el IUE ya existe
+            if (model.Agency.UieNumber > 0)
+            {
+                var uieExists = await _agencyRepository.UieNumberExists(model.Agency.UieNumber);
+                if (uieExists)
+                {
+                    _loggingService.LogWarning("Intento de registro con IUE existente", new Dictionary<string, string>
+                    {
+                        { "UieNumber", model.Agency.UieNumber.ToString() }
+                    });
+                    return new BadRequestObjectResult(new { Message = "Este Identificador Único de Entidad (IUE) ya está registrado en el sistema." });
+                }
+            }
+
+            // Verificar si el SDR ya existe
+            if (model.Agency.SdrNumber > 0)
+            {
+                var sdrExists = await _agencyRepository.SdrNumberExists(model.Agency.SdrNumber);
+                if (sdrExists)
+                {
+                    _loggingService.LogWarning("Intento de registro con SDR existente", new Dictionary<string, string>
+                    {
+                        { "SdrNumber", model.Agency.SdrNumber.ToString() }
+                    });
+                    return new BadRequestObjectResult(new { Message = "Este Número de Registro del Departamento de Estado (SDR) ya está registrado en el sistema." });
+                }
+            }
+
+            // Verificar si el EIN ya existe
+            if (model.Agency.EinNumber > 0)
+            {
+                var einExists = await _agencyRepository.EinNumberExists(model.Agency.EinNumber);
+                if (einExists)
+                {
+                    _loggingService.LogWarning("Intento de registro con EIN existente", new Dictionary<string, string>
+                    {
+                        { "EinNumber", model.Agency.EinNumber.ToString() }
+                    });
+                    return new BadRequestObjectResult(new { Message = "Este Número de Seguro Social Patronal (EIN) ya está registrado en el sistema." });
+                }
+            }
+
 #if !DEBUG
             // Generar una contraseña temporal
             var temporaryPassword = Utilities.GenerateTemporaryPassword();

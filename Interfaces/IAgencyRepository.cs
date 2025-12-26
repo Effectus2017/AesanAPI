@@ -51,4 +51,25 @@ public interface IAgencyRepository
     /// <param name="agencyId">ID de la agencia</param>
     /// <returns>Lista de UserIds únicos de evaluadores</returns>
     Task<List<string>> GetAllEvaluatorUserIdsByAgencyId(int agencyId);
+
+    /// <summary>
+    /// Verifica si un IUE (Identificador Único de Entidad) ya existe en la tabla Agency
+    /// </summary>
+    /// <param name="uieNumber">El número IUE a verificar</param>
+    /// <returns>True si el IUE existe, False si no existe</returns>
+    Task<bool> UieNumberExists(long uieNumber);
+
+    /// <summary>
+    /// Verifica si un SDR (Número de Registro del Departamento de Estado) ya existe en la tabla Agency
+    /// </summary>
+    /// <param name="sdrNumber">El número SDR a verificar</param>
+    /// <returns>True si el SDR existe, False si no existe</returns>
+    Task<bool> SdrNumberExists(long sdrNumber);
+
+    /// <summary>
+    /// Verifica si un EIN (Número de Seguro Social Patronal) ya existe en la tabla Agency
+    /// </summary>
+    /// <param name="einNumber">El número EIN a verificar</param>
+    /// <returns>True si el EIN existe, False si no existe</returns>
+    Task<bool> EinNumberExists(int einNumber);
 }

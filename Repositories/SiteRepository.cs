@@ -837,11 +837,13 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             var agencyCode = await connection.QueryFirstOrDefaultAsync<string>("112_GetAgencyCodeById", parameters, commandType: CommandType.StoredProcedure);
 
             if (string.IsNullOrEmpty(agencyCode))
+            {
                 return "001"; // Valor por defecto si no se encuentra la agencia
-
+            }
             // Extraer el número de secuencia del código de agencia (última parte después del último guión)
+            // El formato esperado es T-{año}-{secuencia}, por lo que necesitamos al menos 3 partes
             var parts = agencyCode.Split('-');
-            return parts.Length > 0 ? parts[^1] : "001";
+            return parts.Length >= 3 ? parts[^1] : "001";
         }
         catch (Exception ex)
         {
