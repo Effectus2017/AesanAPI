@@ -120,7 +120,6 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             parameters.Add("@nameEN", deliveryType.NameEN, DbType.String);
             parameters.Add("@isActive", deliveryType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", deliveryType.DisplayOrder, DbType.Int32);
-            parameters.Add("@selectionNotification", deliveryType.SelectionNotification, DbType.Boolean);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
             await db.ExecuteAsync("100_InsertDeliveryType", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
@@ -150,7 +149,6 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             parameters.Add("@nameEN", deliveryType.NameEN, DbType.String);
             parameters.Add("@isActive", deliveryType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", deliveryType.DisplayOrder, DbType.Int32);
-            parameters.Add("@selectionNotification", deliveryType.SelectionNotification, DbType.Boolean);
             await db.ExecuteAsync("100_UpdateDeliveryType", parameters, commandType: CommandType.StoredProcedure);
             InvalidateCache(deliveryType.Id);
             return true;
@@ -204,6 +202,29 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de entrega para el programa {ProgramId}", programId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los tipos de entrega válidos para un tipo de grupo específico.
+    /// </summary>
+    /// <param name="groupTypeId">El ID del tipo de grupo.</param>
+    /// <returns>Los tipos de entrega válidos para el tipo de grupo con información de RequiresPermission.</returns>
+    public async Task<dynamic> GetDeliveryTypesByGroupType(int groupTypeId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@groupTypeId", groupTypeId, DbType.Int32);
+
+            var result = await db.QueryAsync<DeliveryTypeResponse>("100_GetDeliveryTypesByGroupType", parameters, commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de entrega para el tipo de grupo {GroupTypeId}", groupTypeId);
             throw;
         }
     }

@@ -105,7 +105,7 @@ public class SiteRequest
     public string? ReviewJustification { get; set; }
 
     // School asignada
-    public int SchoolId { get; set; }
+    public int? SchoolId { get; set; }
 
     // Estado de actividad
     public bool? IsActive { get; set; }

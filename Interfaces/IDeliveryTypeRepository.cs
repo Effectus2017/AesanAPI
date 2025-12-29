@@ -49,4 +49,11 @@ public interface IDeliveryTypeRepository
     /// <param name="programId">El ID del programa.</param>
     /// <returns>Los tipos de entrega válidos para el programa.</returns>
     Task<dynamic> GetDeliveryTypesByProgram(int programId);
+
+    /// <summary>
+    /// Obtiene los tipos de entrega válidos para un tipo de grupo específico.
+    /// </summary>
+    /// <param name="groupTypeId">El ID del tipo de grupo.</param>
+    /// <returns>Los tipos de entrega válidos para el tipo de grupo con información de RequiresPermission.</returns>
+    Task<dynamic> GetDeliveryTypesByGroupType(int groupTypeId);
 }

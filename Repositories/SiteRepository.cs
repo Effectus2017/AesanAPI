@@ -356,11 +356,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             }
 
             // Crear relación SchoolSite si se proporciona SchoolId
-            if (request.SchoolId > 0)
+            if (request.SchoolId.HasValue && request.SchoolId.Value > 0)
             {
                 var schoolSiteRequest = new SchoolSiteRequest
                 {
-                    SchoolId = request.SchoolId,
+                    SchoolId = request.SchoolId.Value,
                     SiteId = siteId,
                     IsActive = true,
                     Comment = $"Asignación automática al crear el sitio {request.Name}"

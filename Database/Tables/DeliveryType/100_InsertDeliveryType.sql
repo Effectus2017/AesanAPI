@@ -5,15 +5,14 @@ CREATE OR ALTER PROCEDURE [100_InsertDeliveryType]
     @nameEN NVARCHAR(255),
     @isActive BIT,
     @displayOrder INT,
-    @selectionNotification BIT,
     @id INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
     INSERT INTO DeliveryType
-        (Name, NameEN, IsActive, DisplayOrder, SelectionNotification, CreatedAt)
+        (Name, NameEN, IsActive, DisplayOrder, CreatedAt)
     VALUES
-        (@name, @nameEN, @isActive, @displayOrder, @selectionNotification, GETDATE());
+        (@name, @nameEN, @isActive, @displayOrder, GETDATE());
     SET @id = SCOPE_IDENTITY();
     RETURN @id;
 END; 

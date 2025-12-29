@@ -27,7 +27,7 @@ public static class DeliveryTypeMapper
                 Id = result.Id,
                 Name = result.Name,
                 NameEN = result.NameEN,
-                SelectionNotification = result.SelectionNotification ?? false,
+                RequiresPermission = result.RequiresPermission,
                 DisplayOrder = result.DisplayOrder,
                 IsActive = result.IsActive,
                 CreatedAt = result.CreatedAt,
@@ -62,7 +62,7 @@ public static class DeliveryTypeMapper
                 NameEN = result.NameEN,
                 IsActive = result.IsActive,
                 DisplayOrder = result.DisplayOrder,
-                SelectionNotification = result.SelectionNotification ?? false,
+                RequiresPermission = result.RequiresPermission,
                 CreatedAt = result.CreatedAt,
                 UpdatedAt = result.UpdatedAt
             };

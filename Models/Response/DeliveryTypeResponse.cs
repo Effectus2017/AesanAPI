@@ -10,7 +10,7 @@ public class DeliveryTypeResponse
     public string NameEN { get; set; }
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
-    public bool SelectionNotification { get; set; }
+    public bool? RequiresPermission { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

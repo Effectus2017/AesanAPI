@@ -22,6 +22,4 @@ public class DeliveryTypeRequest
     [Required(ErrorMessage = "El orden de visualización es requerido")]
     [Range(0, int.MaxValue, ErrorMessage = "El orden de visualización debe ser un número positivo")]
     public int DisplayOrder { get; set; }
-
-    public bool SelectionNotification { get; set; } = false;
 }

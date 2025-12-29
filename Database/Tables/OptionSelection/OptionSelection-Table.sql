@@ -77,6 +77,18 @@ VALUES
     ('Híbrido', 'Hybrid', 'publicAllianceContract', 0, 1, 180);
 
 
+-- insertar N/A para publicAllianceContract
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('N/A', 'N/A', 'publicAllianceContract', 0, 1, 175);
+
+-- update the display order of N/A para publicAllianceContract to 176
+UPDATE OptionSelection
+    SET DisplayOrder = 181  
+    WHERE OptionKey = 'publicAllianceContract' AND Name = 'N/A';
+
+
 -- (las opciones de 'publicAllianceContract' fueron consolidadas arriba)
 
 -- Tipos de Institución Infantil Residencial (RCCI) = Pernoctan o No Pernoctan=Requerido
@@ -207,6 +219,12 @@ VALUES
     ('Padre', 'Father', 'relationshipType', 0, 1, 800),
     ('Tía(o)', 'Aunt/Uncle', 'relationshipType', 0, 1, 800),
     ('Encargada(o) Legal', 'Legal Guardian', 'relationshipType', 0, 1, 810);
+
+-- actualizar para agregar N/A para relationshipType
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('N/A', 'N/A', 'relationshipType', 0, 1, 779);
 
 
 -- Tenemos que crear un nuevo OptionSelection para Tipo de Hogar (optionKey = 'homeType')

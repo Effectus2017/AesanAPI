@@ -209,4 +209,38 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
             return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de entrega", ex.Message));
         }
     }
+
+    /// <summary>
+    /// Obtiene los tipos de entrega válidos para un tipo de grupo específico
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del tipo de grupo</param>
+    /// <returns>Lista de tipos de entrega válidos para el tipo de grupo con información de RequiresPermission, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-delivery-types-by-group-type")]
+    [SwaggerOperation(Summary = "Obtiene tipos de entrega por tipo de grupo", Description = "Devuelve los tipos de entrega válidos para un tipo de grupo específico con información sobre si requieren permiso.")]
+    public async Task<ActionResult> GetDeliveryTypesByGroupType([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de entrega para el tipo de grupo: {GroupTypeId}", queryParameters.GroupTypeId);
+
+                if (queryParameters.GroupTypeId == 0)
+                {
+                    return BadRequest("El ID del tipo de grupo es requerido");
+                }
+
+                var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de entrega para el tipo de grupo {GroupTypeId}", queryParameters.GroupTypeId);
+            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de entrega", ex.Message));
+        }
+    }
 }

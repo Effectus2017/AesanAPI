@@ -1,5 +1,5 @@
-CREATE OR ALTER PROCEDURE [100_GetDeliveryTypesByProgram]
-    @programId INT
+CREATE OR ALTER PROCEDURE [100_GetDeliveryTypesByGroupType]
+    @groupTypeId INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -9,13 +9,14 @@ BEGIN
         dt.NameEN,
         dt.IsActive,
         dt.DisplayOrder,
+        dtg.RequiresPermission,
         dt.CreatedAt,
         dt.UpdatedAt
     FROM DeliveryType dt
-        INNER JOIN DeliveryTypeProgram dtp ON dt.Id = dtp.DeliveryTypeId
-    WHERE dtp.ProgramId = @programId
+        INNER JOIN DeliveryTypeGroupType dtg ON dt.Id = dtg.DeliveryTypeId
+    WHERE dtg.GroupTypeId = @groupTypeId
         AND dt.IsActive = 1
-        AND dtp.IsActive = 1
+        AND dtg.IsActive = 1
     ORDER BY dt.DisplayOrder, dt.Name;
 END;
 GO

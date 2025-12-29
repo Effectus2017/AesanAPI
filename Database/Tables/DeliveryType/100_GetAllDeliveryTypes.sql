@@ -8,7 +8,7 @@ CREATE OR ALTER PROCEDURE [100_GetAllDeliveryTypes]
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT Id, Name, NameEN, IsActive, CreatedAt, UpdatedAt, DisplayOrder, SelectionNotification
+    SELECT Id, Name, NameEN, IsActive, CreatedAt, UpdatedAt, DisplayOrder
     FROM DeliveryType
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%')

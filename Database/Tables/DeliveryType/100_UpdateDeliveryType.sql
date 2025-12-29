@@ -5,8 +5,7 @@ CREATE OR ALTER PROCEDURE [100_UpdateDeliveryType]
     @name NVARCHAR(100),
     @nameEN NVARCHAR(255),
     @isActive BIT,
-    @displayOrder INT,
-    @selectionNotification BIT
+    @displayOrder INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -19,7 +18,6 @@ BEGIN
             NameEN = @nameEN,
             IsActive = @isActive,
             DisplayOrder = @displayOrder,
-            SelectionNotification = @selectionNotification,
             UpdatedAt = GETDATE()
         WHERE Id = @id;
 
