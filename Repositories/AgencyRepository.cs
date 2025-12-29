@@ -386,7 +386,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             if (ex.Message.Contains("IUE") || ex.Message.Contains("EIN") || ex.Message.Contains("SDR") || 
                 ex.Message.Contains("ya está registrado"))
             {
-                await _logger.LogWarning(ex, $"Intento de insertar agencia con identificador duplicado: {ex.Message}");
+                await _logger.LogError(ex, $"Intento de insertar agencia con identificador duplicado: {ex.Message}");
                 // Re-lanzar el mensaje original del stored procedure que ya es descriptivo
                 throw new Exception(ex.Message, ex);
             }
@@ -412,7 +412,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     errorMessage = $"El Número de Registro del Departamento de Estado (SDR) ya está registrado en el sistema.";
                 }
                 
-                await _logger.LogWarning(ex, $"Intento de insertar agencia con identificador duplicado (constraint): {errorMessage}");
+                await _logger.LogError(ex, $"Intento de insertar agencia con identificador duplicado (constraint): {errorMessage}");
                 throw new Exception(errorMessage, ex);
             }
             
@@ -584,7 +584,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             if (ex.Message.Contains("IUE") || ex.Message.Contains("EIN") || ex.Message.Contains("SDR") || 
                 ex.Message.Contains("ya está registrado") || ex.Message.Contains("otra agencia"))
             {
-                await _logger.LogWarning(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado: {ex.Message}");
+                await _logger.LogError(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado: {ex.Message}");
                 // Re-lanzar el mensaje original del stored procedure que ya es descriptivo
                 throw new Exception(ex.Message, ex);
             }
@@ -610,7 +610,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     errorMessage = $"El Número de Registro del Departamento de Estado (SDR) ya está registrado en otra agencia.";
                 }
                 
-                await _logger.LogWarning(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado (constraint): {errorMessage}");
+                await _logger.LogError(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado (constraint): {errorMessage}");
                 throw new Exception(errorMessage, ex);
             }
             
