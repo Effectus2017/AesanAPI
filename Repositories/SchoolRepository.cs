@@ -229,17 +229,20 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     }
 
     /// <summary>
-    /// Obtiene todas las escuelas de una agencia específica
+    /// Obtiene todas las escuelas de una agencia específica con paginación y filtros
     /// </summary>
-    public async Task<dynamic> GetSchoolsByAgencyId(int agencyId)
+    public async Task<dynamic> GetSchoolsByAgencyId(int agencyId, int take, int skip, string? name)
     {
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId, DbType.Int32);
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@name", name, DbType.String);
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetSchoolsByAgencyId", parameters, commandType: CommandType.StoredProcedure);
+            using var result = await dbConnection.QueryMultipleAsync("100_GetSchoolsByAgencyId", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {

@@ -35,7 +35,7 @@ public interface ISchoolRepository
     Task<bool> DeleteSchool(int id);
 
     /// <summary>
-    /// Obtiene todas las escuelas de una agencia específica
+    /// Obtiene todas las escuelas de una agencia específica con paginación y filtros
     /// </summary>
-    Task<dynamic> GetSchoolsByAgencyId(int agencyId);
+    Task<dynamic> GetSchoolsByAgencyId(int agencyId, int take, int skip, string? name);
 }

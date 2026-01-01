@@ -195,17 +195,21 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     }
 
     /// <summary>
-    /// Obtiene todas las escuelas de una agencia específica
+    /// Obtiene todas las escuelas de una agencia específica con paginación y filtros
     /// </summary>
-    /// <param name="queryParameters">Los parámetros de consulta que incluyen el agencyId</param>
+    /// <param name="queryParameters">Los parámetros de consulta que incluyen el agencyId, take, skip y name</param>
     /// <returns>Lista de escuelas de la agencia</returns>
     [HttpGet("get-schools-by-agency")]
-    [SwaggerOperation(Summary = "Obtiene escuelas por agencia", Description = "Devuelve todas las escuelas de una agencia específica.")]
+    [SwaggerOperation(Summary = "Obtiene escuelas por agencia", Description = "Devuelve todas las escuelas de una agencia específica con paginación y búsqueda por nombre.")]
     public async Task<IActionResult> GetSchoolsByAgencyId([FromQuery] QueryParameters queryParameters)
     {
         try
         {
-            var result = await _unitOfWork.SchoolRepository.GetSchoolsByAgencyId(queryParameters.AgencyId);
+            var result = await _unitOfWork.SchoolRepository.GetSchoolsByAgencyId(
+                queryParameters.AgencyId,
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Name);
 
             if (result == null)
             {
