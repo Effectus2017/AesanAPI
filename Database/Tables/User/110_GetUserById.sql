@@ -1,4 +1,12 @@
-CREATE OR ALTER PROCEDURE [109_GetUserById]
+-- =============================================
+-- Stored Procedure: 110_GetUserById
+-- Fecha: 2025-01-XX
+-- Descripción: Obtiene un usuario por su ID usando la nueva lógica con AgencyAssignmentType.
+--              Reemplaza 109_GetUserById con nueva lógica.
+--              Usa AgencyAssignmentType en lugar de IsOwner/IsMonitor.
+-- =============================================
+
+CREATE OR ALTER PROCEDURE [110_GetUserById]
     @userId NVARCHAR(450)
 AS
 BEGIN
@@ -60,7 +68,7 @@ BEGIN
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
         LEFT JOIN OptionSelection os_stafftype ON s.StaffTypeId = os_stafftype.Id
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
-        -- Obtener la agencia desde AgencyUsers usando la misma lógica que 103_GetUserAssignedAgency
+        -- Obtener la agencia desde AgencyUsers usando la nueva lógica con AgencyAssignmentType
         LEFT JOIN (
             SELECT TOP 1
             au.AgencyId,
@@ -68,24 +76,9 @@ BEGIN
         FROM AgencyUsers au
         WHERE au.UserId = @userId
             AND au.IsActive = 1
-            AND (
-                    -- Si es Agency-Administrator, obtener donde es owner
-                    (EXISTS (
-                        SELECT 1
-            FROM AspNetUserRoles ur
-                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-            WHERE ur.UserId = @userId AND r.Name = 'Agency-Administrator'
-                    ) AND au.IsOwner = 1)
-            OR
-            -- Si no es Agency-Administrator, obtener donde no es monitor
-            (NOT EXISTS (
-                        SELECT 1
-            FROM AspNetUserRoles ur
-                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-            WHERE ur.UserId = @userId AND r.Name = 'Agency-Administrator'
-                    ) AND au.IsMonitor = 0)
-                )
-        ORDER BY au.CreatedAt DESC
+        ORDER BY 
+            CASE WHEN au.AgencyAssignmentType = 'AGENCY_OWNER' THEN 1 ELSE 2 END,
+            au.CreatedAt DESC
         ) au_filtered ON u.Id = au_filtered.UserId
         LEFT JOIN Agency a ON au_filtered.AgencyId = a.Id
     WHERE u.Id = @userId;
@@ -106,4 +99,4 @@ BEGIN
 END;
 GO
 
---EXEC [109_GetUserById] 'dd56a451-42e0-4965-aa48-2980dd310b36';
+--EXEC [110_GetUserById] 'dd56a451-42e0-4965-aa48-2980dd310b36';

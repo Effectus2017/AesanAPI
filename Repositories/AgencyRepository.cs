@@ -39,8 +39,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32, ParameterDirection.Input);
+            // Nota: userId es opcional en el nuevo SP, si no se proporciona permite acceso (comportamiento legacy)
 
-            var result = await dbConnection.QueryMultipleAsync("113_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("114_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -116,7 +117,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@userId", userId);
-            var result = await dbConnection.QueryMultipleAsync("112_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
+            
+            // Usar nuevo SP con nueva lógica de acceso
+            var result = await dbConnection.QueryMultipleAsync("113_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -174,9 +177,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@alls", alls);
             param.Add("@isPropietary", isPropietary);
 
+            // Usar nuevo SP con nueva lógica de acceso
             if (isList)
             {
-                using var result = await dbConnection.QueryMultipleAsync("117_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("118_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -196,7 +200,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 List<DTOStaff> agenciesOwners = [];
                 int count = 0;
 
-                using var result = await dbConnection.QueryMultipleAsync("117_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("118_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -574,7 +578,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
                 // Asignar el nuevo monitor
                 _logger.LogInformation($"Asignando nuevo monitor {agencyRequest.MonitorId} a la agencia {agencyId}");
-                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId.ToString(), agencyId, agencyRequest.AssignedBy, false, true);
+                // Calcular AgencyAssignmentType según el rol del monitor/coordinador
+                string agencyAssignmentType = await _agencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(agencyRequest.MonitorId.ToString());
+                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId.ToString(), agencyId, agencyRequest.AssignedBy, agencyAssignmentType);
             }
 
             // Invalidar caché

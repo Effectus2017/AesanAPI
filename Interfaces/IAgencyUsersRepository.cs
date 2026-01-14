@@ -22,15 +22,6 @@ public interface IAgencyUsersRepository
     Task<dynamic> GetUserAssignedAgency(string userId);
 
     /// <summary>
-    /// Asigna una agencia a un usuario
-    /// </summary>
-    /// <param name="userId">ID del usuario</param>
-    /// <param name="agencyId">ID de la agencia</param>
-    /// <param name="assignedBy">ID del usuario que asigna</param>
-    /// <returns>True si la asignación fue exitosa</returns>
-    Task<bool> AssignAgencyToUser(string userId, int agencyId, string assignedBy, bool isOwner = false, bool isMonitor = false);
-
-    /// <summary>
     /// Desasigna una agencia de un usuario
     /// </summary>
     /// <param name="userId">ID del usuario</param>
@@ -46,4 +37,21 @@ public interface IAgencyUsersRepository
     /// <param name="assignedBy">ID del usuario que realiza el cambio</param>
     /// <returns>True si la actualización fue exitosa</returns>
     Task<bool> UpdateUserMainAgency(string userId, int agencyId, string assignedBy);
+
+    /// <summary>
+    /// Calcula el AgencyAssignmentType apropiado basado en el rol del usuario
+    /// </summary>
+    /// <param name="userId">ID del usuario</param>
+    /// <returns>El AgencyAssignmentType calculado</returns>
+    Task<string> CalculateAgencyAssignmentTypeFromRole(string userId);
+
+    /// <summary>
+    /// Asigna una agencia a un usuario usando AgencyAssignmentType
+    /// </summary>
+    /// <param name="userId">ID del usuario</param>
+    /// <param name="agencyId">ID de la agencia</param>
+    /// <param name="assignedBy">ID del usuario que asigna</param>
+    /// <param name="agencyAssignmentType">Tipo de asignación (AGENCY_OWNER, AGENCY_STAFF, NUTRE_COORDINATOR, etc.)</param>
+    /// <returns>True si la asignación fue exitosa</returns>
+    Task<bool> AssignAgencyToUser(string userId, int agencyId, string assignedBy, string agencyAssignmentType);
 }

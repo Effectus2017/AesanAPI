@@ -41,6 +41,7 @@ BEGIN
         IsActive,
         DisplayOrder,
         BooleanValue,
+        IsDefaultValue,
         CreatedAt,
         UpdatedAt
     FROM
@@ -72,13 +73,13 @@ END;
 
 -- Ejemplos de uso:
 -- Obtener todas las opciones de status y employeePosition
-EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'status,employeePosition', @names = NULL;
+--EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'status,employeePosition', @names = NULL;
 
 -- Obtener solo las opciones específicas de employeePosition
-EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'employeePosition', @names = 'Presidente,Director,Supervisor';
+--EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'employeePosition', @names = 'Presidente,Director,Supervisor';
 
 -- Obtener todas las opciones activas/inactivas
-EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'isActive', @names = 'Active,Inactive';
+--EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'isActive', @names = 'Active,Inactive';
 
 -- Obtener todas las opciones de isActive Y solo las opciones específicas de employeePosition
-EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'isActive,employeePosition', @names = 'Presidente,Director,Supervisor';
+--EXEC [100_GetOptionSelectionByOptionKey] @optionKey = 'isActive,employeePosition', @names = 'Presidente,Director,Supervisor';

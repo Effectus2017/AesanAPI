@@ -107,7 +107,7 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@userId", userId, DbType.String);
 
             // Ejecutar el SP que retorna dos resultados
-            var result = await db.QueryMultipleAsync("109_GetUserById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryMultipleAsync("110_GetUserById", parameters, commandType: CommandType.StoredProcedure);
 
             // Leer el primer resultado: datos del usuario
             var userFromDb = await result.ReadFirstOrDefaultAsync<DTOUserById>();
@@ -671,7 +671,9 @@ public class UserRepository(UserManager<User> userManager,
             // 5. Asignar agencia a usuario (para compatibilidad con sistema existente)
             if (agencyId != 0)
             {
-                await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, true);
+                // El creador de la agencia siempre es AGENCY_OWNER
+                string agencyAssignmentType = "AGENCY_OWNER";
+                await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, agencyAssignmentType);
 
                 // 6. Actualizar solo el AgencyId del staff
                 bool staffUpdated = await _staffRepository.UpdateStaffAgencyId(staffId, agencyId);
@@ -785,7 +787,9 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Asignar la agencia al usuario
-            await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, false, false);
+            // Calcular AgencyAssignmentType según el rol del usuario
+            string agencyAssignmentType = await _agencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(user.Id);
+            await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, agencyAssignmentType);
 
             // Enviar correo con la contraseña temporal
             await InsertTemporaryPassword(user.Id, model.Password);
@@ -845,11 +849,12 @@ public class UserRepository(UserManager<User> userManager,
                 if (user != null)
                 {
                     var currentRoles = await _userManager.GetRolesAsync(user);
-                    roleName = currentRoles.FirstOrDefault() ?? "Monitor";
+                    roleName = currentRoles.FirstOrDefault();
                 }
-                else
+                
+                if (string.IsNullOrEmpty(roleName))
                 {
-                    roleName = "Monitor";
+                    throw new Exception($"El usuario {entity.Id} no tiene un rol asignado");
                 }
             }
 
@@ -858,7 +863,8 @@ public class UserRepository(UserManager<User> userManager,
             // Parámetro de usuario que realiza la asignación
             parameters.Add("@assignedBy", currentUserId, DbType.String);
 
-            var result = await db.QueryFirstOrDefaultAsync<int>("110_UpdateUser", parameters, commandType: CommandType.StoredProcedure);
+            // Usar nuevo SP con nueva lógica
+            var result = await db.QueryFirstOrDefaultAsync<int>("111_UpdateUser", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == 1)
             {

@@ -71,10 +71,14 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
                     return BadRequest("El ID de la agencia es requerido");
                 }
 
+                // Calcular AgencyAssignmentType según el rol del usuario
+                string agencyAssignmentType = await _unitOfWork.AgencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(queryParameters.UserId);
+
                 var result = await _unitOfWork.AgencyUsersRepository.AssignAgencyToUser(
                     queryParameters.UserId,
                     queryParameters.AgencyId,
-                    queryParameters.AssignedBy
+                    queryParameters.AssignedBy ?? queryParameters.UserId, // Si no se proporciona, usar el mismo usuario
+                    agencyAssignmentType
                 );
 
                 return Ok(result);

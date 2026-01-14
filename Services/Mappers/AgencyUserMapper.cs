@@ -52,15 +52,19 @@ public static class AgencyUserMapper
             return new DTOAgencyUser
             {
                 Id = result.Id,
-                Name = result.Name,
-                Address = result.Address,
-                Phone = result.Phone,
-                Email = result.Email,
-                IsOwner = result.IsOwner,
-                IsMonitor = result.IsMonitor,
-                IsActive = result.IsActive,
+                Name = result.Name ?? string.Empty,
+                Address = result.Address ?? string.Empty,
+                Phone = result.Phone ?? string.Empty,
+                Email = result.Email ?? string.Empty,
+                IsActive = result.IsActive ?? false,
+                // Campos nuevos
+                AgencyAssignmentType = result.AgencyAssignmentType,
+                RoleId = result.RoleId,
+                RoleName = result.RoleName,
+                AssignedDate = result.AssignedDate,
+                AssignedBy = result.AssignedBy,
                 CreatedAt = result.CreatedAt,
-                UpdatedAt = result.UpdatedAt,
+                UpdatedAt = result.UpdatedAt ?? result.CreatedAt,
             };
         }
         catch (Exception ex)
