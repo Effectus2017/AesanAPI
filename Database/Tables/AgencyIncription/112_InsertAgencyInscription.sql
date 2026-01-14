@@ -1,5 +1,6 @@
 -- Insertar una inscripción de agencia
 -- 1.1.9 - Agregado ParticipatesInHeadStartProgramId (Solo para PSAV)
+-- 1.2.0 - Agregado BoardMeetingsPerYear, BoardMeetsRegularly, BoardExecutiveAuthority (Solo para PACNA)
 CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @agencyId int,
     @nonProfit bit,
@@ -18,6 +19,9 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @nationalYouthProgram bit,
     @isDayCareHomeId int = NULL,
     @participatesInHeadStartProgramId int = NULL,
+    @boardMeetingsPerYear int = NULL,
+    @boardMeetsRegularly bit = NULL,
+    @boardExecutiveAuthority nvarchar(max) = NULL,
     @deadlineToCompleteRegistration datetime,
     @id int OUTPUT
 AS
@@ -32,6 +36,7 @@ BEGIN
         BasicEducationRegistry, ExtendedHours, ServicesOfferedSince,
         TaxExemptionStatusId, TaxExemptionTypeId,
         PublicAllianceContractId, NationalYouthProgram, IsDayCareHomeId, ParticipatesInHeadStartProgramId,
+        BoardMeetingsPerYear, BoardMeetsRegularly, BoardExecutiveAuthority,
         DeadlineToCompleteRegistration
         )
     VALUES
@@ -41,6 +46,7 @@ BEGIN
             @basicEducationRegistry, @extendedHours, @servicesOfferedSince,
             @taxExemptionStatusId, @taxExemptionTypeId,
             @publicAllianceContractId, @nationalYouthProgram, @isDayCareHomeId, @participatesInHeadStartProgramId,
+            @boardMeetingsPerYear, @boardMeetsRegularly, @boardExecutiveAuthority,
             @deadlineToCompleteRegistration
         );
         SET @id = SCOPE_IDENTITY();

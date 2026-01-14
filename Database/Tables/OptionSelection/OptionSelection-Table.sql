@@ -17,6 +17,7 @@ Características:
 - Agrupación lógica por OptionKey
 - Control de orden de visualización (DisplayOrder)
 - Gestión de estado activo/inactivo (IsActive)
+- Valor por defecto para selección automática (IsDefaultValue)
 - Marcas de tiempo para auditoría (CreatedAt, UpdatedAt)
 
 Estructura:
@@ -27,6 +28,7 @@ Estructura:
 - IsActive: Estado activo/inactivo
 - BooleanValue: Valor booleano para yesNo
 - DisplayOrder: Orden de visualización
+- IsDefaultValue: Indica si esta opción es la seleccionada por defecto (solo una por OptionKey)
 - CreatedAt/UpdatedAt: Auditoría
 
 Relaciones:
@@ -49,6 +51,8 @@ CREATE TABLE OptionSelection
     -- Solo para yesNo
     IsActive BIT NOT NULL DEFAULT 1,
     DisplayOrder INT NOT NULL DEFAULT 0,
+    IsDefaultValue BIT NOT NULL DEFAULT 0,
+    -- Indica si esta opción es la seleccionada por defecto (solo una por OptionKey)
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL
 );
@@ -280,3 +284,34 @@ VALUES
     ('Semanas', 'Weeks', 'tenureDurationUnit', 0, 1, 1010),
     ('Meses', 'Months', 'tenureDurationUnit', 0, 1, 1020),
     ('Años', 'Years', 'tenureDurationUnit', 0, 1, 1030);
+
+-- Opciones para BoardExecutiveAuthority (¿La Junta de Directores tiene la autoridad para realizar alguna de las siguientes funciones hacia el Director Ejecutivo?)
+-- Does the Board of Directors have the authority to perform any of the following functions towards the Executive Director?
+-- Solo para programa PACNA
+-- Verificar si las opciones ya existen antes de insertarlas
+IF NOT EXISTS (SELECT 1 FROM OptionSelection WHERE OptionKey = 'boardExecutiveAuthority' AND Name = 'Contratar')
+BEGIN
+    INSERT INTO OptionSelection
+        (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+    VALUES
+        ('Contratar', 'Hire', 'boardExecutiveAuthority', 0, 1, 1040);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM OptionSelection WHERE OptionKey = 'boardExecutiveAuthority' AND Name = 'Despedir')
+BEGIN
+    INSERT INTO OptionSelection
+        (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+    VALUES
+        ('Despedir', 'Terminate', 'boardExecutiveAuthority', 0, 1, 1050);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM OptionSelection WHERE OptionKey = 'boardExecutiveAuthority' AND Name = 'N/A')
+BEGIN
+    INSERT INTO OptionSelection
+        (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+    VALUES
+        ('N/A', 'N/A', 'boardExecutiveAuthority', 0, 1, 1060);
+END
+GO

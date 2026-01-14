@@ -7,4 +7,5 @@ public class DTOOptionSelection
     public bool? BooleanValue { get; set; }
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
+    public bool IsDefaultValue { get; set; }
 }

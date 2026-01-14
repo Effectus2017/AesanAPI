@@ -5,6 +5,14 @@ CREATE OR ALTER PROCEDURE [100_DeleteAgency]
 AS
 BEGIN
     SET NOCOUNT ON;
+    
+    -- Protección: No permitir eliminar la agencia 1 (NUTRE)
+    IF @Id = 1
+    BEGIN
+        RAISERROR('No se puede eliminar la agencia 1 (NUTRE). Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
+        RETURN 0;
+    END
+    
     DECLARE @rowsAffected INT;
 
     UPDATE Agency
