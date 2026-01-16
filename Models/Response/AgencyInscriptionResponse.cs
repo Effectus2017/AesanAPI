@@ -170,5 +170,30 @@ public class AgencyInscriptionResponse
     /// Participa en programa Head Start (relación)
     /// </summary>
     public DTOOptionSelection? ParticipatesInHeadStartProgram { get; set; }
+
+    /// <summary>
+    /// ¿Cuántas reuniones se realizan durante el año? (Solo para PACNA)
+    /// How many meetings are held during the year? (Only for PACNA)
+    /// </summary>
+    public int? BoardMeetingsPerYear { get; set; }
+
+    /// <summary>
+    /// ¿La Junta de Directores se reúne regularmente? (Solo para PACNA)
+    /// Does the Board of Directors meet regularly? (Only for PACNA)
+    /// </summary>
+    public bool? BoardMeetsRegularly { get; set; }
+
+    /// <summary>
+    /// ¿La Junta de Directores tiene la autoridad para realizar alguna de las siguientes funciones hacia el Director Ejecutivo? (Solo para PACNA)
+    /// Does the Board of Directors have the authority to perform any of the following functions towards the Executive Director? (Only for PACNA)
+    /// Contratar, Despedir, N/A
+    /// Lista de IDs de OptionSelection (OptionKey = 'boardExecutiveAuthority')
+    /// </summary>
+    public List<int>? BoardExecutiveAuthorityIds { get; set; }
+
+    /// <summary>
+    /// Funciones de autoridad de la Junta de Directores (relación completa)
+    /// </summary>
+    public List<DTOOptionSelection>? BoardExecutiveAuthority { get; set; }
 }
 

@@ -158,7 +158,9 @@ GO
 
 -- ¿La Junta de Directores tiene la autoridad para realizar alguna de las siguientes funciones hacia el Director Ejecutivo?
 -- Does the Board of Directors have the authority to perform any of the following functions towards the Executive Director?
--- Contratar, Despedir, N/A (almacenado como JSON array de IDs)
+-- DEPRECATED: Este campo está deprecado. Los datos se almacenan ahora en la tabla AgencyInscriptionBoardExecutiveAuthority.
+-- DEPRECATED: This field is deprecated. Data is now stored in the AgencyInscriptionBoardExecutiveAuthority table.
+-- Contratar, Despedir, N/A (almacenado como JSON array de IDs) - MIGRADO A TABLA DE RELACIÓN
 IF COL_LENGTH('AgencyInscription', 'BoardExecutiveAuthority') IS NULL
 BEGIN
     ALTER TABLE AgencyInscription

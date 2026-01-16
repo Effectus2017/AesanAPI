@@ -86,6 +86,8 @@ BEGIN
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
         ai.IsDayCareHomeId,
+        ai.BoardMeetingsPerYear,
+        ai.BoardMeetsRegularly,
         ai.ServicesOfferedSince,
         ai.RejectionJustification,
         ai.AppointmentCoordinated,
@@ -162,5 +164,24 @@ BEGIN
         LEFT JOIN Staff s ON u.Id = s.UserId
     WHERE aua.UserId = @userId
         AND (@agencyId IS NULL OR ap.AgencyId = @agencyId);
+
+    -- Cuarta consulta: Obtener las funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+    SELECT 
+        aibe.OptionSelectionId,
+        os.Id,
+        os.Name,
+        os.NameEN,
+        os.OptionKey,
+        os.BooleanValue,
+        os.IsActive,
+        os.DisplayOrder,
+        os.IsDefaultValue
+    FROM AgencyInscriptionBoardExecutiveAuthority aibe
+        INNER JOIN AgencyInscription ai ON aibe.AgencyInscriptionId = ai.Id
+        INNER JOIN OptionSelection os ON aibe.OptionSelectionId = os.Id
+    WHERE ai.AgencyId = @agencyId
+        AND aibe.IsActive = 1
+        AND os.OptionKey = 'boardExecutiveAuthority'
+    ORDER BY os.DisplayOrder ASC;
 END;
 GO

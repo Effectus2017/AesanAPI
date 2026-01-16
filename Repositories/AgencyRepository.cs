@@ -94,6 +94,23 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 }
             }
 
+            // Leer el quinto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+            var _boardExecutiveAuthority = await result.ReadAsync<dynamic>();
+
+            if (_boardExecutiveAuthority.Any() && agency.Inscription != null)
+            {
+                var boardAuthorityIds = _boardExecutiveAuthority.Select(x => (int)x.OptionSelectionId).ToList();
+                var boardAuthorityOptions = _boardExecutiveAuthority.Select(x => _mappingService.MapOptionSelection(
+                    (int?)x.Id,
+                    x.Name?.ToString(),
+                    x.NameEN?.ToString(),
+                    x.OptionKey?.ToString()
+                )).Where(x => x != null).Cast<DTOOptionSelection>().ToList();
+                
+                agency.Inscription.BoardExecutiveAuthorityIds = boardAuthorityIds;
+                agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Any() ? boardAuthorityOptions : null;
+            }
+
             return agency;
         }
         catch (Exception ex)
@@ -140,6 +157,26 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             if (_agenciesPrograms != null && _agenciesPrograms.Any())
             {
                 agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
+            }
+
+            // Leer el tercer result set: Usuarios que hicieron appointments (puede estar vacío)
+            var _appointmentUsers = await result.ReadAsync<dynamic>();
+
+            // Leer el cuarto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+            var _boardExecutiveAuthority = await result.ReadAsync<dynamic>();
+
+            if (_boardExecutiveAuthority.Any() && agency.Inscription != null)
+            {
+                var boardAuthorityIds = _boardExecutiveAuthority.Select(x => (int)x.OptionSelectionId).ToList();
+                var boardAuthorityOptions = _boardExecutiveAuthority.Select(x => _mappingService.MapOptionSelection(
+                    (int?)x.Id,
+                    x.Name?.ToString(),
+                    x.NameEN?.ToString(),
+                    x.OptionKey?.ToString()
+                )).Where(x => x != null).Cast<DTOOptionSelection>().ToList();
+                
+                agency.Inscription.BoardExecutiveAuthorityIds = boardAuthorityIds;
+                agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Any() ? boardAuthorityOptions : null;
             }
 
             _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
@@ -351,7 +388,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             }
 
             // Insertar la solicitud de participación de la Agencia
-            await InsertAgencyInscription(
+            var agencyInscriptionId = await InsertAgencyInscription(
                 agencyId,
                 agencyRequest.NonProfit,
                 agencyRequest.FederalFundsDenied,
@@ -368,11 +405,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.IsDayCareHomeId,
                 agencyRequest.ParticipatesInHeadStartProgramId,
                 agencyRequest.BoardMeetingsPerYear,
-                agencyRequest.BoardMeetsRegularly,
-                agencyRequest.BoardExecutiveAuthority != null && agencyRequest.BoardExecutiveAuthority.Count > 0 
-                    ? System.Text.Json.JsonSerializer.Serialize(agencyRequest.BoardExecutiveAuthority) 
-                    : null
+                agencyRequest.BoardMeetsRegularly
             );
+
+            // Insertar funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+            if (agencyRequest.BoardExecutiveAuthority != null && agencyRequest.BoardExecutiveAuthority.Count > 0)
+            {
+                await InsertAgencyInscriptionBoardExecutiveAuthority(agencyInscriptionId, agencyRequest.BoardExecutiveAuthority);
+            }
 
             // Asignar programas a la agencia
             if (agencyRequest.Programs != null && agencyRequest.Programs.Count > 0)
@@ -442,7 +482,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null, string? boardExecutiveAuthority = null)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null)
     {
         try
         {
@@ -464,7 +504,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@participatesInHeadStartProgramId", participatesInHeadStartProgramId);
             parameters.Add("@boardMeetingsPerYear", boardMeetingsPerYear);
             parameters.Add("@boardMeetsRegularly", boardMeetsRegularly);
-            parameters.Add("@boardExecutiveAuthority", boardExecutiveAuthority);
 
             // Deadline to complete the registration of the Sites
             // Tomar valor desde AppSettings que es un numero de días y convertir a date-time
@@ -481,6 +520,42 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         {
             await _logger.LogError(ex, $"Error inserting agency inscription for agency {agencyId}: {ex.Message}");
             throw new Exception($"Error al insertar la inscripción de la agencia {agencyId}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Inserta múltiples funciones de autoridad de la Junta de Directores para una inscripción de agencia
+    /// </summary>
+    /// <param name="agencyInscriptionId">ID de la inscripción de la agencia</param>
+    /// <param name="optionSelectionIds">Lista de IDs de opciones de selección (OptionKey = 'boardExecutiveAuthority')</param>
+    /// <param name="connection">Conexión de base de datos (opcional)</param>
+    /// <param name="transaction">Transacción de base de datos (opcional)</param>
+    /// <returns>True si se insertaron correctamente</returns>
+    private async Task<bool> InsertAgencyInscriptionBoardExecutiveAuthority(int agencyInscriptionId, List<int> optionSelectionIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyInscriptionId", agencyInscriptionId, DbType.Int32);
+            parameters.Add("@optionSelectionIds", string.Join(",", optionSelectionIds), DbType.String);
+
+            await dbConnection.ExecuteAsync("100_InsertAgencyInscriptionBoardExecutiveAuthority", parameters, transaction, commandType: CommandType.StoredProcedure);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error al insertar funciones de autoridad de la Junta de Directores para la inscripción {agencyInscriptionId}: {ex.Message}");
+            throw new Exception($"Error al insertar funciones de autoridad de la Junta de Directores: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
         }
     }
 

@@ -133,6 +133,8 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 TypeOfApplicantId = item.TypeOfApplicantId,
                 PublicAllianceContractId = item.PublicAllianceContractId,
                 ParticipatesInHeadStartProgramId = item.ParticipatesInHeadStartProgramId,
+                BoardMeetingsPerYear = item.BoardMeetingsPerYear,
+                BoardMeetsRegularly = item.BoardMeetsRegularly,
 
                 // Campos de fecha y texto
                 RejectionJustification = item.RejectionJustification,
