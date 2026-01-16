@@ -844,6 +844,56 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     }
 
     /// <summary>
+    /// Verifica si una agencia es propietaria
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia a verificar</param>
+    /// <returns>True si la agencia es propietaria, False en caso contrario</returns>
+    private async Task<bool> IsAgencyPropietary(int agencyId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", agencyId, DbType.Int32, ParameterDirection.Input);
+
+            var result = await dbConnection.QueryMultipleAsync("114_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            
+            if (result == null)
+            {
+                return false;
+            }
+
+            var agencyDynamic = await result.ReadFirstOrDefaultAsync<dynamic>();
+            if (agencyDynamic == null)
+            {
+                return false;
+            }
+
+            // Acceder de forma segura a la propiedad IsPropietary del objeto dinámico
+            // Usar conversión a diccionario para acceso seguro
+            if (agencyDynamic is IDictionary<string, object> agencyDict && agencyDict.TryGetValue("IsPropietary", out var isPropietaryValue))
+            {
+                return isPropietaryValue is bool isPropietary && isPropietary;
+            }
+
+            // Fallback: intentar acceso directo si la conversión falla
+            try
+            {
+                return agencyDynamic.IsPropietary == true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error verificando si la agencia {agencyId} es propietaria: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Elimina una agencia y sus programas asociados
     /// </summary>
     /// <param name="agencyId">Id de la agencia a eliminar</param>
@@ -854,11 +904,21 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         {
             _logger.LogInformation($"Eliminando la agencia {agencyId}");
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var param = new { agencyId };
+            // Validación previa: Verificar si la agencia es propietaria
+            if (await IsAgencyPropietary(agencyId))
+            {
+                var errorMessage = $"No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.";
+                await _logger.LogError(new Exception(errorMessage), $"Intento de eliminar agencia propietaria {agencyId}");
+                throw new Exception(errorMessage);
+            }
 
-            // Llamar al procedimiento almacenado para eliminar la agencia y sus programas
-            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_DeleteAgency", param, commandType: CommandType.StoredProcedure);
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("100_DeleteAgency", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
             {

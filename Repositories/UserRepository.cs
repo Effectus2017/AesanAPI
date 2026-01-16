@@ -693,7 +693,7 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Enviar correo con la contraseña temporal y bienvenida
-            await _emailService.SendWelcomeAgencyEmail(model, temporaryPassword);
+            await _emailService.SendWelcomeAgencyEmail(model, temporaryPassword, user.Id);
 
             // Asignar permisos CRUD de escuelas, staff y sitios al usuario
             await AssignSchoolCrudPermissionsToUserAsync(user.Id);

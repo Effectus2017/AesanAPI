@@ -16,10 +16,10 @@ BEGIN
     SET XACT_ABORT ON;
     -- Asegurar que los errores causen rollback automático
 
-    -- Protección: No permitir eliminar la agencia 1 (NUTRE)
-    IF @agencyId = 1
+    -- Protección: No permitir eliminar agencias propietarias (isPropietary = 1)
+    IF EXISTS (SELECT 1 FROM Agency WHERE Id = @agencyId AND IsPropietary = 1)
     BEGIN
-        RAISERROR('No se puede eliminar la agencia 1 (NUTRE). Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
+        RAISERROR('No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
         RETURN 0;
     END
 
@@ -359,12 +359,12 @@ BEGIN
     FROM AgencyUsers
     WHERE AgencyId = @agencyId;
         
-        -- Obtener el usuario creador (IsOwner = 1) para referencia
+        -- Obtener el usuario creador (AgencyAssignmentType = 'AGENCY_OWNER') para referencia
         SELECT TOP 1
         @ownerUserId = UserId
     FROM AgencyUsers
     WHERE AgencyId = @agencyId
-        AND IsOwner = 1
+        AND AgencyAssignmentType = 'AGENCY_OWNER'
         AND IsActive = 1;
         
         -- =============================================

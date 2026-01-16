@@ -1,10 +1,10 @@
 -- =============================================
 -- Trigger: trg_PreventDeleteAgency1
--- Descripción: Previene la eliminación directa de la agencia 1 (NUTRE) desde cualquier script SQL
+-- Descripción: Previene la eliminación directa de agencias propietarias (isPropietary = 1) desde cualquier script SQL
 -- Fecha: 2025-01-XX
--- Versión: 1.0
+-- Versión: 2.0
 -- =============================================
--- IMPORTANTE: Este trigger protege la agencia 1 (NUTRE) de ser eliminada
+-- IMPORTANTE: Este trigger protege las agencias propietarias (isPropietary = 1) de ser eliminadas
 -- bajo ninguna circunstancia, incluso si se intenta un DELETE directo en la tabla
 -- =============================================
 
@@ -15,10 +15,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Verificar si se intenta eliminar la agencia 1 (NUTRE)
-    IF EXISTS (SELECT 1 FROM deleted WHERE Id = 1)
+    -- Verificar si se intenta eliminar alguna agencia propietaria (isPropietary = 1)
+    IF EXISTS (SELECT 1 FROM deleted d INNER JOIN Agency a ON d.Id = a.Id WHERE a.IsPropietary = 1)
     BEGIN
-        RAISERROR('No se puede eliminar la agencia 1 (NUTRE). Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
+        RAISERROR('No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
         ROLLBACK TRANSACTION;
         RETURN;
     END

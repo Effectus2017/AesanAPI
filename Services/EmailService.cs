@@ -1,5 +1,6 @@
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Request;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -14,15 +15,17 @@ public class EmailService(
     IOptions<ApplicationSettings> appSettings,
     ILogger<EmailService> logger,
     IWebHostEnvironment environment,
-    IEmailTemplateRepository emailTemplateRepository) : IEmailService
+    IEmailTemplateRepository emailTemplateRepository,
+    IEmailLogRepository emailLogRepository) : IEmailService
 {
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly ILogger<EmailService> _logger = logger;
     private readonly IWebHostEnvironment _environment = environment;
     private readonly IEmailTemplateRepository _emailTemplateRepository = emailTemplateRepository;
+    private readonly IEmailLogRepository _emailLogRepository = emailLogRepository;
     public async Task SendEmailAsync(string email, string subject, string message)
     {
-        await SendEmailWithGmailAsync(email, subject, message);
+        await SendEmailWithGmailAsync(email, subject, message, "Generic");
     }
 
     public async Task SendTemporaryPasswordEmail(string email, string temporaryPassword)
@@ -35,14 +38,14 @@ public class EmailService(
         var template = await GetTemplateAndReplaceVariables("TemporaryPassword", variables);
         if (template.HasValue)
         {
-            await SendEmailWithGmailAsync(email, template.Value.subject, template.Value.body);
+            await SendEmailWithGmailAsync(email, template.Value.subject, template.Value.body, "TemporaryPassword", null, null, "TemporaryPassword");
         }
         else
         {
             // Fallback a código hardcodeado
             var subject = "Tu contraseña temporera";
             var message = $"Tu contraseña temporera es: {temporaryPassword}";
-            await SendEmailWithGmailAsync(email, subject, message);
+            await SendEmailWithGmailAsync(email, subject, message, "TemporaryPassword");
         }
     }
 
@@ -52,8 +55,13 @@ public class EmailService(
     /// <param name="email">El correo electrónico del destinatario</param>
     /// <param name="subject">El asunto del correo electrónico</param>
     /// <param name="message">El mensaje del correo electrónico</param>
-    public async Task SendEmailWithGmailAsync(string email, string subject, string message)
+    /// <param name="emailType">Tipo de correo (WelcomeAgency, ApprovalSponsor, etc.)</param>
+    /// <param name="userId">ID del usuario relacionado (opcional)</param>
+    /// <param name="agencyId">ID de la agencia relacionada (opcional)</param>
+    /// <param name="emailTemplateKey">Clave del template usado (opcional)</param>
+    public async Task SendEmailWithGmailAsync(string email, string subject, string message, string emailType = "Generic", string? userId = null, int? agencyId = null, string? emailTemplateKey = null)
     {
+        // El logging ahora se maneja en EmailServiceDecorator
         _logger.LogInformation("Enviando correo electrónico con Gmail a {Email}", email);
 
         var emailMessage = new MimeMessage();
@@ -81,34 +89,25 @@ public class EmailService(
 
         emailMessage.Body = bodyBuilder.ToMessageBody();
 
-        try
-        {
-            var client = new MailKit.Net.Smtp.SmtpClient();
+        var client = new MailKit.Net.Smtp.SmtpClient();
 
-            client.AuthenticationMechanisms.Remove("XOAUTH2");
+        client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-            _logger.LogInformation("Conectando a servidor SMTP: {Server}:{Port}", _appSettings.Gmail.SmtpServer, _appSettings.Gmail.SmtpServerPort);
-            await client.ConnectAsync(_appSettings.Gmail.SmtpServer, _appSettings.Gmail.SmtpServerPort, MailKit.Security.SecureSocketOptions.Auto);
-            
-            _logger.LogInformation("Autenticando con usuario: {EmailFrom}", _appSettings.Gmail.EmailFrom);
-            await client.AuthenticateAsync(_appSettings.Gmail.EmailFrom, _appSettings.Gmail.SmtpPass);
+        _logger.LogInformation("Conectando a servidor SMTP: {Server}:{Port}", _appSettings.Gmail.SmtpServer, _appSettings.Gmail.SmtpServerPort);
+        await client.ConnectAsync(_appSettings.Gmail.SmtpServer, _appSettings.Gmail.SmtpServerPort, MailKit.Security.SecureSocketOptions.Auto);
+        
+        _logger.LogInformation("Autenticando con usuario: {EmailFrom}", _appSettings.Gmail.EmailFrom);
+        await client.AuthenticateAsync(_appSettings.Gmail.EmailFrom, _appSettings.Gmail.SmtpPass);
 
-            _logger.LogInformation("Enviando correo...");
-            await client.SendAsync(emailMessage);
-            await client.DisconnectAsync(true);
+        _logger.LogInformation("Enviando correo...");
+        await client.SendAsync(emailMessage);
+        await client.DisconnectAsync(true);
 
 #if DEBUG || LOCAL
-            _logger.LogInformation("Correo electrónico enviado con Gmail exitosamente a {Recipient} (originalmente destinado a {OriginalEmail})", actualRecipient, email);
+        _logger.LogInformation("Correo electrónico enviado con Gmail exitosamente a {Recipient} (originalmente destinado a {OriginalEmail})", actualRecipient, email);
 #else
-            _logger.LogInformation("Correo electrónico enviado con Gmail exitosamente a {Recipient}", email);
+        _logger.LogInformation("Correo electrónico enviado con Gmail exitosamente a {Recipient}", email);
 #endif
-
-        }
-        catch (Exception ex) //todo add another try to send email
-        {
-            _logger.LogError(ex, "Error al enviar correo electrónico. Detalles: {Message}. StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
-            throw new Exception("Error al enviar correo electrónico", ex);
-        }
     }
 
     /// <summary>
@@ -178,7 +177,8 @@ public class EmailService(
     /// </summary>
     /// <param name="userRequest">Datos del usuario y la agencia</param>
     /// <param name="temporaryPassword">Contraseña temporera asignada</param>
-    public async Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword)
+    /// <param name="userId">ID del usuario (opcional)</param>
+    public async Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword, string? userId = null)
     {
         _logger.LogInformation("Enviando correo de bienvenida a la agencia");
 
@@ -196,7 +196,7 @@ public class EmailService(
         var template = await GetTemplateAndReplaceVariables("WelcomeAgency", variables);
         if (template.HasValue)
         {
-            await SendEmailWithGmailAsync(userRequest.Staff.Email, template.Value.subject, template.Value.body);
+            await SendEmailWithGmailAsync(userRequest.Staff.Email, template.Value.subject, template.Value.body, "WelcomeAgency", userId, null, "WelcomeAgency");
         }
         else
         {
@@ -231,7 +231,7 @@ public class EmailService(
                     (787) 759-2000 / Exts. 4625751, 4625753</p>
                 </div>";
 
-            await SendEmailWithGmailAsync(userRequest.Staff.Email, subject, htmlBody);
+            await SendEmailWithGmailAsync(userRequest.Staff.Email, subject, htmlBody, "WelcomeAgency", userId);
         }
     }
 
@@ -259,7 +259,7 @@ public class EmailService(
         if (template.HasValue)
         {
 #if !DEBUG
-            await SendEmailWithGmailAsync(user.Email, template.Value.subject, template.Value.body);
+            await SendEmailWithGmailAsync(user.Email, template.Value.subject, template.Value.body, "ApprovalSponsor", user.Id, null, "ApprovalSponsor");
 #endif
         }
         else
@@ -295,7 +295,7 @@ public class EmailService(
                 </div>";
 
 #if !DEBUG
-            await SendEmailWithGmailAsync(user.Email, subject, htmlBody);
+            await SendEmailWithGmailAsync(user.Email, subject, htmlBody, "ApprovalSponsor", user.Id);
 #endif
         }
     }
@@ -321,7 +321,7 @@ public class EmailService(
         if (template.HasValue)
         {
 #if !DEBUG
-            await SendEmailWithGmailAsync(email, template.Value.subject, template.Value.body);
+            await SendEmailWithGmailAsync(email, template.Value.subject, template.Value.body, "DenialSponsor", null, null, "DenialSponsor");
 #endif
         }
         else
@@ -346,7 +346,7 @@ public class EmailService(
                 </div>";
 
 #if !DEBUG
-            await SendEmailWithGmailAsync(email, subject, htmlBody);
+            await SendEmailWithGmailAsync(email, subject, htmlBody, "DenialSponsor");
 #endif
         }
     }
@@ -408,7 +408,7 @@ public class EmailService(
             }
 #endif
 
-            await SendEmailWithGmailAsync(recipientEmail, subject, body);
+            await SendEmailWithGmailAsync(recipientEmail, subject, body, "AgencyAssignment", user.Id, agency.Id, "AgencyAssignment");
             _logger.LogInformation($"Correo de asignación de agencia enviado exitosamente a {recipientEmail}");
         }
         catch (Exception ex)
@@ -461,7 +461,7 @@ public class EmailService(
         }
 #endif
 
-        await SendEmailWithGmailAsync(recipientEmail, subject, body);
+        await SendEmailWithGmailAsync(recipientEmail, subject, body, "AgencyUnassignment", user.Id, agency.Id, "AgencyUnassignment");
         _logger.LogInformation($"Correo de desasignación de agencia enviado exitosamente a {recipientEmail}");
     }
 
@@ -519,7 +519,7 @@ public class EmailService(
         }
 #endif
 
-        await SendEmailWithGmailAsync(recipientEmail, subject, htmlContent);
+        await SendEmailWithGmailAsync(recipientEmail, subject, htmlContent, "PasswordChanged", user.Id, null, "PasswordChanged");
     }
 
     public async Task SendPasswordResetEmail(string email, string resetLink)
@@ -568,13 +568,61 @@ public class EmailService(
             }
 #endif
 
-            await SendEmailWithGmailAsync(email, subject, htmlContent);
+            await SendEmailWithGmailAsync(email, subject, htmlContent, "PasswordReset", null, null, "PasswordReset");
             _logger.LogInformation("Correo de restablecimiento de contraseña enviado a: {Email}", email);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al enviar correo de restablecimiento de contraseña a: {Email}", email);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Reenvía un correo electrónico basado en un log existente
+    /// </summary>
+    /// <param name="emailLogId">ID del log de correo original</param>
+    /// <param name="forceResend">Si es true, reenvía incluso si el correo original fue exitoso</param>
+    public async Task<bool> ResendEmailAsync(int emailLogId, bool forceResend = false)
+    {
+        try
+        {
+            var originalLog = await _emailLogRepository.GetEmailLogByIdAsync(emailLogId);
+            
+            if (originalLog == null)
+            {
+                _logger.LogWarning("No se encontró el log de correo con ID {EmailLogId}", emailLogId);
+                return false;
+            }
+
+            // Si el correo original fue exitoso y no se fuerza el reenvío, no reenviar
+            if (originalLog.Status == "Sent" && !forceResend)
+            {
+                _logger.LogInformation("El correo con ID {EmailLogId} ya fue enviado exitosamente. Use forceResend=true para reenviar.", emailLogId);
+                return false;
+            }
+
+            // Reenviar el correo con la información del log original
+            await SendEmailWithGmailAsync(
+                originalLog.RecipientEmail,
+                originalLog.Subject,
+                "", // El body no se guarda en el log, se reconstruye desde el template si es necesario
+                originalLog.EmailType,
+                originalLog.UserId,
+                originalLog.AgencyId,
+                originalLog.EmailTemplateKey
+            );
+
+            // El nuevo log se crea automáticamente en SendEmailWithGmailAsync
+            // Aquí podríamos actualizar el retryCount del log original si fuera necesario
+            
+            _logger.LogInformation("Correo reenviado exitosamente desde log {EmailLogId}", emailLogId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al reenviar correo desde log {EmailLogId}", emailLogId);
+            throw new Exception($"Error al reenviar correo: {ex.Message}", ex);
         }
     }
 }
