@@ -122,6 +122,16 @@ public class AgencyRequest
     // Does your Entity currently participate in any of the following programs? (Only for PSAV)
     // Early Head Start, Head Start, N/A
     public int? ParticipatesInHeadStartProgramId { get; set; } = null;
+    // ¿Cuántas reuniones se realizan durante el año? (Solo para PACNA)
+    // How many meetings are held during the year? (Only for PACNA)
+    public int? BoardMeetingsPerYear { get; set; } = null;
+    // ¿La Junta de Directores se reúne regularmente? (Solo para PACNA)
+    // Does the Board of Directors meet regularly? (Only for PACNA)
+    public bool? BoardMeetsRegularly { get; set; } = null;
+    // ¿La Junta de Directores tiene la autoridad para realizar alguna de las siguientes funciones hacia el Director Ejecutivo? (Solo para PACNA)
+    // Does the Board of Directors have the authority to perform any of the following functions towards the Executive Director? (Only for PACNA)
+    // Contratar, Despedir, N/A
+    public List<int>? BoardExecutiveAuthority { get; set; } = null;
 
     // ¿Es la agencia recurrente?
     // Is the agency recurrent?

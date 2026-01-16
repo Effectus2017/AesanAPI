@@ -1,16 +1,71 @@
--- Descripción: Obtiene los datos de una agencia por su ID con datos completos de inscripción
--- Versión actualizada con JOINs a OptionSelection para datos de inscripción
--- 1.1.2
-CREATE OR ALTER PROCEDURE [113_GetAgencyById]
-    @id int
+-- =============================================
+-- Stored Procedure: 114_GetAgencyById
+-- Fecha: 2025-01-XX
+-- Descripción: Obtiene los datos de una agencia por su ID con nueva lógica de acceso.
+--              Reemplaza 113_GetAgencyById con verificación de acceso.
+--              Verifica que el usuario tenga acceso a la agencia según nueva lógica.
+-- =============================================
+
+CREATE OR ALTER PROCEDURE [114_GetAgencyById]
+    @id INT,
+    @userId NVARCHAR(450) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- =============================================
+    -- NUEVA LÓGICA DE ACCESO: Verificar acceso del usuario
+    -- =============================================
+    DECLARE @userRoleName NVARCHAR(256) = NULL;
+    DECLARE @canSeeAllAgencies BIT = 0;
+    DECLARE @hasAccess BIT = 0;
+
+    -- Si se proporciona @userId, verificar acceso
+    IF @userId IS NOT NULL
+    BEGIN
+        -- Obtener el rol del usuario
+        SELECT TOP 1 @userRoleName = r.Name
+        FROM AspNetUserRoles ur
+        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+        WHERE ur.UserId = @userId;
+
+        -- Si es SuperAdministrator o Administrator → ver todas las agencias
+        IF @userRoleName IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+        BEGIN
+            SET @canSeeAllAgencies = 1;
+            SET @hasAccess = 1;
+        END
+        ELSE
+        BEGIN
+            -- Verificar si el usuario tiene acceso a esta agencia específica
+            IF EXISTS (
+                SELECT 1 FROM AgencyUsers au 
+                WHERE au.UserId = @userId 
+                AND au.AgencyId = @id 
+                AND au.IsActive = 1
+            )
+            BEGIN
+                SET @hasAccess = 1;
+            END
+        END
+    END
+    ELSE
+    BEGIN
+        -- Si no se proporciona @userId, permitir acceso (comportamiento legacy)
+        SET @hasAccess = 1;
+    END
+
+    -- Si no tiene acceso, retornar error
+    IF @hasAccess = 0
+    BEGIN
+        RAISERROR('El usuario no tiene acceso a esta agencia.', 16, 1);
+        RETURN -1;
+    END
+
+    -- Continuar con la consulta original (similar a 113_GetAgencyById pero usando AgencyAssignmentType)
     -- Primera consulta: Obtener los datos de la agencia con datos completos de inscripción
     SELECT
         a.*,
-
         -- Datos del usuario de la agencia (auspiciador) - desde Staff
         s_sponsor.Id as UserId,
         s_sponsor.FirstName AS UserFirstName,
@@ -25,7 +80,6 @@ BEGIN
         s_sponsor.ContractStartDate AS UserContractStartDate,
         s_sponsor.ContractEndDate AS UserContractEndDate,
         u2.Id AS UserGuid,
-
         -- Datos del usuario monitor - desde Staff
         s_monitor.Id as MonitorId,
         s_monitor.FirstName AS MonitorFirstName,
@@ -39,8 +93,7 @@ BEGIN
         os_position_monitor.OptionKey AS MonitorPositionOptionKey,
         s_monitor.ContractStartDate AS MonitorContractStartDate,
         s_monitor.ContractEndDate AS MonitorContractEndDate,
-
-        -- Campos de AgencyInscription con IDs
+        -- Campos de AgencyInscription
         ai.Id AS AgencyInscriptionId,
         ai.NonProfit,
         ai.FederalFundsDenied,
@@ -63,49 +116,7 @@ BEGIN
         ai.Comments,
         ai.DeadlineToCompleteRegistration,
         ai.CompletedRegistrationDate,
-
-        -- Datos de OptionSelection para BasicEducationRegistry
-        os_ber.Name AS BasicEducationRegistryName,
-        os_ber.NameEN AS BasicEducationRegistryNameEN,
-        os_ber.OptionKey AS BasicEducationRegistryOptionKey,
-
-        -- Datos de OptionSelection para TaxExemptionStatus
-        os_tes.Name AS TaxExemptionStatusName,
-        os_tes.NameEN AS TaxExemptionStatusNameEN,
-        os_tes.OptionKey AS TaxExemptionStatusOptionKey,
-
-        -- Datos de OptionSelection para TaxExemptionType
-        os_tet.Name AS TaxExemptionTypeName,
-        os_tet.NameEN AS TaxExemptionTypeNameEN,
-        os_tet.OptionKey AS TaxExemptionTypeOptionKey,
-
-        -- Datos de OptionSelection para TypeOfEntity
-        os_toe.Name AS TypeOfEntityName,
-        os_toe.NameEN AS TypeOfEntityNameEN,
-        os_toe.OptionKey AS TypeOfEntityOptionKey,
-
-        -- Datos de OptionSelection para TypeOfApplicant
-        os_toa.Name AS TypeOfApplicantName,
-        os_toa.NameEN AS TypeOfApplicantNameEN,
-        os_toa.OptionKey AS TypeOfApplicantOptionKey,
-
-        -- Datos de OptionSelection para PublicAllianceContract
-        os_pac.Name AS PublicAllianceContractName,
-        os_pac.NameEN AS PublicAllianceContractNameEN,
-        os_pac.OptionKey AS PublicAllianceContractOptionKey,
-
-        -- Datos de OptionSelection para IsDayCareHome
-        os_idch.Name AS IsDayCareHomeName,
-        os_idch.NameEN AS IsDayCareHomeNameEN,
-        os_idch.OptionKey AS IsDayCareHomeOptionKey,
-        os_idch.BooleanValue AS IsDayCareHomeBooleanValue,
-
-        -- Datos de OptionSelection para ParticipatesInHeadStartProgram
-        os_phsp.Name AS ParticipatesInHeadStartProgramName,
-        os_phsp.NameEN AS ParticipatesInHeadStartProgramNameEN,
-        os_phsp.OptionKey AS ParticipatesInHeadStartProgramOptionKey,
-
-        -- Datos adicionales de la agencia
+        -- Datos adicionales
         a.IsPropietary,
         c.Name as CityName,
         c.Id as CityId,
@@ -116,7 +127,6 @@ BEGIN
         pr.Name as PostalRegionName,
         pr.Id as PostalRegionId,
         ast.Name as AgencyStatusName
-
     FROM Agency a
         LEFT JOIN AgencyInscription ai ON a.id = ai.AgencyId
         LEFT JOIN City c ON a.CityId = c.Id
@@ -124,29 +134,24 @@ BEGIN
         LEFT JOIN Region r ON a.RegionId = r.Id
         LEFT JOIN Region pr ON a.PostalRegionId = pr.Id
         LEFT JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
-        -- Usuario sponsor (owner) de la agencia
-        LEFT JOIN AgencyUsers auaSponsor ON a.Id = auaSponsor.AgencyId AND auaSponsor.IsActive = 1 AND auaSponsor.IsOwner = 1
-        -- Usuario monitor de la agencia
-        LEFT JOIN AgencyUsers auaMonitor ON a.Id = auaMonitor.AgencyId AND auaMonitor.IsActive = 1 AND auaMonitor.IsMonitor = 1
+        -- Usuario sponsor (owner) de la agencia - usando AgencyAssignmentType
+        LEFT JOIN AgencyUsers auaSponsor ON a.Id = auaSponsor.AgencyId 
+            AND auaSponsor.IsActive = 1 
+            AND auaSponsor.AgencyAssignmentType = 'AGENCY_OWNER'
+        -- Usuario monitor de la agencia - usando AgencyAssignmentType
+        LEFT JOIN AgencyUsers auaMonitor ON a.Id = auaMonitor.AgencyId 
+            AND auaMonitor.IsActive = 1 
+            AND auaMonitor.AgencyAssignmentType LIKE 'NUTRE_%'
         -- Datos del usuario sponsor
         LEFT JOIN AspNetUsers u2 ON auaSponsor.UserId = u2.Id
         -- Datos del usuario monitor
         LEFT JOIN AspNetUsers u ON auaMonitor.UserId = u.Id
-        -- LEFT JOINs con Staff para obtener las posiciones de los usuarios
+        -- LEFT JOINs con Staff
         LEFT JOIN Staff s_sponsor ON u2.Id = s_sponsor.UserId
         LEFT JOIN Staff s_monitor ON u.Id = s_monitor.UserId
-        -- LEFT JOINs con OptionSelection para obtener los nombres de las posiciones
+        -- LEFT JOINs con OptionSelection
         LEFT JOIN OptionSelection os_position_sponsor ON s_sponsor.PositionId = os_position_sponsor.Id
         LEFT JOIN OptionSelection os_position_monitor ON s_monitor.PositionId = os_position_monitor.Id
-        -- JOINs con OptionSelection para datos de inscripción
-        LEFT JOIN OptionSelection os_ber ON ai.BasicEducationRegistry = os_ber.Id
-        LEFT JOIN OptionSelection os_tes ON ai.TaxExemptionStatusId = os_tes.Id
-        LEFT JOIN OptionSelection os_tet ON ai.TaxExemptionTypeId = os_tet.Id
-        LEFT JOIN OptionSelection os_toe ON ai.TypeOfEntityId = os_toe.Id
-        LEFT JOIN OptionSelection os_toa ON ai.TypeOfApplicantId = os_toa.Id
-        LEFT JOIN OptionSelection os_pac ON ai.PublicAllianceContractId = os_pac.Id
-        LEFT JOIN OptionSelection os_idch ON ai.IsDayCareHomeId = os_idch.Id
-        LEFT JOIN OptionSelection os_phsp ON ai.ParticipatesInHeadStartProgramId = os_phsp.Id
     WHERE a.Id = @id;
 
     -- Segunda consulta: Obtener los programas asociados a la agencia
@@ -180,7 +185,9 @@ BEGIN
         s.ContractEndDate,
         u.Id AS UserGuid
     FROM Staff s
-        INNER JOIN AgencyUsers aua ON aua.AgencyId = @id AND aua.IsActive = 1 AND aua.IsMonitor = 1
+        INNER JOIN AgencyUsers aua ON aua.AgencyId = @id 
+            AND aua.IsActive = 1 
+            AND aua.AgencyAssignmentType LIKE 'NUTRE_%'
         INNER JOIN AspNetUsers u ON aua.UserId = u.Id AND s.UserId = u.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id;
 
@@ -200,10 +207,10 @@ BEGIN
         s.ContractEndDate,
         u.Id AS UserGuid
     FROM Staff s
-        INNER JOIN AgencyUsers aua ON aua.AgencyId = @id AND aua.IsActive = 1 AND aua.IsOwner = 1
+        INNER JOIN AgencyUsers aua ON aua.AgencyId = @id 
+            AND aua.IsActive = 1 
+            AND aua.AgencyAssignmentType = 'AGENCY_OWNER'
         INNER JOIN AspNetUsers u ON aua.UserId = u.Id AND s.UserId = u.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id;
 END;
 GO
-
-EXEC [113_GetAgencyById] 23;

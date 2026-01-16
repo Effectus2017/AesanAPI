@@ -136,3 +136,32 @@ BEGIN
     ADD FOREIGN KEY (ParticipatesInHeadStartProgramId) REFERENCES OptionSelection(Id);
 END
 GO
+
+-- Agregar columnas para preguntas de Junta de Directores (Solo para PACNA)
+-- ¿Cuántas reuniones se realizan durante el año?
+-- How many meetings are held during the year?
+IF COL_LENGTH('AgencyInscription', 'BoardMeetingsPerYear') IS NULL
+BEGIN
+    ALTER TABLE AgencyInscription
+    ADD BoardMeetingsPerYear int NULL;
+END
+GO
+
+-- ¿La Junta de Directores se reúne regularmente?
+-- Does the Board of Directors meet regularly?
+IF COL_LENGTH('AgencyInscription', 'BoardMeetsRegularly') IS NULL
+BEGIN
+    ALTER TABLE AgencyInscription
+    ADD BoardMeetsRegularly bit NULL;
+END
+GO
+
+-- ¿La Junta de Directores tiene la autoridad para realizar alguna de las siguientes funciones hacia el Director Ejecutivo?
+-- Does the Board of Directors have the authority to perform any of the following functions towards the Executive Director?
+-- Contratar, Despedir, N/A (almacenado como JSON array de IDs)
+IF COL_LENGTH('AgencyInscription', 'BoardExecutiveAuthority') IS NULL
+BEGIN
+    ALTER TABLE AgencyInscription
+    ADD BoardExecutiveAuthority nvarchar(max) NULL;
+END
+GO

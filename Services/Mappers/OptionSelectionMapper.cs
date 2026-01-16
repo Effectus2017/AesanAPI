@@ -77,6 +77,7 @@ public static class OptionSelectionMapper
                 OptionKey = result.OptionKey ?? string.Empty,
                 IsActive = result.IsActive,
                 DisplayOrder = result.DisplayOrder,
+                IsDefaultValue = result.IsDefaultValue ?? false,
             };
         }
         catch (Exception ex)

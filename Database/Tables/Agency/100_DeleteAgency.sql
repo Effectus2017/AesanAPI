@@ -5,6 +5,14 @@ CREATE OR ALTER PROCEDURE [100_DeleteAgency]
 AS
 BEGIN
     SET NOCOUNT ON;
+    
+    -- Protección: No permitir eliminar agencias propietarias (isPropietary = 1)
+    IF EXISTS (SELECT 1 FROM Agency WHERE Id = @Id AND IsPropietary = 1)
+    BEGIN
+        RAISERROR('No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
+        RETURN 0;
+    END
+    
     DECLARE @rowsAffected INT;
 
     UPDATE Agency

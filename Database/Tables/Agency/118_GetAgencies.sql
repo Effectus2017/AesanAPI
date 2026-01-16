@@ -1,6 +1,13 @@
--- Obtener todas las agencias
--- 1.1.7 - Versión simplificada sin datos de usuarios
-CREATE OR ALTER PROCEDURE [117_GetAgencies]
+-- =============================================
+-- Stored Procedure: 118_GetAgencies
+-- Fecha: 2025-01-XX
+-- Descripción: Obtener todas las agencias con nueva lógica de acceso simplificada.
+--              Reemplaza 117_GetAgencies con nueva lógica de acceso.
+--              Solo SuperAdministrator y Administrator ven todas las agencias.
+--              Todos los demás roles solo ven agencias asignadas en AgencyUsers.
+-- =============================================
+
+CREATE OR ALTER PROCEDURE [118_GetAgencies]
     @take INT = 10000000,
     @skip INT = 0,
     @name NVARCHAR(255) = NULL,
@@ -15,7 +22,9 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- =============================================
     -- CTEs para mejorar la performance
+    -- =============================================
     WITH
         AgencyProgramsCTE
         AS
@@ -29,14 +38,14 @@ BEGIN
         (
             SELECT DISTINCT AgencyId, UserId, CreatedAt
             FROM AgencyUsers
-            WHERE IsOwner = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType = 'AGENCY_OWNER' AND IsActive = 1
         ),
         AgencyMonitorsCTE
         AS
         (
-            SELECT DISTINCT AgencyId, UserId
+            SELECT DISTINCT AgencyId, UserId, CreatedAt
             FROM AgencyUsers
-            WHERE IsMonitor = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1
         )
     SELECT DISTINCT
         a.Id,
@@ -70,7 +79,7 @@ BEGIN
         ai.ServicesOfferedSince,
         ai.NonProfit,
         ai.FederalFundsDenied,
-        ai.FederalFundsDeniedReason, -- Nuevo campo
+        ai.FederalFundsDeniedReason,
         ai.StateFundsDenied,
         ai.StateFundsDeniedReason,
         ai.TaxExemptionStatusId,
@@ -87,12 +96,10 @@ BEGIN
         a.CreatedAt,
         a.UpdatedAt,
         a.AgencyCode,
-
         -- Comentarios de la asignación de programa
         ai.Comments as ProgramRejectionJustification,
         ai.AppointmentCoordinated AS ProgramAppointmentCoordinated,
         ai.AppointmentDate AS ProgramAppointmentDate
-
     FROM Agency a
         INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
         INNER JOIN City c ON a.CityId = c.Id
@@ -104,19 +111,37 @@ BEGIN
         LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
         LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
     WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+        -- NUEVA LÓGICA DE ACCESO: Filtrar por AgencyUsers si no es SuperAdmin/Admin
         AND (
-    @alls = 1
-        OR ((@name IS NULL OR a.Name LIKE '%' + @name + '%')
-        AND (@regionId IS NULL OR a.RegionId = @regionId)
-        AND (@cityId IS NULL OR a.CityId = @cityId)
-        AND (@programId IS NULL OR ap.ProgramId = @programId)
-        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
-    )
-)
+            @userId IS NULL
+            OR EXISTS (
+                SELECT 1 
+                FROM AspNetUserRoles ur
+                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE ur.UserId = @userId
+                    AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+            )
+            OR EXISTS (
+                SELECT 1 FROM AgencyUsers au 
+                WHERE au.UserId = @userId 
+                AND au.AgencyId = a.Id 
+                AND au.IsActive = 1
+            )
+        )
+        AND (
+            @alls = 1
+            OR (
+                (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+                AND (@regionId IS NULL OR a.RegionId = @regionId)
+                AND (@cityId IS NULL OR a.CityId = @cityId)
+                AND (@programId IS NULL OR ap.ProgramId = @programId)
+                AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+                AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+            )
+        )
     ORDER BY a.CreatedAt DESC, a.Name
-OFFSET @skip ROWS
-FETCH NEXT @take ROWS ONLY;
+    OFFSET @skip ROWS
+    FETCH NEXT @take ROWS ONLY;
 
     -- Obtener programas asociados a las agencias filtradas
     WITH
@@ -132,14 +157,14 @@ FETCH NEXT @take ROWS ONLY;
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsOwner = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType = 'AGENCY_OWNER' AND IsActive = 1
         ),
         AgencyMonitorsCTE
         AS
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsMonitor = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1
         ),
         FilteredAgencies
         AS
@@ -150,20 +175,37 @@ FETCH NEXT @take ROWS ONLY;
                 LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
                 LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
             WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+                -- NUEVA LÓGICA DE ACCESO
                 AND (
-        @alls = 1
-                OR (
-            (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                AND (@regionId IS NULL OR a.RegionId = @regionId)
-                AND (@cityId IS NULL OR a.CityId = @cityId)
-                AND (@programId IS NULL OR ap.ProgramId = @programId)
-                AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-                AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
-        )
-    )
+                    @userId IS NULL
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM AspNetUserRoles ur
+                        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                        WHERE ur.UserId = @userId
+                            AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM AgencyUsers au 
+                        WHERE au.UserId = @userId 
+                        AND au.AgencyId = a.Id 
+                        AND au.IsActive = 1
+                    )
+                )
+                AND (
+                    @alls = 1
+                    OR (
+                        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+                        AND (@regionId IS NULL OR a.RegionId = @regionId)
+                        AND (@cityId IS NULL OR a.CityId = @cityId)
+                        AND (@programId IS NULL OR ap.ProgramId = @programId)
+                        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+                        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+                    )
+                )
             ORDER BY a.Id
-    OFFSET @skip ROWS
-    FETCH NEXT @take ROWS ONLY
+            OFFSET @skip ROWS
+            FETCH NEXT @take ROWS ONLY
         )
     SELECT DISTINCT
         p.Id,
@@ -193,14 +235,14 @@ FETCH NEXT @take ROWS ONLY;
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsOwner = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType = 'AGENCY_OWNER' AND IsActive = 1
         ),
         AgencyMonitorsCTE
         AS
         (
             SELECT DISTINCT AgencyId, UserId, CreatedAt
             FROM AgencyUsers
-            WHERE IsMonitor = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1
         ),
         FilteredAgencies
         AS
@@ -211,20 +253,37 @@ FETCH NEXT @take ROWS ONLY;
                 LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
                 LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
             WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+                -- NUEVA LÓGICA DE ACCESO
                 AND (
-        @alls = 1
-                OR (
-            (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                AND (@regionId IS NULL OR a.RegionId = @regionId)
-                AND (@cityId IS NULL OR a.CityId = @cityId)
-                AND (@programId IS NULL OR ap.ProgramId = @programId)
-                AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-                AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
-        )
-    )
+                    @userId IS NULL
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM AspNetUserRoles ur
+                        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                        WHERE ur.UserId = @userId
+                            AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM AgencyUsers au 
+                        WHERE au.UserId = @userId 
+                        AND au.AgencyId = a.Id 
+                        AND au.IsActive = 1
+                    )
+                )
+                AND (
+                    @alls = 1
+                    OR (
+                        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+                        AND (@regionId IS NULL OR a.RegionId = @regionId)
+                        AND (@cityId IS NULL OR a.CityId = @cityId)
+                        AND (@programId IS NULL OR ap.ProgramId = @programId)
+                        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+                        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+                    )
+                )
             ORDER BY a.Id
-    OFFSET @skip ROWS
-    FETCH NEXT @take ROWS ONLY
+            OFFSET @skip ROWS
+            FETCH NEXT @take ROWS ONLY
         ),
         AgencyMonitorsWithDataCTE
         AS
@@ -239,21 +298,17 @@ FETCH NEXT @take ROWS ONLY;
     SELECT DISTINCT
         mon.AgencyId,
         mon.UserId,
-        -- Datos del usuario desde Staff
         s.Id as Id,
         s.FirstName,
         s.MiddleName,
         s.FatherLastName,
         s.MotherLastName,
-        -- Campos de posición del usuario
         s.PositionId,
         os.Name AS PositionName,
         os.NameEN AS PositionNameEN,
         os.OptionKey AS PositionOptionKey,
-        -- Campos de contrato del usuario
         s.ContractStartDate,
         s.ContractEndDate,
-        -- Información adicional del usuario
         s.Email,
         s.BirthDate,
         s.StatusId,
@@ -280,14 +335,14 @@ FETCH NEXT @take ROWS ONLY;
         (
             SELECT DISTINCT AgencyId, UserId, CreatedAt
             FROM AgencyUsers
-            WHERE IsOwner = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType = 'AGENCY_OWNER' AND IsActive = 1
         ),
         AgencyMonitorsCTE
         AS
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsMonitor = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1
         ),
         FilteredAgencies
         AS
@@ -298,20 +353,37 @@ FETCH NEXT @take ROWS ONLY;
                 LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
                 LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
             WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+                -- NUEVA LÓGICA DE ACCESO
                 AND (
-        @alls = 1
-                OR (
-            (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                AND (@regionId IS NULL OR a.RegionId = @regionId)
-                AND (@cityId IS NULL OR a.CityId = @cityId)
-                AND (@programId IS NULL OR ap.ProgramId = @programId)
-                AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-                AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
-        )
-            )
+                    @userId IS NULL
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM AspNetUserRoles ur
+                        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                        WHERE ur.UserId = @userId
+                            AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM AgencyUsers au 
+                        WHERE au.UserId = @userId 
+                        AND au.AgencyId = a.Id 
+                        AND au.IsActive = 1
+                    )
+                )
+                AND (
+                    @alls = 1
+                    OR (
+                        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+                        AND (@regionId IS NULL OR a.RegionId = @regionId)
+                        AND (@cityId IS NULL OR a.CityId = @cityId)
+                        AND (@programId IS NULL OR ap.ProgramId = @programId)
+                        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+                        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+                    )
+                )
             ORDER BY a.Id
-    OFFSET @skip ROWS
-    FETCH NEXT @take ROWS ONLY
+            OFFSET @skip ROWS
+            FETCH NEXT @take ROWS ONLY
         ),
         AgencyOwnersWithDataCTE
         AS
@@ -326,21 +398,17 @@ FETCH NEXT @take ROWS ONLY;
     SELECT DISTINCT
         own.AgencyId,
         own.UserId,
-        -- Datos del usuario desde Staff
         s.Id as Id,
         s.FirstName,
         s.MiddleName,
         s.FatherLastName,
         s.MotherLastName,
-        -- Campos de posición del usuario
         s.PositionId,
         os.Name AS PositionName,
         os.NameEN AS PositionNameEN,
         os.OptionKey AS PositionOptionKey,
-        -- Campos de contrato del usuario
         s.ContractStartDate,
         s.ContractEndDate,
-        -- Información adicional del usuario
         s.Email,
         s.BirthDate,
         s.StatusId,
@@ -367,14 +435,14 @@ FETCH NEXT @take ROWS ONLY;
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsOwner = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType = 'AGENCY_OWNER' AND IsActive = 1
         ),
         AgencyMonitorsCTE
         AS
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsMonitor = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1
         )
     SELECT COUNT(DISTINCT a.Id)
     FROM Agency a
@@ -383,29 +451,34 @@ FETCH NEXT @take ROWS ONLY;
         LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
         LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
     WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+        -- NUEVA LÓGICA DE ACCESO
         AND (
-    @alls = 1
-        OR (
-        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-        AND (@regionId IS NULL OR a.RegionId = @regionId)
-        AND (@cityId IS NULL OR a.CityId = @cityId)
-        AND (@programId IS NULL OR ap.ProgramId = @programId)
-        AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
-        AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
-        AND (a.IsListable = 1)
-    )
+            @userId IS NULL
+            OR EXISTS (
+                SELECT 1 
+                FROM AspNetUserRoles ur
+                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE ur.UserId = @userId
+                    AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+            )
+            OR EXISTS (
+                SELECT 1 FROM AgencyUsers au 
+                WHERE au.UserId = @userId 
+                AND au.AgencyId = a.Id 
+                AND au.IsActive = 1
+            )
+        )
+        AND (
+            @alls = 1
+            OR (
+                (@name IS NULL OR a.Name LIKE '%' + @name + '%')
+                AND (@regionId IS NULL OR a.RegionId = @regionId)
+                AND (@cityId IS NULL OR a.CityId = @cityId)
+                AND (@programId IS NULL OR ap.ProgramId = @programId)
+                AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
+                AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
+                AND (a.IsListable = 1)
+            )
         );
 END;
 GO
-
-EXEC [117_GetAgencies]
-    @take = 10,
-    @skip = 0,
-    @name = NULL,
-    @regionId = NULL,
-    @cityId = NULL,
-    @programId = NULL,
-    @statusId = NULL,
-    @userId = NULL,
-    @alls = 1,
-    @isPropietary = NULL;

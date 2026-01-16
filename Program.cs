@@ -200,8 +200,20 @@ builder.Services.AddScoped<IAgencyDashboardRepository, AgencyDashboardRepository
 builder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
 builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository>();
 builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
+builder.Services.AddScoped<IEmailLogRepository, EmailLogRepository>();
 
-builder.Services.AddScoped<IEmailService, EmailService>();
+// Registrar EmailService primero (sin interfaz)
+builder.Services.AddScoped<EmailService>();
+
+// Registrar el decorator que envuelve EmailService
+builder.Services.AddScoped<IEmailService>(serviceProvider =>
+{
+    var emailService = serviceProvider.GetRequiredService<EmailService>();
+    var emailLogRepository = serviceProvider.GetRequiredService<IEmailLogRepository>();
+    var logger = serviceProvider.GetRequiredService<ILogger<EmailServiceDecorator>>();
+    return new EmailServiceDecorator(emailService, emailLogRepository, logger);
+});
+
 builder.Services.AddScoped<MessageTemplateService>();
 builder.Services.AddScoped<TemplateVariableService>();
 builder.Services.AddScoped<IProgramPeriodService, ProgramPeriodService>();
@@ -321,11 +333,21 @@ builder.Services.Configure<TelemetryConfiguration>((config) =>
 });
 
 // Configuración de ELMAH con SQL Server
+var elmahConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddElmah<SqlErrorLog>(options =>
 {
-    options.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // Usa la misma conexión que la aplicación
+    options.ConnectionString = elmahConnectionString ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found for ELMAH");
     options.Path = "/elmah"; // Ruta para acceder al dashboard de ELMAH
     options.OnPermissionCheck = context => context.User.Identity?.IsAuthenticated ?? false; // Solo usuarios autenticados pueden ver el dashboard
+    // Asegurar que el nombre de la tabla y esquema sean correctos
+    options.SqlServerDatabaseSchemaName = "dbo";
+    options.SqlServerDatabaseTableName = "ELMAH_Error";
+});
+
+// Agregar logging para diagnosticar problemas de Elmah
+builder.Services.AddLogging(logging =>
+{
+    logging.AddFilter("ElmahCore", LogLevel.Debug);
 });
 
 builder.Services.AddScoped<ILoggingService, LoggingService>();
@@ -404,6 +426,7 @@ app.Use(async (context, next) =>
 });
 
 // Configuración de middleware
+// IMPORTANTE: UseElmah debe ir ANTES de UseExceptionHandler para capturar todos los errores
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -419,7 +442,14 @@ else
             var exception = exceptionHandlerPathFeature?.Error;
 
             // Registrar en ELMAH
-            await context.RaiseError(exception);
+            try
+            {
+                await context.RaiseError(exception);
+            }
+            catch (Exception elmahEx)
+            {
+                logger.LogError(elmahEx, "Error al registrar en ELMAH: {Message}", elmahEx.Message);
+            }
 
             logger.LogError(
                 exception,
@@ -468,7 +498,8 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Habilitar ELMAH - Debe ir después de Routing y Authentication
+// Habilitar ELMAH - Debe ir después de Routing y Authentication, pero antes de los endpoints
+// Esto permite que Elmah capture errores de manera automática
 app.UseElmah();
 
 // Habilitar Swagger
@@ -522,7 +553,15 @@ app.Use(async (context, next) =>
     catch (Exception ex)
     {
         // Registrar errores no capturados en Elmah
-        await context.RaiseError(ex);
+        try
+        {
+            await context.RaiseError(ex);
+        }
+        catch (Exception elmahEx)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(elmahEx, "Error al registrar excepción en ELMAH: {Message}", elmahEx.Message);
+        }
         throw;
     }
     finally

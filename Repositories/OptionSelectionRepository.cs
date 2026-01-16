@@ -166,6 +166,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             parameters.Add("@optionKey", optionSelection.OptionKey, DbType.String);
             parameters.Add("@isActive", optionSelection.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", optionSelection.DisplayOrder, DbType.Int32);
+            parameters.Add("@isDefaultValue", optionSelection.IsDefaultValue, DbType.Boolean);
             parameters.Add("@id", optionSelection.Id, DbType.Int32, direction: ParameterDirection.Output);
 
             await db.ExecuteAsync("100_InsertOptionSelection", parameters, commandType: CommandType.StoredProcedure);
@@ -203,6 +204,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             parameters.Add("@optionKey", optionSelection.OptionKey, DbType.String);
             parameters.Add("@isActive", optionSelection.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", optionSelection.DisplayOrder, DbType.Int32);
+            parameters.Add("@isDefaultValue", optionSelection.IsDefaultValue, DbType.Boolean);
             var rowsAffected = await db.ExecuteAsync("100_UpdateOptionSelection", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)

@@ -5,7 +5,7 @@
 -- Versión: 1.0
 -- =============================================
 -- IMPORTANTE: Este procedimiento elimina permanentemente todos los datos relacionados con el usuario
--- Si el usuario es propietario de una agencia (IsOwner = 1 en AgencyUsers), también elimina la agencia
+-- Si el usuario es propietario de una agencia (AgencyAssignmentType = 'AGENCY_OWNER' en AgencyUsers), también elimina la agencia
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[101_BulkDeleteUser]
@@ -66,7 +66,7 @@ BEGIN
             SELECT 1
     FROM AgencyUsers
     WHERE UserId = @userId
-        AND IsOwner = 1
+        AND AgencyAssignmentType = 'AGENCY_OWNER'
         AND IsActive = 1
         )
         BEGIN
@@ -75,7 +75,7 @@ BEGIN
             @agencyId = AgencyId
         FROM AgencyUsers
         WHERE UserId = @userId
-            AND IsOwner = 1
+            AND AgencyAssignmentType = 'AGENCY_OWNER'
             AND IsActive = 1;
         PRINT '⚠ El usuario es propietario de la agencia ID ' + CAST(@agencyId AS NVARCHAR(10)) + '. Se eliminará la agencia completa.';
         PRINT '';

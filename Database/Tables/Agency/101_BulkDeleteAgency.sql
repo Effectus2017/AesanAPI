@@ -16,6 +16,13 @@ BEGIN
     SET XACT_ABORT ON;
     -- Asegurar que los errores causen rollback automático
 
+    -- Protección: No permitir eliminar agencias propietarias (isPropietary = 1)
+    IF EXISTS (SELECT 1 FROM Agency WHERE Id = @agencyId AND IsPropietary = 1)
+    BEGIN
+        RAISERROR('No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.', 16, 1);
+        RETURN 0;
+    END
+
     DECLARE @rowsAffected INT = 0;
     DECLARE @ownerUserId NVARCHAR(450) = NULL;
     DECLARE @tranCount INT = @@TRANCOUNT;
@@ -107,6 +114,27 @@ BEGIN
     END
         
         -- =============================================
+        -- 4.1. Eliminar SiteOperatingDaysOfWeek (días de la semana de operación) - PRIMERO
+        -- IMPORTANTE: Debe eliminarse ANTES de Site para evitar FK constraint
+        -- =============================================
+        PRINT '';
+        PRINT '--- Eliminando SiteOperatingDaysOfWeek ---';
+        IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SiteOperatingDaysOfWeek' AND schema_id = SCHEMA_ID('dbo'))
+        BEGIN
+        DELETE FROM dbo.SiteOperatingDaysOfWeek
+        WHERE SiteId IN (SELECT Id FROM dbo.Site WHERE AgencyId = @agencyId);
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteOperatingDaysOfWeek';
+        ELSE
+            PRINT '⚠ No se encontraron registros de SiteOperatingDaysOfWeek para eliminar';
+    END
+        ELSE
+        BEGIN
+        PRINT '⚠ Tabla SiteOperatingDaysOfWeek no existe, omitiendo eliminación';
+    END
+        
+        -- =============================================
         -- 5. Eliminar SitePersonInCharge (relación con Site)
         -- =============================================
         IF OBJECT_ID('SitePersonInCharge', 'U') IS NOT NULL
@@ -118,6 +146,105 @@ BEGIN
         SET @currentRows = @@ROWCOUNT;
         IF @currentRows > 0
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SitePersonInCharge';
+    END
+        
+        -- =============================================
+        -- 5.2. Eliminar SiteOperatingDayService (servicios de días operativos - debe ir antes de SiteOperatingDays)
+        -- =============================================
+        IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SiteOperatingDayService' AND schema_id = SCHEMA_ID('dbo'))
+        BEGIN
+        DELETE FROM dbo.SiteOperatingDayService
+        WHERE OperatingDayId IN (
+            SELECT sod.Id 
+            FROM dbo.SiteOperatingDays sod
+            INNER JOIN dbo.Site s ON sod.SiteId = s.Id
+            WHERE s.AgencyId = @agencyId
+        );
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteOperatingDayService';
+    END
+        
+        -- =============================================
+        -- 5.3. Eliminar SiteOperatingDays (días específicos de operación)
+        -- =============================================
+        IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SiteOperatingDays' AND schema_id = SCHEMA_ID('dbo'))
+        BEGIN
+        DELETE FROM dbo.SiteOperatingDays
+        WHERE SiteId IN (SELECT Id FROM dbo.Site WHERE AgencyId = @agencyId);
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteOperatingDays';
+    END
+        
+        -- =============================================
+        -- 5.4. Eliminar SiteProgram (programas del sitio)
+        -- =============================================
+        IF OBJECT_ID('SiteProgram', 'U') IS NOT NULL
+        BEGIN
+        DELETE sp
+            FROM SiteProgram sp
+            INNER JOIN Site s ON sp.SiteId = s.Id
+            WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteProgram';
+    END
+        
+        -- =============================================
+        -- 5.5. Eliminar SiteParticipant (participantes del sitio)
+        -- =============================================
+        IF OBJECT_ID('SiteParticipant', 'U') IS NOT NULL
+        BEGIN
+        DELETE sp
+            FROM SiteParticipant sp
+            INNER JOIN Site s ON sp.SiteId = s.Id
+            WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteParticipant';
+    END
+        
+        -- =============================================
+        -- 5.6. Eliminar SiteFacility (instalaciones del sitio)
+        -- =============================================
+        IF OBJECT_ID('SiteFacility', 'U') IS NOT NULL
+        BEGIN
+        DELETE sf
+            FROM SiteFacility sf
+            INNER JOIN Site s ON sf.SiteId = s.Id
+            WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteFacility';
+    END
+        
+        -- =============================================
+        -- 5.7. Eliminar SiteEducationLevel (niveles educativos del sitio)
+        -- =============================================
+        IF OBJECT_ID('SiteEducationLevel', 'U') IS NOT NULL
+        BEGIN
+        DELETE sel
+            FROM SiteEducationLevel sel
+            INNER JOIN Site s ON sel.SiteId = s.Id
+            WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteEducationLevel';
+    END
+        
+        -- =============================================
+        -- 5.8. Eliminar SiteChildGroup (grupos de niños del sitio)
+        -- =============================================
+        IF OBJECT_ID('SiteChildGroup', 'U') IS NOT NULL
+        BEGIN
+        DELETE scg
+            FROM SiteChildGroup scg
+            INNER JOIN Site s ON scg.SiteId = s.Id
+            WHERE s.AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteChildGroup';
     END
         
         -- =============================================
@@ -190,15 +317,6 @@ BEGIN
         DROP TABLE #StaffIdsFromAgency;
         
         -- =============================================
-        -- 10. Eliminar Staff (personal de la agencia)
-        -- =============================================
-        DELETE FROM Staff WHERE AgencyId = @agencyId;
-        SET @currentRows = @@ROWCOUNT;
-        SET @deletedCount = @deletedCount + @currentRows;
-        IF @currentRows > 0
-            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de Staff';
-        
-        -- =============================================
         -- 12. Eliminar AgencyFiles (archivos de la agencia)
         -- =============================================
         DELETE FROM AgencyFiles WHERE AgencyId = @agencyId;
@@ -241,13 +359,23 @@ BEGIN
     FROM AgencyUsers
     WHERE AgencyId = @agencyId;
         
-        -- Obtener el usuario creador (IsOwner = 1) para referencia
+        -- Obtener el usuario creador (AgencyAssignmentType = 'AGENCY_OWNER') para referencia
         SELECT TOP 1
         @ownerUserId = UserId
     FROM AgencyUsers
     WHERE AgencyId = @agencyId
-        AND IsOwner = 1
+        AND AgencyAssignmentType = 'AGENCY_OWNER'
         AND IsActive = 1;
+        
+        -- =============================================
+        -- 15.1. Eliminar AgencyUsers donde AssignedBy apunta a usuarios que se van a eliminar
+        -- IMPORTANTE: Debe hacerse ANTES de eliminar AgencyUsers por AgencyId
+        -- =============================================
+        DELETE FROM AgencyUsers 
+        WHERE AssignedBy IN (SELECT UserId FROM #UserIdsFromAgencyUsers);
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers (donde AssignedBy apunta a usuarios a eliminar)';
         
         -- =============================================
         -- 16. Eliminar AgencyUsers (usuarios asignados a la agencia)
@@ -496,4 +624,4 @@ BEGIN
 END;
 GO
 
-EXEC [dbo].[101_BulkDeleteAgency] 1;
+--EXEC [dbo].[101_BulkDeleteAgency] 1;

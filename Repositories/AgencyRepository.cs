@@ -39,8 +39,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32, ParameterDirection.Input);
+            // Nota: userId es opcional en el nuevo SP, si no se proporciona permite acceso (comportamiento legacy)
 
-            var result = await dbConnection.QueryMultipleAsync("113_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("114_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -116,7 +117,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@userId", userId);
-            var result = await dbConnection.QueryMultipleAsync("112_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
+            
+            // Usar nuevo SP con nueva lógica de acceso
+            var result = await dbConnection.QueryMultipleAsync("113_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -174,9 +177,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@alls", alls);
             param.Add("@isPropietary", isPropietary);
 
+            // Usar nuevo SP con nueva lógica de acceso
             if (isList)
             {
-                using var result = await dbConnection.QueryMultipleAsync("117_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("118_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -196,7 +200,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 List<DTOStaff> agenciesOwners = [];
                 int count = 0;
 
-                using var result = await dbConnection.QueryMultipleAsync("117_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("118_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -362,7 +366,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.PublicAllianceContractId,
                 agencyRequest.NationalYouthProgram,
                 agencyRequest.IsDayCareHomeId,
-                agencyRequest.ParticipatesInHeadStartProgramId
+                agencyRequest.ParticipatesInHeadStartProgramId,
+                agencyRequest.BoardMeetingsPerYear,
+                agencyRequest.BoardMeetsRegularly,
+                agencyRequest.BoardExecutiveAuthority != null && agencyRequest.BoardExecutiveAuthority.Count > 0 
+                    ? System.Text.Json.JsonSerializer.Serialize(agencyRequest.BoardExecutiveAuthority) 
+                    : null
             );
 
             // Asignar programas a la agencia
@@ -433,7 +442,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null, string? boardExecutiveAuthority = null)
     {
         try
         {
@@ -453,6 +462,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@nationalYouthProgram", nationalYouthProgram);
             parameters.Add("@isDayCareHomeId", isDayCareHomeId);
             parameters.Add("@participatesInHeadStartProgramId", participatesInHeadStartProgramId);
+            parameters.Add("@boardMeetingsPerYear", boardMeetingsPerYear);
+            parameters.Add("@boardMeetsRegularly", boardMeetsRegularly);
+            parameters.Add("@boardExecutiveAuthority", boardExecutiveAuthority);
 
             // Deadline to complete the registration of the Sites
             // Tomar valor desde AppSettings que es un numero de días y convertir a date-time
@@ -566,7 +578,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
                 // Asignar el nuevo monitor
                 _logger.LogInformation($"Asignando nuevo monitor {agencyRequest.MonitorId} a la agencia {agencyId}");
-                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId.ToString(), agencyId, agencyRequest.AssignedBy, false, true);
+                // Calcular AgencyAssignmentType según el rol del monitor/coordinador
+                string agencyAssignmentType = await _agencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(agencyRequest.MonitorId.ToString());
+                await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId.ToString(), agencyId, agencyRequest.AssignedBy, agencyAssignmentType);
             }
 
             // Invalidar caché
@@ -830,6 +844,56 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     }
 
     /// <summary>
+    /// Verifica si una agencia es propietaria
+    /// </summary>
+    /// <param name="agencyId">Id de la agencia a verificar</param>
+    /// <returns>True si la agencia es propietaria, False en caso contrario</returns>
+    private async Task<bool> IsAgencyPropietary(int agencyId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@id", agencyId, DbType.Int32, ParameterDirection.Input);
+
+            var result = await dbConnection.QueryMultipleAsync("114_GetAgencyById", parameters, commandType: CommandType.StoredProcedure);
+            
+            if (result == null)
+            {
+                return false;
+            }
+
+            var agencyDynamic = await result.ReadFirstOrDefaultAsync<dynamic>();
+            if (agencyDynamic == null)
+            {
+                return false;
+            }
+
+            // Acceder de forma segura a la propiedad IsPropietary del objeto dinámico
+            // Usar conversión a diccionario para acceso seguro
+            if (agencyDynamic is IDictionary<string, object> agencyDict && agencyDict.TryGetValue("IsPropietary", out var isPropietaryValue))
+            {
+                return isPropietaryValue is bool isPropietary && isPropietary;
+            }
+
+            // Fallback: intentar acceso directo si la conversión falla
+            try
+            {
+                return agencyDynamic.IsPropietary == true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error verificando si la agencia {agencyId} es propietaria: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Elimina una agencia y sus programas asociados
     /// </summary>
     /// <param name="agencyId">Id de la agencia a eliminar</param>
@@ -840,11 +904,21 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         {
             _logger.LogInformation($"Eliminando la agencia {agencyId}");
 
-            using IDbConnection dbConnection = _context.CreateConnection();
-            var param = new { agencyId };
+            // Validación previa: Verificar si la agencia es propietaria
+            if (await IsAgencyPropietary(agencyId))
+            {
+                var errorMessage = $"No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.";
+                await _logger.LogError(new Exception(errorMessage), $"Intento de eliminar agencia propietaria {agencyId}");
+                throw new Exception(errorMessage);
+            }
 
-            // Llamar al procedimiento almacenado para eliminar la agencia y sus programas
-            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_DeleteAgency", param, commandType: CommandType.StoredProcedure);
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+            await dbConnection.ExecuteAsync("100_DeleteAgency", parameters, commandType: CommandType.StoredProcedure);
+            var rowsAffected = parameters.Get<int>("@rowsAffected");
 
             if (rowsAffected > 0)
             {
