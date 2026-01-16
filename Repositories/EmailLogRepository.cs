@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Services;
 using Dapper;
 
 namespace Api.Repositories;

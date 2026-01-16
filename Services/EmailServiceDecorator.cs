@@ -52,17 +52,17 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
-    public async Task SendEmailWithGmailAsync(string email, string subject, string message)
+    public async Task SendEmailWithGmailAsync(string email, string subject, string message, string emailType = "Generic", string? userId = null, int? agencyId = null, string? emailTemplateKey = null)
     {
         await LogAndSendEmailAsync(
             email: email,
             subject: subject,
             message: message,
-            emailType: "Generic",
-            userId: null,
-            agencyId: null,
-            emailTemplateKey: null,
-            sendAction: () => _emailService.SendEmailWithGmailAsync(email, subject, message)
+            emailType: emailType,
+            userId: userId,
+            agencyId: agencyId,
+            emailTemplateKey: emailTemplateKey,
+            sendAction: () => _emailService.SendEmailWithGmailAsync(email, subject, message, emailType, userId, agencyId, emailTemplateKey)
         );
     }
 
@@ -150,17 +150,17 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
-    public async Task SendPasswordResetEmail(string email, string token)
+    public async Task SendPasswordResetEmail(string email, string resetLink)
     {
         await LogAndSendEmailAsync(
             email: email,
             subject: "Restablecimiento de Contraseña",
-            message: $"Token: {token}",
+            message: $"Link: {resetLink}",
             emailType: "PasswordReset",
             userId: null,
             agencyId: null,
             emailTemplateKey: "PasswordReset",
-            sendAction: () => _emailService.SendPasswordResetEmail(email, token)
+            sendAction: () => _emailService.SendPasswordResetEmail(email, resetLink)
         );
     }
 

@@ -550,20 +550,19 @@ app.Use(async (context, next) =>
         memoryStream.Position = 0;
         await memoryStream.CopyToAsync(originalBodyStream);
     }
-    catch (Exception ex)
-    {
-        // Registrar errores no capturados en Elmah
-        try
+        catch (Exception ex)
         {
-            await context.RaiseError(ex);
+            // Registrar errores no capturados en Elmah
+            try
+            {
+                await context.RaiseError(ex);
+            }
+            catch (Exception elmahEx)
+            {
+                logger.LogError(elmahEx, "Error al registrar excepción en ELMAH: {Message}", elmahEx.Message);
+            }
+            throw;
         }
-        catch (Exception elmahEx)
-        {
-            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(elmahEx, "Error al registrar excepción en ELMAH: {Message}", elmahEx.Message);
-        }
-        throw;
-    }
     finally
     {
         context.Response.Body = originalBodyStream;

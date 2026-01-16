@@ -22,7 +22,7 @@ public static class ElmahExtensions
                     
                     // Log para diagnóstico en desarrollo
                     var logger = context.RequestServices.GetService<ILogger<ErrorLog>>();
-                    logger?.LogDebug("Error registrado en ELMAH: {ErrorId}", error.Id);
+                    logger?.LogDebug("Error registrado en ELMAH: {ExceptionType}", exception.GetType().Name);
                 }
                 else
                 {
