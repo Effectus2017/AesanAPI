@@ -2,7 +2,7 @@
 -- Stored Procedure: 100_GetSchoolsByAgencyId
 -- Descripción: Obtiene todas las escuelas de una agencia específica con paginación, filtros y conteo
 -- Fecha: 2025-10-15
--- Versión: 3.0
+-- Versión: 3.1
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetSchoolsByAgencyId]
@@ -19,7 +19,12 @@ BEGIN
         s.[Id],
         s.[AgencyId],
         s.[Name],
-        s.[SchoolCode],
+        -- Formatear SchoolCode como XXX-XX (últimos 3 dígitos de agencia - código de escuela)
+        CASE 
+            WHEN a.[AgencyCode] IS NOT NULL AND s.[SchoolCode] IS NOT NULL 
+            THEN RIGHT(a.[AgencyCode], 3) + '-' + s.[SchoolCode]
+            ELSE s.[SchoolCode]
+        END AS [SchoolCode],
         s.[SchoolNumber],
         s.[IsActive],
         s.[CreatedAt],

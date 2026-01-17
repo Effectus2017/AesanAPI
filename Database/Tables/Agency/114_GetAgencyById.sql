@@ -108,6 +108,10 @@ BEGIN
         ai.PublicAllianceContractId,
         ai.NationalYouthProgram,
         ai.IsDayCareHomeId,
+        os_idch.Name AS IsDayCareHomeName,
+        os_idch.NameEN AS IsDayCareHomeNameEN,
+        os_idch.OptionKey AS IsDayCareHomeOptionKey,
+        os_idch.BooleanValue AS IsDayCareHomeBooleanValue,
         ai.ParticipatesInHeadStartProgramId,
         ai.BoardMeetingsPerYear,
         ai.BoardMeetsRegularly,
@@ -154,6 +158,7 @@ BEGIN
         -- LEFT JOINs con OptionSelection
         LEFT JOIN OptionSelection os_position_sponsor ON s_sponsor.PositionId = os_position_sponsor.Id
         LEFT JOIN OptionSelection os_position_monitor ON s_monitor.PositionId = os_position_monitor.Id
+        LEFT JOIN OptionSelection os_idch ON ai.IsDayCareHomeId = os_idch.Id
     WHERE a.Id = @id;
 
     -- Segunda consulta: Obtener los programas asociados a la agencia

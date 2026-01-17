@@ -2,7 +2,7 @@
 -- Stored Procedure: 100_GetAllSchools
 -- Descripción: Obtiene todas las escuelas con paginación y filtros
 -- Fecha: 2025-10-15
--- Versión: 1.0
+-- Versión: 1.1
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetAllSchools]
@@ -20,7 +20,12 @@ BEGIN
         s.[Id],
         s.[AgencyId],
         s.[Name],
-        s.[SchoolCode],
+        -- Formatear SchoolCode como XXX-XX (últimos 3 dígitos de agencia - código de escuela)
+        CASE 
+            WHEN a.[AgencyCode] IS NOT NULL AND s.[SchoolCode] IS NOT NULL 
+            THEN RIGHT(a.[AgencyCode], 3) + '-' + s.[SchoolCode]
+            ELSE s.[SchoolCode]
+        END AS [SchoolCode],
         s.[SchoolNumber],
         s.[IsActive],
         s.[CreatedAt],
