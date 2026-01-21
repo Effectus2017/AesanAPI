@@ -3,8 +3,9 @@
 -- Descripción: Inserta días de funcionamiento para un sitio basado en fechas desde y hasta
 -- Reemplaza: 100_InsertSchoolOperatingDays
 -- Fecha: 2025-01-15
--- Versión: 2.0
+-- Versión: 2.1
 -- Cambios v2.0: Agregado parámetro @includeWeekends para controlar si se incluyen fines de semana
+-- Cambios v2.1: Agregado IsManuallyAdded = 0 para indicar días generados automáticamente
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertSiteOperatingDays]
@@ -39,12 +40,13 @@ BEGIN
         BEGIN
             INSERT INTO SiteOperatingDays
                 (
-                SiteId, OperatingDate, StartTime, EndTime, Comment, IsActive, CreatedAt
+                SiteId, OperatingDate, StartTime, EndTime, Comment, IsActive, IsManuallyAdded, CreatedAt
                 )
             VALUES
                 (
-                    @siteId, @CurrentDate, @defaultStartTime, @defaultEndTime, @defaultComment, 1, GETDATE()
+                    @siteId, @CurrentDate, @defaultStartTime, @defaultEndTime, @defaultComment, 1, 0, GETDATE()
             );
+            -- IsManuallyAdded = 0 indica que el día fue generado automáticamente
 
             SET @DaysInserted = @DaysInserted + 1;
         END

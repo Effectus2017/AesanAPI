@@ -373,7 +373,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                     Id = item.RelationshipTypeId,
                     Name = item.RelationshipTypeName,
                     NameEN = item.RelationshipTypeNameEN,
-                    OptionKey = item.RelationshipTypeOptionKey
+                    OptionKey = item.RelationshipTypeOptionKey,
+                    IsActive = item.RelationshipTypeIsActive ?? true
                 } : null,
                 OffersServiceToImmigrantChildren = item.OffersServiceToImmigrantChildren,
                 HomeType = item.HomeTypeId != null ? new DTOOptionSelection
@@ -381,7 +382,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                     Id = item.HomeTypeId,
                     Name = item.HomeTypeName,
                     NameEN = item.HomeTypeNameEN,
-                    OptionKey = item.HomeTypeOptionKey
+                    OptionKey = item.HomeTypeOptionKey,
+                    IsActive = item.HomeTypeIsActive ?? true
                 } : null,
                 AdministratorAuthorizedName = item.AdministratorAuthorizedName,
                 AdministratorBirthDate = item.AdministratorBirthDate,

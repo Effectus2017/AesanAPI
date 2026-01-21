@@ -74,6 +74,7 @@ BEGIN
     END
 
         -- Insertar el día
+        -- IsManuallyAdded = 1 porque este día es agregado manualmente desde el calendario
         INSERT INTO SiteOperatingDays
         (
         SiteId,
@@ -84,6 +85,7 @@ BEGIN
         IsHoliday,
         Comment,
         IsActive,
+        IsManuallyAdded,
         CreatedAt,
         UpdatedAt
         )
@@ -97,6 +99,7 @@ BEGIN
             @isHoliday,
             @comment,
             1,
+            1, -- IsManuallyAdded = 1 (día agregado manualmente en el calendario)
             GETDATE(),
             GETDATE()
         );

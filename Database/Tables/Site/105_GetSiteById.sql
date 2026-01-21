@@ -95,9 +95,11 @@ BEGIN
         sdch.NumberOfEnrolledChildren, sdch.NumberOfProviderChildren, sdch.NumberOfParticipantsWithBloodTies,
         sdch.NumberOfParticipantsWithoutBloodTies, sdch.MinorsLiveWithProvider, sdch.RelationshipTypeId,
         rt.Name AS RelationshipTypeName, rt.NameEN AS RelationshipTypeNameEN, rt.OptionKey AS RelationshipTypeOptionKey,
+        rt.IsActive AS RelationshipTypeIsActive,
         sdch.OffersServiceToImmigrantChildren, sdch.HomeTypeId, ht.Name AS HomeTypeName,
-        ht.NameEN AS HomeTypeNameEN, ht.OptionKey AS HomeTypeOptionKey, sdch.AdministratorAuthorizedName,
-        sdch.AdministratorBirthDate, sdch.OffersServiceToDifferentGroups, sdch.CreatedAt, sdch.UpdatedAt
+        ht.NameEN AS HomeTypeNameEN, ht.OptionKey AS HomeTypeOptionKey, ht.IsActive AS HomeTypeIsActive,
+        sdch.AdministratorAuthorizedName, sdch.AdministratorBirthDate, sdch.OffersServiceToDifferentGroups,
+        sdch.CreatedAt, sdch.UpdatedAt
     FROM SiteDayCareHome sdch
         LEFT JOIN OptionSelection rt ON sdch.RelationshipTypeId = rt.Id
         LEFT JOIN OptionSelection ht ON sdch.HomeTypeId = ht.Id

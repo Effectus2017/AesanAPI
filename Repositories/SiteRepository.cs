@@ -486,6 +486,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 if (request.OperatingDaysOfWeek != null && request.OperatingDaysOfWeek.Count > 0)
                 {
                     await UpdateSiteOperatingDaysOfWeek(request.Id.Value, request.OperatingDaysOfWeek, dbConnection);
+                    
+                    // Sincronizar el calendario (SiteOperatingDays) con el nuevo patrón semanal
+                    // Esto elimina días que ya no corresponden al patrón (excepto los agregados manualmente)
+                    // y genera nuevos días según el patrón actualizado
+                    await SyncSiteOperatingDaysWithWeekPattern(request.Id.Value, dbConnection);
                 }
 
                 // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
@@ -514,18 +519,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     }
                 }
 
-                // // Actualizar información de Day Care Home solo si la agencia es Day Care Home
-                // if (request.DayCareHome != null && request.IsDayCareHome == true)
-                // {
-                //     await UpdateSiteDayCareHome(request.Id.Value, request.DayCareHome);
-                // }
+                // Actualizar información de Day Care Home si se proporciona
+                if (request.DayCareHome != null)
+                {
+                    await UpdateSiteDayCareHome(request.Id.Value, request.DayCareHome, dbConnection);
+                }
 
-                // // Actualizar tipos de participantes
-                // if (request.Participants != null && request.Participants.Count != 0)
-                // {
-                //     var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
-                //     await UpdateSiteParticipants(request.Id.Value, participantTypeIds);
-                // }
+                // Actualizar tipos de participantes
+                if (request.Participants != null && request.Participants.Count != 0)
+                {
+                    var participantTypeIds = request.Participants.Select(p => p.ParticipantTypeId).ToList();
+                    await UpdateSiteParticipants(request.Id.Value, participantTypeIds, dbConnection);
+                }
 
                 // Sincronizar relaciones sitio-programa
                 if (request.ProgramIds != null)
@@ -762,6 +767,66 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al actualizar días de la semana para el sitio {SiteId}", siteId);
             throw new Exception(ex.Message);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sincroniza los días del calendario (SiteOperatingDays) con el patrón semanal definido en SiteOperatingDaysOfWeek.
+    /// - Elimina días que ya no corresponden al patrón (excepto los agregados manualmente)
+    /// - Agrega días nuevos según el nuevo patrón semanal
+    /// - Genera servicios para los nuevos días agregados
+    /// </summary>
+    /// <param name="siteId">ID del sitio</param>
+    /// <param name="connection">Conexión de base de datos (opcional)</param>
+    /// <param name="transaction">Transacción de base de datos (opcional)</param>
+    /// <returns>True si la sincronización fue exitosa</returns>
+    private async Task<bool> SyncSiteOperatingDaysWithWeekPattern(int siteId, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteId", siteId, DbType.Int32);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>(
+                "100_SyncSiteOperatingDaysWithWeekPattern", 
+                parameters, 
+                transaction, 
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (result != null)
+            {
+                int daysDeleted = (int)(result.DaysDeleted ?? 0);
+                int daysInserted = (int)(result.DaysInserted ?? 0);
+                int servicesInserted = (int)(result.ServicesInserted ?? 0);
+                
+                _logger.LogInformation(
+                    "Sincronización de calendario completada para sitio {SiteId}: {DaysDeleted} días eliminados, {DaysInserted} días insertados, {ServicesInserted} servicios insertados",
+                    siteId, 
+                    daysDeleted, 
+                    daysInserted, 
+                    servicesInserted
+                );
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al sincronizar calendario con patrón semanal para el sitio {SiteId}", siteId);
+            // No propagamos el error para no fallar la actualización del sitio
+            // La sincronización fallida no debe impedir que el sitio se actualice
+            return false;
         }
         finally
         {
@@ -1949,10 +2014,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@homeTypeId", dayCareHome.HomeTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@administratorBirthDate", dayCareHome.AdministratorBirthDate, DbType.Date, ParameterDirection.Input);
             parameters.Add("@offersServiceToDifferentGroups", dayCareHome.OffersServiceToDifferentGroups, DbType.Boolean, ParameterDirection.Input);
-            parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@returnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await dbConnection.ExecuteAsync("100_UpdateSiteDayCareHome", parameters, transaction, commandType: CommandType.StoredProcedure);
-            var rowsAffected = parameters.Get<int>("@rowsAffected");
+            var rowsAffected = parameters.Get<int>("@returnValue");
             return rowsAffected > 0;
         }
         catch (Exception ex)
