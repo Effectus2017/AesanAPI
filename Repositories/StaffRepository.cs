@@ -498,18 +498,16 @@ public class StaffRepository(
 
             int rowsAffected = parameters.Get<int>("@rowsAffected");
 
-            if (rowsAffected > 0)
+            if (rowsAffected > 0 && !isActive)
             {
                 // Si se inactivó el personal, enviar notificación al evaluador asignado
-                if (!isActive)
-                {
-                    await NotifyEvaluatorOnStaffInactivation(staffId);
-                }
-
-                return true;
+                await NotifyEvaluatorOnStaffInactivation(staffId);
+                    
+                // Notificar también al SuperAdmin si el usuario tiene cuenta de NUTRE (UserId no nulo)
+                await NotifySuperAdminIfNutreUser(staffId);
             }
 
-            return false;
+            return true;
         }
         catch (Exception ex)
         {
@@ -593,6 +591,104 @@ public class StaffRepository(
         {
             _logger.LogError(ex, "Error al enviar notificación al evaluador para staff {StaffId}: {Message}", staffId, ex.Message);
             // No lanzar excepción para no fallar la operación principal
+        }
+    }
+
+    /// <summary>
+    /// Notifica a los Super Admins cuando un personal con usuario NUTRE es inactivado
+    /// </summary>
+    /// <param name="staffId">ID del personal inactivado</param>
+    private async Task NotifySuperAdminIfNutreUser(int staffId)
+    {
+        try
+        {
+            // 1. Obtener información del staff
+            var staffResult = await GetStaffById(staffId);
+            if (staffResult == null || staffResult is not DTOStaff staff)
+            {
+                return;
+            }
+
+            // 2. Verificar si tiene usuario NUTRE asociado
+            if (string.IsNullOrEmpty(staff.UserId))
+            {
+                return;
+            }
+
+            // 3. Obtener IDs de usuarios SuperAdmin / Administrator
+            var superAdminIds = await GetSuperAdminUserIds();
+
+            if (superAdminIds == null || !superAdminIds.Any())
+            {
+                _logger.LogWarning("NotifySuperAdminIfNutreUser - No se encontraron Super Admins para notificar sobre staff {StaffId}", staffId);
+                return;
+            }
+
+            // 4. Preparar variables para el mensaje
+            // Construir nombre completo del staff
+            var staffNameParts = new List<string> { staff.FirstName };
+            if (!string.IsNullOrWhiteSpace(staff.MiddleName))
+            {
+                staffNameParts.Add(staff.MiddleName);
+            }
+            staffNameParts.Add(staff.FatherLastName);
+            if (!string.IsNullOrWhiteSpace(staff.MotherLastName))
+            {
+                staffNameParts.Add(staff.MotherLastName);
+            }
+            var staffName = string.Join(" ", staffNameParts);
+
+            var variables = new Dictionary<string, string>
+            {
+                { "StaffName", staffName },
+                { "AgencyName", staff.AgencyName ?? "Agencia Desconocida" },
+                { "InactiveDate", DateTime.Now.ToString("dd/MM/yyyy") },
+                { "UserEmail", staff.Email } // Variable adicional por si el template la usa
+            };
+
+            // 5. Enviar notificaciones a cada Super Admin
+            _logger.LogInformation("NotifySuperAdminIfNutreUser - Enviando notificación a {Count} Super Admins para staff {StaffId}", superAdminIds.Count, staffId);
+
+            foreach (var adminId in superAdminIds)
+            {
+                await _messageTemplateService.SendMessageAndEmailFromTemplate(
+                    messageTemplateKey: "StaffInactivated", // Usamos el mismo template o uno específico si existiera
+                    emailTemplateKey: "StaffInactivated",
+                    recipientUserId: adminId,
+                    variables: variables,
+                    language: "es"
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al enviar notificación a Super Admins para staff {StaffId}: {Message}", staffId, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los IDs de usuarios con rol SuperAdmin o Administrator
+    /// </summary>
+    private async Task<List<string>> GetSuperAdminUserIds()
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            string sql = @"
+                SELECT DISTINCT u.Id
+                FROM AspNetUsers u
+                INNER JOIN AspNetUserRoles ur ON u.Id = ur.UserId
+                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE r.Name IN ('SuperAdmin', 'Administrator')
+                AND u.IsActive = 1";
+
+            var result = await dbConnection.QueryAsync<string>(sql);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener IDs de Super Admins");
+            return new List<string>();
         }
     }
 

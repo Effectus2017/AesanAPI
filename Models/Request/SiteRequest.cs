@@ -86,6 +86,7 @@ public class SiteRequest
     public int? LocationTypeId { get; set; }
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
+    public int? DiningRoomCapacity { get; set; }
 
     // ===== RELACIONES CON MODELOS REQUEST =====
     public SitePersonInChargeRequest? PersonInCharge { get; set; }

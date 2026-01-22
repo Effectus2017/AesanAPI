@@ -212,7 +212,8 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                 queryParameters.SiteId.Value,
                 queryParameters.IsActive,
                 queryParameters.InactiveJustification,
-                queryParameters.InactiveDate);
+                queryParameters.InactiveDate,
+                queryParameters.ProvidedRationsService);
             _logger.LogInformation("UpdateSiteActiveStatus - Estado actualizado para SiteId: {SiteId}, Result: {Result}", queryParameters.SiteId.Value, result);
 
             // Si se inactivó el sitio, enviar notificación al evaluador asignado

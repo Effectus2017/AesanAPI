@@ -22,7 +22,7 @@ BEGIN
     -- Retorna únicamente los campos necesarios para la tabla de sitios
     SELECT
         s.Id, s.Name, s.Address, c.Name AS CityName, r.Name AS RegionName,
-        s.GeneralEnrollment, s.SiteNumber, s.IsActive,
+        s.GeneralEnrollment AS generalenrollment, s.SiteNumber, s.IsActive,
         a.AgencyCode, gt.Name AS GroupTypeName,
         -- Formatear SiteCode como XXX-XX-X (últimos 3 dígitos de agencia - código de escuela - código del sitio)
         CASE 

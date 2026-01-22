@@ -211,6 +211,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@locationTypeId", request.LocationTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@diningRoomCapacity", request.DiningRoomCapacity, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
@@ -443,6 +444,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingPolicyId", request.OperatingPolicyId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@hasWarehouse", request.HasWarehouse, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@hasDiningRoom", request.HasDiningRoom, DbType.Boolean, ParameterDirection.Input);
+            parameters.Add("@diningRoomCapacity", request.DiningRoomCapacity, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@communityId", request.CommunityId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@walkersId", request.WalkersId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@siteTypeId", request.SiteTypeId, DbType.Int32, ParameterDirection.Input);
@@ -844,7 +846,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="isActive">Estado activo (true) o inactivo (false)</param>
     /// <param name="inactiveJustification">Justificación cuando se inactiva (requerida si isActive es false)</param>
     /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
-    public async Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null, DateTime? inactiveDate = null)
+    public async Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null, DateTime? inactiveDate = null, bool? providedRationsService = null)
     {
         try
         {
@@ -854,6 +856,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@isActive", isActive, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@inactiveJustification", inactiveJustification, DbType.String, ParameterDirection.Input);
             parameters.Add("@inactiveDate", inactiveDate, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@providedRationsService", providedRationsService, DbType.Boolean, ParameterDirection.Input);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await dbConnection.ExecuteAsync("103_UpdateSiteActiveStatus", parameters, commandType: CommandType.StoredProcedure);
