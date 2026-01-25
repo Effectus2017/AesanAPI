@@ -271,8 +271,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteDayCareHome(siteId, request, dbConnection, transaction);
             }
 
-            // Insertar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
-            if (request.DayCareHome?.OffersServiceToDifferentGroups == true && request.ChildGroups != null && request.ChildGroups.Count != 0)
+            // Insertar grupos de niños (para todos los sitios de todos los programas)
+            if (request.ChildGroups != null && request.ChildGroups.Count != 0)
             {
                 await InsertSiteChildGroups(siteId, request.ChildGroups, dbConnection, transaction);
             }
@@ -495,11 +495,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     await SyncSiteOperatingDaysWithWeekPattern(request.Id.Value, dbConnection);
                 }
 
-                // Actualizar grupos de niños específicos (solo si OffersServiceToDifferentGroups = true)
-                // if (request.DayCareHome?.OffersServiceToDifferentGroups == true && request.ChildGroups != null && request.ChildGroups.Count != 0)
-                // {
-                //     await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups);
-                // }
+                // Actualizar grupos de niños (para todos los sitios de todos los programas)
+                if (request.ChildGroups != null && request.ChildGroups.Count != 0)
+                {
+                    await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups, dbConnection);
+                }
 
                 // Actualizar servicios de alimentación
                 if (request.Services != null && request.Services.Count != 0)
@@ -1869,15 +1869,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 // Validar que si un servicio está habilitado, tenga horarios
                 ValidateServiceTimes(service);
 
-                // Al actualizar, el ID debe estar presente
-                if (!service.Id.HasValue)
-                {
-                    _logger.LogError("No se proporcionó el ID del SiteService para actualizar el sitio {SiteId}", siteId);
-                    throw new ArgumentException("El ID del servicio es requerido para actualizar.");
-                }
-
                 var parameters = new DynamicParameters();
-                parameters.Add("@id", service.Id.Value, DbType.Int32);
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
                 parameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
@@ -1911,7 +1903,19 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
                 parameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
 
-                await dbConnection.ExecuteAsync("100_UpdateSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
+                // Si tiene ID, actualizar; si no, insertar
+                if (service.Id.HasValue)
+                {
+                    parameters.Add("@id", service.Id.Value, DbType.Int32);
+                    await dbConnection.ExecuteAsync("100_UpdateSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
+                    _logger.LogInformation("Servicio actualizado para el sitio {SiteId} con ID {ServiceId}", siteId, service.Id.Value);
+                }
+                else
+                {
+                    parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                    await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
+                    _logger.LogInformation("Servicio insertado para el sitio {SiteId}", siteId);
+                }
             }
 
             return true;
