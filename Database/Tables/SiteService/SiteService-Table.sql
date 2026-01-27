@@ -10,7 +10,7 @@ CREATE TABLE [dbo].[SiteService]
 (
     [Id] [int] IDENTITY(1,1) NOT NULL,
     [SiteId] [int] NOT NULL,
-    [ChildGroupId] [int] NULL,
+    [ChildGroupId] [int] NOT NULL,
     [Breakfast] [bit] NULL,
     [BreakfastFrom] [time] NULL,
     [BreakfastTo] [time] NULL,
@@ -59,7 +59,7 @@ CREATE INDEX [IX_SiteService_SiteId_ChildGroupId] ON [SiteService]([SiteId], [Ch
 -- =============================================
 
 ALTER TABLE [SiteService] ADD CONSTRAINT [FK_SiteService_Site] FOREIGN KEY([SiteId]) REFERENCES [Site]([Id]) ON DELETE CASCADE;
-ALTER TABLE [SiteService] ADD CONSTRAINT [FK_SiteService_ChildGroup] FOREIGN KEY([ChildGroupId]) REFERENCES [OptionSelection]([Id]) ON DELETE CASCADE;
+ALTER TABLE [SiteService] ADD CONSTRAINT [FK_SiteService_ChildGroup] FOREIGN KEY([ChildGroupId]) REFERENCES [SiteChildGroup]([Id]) ON DELETE CASCADE;
 
 -- =============================================
 -- Comentarios

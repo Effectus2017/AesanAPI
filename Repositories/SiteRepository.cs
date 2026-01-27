@@ -65,13 +65,26 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 .OfType<DayOfWeekResponse>()
                 .ToList();
 
-            data.Services = services.Select(_mappingService.MapSiteService).ToList();
+            // Mapear servicios y grupos
+            var mappedServices = services.Select(_mappingService.MapSiteService).ToList();
             data.DayCareHome = dayCareHome != null ? _mappingService.MapSiteDayCareHome(dayCareHome) : null;
             data.Participants = participants.Select(_mappingService.MapSiteParticipant).ToList();
-            data.ChildGroups = childGroups
+            
+            // Mapear grupos
+            var mappedChildGroups = childGroups
                 .Select(d => _mappingService.MapSiteChildGroup(d))
                 .OfType<SiteChildGroupResponse>()
                 .ToList();
+
+            // Agrupar servicios por ChildGroupId y asignarlos a cada grupo
+            foreach (var group in mappedChildGroups)
+            {
+                group.Services = mappedServices
+                    .Where(s => s.ChildGroup != null && s.ChildGroup.Id == group.Id)
+                    .ToList();
+            }
+
+            data.ChildGroups = mappedChildGroups;
 
             return data;
         }
@@ -252,9 +265,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteEducationLevels(siteId, educationLevelIds, dbConnection, transaction);
             }
 
-            // // Insertar servicios de alimentación9
-            await InsertSiteService(siteId, request, dbConnection, transaction);
-
             // Insertar información de Day Care Home solo si el sitio es un Hogar (IsDayCareHomeId = "Sí")
             // Determinar si es un hogar basándose en IsDayCareHomeId
             bool isDayCareHome = false;
@@ -271,10 +281,21 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteDayCareHome(siteId, request, dbConnection, transaction);
             }
 
-            // Insertar grupos de niños (para todos los sitios de todos los programas)
+            // Insertar grupos de niños PRIMERO (para todos los sitios de todos los programas)
+            // Esto es necesario porque los servicios necesitan referenciar los grupos
+            // Los servicios ahora vienen dentro de cada grupo, así que se insertan junto con el grupo
+            List<int> childGroupIds = [];
             if (request.ChildGroups != null && request.ChildGroups.Count != 0)
             {
-                await InsertSiteChildGroups(siteId, request.ChildGroups, dbConnection, transaction);
+                childGroupIds = await InsertSiteChildGroups(siteId, request.ChildGroups, dbConnection, transaction);
+            }
+
+            // Insertar servicios de alimentación desde request.Services (compatibilidad hacia atrás)
+            // Si hay servicios en request.Services, procesarlos también
+            // Prioridad: ChildGroups[].Services > request.Services
+            if (request.Services != null && request.Services.Count > 0)
+            {
+                await InsertSiteService(siteId, request, childGroupIds, dbConnection, transaction);
             }
 
             // Insertar tipos de participantes
@@ -496,21 +517,27 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 }
 
                 // Actualizar grupos de niños (para todos los sitios de todos los programas)
+                // Los servicios ahora vienen dentro de cada grupo, así que se actualizan junto con el grupo
+                List<int> childGroupIds = [];
+                
                 if (request.ChildGroups != null && request.ChildGroups.Count != 0)
                 {
-                    await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups, dbConnection);
+                    childGroupIds = await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups, dbConnection);
                 }
 
-                // Actualizar servicios de alimentación
-                if (request.Services != null && request.Services.Count != 0)
+                // Actualizar servicios de alimentación desde request.Services (compatibilidad hacia atrás)
+                // Si hay servicios en request.Services, procesarlos también
+                // Prioridad: ChildGroups[].Services > request.Services
+                if (request.Services != null && request.Services.Count > 0)
                 {
-                    await UpdateSiteService(request.Id.Value, request.Services, dbConnection);
+                    await UpdateSiteService(request.Id.Value, request.Services, childGroupIds, dbConnection);
                 }
 
                 // Actualizar o insertar información de Persona a Cargo
                 if (request.PersonInCharge != null)
                 {
                     var existingPersonInCharge = await _sitePersonInChargeRepository.Value.GetSitePersonInChargeBySiteId(request.Id.Value);
+                    
                     if (existingPersonInCharge != null)
                     {
                         await _sitePersonInChargeRepository.Value.UpdateSitePersonInCharge(request.Id.Value, request.PersonInCharge);
@@ -926,7 +953,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="request">Request con datos de servicios</param>
     /// <returns>True si se insertó correctamente</returns>
-    private async Task<bool> InsertSiteService(int siteId, SiteRequest request, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    private async Task<bool> InsertSiteService(int siteId, SiteRequest request, List<int>? childGroupIds = null, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
         var dbConnection = connection ?? _context.CreateConnection();
         var shouldDisposeConnection = connection == null;
@@ -935,18 +962,41 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             if (request.Services == null || request.Services.Count == 0)
             {
-                // Si no hay servicios, insertar un registro vacío
-                return await InsertEmptySiteService(siteId, dbConnection, transaction);
+                // Si no hay servicios, no hacer nada (ya no se insertan servicios vacíos)
+                return true;
             }
 
-            foreach (var service in request.Services)
+            // Validar que haya grupos si hay servicios
+            if (childGroupIds == null || childGroupIds.Count == 0)
             {
+                throw new ArgumentException("No se pueden insertar servicios sin grupos. Debe haber al menos un grupo.");
+            }
+
+            for (int i = 0; i < request.Services.Count; i++)
+            {
+                var service = request.Services[i];
+                
                 // Validar que si un servicio está habilitado, tenga horarios
                 ValidateServiceTimes(service);
 
+                // Obtener childGroupId del servicio o usar el índice correspondiente de childGroupIds
+                int childGroupId;
+                if (service.ChildGroupId.HasValue)
+                {
+                    childGroupId = service.ChildGroupId.Value;
+                }
+                else if (childGroupIds != null && childGroupIds.Count > i)
+                {
+                    childGroupId = childGroupIds[i];
+                }
+                else
+                {
+                    throw new ArgumentException($"El servicio en la posición {i} no tiene un grupo asociado y no hay grupos disponibles.");
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
-                parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
+                parameters.Add("@childGroupId", childGroupId, DbType.Int32);
                 parameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
                 parameters.Add("@breakfastFrom", service.BreakfastFrom, DbType.Time);
                 parameters.Add("@breakfastTo", service.BreakfastTo, DbType.Time);
@@ -998,58 +1048,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
     }
 
-    /// <summary>
-    /// Inserta un registro vacío de servicios cuando no hay servicios definidos
-    /// </summary>
-    /// <param name="siteId">ID del sitio</param>
-    /// <returns>True si se insertó correctamente</returns>
-    private async Task<bool> InsertEmptySiteService(int siteId, IDbConnection? connection = null, IDbTransaction? transaction = null)
-    {
-        var dbConnection = connection ?? _context.CreateConnection();
-        var shouldDisposeConnection = connection == null;
-
-        try
-        {
-            var parameters = new DynamicParameters();
-
-            parameters.Add("@siteId", siteId, DbType.Int32);
-            parameters.Add("@childGroupId", null, DbType.Int32);
-            parameters.Add("@breakfast", null, DbType.Boolean);
-            parameters.Add("@breakfastFrom", null, DbType.Time);
-            parameters.Add("@breakfastTo", null, DbType.Time);
-            parameters.Add("@lunch", null, DbType.Boolean);
-            parameters.Add("@lunchFrom", null, DbType.Time);
-            parameters.Add("@lunchTo", null, DbType.Time);
-            parameters.Add("@snackAM", null, DbType.Boolean);
-            parameters.Add("@snackAMFrom", null, DbType.Time);
-            parameters.Add("@snackAMTo", null, DbType.Time);
-            parameters.Add("@dinner", null, DbType.Boolean);
-            parameters.Add("@dinnerFrom", null, DbType.Time);
-            parameters.Add("@dinnerTo", null, DbType.Time);
-            parameters.Add("@snackPM", null, DbType.Boolean);
-            parameters.Add("@snackPMFrom", null, DbType.Time);
-            parameters.Add("@snackPMTo", null, DbType.Time);
-            parameters.Add("@snackNight", null, DbType.Boolean);
-            parameters.Add("@snackNightFrom", null, DbType.Time);
-            parameters.Add("@snackNightTo", null, DbType.Time);
-            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-            await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al insertar servicios vacíos para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
-        }
-        finally
-        {
-            if (shouldDisposeConnection)
-            {
-                dbConnection.Dispose();
-            }
-        }
-    }
 
     /// <summary>
     /// Inserta información de Day Care Home para un sitio
@@ -1186,21 +1184,24 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Inserta los grupos de niños específicos para un sitio
+    /// Inserta los grupos de niños específicos para un sitio y sus servicios asociados
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
-    /// <param name="childGroups">Lista de grupos de niños</param>
-    /// <returns>True si se insertaron correctamente</returns>
-    private async Task<bool> InsertSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    /// <param name="childGroups">Lista de grupos de niños con sus servicios</param>
+    /// <param name="connection">Conexión a la base de datos</param>
+    /// <param name="transaction">Transacción</param>
+    /// <returns>Lista de IDs de los grupos insertados</returns>
+    private async Task<List<int>> InsertSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
         var dbConnection = connection ?? _context.CreateConnection();
         var shouldDisposeConnection = connection == null;
+        var childGroupIds = new List<int>();
 
         try
         {
-
             foreach (var childGroup in childGroups)
             {
+                // Insertar el grupo
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@groupName", childGroup.GroupName, DbType.String);
@@ -1208,9 +1209,59 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, transaction, commandType: CommandType.StoredProcedure);
+                
+                int groupId = parameters.Get<int>("@id");
+                childGroupIds.Add(groupId);
+
+                // Insertar servicios del grupo si existen
+                if (childGroup.Services != null && childGroup.Services.Count > 0)
+                {
+                    foreach (var service in childGroup.Services)
+                    {
+                        // Validar que si un servicio está habilitado, tenga horarios
+                        ValidateServiceTimes(service);
+
+                        var serviceParameters = new DynamicParameters();
+                        serviceParameters.Add("@siteId", siteId, DbType.Int32);
+                        serviceParameters.Add("@childGroupId", groupId, DbType.Int32);
+                        serviceParameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
+                        serviceParameters.Add("@breakfastFrom", service.BreakfastFrom, DbType.Time);
+                        serviceParameters.Add("@breakfastTo", service.BreakfastTo, DbType.Time);
+                        serviceParameters.Add("@lunch", service.Lunch, DbType.Boolean);
+                        serviceParameters.Add("@lunchFrom", service.LunchFrom, DbType.Time);
+                        serviceParameters.Add("@lunchTo", service.LunchTo, DbType.Time);
+                        serviceParameters.Add("@snackAM", service.SnackAM, DbType.Boolean);
+                        serviceParameters.Add("@snackAMFrom", service.SnackAMFrom, DbType.Time);
+                        serviceParameters.Add("@snackAMTo", service.SnackAMTo, DbType.Time);
+                        serviceParameters.Add("@dinner", service.Dinner, DbType.Boolean);
+                        serviceParameters.Add("@dinnerFrom", service.DinnerFrom, DbType.Time);
+                        serviceParameters.Add("@dinnerTo", service.DinnerTo, DbType.Time);
+                        serviceParameters.Add("@snackPM", service.SnackPM, DbType.Boolean);
+                        serviceParameters.Add("@snackPMFrom", service.SnackPMFrom, DbType.Time);
+                        serviceParameters.Add("@snackPMTo", service.SnackPMTo, DbType.Time);
+                        serviceParameters.Add("@snackNight", service.SnackNight, DbType.Boolean);
+                        serviceParameters.Add("@snackNightFrom", service.SnackNightFrom, DbType.Time);
+                        serviceParameters.Add("@snackNightTo", service.SnackNightTo, DbType.Time);
+                        serviceParameters.Add("@dinnerExtended", service.DinnerExtended, DbType.Boolean);
+                        serviceParameters.Add("@dinnerExtendedFrom", service.DinnerExtendedFrom, DbType.Time);
+                        serviceParameters.Add("@dinnerExtendedTo", service.DinnerExtendedTo, DbType.Time);
+                        serviceParameters.Add("@dinnerAtRisk", service.DinnerAtRisk, DbType.Boolean);
+                        serviceParameters.Add("@dinnerAtRiskFrom", service.DinnerAtRiskFrom, DbType.Time);
+                        serviceParameters.Add("@dinnerAtRiskTo", service.DinnerAtRiskTo, DbType.Time);
+                        serviceParameters.Add("@snackExtended", service.SnackExtended, DbType.Boolean);
+                        serviceParameters.Add("@snackExtendedFrom", service.SnackExtendedFrom, DbType.Time);
+                        serviceParameters.Add("@snackExtendedTo", service.SnackExtendedTo, DbType.Time);
+                        serviceParameters.Add("@snackAtRisk", service.SnackAtRisk, DbType.Boolean);
+                        serviceParameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
+                        serviceParameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
+                        serviceParameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                        await dbConnection.ExecuteAsync("100_InsertSiteService", serviceParameters, transaction, commandType: CommandType.StoredProcedure);
+                    }
+                }
             }
 
-            return true;
+            return childGroupIds;
         }
         catch (Exception ex)
         {
@@ -1227,27 +1278,30 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Actualiza los grupos de niños específicos para un sitio
+    /// Actualiza los grupos de niños específicos para un sitio y sus servicios asociados
     /// </summary>
     /// <param name="siteId">ID del sitio</param>
-    /// <param name="childGroups">Lista de grupos de niños</param>
-    /// <returns>True si se actualizaron correctamente</returns>
-    private async Task<bool> UpdateSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    /// <param name="childGroups">Lista de grupos de niños con sus servicios</param>
+    /// <param name="connection">Conexión a la base de datos</param>
+    /// <param name="transaction">Transacción</param>
+    /// <returns>Lista de IDs de los grupos insertados</returns>
+    private async Task<List<int>> UpdateSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
         var dbConnection = connection ?? _context.CreateConnection();
         var shouldDisposeConnection = connection == null;
+        var childGroupIds = new List<int>();
 
         try
         {
-
-            // Primero eliminar todos los grupos existentes para este sitio
+            // Primero eliminar todos los grupos existentes para este sitio (esto también eliminará sus servicios por CASCADE)
             var deleteParameters = new DynamicParameters();
             deleteParameters.Add("@siteId", siteId, DbType.Int32);
             await dbConnection.ExecuteAsync("100_DeleteSiteChildGroupsBySiteId", deleteParameters, transaction, commandType: CommandType.StoredProcedure);
 
-            // Luego insertar los nuevos grupos
+            // Luego insertar los nuevos grupos con sus servicios
             foreach (var childGroup in childGroups)
             {
+                // Insertar el grupo
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
                 parameters.Add("@groupName", childGroup.GroupName, DbType.String);
@@ -1255,9 +1309,59 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, transaction, commandType: CommandType.StoredProcedure);
+                
+                int groupId = parameters.Get<int>("@id");
+                childGroupIds.Add(groupId);
+
+                // Insertar servicios del grupo si existen
+                if (childGroup.Services != null && childGroup.Services.Count > 0)
+                {
+                    foreach (var service in childGroup.Services)
+                    {
+                        // Validar que si un servicio está habilitado, tenga horarios
+                        ValidateServiceTimes(service);
+
+                        var serviceParameters = new DynamicParameters();
+                        serviceParameters.Add("@siteId", siteId, DbType.Int32);
+                        serviceParameters.Add("@childGroupId", groupId, DbType.Int32);
+                        serviceParameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
+                        serviceParameters.Add("@breakfastFrom", service.BreakfastFrom, DbType.Time);
+                        serviceParameters.Add("@breakfastTo", service.BreakfastTo, DbType.Time);
+                        serviceParameters.Add("@lunch", service.Lunch, DbType.Boolean);
+                        serviceParameters.Add("@lunchFrom", service.LunchFrom, DbType.Time);
+                        serviceParameters.Add("@lunchTo", service.LunchTo, DbType.Time);
+                        serviceParameters.Add("@snackAM", service.SnackAM, DbType.Boolean);
+                        serviceParameters.Add("@snackAMFrom", service.SnackAMFrom, DbType.Time);
+                        serviceParameters.Add("@snackAMTo", service.SnackAMTo, DbType.Time);
+                        serviceParameters.Add("@dinner", service.Dinner, DbType.Boolean);
+                        serviceParameters.Add("@dinnerFrom", service.DinnerFrom, DbType.Time);
+                        serviceParameters.Add("@dinnerTo", service.DinnerTo, DbType.Time);
+                        serviceParameters.Add("@snackPM", service.SnackPM, DbType.Boolean);
+                        serviceParameters.Add("@snackPMFrom", service.SnackPMFrom, DbType.Time);
+                        serviceParameters.Add("@snackPMTo", service.SnackPMTo, DbType.Time);
+                        serviceParameters.Add("@snackNight", service.SnackNight, DbType.Boolean);
+                        serviceParameters.Add("@snackNightFrom", service.SnackNightFrom, DbType.Time);
+                        serviceParameters.Add("@snackNightTo", service.SnackNightTo, DbType.Time);
+                        serviceParameters.Add("@dinnerExtended", service.DinnerExtended, DbType.Boolean);
+                        serviceParameters.Add("@dinnerExtendedFrom", service.DinnerExtendedFrom, DbType.Time);
+                        serviceParameters.Add("@dinnerExtendedTo", service.DinnerExtendedTo, DbType.Time);
+                        serviceParameters.Add("@dinnerAtRisk", service.DinnerAtRisk, DbType.Boolean);
+                        serviceParameters.Add("@dinnerAtRiskFrom", service.DinnerAtRiskFrom, DbType.Time);
+                        serviceParameters.Add("@dinnerAtRiskTo", service.DinnerAtRiskTo, DbType.Time);
+                        serviceParameters.Add("@snackExtended", service.SnackExtended, DbType.Boolean);
+                        serviceParameters.Add("@snackExtendedFrom", service.SnackExtendedFrom, DbType.Time);
+                        serviceParameters.Add("@snackExtendedTo", service.SnackExtendedTo, DbType.Time);
+                        serviceParameters.Add("@snackAtRisk", service.SnackAtRisk, DbType.Boolean);
+                        serviceParameters.Add("@snackAtRiskFrom", service.SnackAtRiskFrom, DbType.Time);
+                        serviceParameters.Add("@snackAtRiskTo", service.SnackAtRiskTo, DbType.Time);
+                        serviceParameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                        await dbConnection.ExecuteAsync("100_InsertSiteService", serviceParameters, transaction, commandType: CommandType.StoredProcedure);
+                    }
+                }
             }
 
-            return true;
+            return childGroupIds;
         }
         catch (Exception ex)
         {
@@ -1854,24 +1958,53 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="siteId">ID del sitio</param>
     /// <param name="services">Lista de servicios</param>
     /// <returns>True si se actualizaron correctamente</returns>
-    private async Task<bool> UpdateSiteService(int siteId, List<SiteServiceRequest> services, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    private async Task<bool> UpdateSiteService(int siteId, List<SiteServiceRequest> services, List<int>? childGroupIds = null, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
         var dbConnection = connection ?? _context.CreateConnection();
         var shouldDisposeConnection = connection == null;
 
         try
         {
+            // Obtener servicios existentes del sitio usando SP
+            var parametersGet = new DynamicParameters();
+            parametersGet.Add("@siteId", siteId, DbType.Int32);
 
-            if (services.Count > 0)
+            var existingServices = await dbConnection.QueryAsync<(int Id, int ChildGroupId)>(
+                "100_GetSiteServicesBySiteId",
+                parametersGet,
+                transaction,
+                commandType: CommandType.StoredProcedure
+            ).ConfigureAwait(false);
+            
+            var existingServicesList = existingServices.ToList();
+
+            // Procesar cada servicio en la lista
+            for (int i = 0; i < services.Count; i++)
             {
-                var service = services[0]; // Solo hay un servicio por sitio
-
+                var service = services[i];
+                
                 // Validar que si un servicio está habilitado, tenga horarios
                 ValidateServiceTimes(service);
 
+                // Obtener childGroupId del servicio o usar el índice correspondiente de childGroupIds
+                int childGroupId;
+
+                if (service.ChildGroupId.HasValue)
+                {
+                    childGroupId = service.ChildGroupId.Value;
+                }
+                else if (childGroupIds != null && childGroupIds.Count > i)
+                {
+                    childGroupId = childGroupIds[i];
+                }
+                else
+                {
+                    throw new ArgumentException($"El servicio en la posición {i} no tiene un grupo asociado y no hay grupos disponibles.");
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@siteId", siteId, DbType.Int32);
-                parameters.Add("@childGroupId", service.ChildGroupId, DbType.Int32);
+                parameters.Add("@childGroupId", childGroupId, DbType.Int32);
                 parameters.Add("@breakfast", service.Breakfast, DbType.Boolean);
                 parameters.Add("@breakfastFrom", service.BreakfastFrom, DbType.Time);
                 parameters.Add("@breakfastTo", service.BreakfastTo, DbType.Time);
@@ -1908,7 +2041,16 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 {
                     parameters.Add("@id", service.Id.Value, DbType.Int32);
                     await dbConnection.ExecuteAsync("100_UpdateSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
+
                     _logger.LogInformation("Servicio actualizado para el sitio {SiteId} con ID {ServiceId}", siteId, service.Id.Value);
+                    
+                    // Remover de la lista de servicios existentes
+                    var existingService = existingServicesList.FirstOrDefault(s => s.Id == service.Id.Value);
+
+                    if (existingService.Id != default(int))
+                    {
+                        existingServicesList.Remove(existingService);
+                    }
                 }
                 else
                 {
@@ -1916,6 +2058,20 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     await dbConnection.ExecuteAsync("100_InsertSiteService", parameters, transaction, commandType: CommandType.StoredProcedure);
                     _logger.LogInformation("Servicio insertado para el sitio {SiteId}", siteId);
                 }
+            }
+
+            // Eliminar servicios que ya no están en la lista usando SP
+            foreach (var existingService in existingServicesList)
+            {
+                var deleteParameters = new DynamicParameters();
+                deleteParameters.Add("@id", existingService.Id, DbType.Int32);
+                await dbConnection.ExecuteAsync(
+                    "100_DeleteSiteServiceById",
+                    deleteParameters,
+                    transaction,
+                    commandType: CommandType.StoredProcedure
+                );
+                _logger.LogInformation("Servicio eliminado para el sitio {SiteId} con ID {ServiceId}", siteId, existingService.Id);
             }
 
             return true;

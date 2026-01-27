@@ -104,9 +104,6 @@ public class SiteResponse
     // Niveles educativos
     public List<EducationLevelResponse>? EducationLevels { get; set; }
 
-    // Servicios de alimentación
-    public List<SiteServiceResponse>? Services { get; set; }
-
     // Información específica de Day Care Home
     public SiteDayCareHomeResponse? DayCareHome { get; set; }
 

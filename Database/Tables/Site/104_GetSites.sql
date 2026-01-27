@@ -20,9 +20,11 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Retorna únicamente los campos necesarios para la tabla de sitios
+    -- generalenrollment: Site.GeneralEnrollment o, si es NULL, suma de NumberOfChildren de los grupos del sitio
     SELECT
         s.Id, s.Name, s.Address, c.Name AS CityName, r.Name AS RegionName,
-        s.GeneralEnrollment AS generalenrollment, s.SiteNumber, s.IsActive,
+        ISNULL(s.GeneralEnrollment, (SELECT ISNULL(SUM(scg.NumberOfChildren), 0) FROM SiteChildGroup scg WHERE scg.SiteId = s.Id)) AS generalenrollment,
+        s.SiteNumber, s.IsActive,
         a.AgencyCode, gt.Name AS GroupTypeName,
         -- Formatear SiteCode como XXX-XX-X (últimos 3 dígitos de agencia - código de escuela - código del sitio)
         CASE 
