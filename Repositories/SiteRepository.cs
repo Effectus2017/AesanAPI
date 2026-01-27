@@ -2,6 +2,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using Api.Data;
+using Api.Exceptions;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
@@ -13,7 +14,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -27,6 +28,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly Lazy<IAgencyRepository> _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
     private readonly Lazy<ISiteCalendarRepository> _siteCalendarRepository = siteCalendarRepository ?? throw new ArgumentNullException(nameof(siteCalendarRepository));
     private readonly Lazy<ISiteProgramRepository> _siteProgramRepository = siteProgramRepository ?? throw new ArgumentNullException(nameof(siteProgramRepository));
+    private readonly IServiceTypeRepository _serviceTypeRepository = serviceTypeRepository ?? throw new ArgumentNullException(nameof(serviceTypeRepository));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -172,6 +174,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
         try
         {
+            await ValidateStrongServicesForProgramsAsync(request);
+            await ValidateTimeBetweenServicesAsync(request);
+
             // Generar código único de sitio automáticamente si no se proporciona
             if (string.IsNullOrEmpty(request.SiteCode) && request.AgencyId.HasValue)
             {
@@ -426,6 +431,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     {
         try
         {
+            await ValidateStrongServicesForProgramsAsync(request);
+            await ValidateTimeBetweenServicesAsync(request);
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
@@ -2086,6 +2094,212 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             if (shouldDisposeConnection)
             {
                 dbConnection.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los servicios del request (Services o ChildGroups[].Services). AESAN-257.
+    /// </summary>
+    private static List<SiteServiceRequest> GetAllServicesFromRequest(SiteRequest request)
+    {
+        if (request.Services != null && request.Services.Count > 0)
+        {
+            return request.Services.ToList();
+        }
+
+        if (request.ChildGroups != null)
+        {
+            return request.ChildGroups
+                .SelectMany(cg => cg.Services ?? [])
+                .ToList();
+        }
+
+        return [];
+    }
+
+    /// <summary>
+    /// Indica si el servicio tipo serviceTypeId está seleccionado en el SiteServiceRequest. AESAN-257.
+    /// Mapeo: 1=Breakfast, 2=Lunch, 3=SnackAM, 4=Dinner, 5=SnackPM, 6=SnackNight, 7=DinnerExtended, 8=DinnerAtRisk, 9=SnackExtended, 10=SnackAtRisk.
+    /// </summary>
+    private static bool IsServiceTypeSelected(SiteServiceRequest s, int serviceTypeId)
+    {
+        return serviceTypeId switch
+        {
+            1 => s.Breakfast == true,
+            2 => s.Lunch == true,
+            3 => s.SnackAM == true,
+            4 => s.Dinner == true,
+            5 => s.SnackPM == true,
+            6 => s.SnackNight == true,
+            7 => s.DinnerExtended == true,
+            8 => s.DinnerAtRisk == true,
+            9 => s.SnackExtended == true,
+            10 => s.SnackAtRisk == true,
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Obtiene (ServiceTypeId, From, To) para los servicios activos en el SiteServiceRequest. AESAN-257.
+    /// </summary>
+    private static List<(int ServiceTypeId, TimeSpan From, TimeSpan To)> GetActiveServiceSlots(SiteServiceRequest s)
+    {
+        var list = new List<(int, TimeSpan, TimeSpan)>();
+        if (s.Breakfast == true && s.BreakfastFrom.HasValue && s.BreakfastTo.HasValue)
+        {
+            list.Add((1, s.BreakfastFrom.Value, s.BreakfastTo.Value));
+        }
+
+        if (s.Lunch == true && s.LunchFrom.HasValue && s.LunchTo.HasValue)
+        {
+            list.Add((2, s.LunchFrom.Value, s.LunchTo.Value));
+        }
+
+        if (s.SnackAM == true && s.SnackAMFrom.HasValue && s.SnackAMTo.HasValue)
+        {
+            list.Add((3, s.SnackAMFrom.Value, s.SnackAMTo.Value));
+        }
+
+        if (s.Dinner == true && s.DinnerFrom.HasValue && s.DinnerTo.HasValue)
+        {
+            list.Add((4, s.DinnerFrom.Value, s.DinnerTo.Value));
+        }
+
+        if (s.SnackPM == true && s.SnackPMFrom.HasValue && s.SnackPMTo.HasValue)
+        {
+            list.Add((5, s.SnackPMFrom.Value, s.SnackPMTo.Value));
+        }
+
+        if (s.SnackNight == true && s.SnackNightFrom.HasValue && s.SnackNightTo.HasValue)
+        {
+            list.Add((6, s.SnackNightFrom.Value, s.SnackNightTo.Value));
+        }
+
+        if (s.DinnerExtended == true && s.DinnerExtendedFrom.HasValue && s.DinnerExtendedTo.HasValue)
+        {
+            list.Add((7, s.DinnerExtendedFrom.Value, s.DinnerExtendedTo.Value));
+        }
+
+        if (s.DinnerAtRisk == true && s.DinnerAtRiskFrom.HasValue && s.DinnerAtRiskTo.HasValue)
+        {
+            list.Add((8, s.DinnerAtRiskFrom.Value, s.DinnerAtRiskTo.Value));
+        }
+
+        if (s.SnackExtended == true && s.SnackExtendedFrom.HasValue && s.SnackExtendedTo.HasValue)
+        {
+            list.Add((9, s.SnackExtendedFrom.Value, s.SnackExtendedTo.Value));
+        }
+
+        if (s.SnackAtRisk == true && s.SnackAtRiskFrom.HasValue && s.SnackAtRiskTo.HasValue)
+        {
+            list.Add((10, s.SnackAtRiskFrom.Value, s.SnackAtRiskTo.Value));
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Valida que para cada programa PDAM(1), PSAV(2), PACNA(3) del sitio haya al menos un servicio fuerte seleccionado. AESAN-257.
+    /// </summary>
+    private async Task ValidateStrongServicesForProgramsAsync(SiteRequest request)
+    {
+        var programIdsToCheck = (request.ProgramIds ?? [])
+            .Where(id => id == 1 || id == 2 || id == 3)
+            .Distinct()
+            .ToList();
+
+        if (programIdsToCheck.Count == 0)
+        {
+            return;
+        }
+
+        var allServices = GetAllServicesFromRequest(request);
+        if (allServices.Count == 0)
+        {
+            var programNames = string.Join(", ", programIdsToCheck.Select(p => p == 1 ? "PDAM" : p == 2 ? "PSAV" : "PACNA"));
+            throw new SiteValidationException(
+                "MissingStrongService",
+                $"Para {programNames} debe incluir al menos uno de los siguientes servicios: Almuerzo o Cena (según programa). Incluya al menos uno en su selección.");
+        }
+
+        foreach (var programId in programIdsToCheck)
+        {
+            var typesByProgram = (await _serviceTypeRepository.GetServiceTypesByProgram(programId)).ToList();
+            var strongTypes = typesByProgram.Where(t => t.IsStrongService).Select(t => t.Id).ToList();
+
+            if (strongTypes.Count == 0)
+            {
+                continue;
+            }
+
+            var hasStrong = strongTypes.Any(st => allServices.Any(svc => IsServiceTypeSelected(svc, st)));
+            if (!hasStrong)
+            {
+                var names = string.Join(", ", typesByProgram.Where(t => t.IsStrongService).Select(t => t.Name));
+                var programName = programId == 1 ? "PDAM" : programId == 2 ? "PSAV" : "PACNA";
+                throw new SiteValidationException(
+                    "MissingStrongService",
+                    $"Para el programa {programName} debe incluir al menos uno de los siguientes servicios: {names}. Incluya al menos uno en su selección.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Valida que entre cada par de servicios consecutivos (por hora) se respete el mínimo de minutos. AESAN-257.
+    /// </summary>
+    private async Task ValidateTimeBetweenServicesAsync(SiteRequest request)
+    {
+        var programIdsToCheck = (request.ProgramIds ?? [])
+            .Where(id => id == 1 || id == 2 || id == 3)
+            .Distinct()
+            .ToList();
+
+        if (programIdsToCheck.Count == 0)
+        {
+            return;
+        }
+
+        var allServices = GetAllServicesFromRequest(request);
+        if (allServices.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var programId in programIdsToCheck)
+        {
+            var typesByProgram = (await _serviceTypeRepository.GetServiceTypesByProgram(programId)).ToList();
+            var minMinutesByType = typesByProgram
+                .Where(t => t.MinimumMinutesToNextService.HasValue && t.MinimumMinutesToNextService.Value > 0)
+                .ToDictionary(t => t.Id, t => t.MinimumMinutesToNextService!.Value);
+            var nameByType = typesByProgram.ToDictionary(t => t.Id, t => t.Name);
+
+            foreach (var serviceRow in allServices)
+            {
+                var slots = GetActiveServiceSlots(serviceRow)
+                    .OrderBy(x => x.From)
+                    .ToList();
+
+                for (var i = 0; i < slots.Count - 1; i++)
+                {
+                    var (typeA, _, toA) = slots[i];
+                    var (typeB, fromB, _) = slots[i + 1];
+
+                    if (!minMinutesByType.TryGetValue(typeA, out var minMinutes))
+                    {
+                        continue;
+                    }
+
+                    var gapMinutes = (fromB - toA).TotalMinutes;
+                    if (gapMinutes < minMinutes)
+                    {
+                        var nameA = nameByType.TryGetValue(typeA, out var nA) ? nA : $"Servicio {typeA}";
+                        var nameB = nameByType.TryGetValue(typeB, out var nB) ? nB : $"Servicio {typeB}";
+                        throw new SiteValidationException(
+                            "InsufficientTimeBetweenServices",
+                            $"Entre {nameA} y {nameB} debe haber al menos {minMinutes} minutos. Ajuste los horarios.");
+                    }
+                }
             }
         }
     }
