@@ -51,6 +51,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 ServiceTime = item.ServiceTime,
                 HasWarehouse = item.HasWarehouse,
                 HasDiningRoom = item.HasDiningRoom,
+                DiningRoomCapacity = item.DiningRoomCapacity,
                 CommunityId = item.CommunityId,
                 WalkersId = item.WalkersId,
                 SiteTypeId = item.SiteTypeId,
@@ -62,6 +63,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 IsActive = item.IsActive ?? true,
                 InactiveJustification = item.InactiveJustification ?? string.Empty,
                 InactiveDate = item.InactiveDate,
+                ProvidedRationsService = item.ProvidedRationsService,
                 CreatedAt = item.CreatedAt ?? DateTime.MinValue,
                 UpdatedAt = item.UpdatedAt ?? DateTime.MinValue,
                 GeneralEnrollment = item.GeneralEnrollment,
@@ -223,7 +225,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 RegionName = item.RegionName ?? string.Empty,
                 IsActive = item.IsActive ?? true,
                 GroupTypeName = item.GroupTypeName,
-                GeneralEnrollment = item.GeneralEnrollment,
+                GeneralEnrollment = item.generalenrollment ?? item.GeneralEnrollment,
                 SiteNumber = item.SiteNumber ?? 0,
                 AgencyCode = item.AgencyCode,
                 SiteCode = item.SiteCode,
@@ -373,7 +375,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                     Id = item.RelationshipTypeId,
                     Name = item.RelationshipTypeName,
                     NameEN = item.RelationshipTypeNameEN,
-                    OptionKey = item.RelationshipTypeOptionKey
+                    OptionKey = item.RelationshipTypeOptionKey,
+                    IsActive = item.RelationshipTypeIsActive ?? true
                 } : null,
                 OffersServiceToImmigrantChildren = item.OffersServiceToImmigrantChildren,
                 HomeType = item.HomeTypeId != null ? new DTOOptionSelection
@@ -381,7 +384,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                     Id = item.HomeTypeId,
                     Name = item.HomeTypeName,
                     NameEN = item.HomeTypeNameEN,
-                    OptionKey = item.HomeTypeOptionKey
+                    OptionKey = item.HomeTypeOptionKey,
+                    IsActive = item.HomeTypeIsActive ?? true
                 } : null,
                 AdministratorAuthorizedName = item.AdministratorAuthorizedName,
                 AdministratorBirthDate = item.AdministratorBirthDate,

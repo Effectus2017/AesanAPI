@@ -43,6 +43,7 @@ public class SiteResponse
     public TimeSpan? OperatingEndTime { get; set; }
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
+    public int? DiningRoomCapacity { get; set; }
 
     // Campos adicionales
     public int? CommunityId { get; set; }
@@ -85,6 +86,12 @@ public class SiteResponse
     public bool IsActive { get; set; }
     public string? InactiveJustification { get; set; }
     public DateTime? InactiveDate { get; set; }
+    /// <summary>
+    /// ¿Brindó servicio de raciones durante su periodo de funcionamiento?
+    /// Did it provide ration service during its operating period?
+    /// Solo se usa cuando el sitio está inactivo
+    /// </summary>
+    public bool? ProvidedRationsService { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int? GeneralEnrollment { get; set; }
@@ -96,9 +103,6 @@ public class SiteResponse
 
     // Niveles educativos
     public List<EducationLevelResponse>? EducationLevels { get; set; }
-
-    // Servicios de alimentación
-    public List<SiteServiceResponse>? Services { get; set; }
 
     // Información específica de Day Care Home
     public SiteDayCareHomeResponse? DayCareHome { get; set; }

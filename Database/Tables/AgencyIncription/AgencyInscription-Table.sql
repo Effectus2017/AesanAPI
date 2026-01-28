@@ -167,3 +167,5 @@ BEGIN
     ADD BoardExecutiveAuthority nvarchar(max) NULL;
 END
 GO
+
+ALTER TABLE AgencyInscription DROP COLUMN BoardExecutiveAuthority;

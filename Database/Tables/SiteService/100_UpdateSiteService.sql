@@ -8,7 +8,7 @@
 CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSiteService]
     @id INT,
     @siteId INT,
-    @childGroupId INT = NULL,
+    @childGroupId INT,
     @breakfast BIT = NULL,
     @breakfastFrom TIME = NULL,
     @breakfastTo TIME = NULL,
@@ -42,6 +42,13 @@ CREATE OR ALTER PROCEDURE [dbo].[100_UpdateSiteService]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- Validar que el childGroupId pertenezca al mismo siteId (obligatorio)
+    IF NOT EXISTS (SELECT 1 FROM SiteChildGroup WHERE Id = @childGroupId AND SiteId = @siteId)
+    BEGIN
+        RAISERROR('El grupo especificado no pertenece al sitio indicado.', 16, 1);
+        RETURN;
+    END;
 
     UPDATE SiteService
     SET 

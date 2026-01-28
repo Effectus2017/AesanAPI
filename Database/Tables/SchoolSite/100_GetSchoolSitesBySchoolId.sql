@@ -2,7 +2,7 @@
 -- Stored Procedure: 100_GetSchoolSitesBySchoolId
 -- Descripción: Obtiene todos los Sites asignados a una School específica con paginación
 -- Fecha: 2025-10-15
--- Versión: 1.4
+-- Versión: 1.5
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_GetSchoolSitesBySchoolId]
@@ -32,7 +32,13 @@ BEGIN
         ss.[CreatedAt],
         ss.[UpdatedAt],
         s.[Name] AS SiteName,
-        s.[SiteCode],
+        -- Formatear SiteCode como XXX-XX-X (últimos 3 dígitos de agencia - código de escuela - código del sitio)
+        CASE 
+            WHEN a.[AgencyCode] IS NOT NULL AND sch.[SchoolCode] IS NOT NULL AND s.[SiteCode] IS NOT NULL
+            THEN RIGHT(a.[AgencyCode], 3) + '-' + sch.[SchoolCode] + '-' + 
+                 SUBSTRING(s.[SiteCode], CHARINDEX('-', s.[SiteCode]) + 1, LEN(s.[SiteCode]))
+            ELSE s.[SiteCode]
+        END AS [SiteCode],
         s.[SiteNumber],
         s.[Address],
         s.[IsActive],
@@ -47,6 +53,8 @@ BEGIN
         s.[ReviewDate] AS ApprovalDate
     FROM [SchoolSite] ss
         INNER JOIN [Site] s ON ss.[SiteId] = s.[Id]
+        INNER JOIN [School] sch ON ss.[SchoolId] = sch.[Id]
+        LEFT JOIN [Agency] a ON s.[AgencyId] = a.[Id]
         LEFT JOIN [GroupType] gt ON s.[GroupTypeId] = gt.[Id]
     WHERE ss.[SchoolId] = @schoolId
         AND ss.[IsActive] = 1

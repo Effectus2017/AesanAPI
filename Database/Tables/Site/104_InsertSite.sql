@@ -42,6 +42,7 @@ CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
     @locationTypeId INT = NULL,
     @hasWarehouse BIT = NULL,
     @hasDiningRoom BIT = NULL,
+    @diningRoomCapacity INT = NULL,
     @communityId INT = NULL,
     @walkersId INT = NULL,
     @siteTypeId INT = NULL,
@@ -72,7 +73,7 @@ BEGIN
         PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
         OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingFromDate, OperatingToDate, OperatingDaysCalculated, OperatingStartTime, OperatingEndTime,
         KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
-        HasWarehouse, HasDiningRoom,
+        HasWarehouse, HasDiningRoom, DiningRoomCapacity,
         CommunityId, WalkersId, SiteTypeId, SiteLocationId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
         SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, InactiveJustification, InactiveDate,
         OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, IsAffiliatedCenter, IsDayCareHomeId, CreatedAt
@@ -83,7 +84,7 @@ BEGIN
             @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
             @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingFromDate, @operatingToDate, @operatingDaysCalculated, @operatingStartTime, @operatingEndTime,
             @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
-            @hasWarehouse, @hasDiningRoom,
+            @hasWarehouse, @hasDiningRoom, @diningRoomCapacity,
             @communityId, @walkersId, @siteTypeId, @siteLocationId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
             @siteCode, @generalEnrollment, @siteNumber, @serviceTime, 1, @inactiveJustification, @inactiveDate,
             @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, @isAffiliatedCenter, @isDayCareHomeId, GETDATE()

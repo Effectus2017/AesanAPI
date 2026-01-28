@@ -29,14 +29,14 @@ BEGIN
         rt.Name AS ResidentialTypeName, rt.NameEN AS ResidentialTypeNameEN, s.OperatingPolicyId,
         opol.Name AS OperatingPolicyName, opol.NameEN AS OperatingPolicyNameEN, s.AreaTypeId,
         atype.Name AS AreaTypeName, atype.NameEN AS AreaTypeNameEN, s.LocationTypeId,
-        ltype.Name AS LocationTypeName, ltype.NameEN AS LocationTypeNameEN, s.HasWarehouse,
-        s.HasDiningRoom, s.CommunityId, s.WalkersId,
+        ltype.Name AS LocationTypeName, ltype.NameEN AS LocationTypeNameEN,         s.HasWarehouse,
+        s.HasDiningRoom, s.DiningRoomCapacity, s.CommunityId, s.WalkersId,
         spic.FirstName AS PersonInChargeFirstName, spic.MiddleName AS PersonInChargeMiddleName,
         spic.FatherLastName AS PersonInChargeFatherLastName, spic.MotherLastName AS PersonInChargeMotherLastName,
         spic.SitePhone AS PersonInChargeSitePhone, spic.Extension AS PersonInChargeExtension,
         spic.MobilePhone AS PersonInChargeMobilePhone,
         s.SiteTypeId, s.SiteLocationId, sl.Name AS SiteLocationName, sl.NameEN AS SiteLocationNameEN, sl.OptionKey AS SiteLocationOptionKey, s.ExperienceId, s.ReviewResultId, s.ReviewDate, s.ReviewJustification,
-        s.IsActive, s.InactiveJustification, s.InactiveDate, s.GeneralEnrollment, s.SiteNumber,
+        s.IsActive, s.InactiveJustification, s.InactiveDate, s.ProvidedRationsService, s.GeneralEnrollment, s.SiteNumber,
         s.OrganizedAthleticPrograms, s.AtRiskService, s.PublicAllianceContractId, pac.Name AS PublicAllianceContractName, pac.NameEN AS PublicAllianceContractNameEN, pac.OptionKey AS PublicAllianceContractOptionKey, s.IsAffiliatedCenter, s.IsDayCareHomeId, os_idch.Name AS IsDayCareHomeName, os_idch.NameEN AS IsDayCareHomeNameEN, os_idch.OptionKey AS IsDayCareHomeOptionKey, os_idch.BooleanValue AS IsDayCareHomeBooleanValue, s.IsMainSite, a.AgencyCode,
         s.SiteCode,
         s.CreatedAt, s.UpdatedAt
@@ -78,8 +78,11 @@ BEGIN
     ORDER BY sodow.DayOfWeek;
 
     -- Obtener servicios de alimentación del sitio
-    SELECT ss.Id, ss.SiteId, ss.ChildGroupId, cg.Name AS ChildGroupName,
-        cg.OptionKey AS ChildGroupOptionKey, ss.Breakfast, ss.BreakfastFrom, ss.BreakfastTo,
+    SELECT ss.Id, ss.SiteId, ss.ChildGroupId, 
+        scg.Id AS ChildGroupId, scg.GroupName AS ChildGroupName, 
+        scg.NumberOfChildren AS ChildGroupNumberOfChildren,
+        scg.CreatedAt AS ChildGroupCreatedAt, scg.UpdatedAt AS ChildGroupUpdatedAt,
+        ss.Breakfast, ss.BreakfastFrom, ss.BreakfastTo,
         ss.Lunch, ss.LunchFrom, ss.LunchTo, ss.SnackAM, ss.SnackAMFrom, ss.SnackAMTo,
         ss.Dinner, ss.DinnerFrom, ss.DinnerTo, ss.SnackPM, ss.SnackPMFrom, ss.SnackPMTo,
         ss.SnackNight, ss.SnackNightFrom, ss.SnackNightTo, ss.DinnerExtended, ss.DinnerExtendedFrom,
@@ -87,7 +90,7 @@ BEGIN
         ss.SnackExtended, ss.SnackExtendedFrom, ss.SnackExtendedTo, ss.SnackAtRisk,
         ss.SnackAtRiskFrom, ss.SnackAtRiskTo, ss.CreatedAt, ss.UpdatedAt
     FROM SiteService ss
-        LEFT JOIN OptionSelection cg ON ss.ChildGroupId = cg.Id
+        INNER JOIN SiteChildGroup scg ON ss.ChildGroupId = scg.Id
     WHERE ss.SiteId = @id;
 
     -- Obtener información específica de Day Care Home
@@ -95,9 +98,11 @@ BEGIN
         sdch.NumberOfEnrolledChildren, sdch.NumberOfProviderChildren, sdch.NumberOfParticipantsWithBloodTies,
         sdch.NumberOfParticipantsWithoutBloodTies, sdch.MinorsLiveWithProvider, sdch.RelationshipTypeId,
         rt.Name AS RelationshipTypeName, rt.NameEN AS RelationshipTypeNameEN, rt.OptionKey AS RelationshipTypeOptionKey,
+        rt.IsActive AS RelationshipTypeIsActive,
         sdch.OffersServiceToImmigrantChildren, sdch.HomeTypeId, ht.Name AS HomeTypeName,
-        ht.NameEN AS HomeTypeNameEN, ht.OptionKey AS HomeTypeOptionKey, sdch.AdministratorAuthorizedName,
-        sdch.AdministratorBirthDate, sdch.OffersServiceToDifferentGroups, sdch.CreatedAt, sdch.UpdatedAt
+        ht.NameEN AS HomeTypeNameEN, ht.OptionKey AS HomeTypeOptionKey, ht.IsActive AS HomeTypeIsActive,
+        sdch.AdministratorAuthorizedName, sdch.AdministratorBirthDate, sdch.OffersServiceToDifferentGroups,
+        sdch.CreatedAt, sdch.UpdatedAt
     FROM SiteDayCareHome sdch
         LEFT JOIN OptionSelection rt ON sdch.RelationshipTypeId = rt.Id
         LEFT JOIN OptionSelection ht ON sdch.HomeTypeId = ht.Id

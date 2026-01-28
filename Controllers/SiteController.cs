@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Exceptions;
 using Api.Models;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -110,6 +111,10 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
+        catch (SiteValidationException ex)
+        {
+            return BadRequest(new { code = ex.Code, message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el sitio: {Message}", ex.Message);
@@ -147,6 +152,10 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
             }
 
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (SiteValidationException ex)
+        {
+            return BadRequest(new { code = ex.Code, message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -212,7 +221,8 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                 queryParameters.SiteId.Value,
                 queryParameters.IsActive,
                 queryParameters.InactiveJustification,
-                queryParameters.InactiveDate);
+                queryParameters.InactiveDate,
+                queryParameters.ProvidedRationsService);
             _logger.LogInformation("UpdateSiteActiveStatus - Estado actualizado para SiteId: {SiteId}, Result: {Result}", queryParameters.SiteId.Value, result);
 
             // Si se inactivó el sitio, enviar notificación al evaluador asignado

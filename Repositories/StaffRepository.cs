@@ -20,7 +20,8 @@ public class StaffRepository(
     IAuditLogger auditLogger,
     ISiteStaffRepository siteStaffRepository,
     IAgencyRepository agencyRepository,
-    MessageTemplateService messageTemplateService) : IStaffRepository
+    MessageTemplateService messageTemplateService
+) : IStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<StaffRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -154,8 +155,7 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Insertando nuevo miembro del staff - Email: {Email}, PositionId: {PositionId}, StaffTypeId: {StaffTypeId}, StatusId: {StatusId}, UserId: {UserId}",
-                staffRequest.Email, staffRequest.PositionId, staffRequest.StaffTypeId, staffRequest.StatusId, staffRequest.UserId);
+            _logger.LogInformation("Insertando nuevo miembro del staff - Email: {Email}, PositionId: {PositionId}, StaffTypeId: {StaffTypeId}, StatusId: {StatusId}, UserId: {UserId}", staffRequest.Email, staffRequest.PositionId, staffRequest.StaffTypeId, staffRequest.StatusId, staffRequest.UserId);
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
@@ -171,7 +171,8 @@ public class StaffRepository(
             parameters.Add("@staffTypeId", finalStaffTypeId, DbType.Int32, ParameterDirection.Input);
             // StaffClassificationId: usar 1 (Administrativo) por defecto si es null o 0
             var finalStaffClassificationId = staffRequest.StaffClassificationId ?? 1;
-            if (finalStaffClassificationId == 0) finalStaffClassificationId = 1;
+            if (finalStaffClassificationId == 0)
+                finalStaffClassificationId = 1;
             parameters.Add("@staffClassificationId", finalStaffClassificationId, DbType.Int32, ParameterDirection.Input);
             // Fechas seguras para SQL Server
             parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
@@ -210,7 +211,7 @@ public class StaffRepository(
                         SiteId = staffRequest.SiteId.Value,
                         StaffId = staffId,
                         IsPrimary = staffRequest.IsPrimary,
-                        Comments = $"Asignación creada automáticamente al crear el staff"
+                        Comments = $"Asignación creada automáticamente al crear el staff",
                     };
 
                     try
@@ -326,11 +327,7 @@ public class StaffRepository(
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var rowsAffected = await dbConnection.ExecuteAsync(
-                "100_DeleteStaff",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            var rowsAffected = await dbConnection.ExecuteAsync("100_DeleteStaff", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -375,11 +372,7 @@ public class StaffRepository(
             parameters.Add("@staffId", id, DbType.Int32);
             parameters.Add("@returnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync(
-                "101_BulkDeleteStaff",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+            await dbConnection.ExecuteAsync("101_BulkDeleteStaff", parameters, commandType: CommandType.StoredProcedure);
 
             var result = parameters.Get<int>("@returnValue");
 
@@ -498,18 +491,16 @@ public class StaffRepository(
 
             int rowsAffected = parameters.Get<int>("@rowsAffected");
 
-            if (rowsAffected > 0)
+            if (rowsAffected > 0 && !isActive)
             {
                 // Si se inactivó el personal, enviar notificación al evaluador asignado
-                if (!isActive)
-                {
-                    await NotifyEvaluatorOnStaffInactivation(staffId);
-                }
+                await NotifyEvaluatorOnStaffInactivation(staffId);
 
-                return true;
+                // Notificar también al SuperAdmin si el usuario tiene cuenta de NUTRE (UserId no nulo)
+                await NotifySuperAdminIfNutreUser(staffId);
             }
 
-            return false;
+            return true;
         }
         catch (Exception ex)
         {
@@ -573,19 +564,13 @@ public class StaffRepository(
             {
                 { "StaffName", staffName },
                 { "AgencyName", staff.AgencyName ?? "" },
-                { "InactiveDate", DateTime.Now.ToString("dd/MM/yyyy") }
+                { "InactiveDate", DateTime.Now.ToString("dd/MM/yyyy") },
             };
 
             // Enviar mensaje interno Y email usando templates separados
             _logger.LogInformation("NotifyEvaluatorOnStaffInactivation - Enviando notificación al evaluador {EvaluatorUserId} para staff {StaffId}", evaluatorUserId, staffId);
 
-            await _messageTemplateService.SendMessageAndEmailFromTemplate(
-                messageTemplateKey: "StaffInactivated",
-                emailTemplateKey: "StaffInactivated",
-                recipientUserId: evaluatorUserId,
-                variables: variables,
-                language: "es"
-            );
+            await _messageTemplateService.SendMessageAndEmailFromTemplate(messageTemplateKey: "StaffInactivated", emailTemplateKey: "StaffInactivated", recipientUserId: evaluatorUserId, variables: variables, language: "es");
 
             _logger.LogInformation("NotifyEvaluatorOnStaffInactivation - Notificación enviada exitosamente para staff {StaffId}", staffId);
         }
@@ -593,6 +578,107 @@ public class StaffRepository(
         {
             _logger.LogError(ex, "Error al enviar notificación al evaluador para staff {StaffId}: {Message}", staffId, ex.Message);
             // No lanzar excepción para no fallar la operación principal
+        }
+    }
+
+    /// <summary>
+    /// Notifica a los Super Admins cuando un personal con usuario NUTRE es inactivado
+    /// </summary>
+    /// <param name="staffId">ID del personal inactivado</param>
+    private async Task NotifySuperAdminIfNutreUser(int staffId)
+    {
+        try
+        {
+            // 1. Obtener información del staff
+            DTOStaff staff = await GetStaffById(staffId);
+
+            if (staff == null)
+            {
+                _logger.LogWarning("NotifySuperAdminIfNutreUser - Staff con ID {StaffId} no encontrado", staffId);
+                return;
+            }
+            
+            //2. Verificar si tiene usuario NUTRE asociado
+            if (string.IsNullOrEmpty(staff.UserId))
+            {
+                return;
+            }
+
+            // 3. Obtener IDs de usuarios SuperAdmin / Administrator
+            var superAdminIds = await GetSuperAdminUserIds();
+
+            if (superAdminIds.Count == 0)
+            {
+                _logger.LogWarning("NotifySuperAdminIfNutreUser - No se encontraron Super Admins para notificar sobre staff {StaffId}", staffId);
+                return;
+            }
+
+            // 4. Preparar variables para el mensaje
+            // Construir nombre completo del staff
+            var staffNameParts = new List<string> { staff.FirstName };
+            if (!string.IsNullOrWhiteSpace(staff.MiddleName))
+            {
+                staffNameParts.Add(staff.MiddleName);
+            }
+            staffNameParts.Add(staff.FatherLastName);
+            if (!string.IsNullOrWhiteSpace(staff.MotherLastName))
+            {
+                staffNameParts.Add(staff.MotherLastName);
+            }
+            var staffName = string.Join(" ", staffNameParts);
+
+            var variables = new Dictionary<string, string>
+            {
+                { "StaffName", staffName },
+                { "AgencyName", staff.AgencyName ?? "Agencia Desconocida" },
+                { "InactiveDate", DateTime.Now.ToString("dd/MM/yyyy") },
+                { "UserEmail", staff.Email }, // Variable adicional por si el template la usa
+            };
+
+            // 5. Enviar notificaciones a cada Super Admin
+            _logger.LogInformation("NotifySuperAdminIfNutreUser - Enviando notificación a {Count} Super Admins para staff {StaffId}", superAdminIds.Count, staffId);
+
+            foreach (var adminId in superAdminIds)
+            {
+                await _messageTemplateService.SendMessageAndEmailFromTemplate(
+                    messageTemplateKey: "StaffInactivated", // Usamos el mismo template o uno específico si existiera
+                    emailTemplateKey: "StaffInactivated",
+                    recipientUserId: adminId,
+                    variables: variables,
+                    language: "es"
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al enviar notificación a Super Admins para staff {StaffId}: {Message}", staffId, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los IDs de usuarios con rol SuperAdmin o Administrator
+    /// </summary>
+    private async Task<List<string>> GetSuperAdminUserIds()
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            string sql =
+                @"
+                SELECT DISTINCT u.Id
+                FROM AspNetUsers u
+                INNER JOIN AspNetUserRoles ur ON u.Id = ur.UserId
+                INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE r.Name IN ('SuperAdmin', 'Administrator')
+                AND u.IsActive = 1";
+
+            var result = await dbConnection.QueryAsync<string>(sql);
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener IDs de Super Admins");
+            return new List<string>();
         }
     }
 
@@ -629,7 +715,6 @@ public class StaffRepository(
             throw new Exception($"Error al actualizar el AgencyId del staff con ID {staffId}: {ex.Message}", ex);
         }
     }
-
 
     /// <summary>
     /// Obtiene todos los miembros del staff de una agencia específica
@@ -727,7 +812,7 @@ public class StaffRepository(
                     SiteId = newSiteId.Value,
                     StaffId = staffId,
                     IsPrimary = isPrimary,
-                    Comments = $"Asignación actualizada automáticamente"
+                    Comments = $"Asignación actualizada automáticamente",
                 };
 
                 await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
@@ -747,8 +832,7 @@ public class StaffRepository(
             // Caso 4: Hay asignación actual y cambió la sitio → Desasignar anterior y crear nueva
             if (currentAssignment != null && newSiteId.HasValue && newSiteId.Value > 0 && currentAssignment.SiteId != newSiteId.Value)
             {
-                _logger.LogInformation("Cambiando asignación: Staff {StaffId} de Sitio {OldSiteId} → {NewSiteId}",
-                    staffId, currentAssignment.SiteId, newSiteId.Value);
+                _logger.LogInformation("Cambiando asignación: Staff {StaffId} de Sitio {OldSiteId} → {NewSiteId}", staffId, currentAssignment.SiteId, newSiteId.Value);
 
                 // Desasignar de la sitio anterior
                 await _siteStaffRepository.UnassignStaffFromSite(currentAssignment.SiteId, staffId);
@@ -759,7 +843,7 @@ public class StaffRepository(
                     SiteId = newSiteId.Value,
                     StaffId = staffId,
                     IsPrimary = isPrimary,
-                    Comments = $"Asignación actualizada automáticamente"
+                    Comments = $"Asignación actualizada automáticamente",
                 };
 
                 await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
@@ -777,11 +861,7 @@ public class StaffRepository(
                 {
                     _logger.LogInformation("Actualizando asignación existente: Staff {StaffId} en Sitio {SiteId}", staffId, newSiteId.Value);
 
-                    var updateRequest = new UpdateSiteStaffRequest
-                    {
-                        IsPrimary = isPrimary,
-                        Comments = $"Asignación actualizada automáticamente"
-                    };
+                    var updateRequest = new UpdateSiteStaffRequest { IsPrimary = isPrimary, Comments = $"Asignación actualizada automáticamente" };
 
                     await _siteStaffRepository.UpdateSiteStaff(currentAssignment.Id, updateRequest);
                     _logger.LogInformation("Asignación actualizada exitosamente");

@@ -166,6 +166,7 @@ builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IGroupTypeRepository, GroupTypeRepository>();
 builder.Services.AddScoped<ISponsorTypeRepository, SponsorTypeRepository>();
 builder.Services.AddScoped<IDeliveryTypeRepository, DeliveryTypeRepository>();
+builder.Services.AddScoped<IServiceTypeRepository, ServiceTypeRepository>();
 builder.Services.AddScoped<ICenterTypeRepository, CenterTypeRepository>();
 builder.Services.AddScoped<IHouseholdMemberRepository, HouseholdMemberRepository>();
 builder.Services.AddScoped<IAreaTypeRepository, AreaTypeRepository>();

@@ -120,7 +120,7 @@ BEGIN
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1
             UNION
-                SELECT DISTINCT sr.RelatedStaffIds
+                SELECT DISTINCT sr.RelatedStaffId
                 FROM StaffRelationship sr
                 WHERE sr.IsActive = 1)))
             )

@@ -3,7 +3,7 @@
 -- Descripción: Obtiene todos los sitios con paginación y filtros
 -- Reemplaza: 104_GetSchools
 -- Fecha: 2025-01-15
--- Versión: 1.1
+-- Versión: 1.2
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[104_GetSites]
@@ -20,14 +20,23 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Retorna únicamente los campos necesarios para la tabla de sitios
+    -- generalenrollment: Site.GeneralEnrollment o, si es NULL, suma de NumberOfChildren de los grupos del sitio
     SELECT
         s.Id, s.Name, s.Address, c.Name AS CityName, r.Name AS RegionName,
-        s.GeneralEnrollment, s.SiteNumber, s.IsActive,
+        ISNULL(s.GeneralEnrollment, (SELECT ISNULL(SUM(scg.NumberOfChildren), 0) FROM SiteChildGroup scg WHERE scg.SiteId = s.Id)) AS generalenrollment,
+        s.SiteNumber, s.IsActive,
         a.AgencyCode, gt.Name AS GroupTypeName,
-        s.SiteCode,
+        -- Formatear SiteCode como XXX-XX-X (últimos 3 dígitos de agencia - código de escuela - código del sitio)
+        CASE 
+            WHEN a.AgencyCode IS NOT NULL AND sch.SchoolCode IS NOT NULL AND s.SiteCode IS NOT NULL
+            THEN RIGHT(a.AgencyCode, 3) + '-' + sch.SchoolCode + '-' + 
+                 SUBSTRING(s.SiteCode, CHARINDEX('-', s.SiteCode) + 1, LEN(s.SiteCode))
+            ELSE s.SiteCode
+        END AS SiteCode,
         -- Información de la escuela relacionada
         sch.Name AS SchoolName,
-        sch.Id AS SchoolId
+        sch.Id AS SchoolId,
+        sch.SchoolCode AS SchoolCode
     FROM Site s
         INNER JOIN City c ON s.CityId = c.Id
         INNER JOIN Region r ON s.RegionId = r.Id
