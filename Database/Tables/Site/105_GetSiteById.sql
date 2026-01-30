@@ -77,21 +77,16 @@ BEGIN
     WHERE sodow.SiteId = @id AND sodow.IsActive = 1
     ORDER BY sodow.DayOfWeek;
 
-    -- Obtener servicios de alimentación del sitio
-    SELECT ss.Id, ss.SiteId, ss.ChildGroupId, 
-        scg.Id AS ChildGroupId, scg.GroupName AS ChildGroupName, 
-        scg.NumberOfChildren AS ChildGroupNumberOfChildren,
-        scg.CreatedAt AS ChildGroupCreatedAt, scg.UpdatedAt AS ChildGroupUpdatedAt,
-        ss.Breakfast, ss.BreakfastFrom, ss.BreakfastTo,
-        ss.Lunch, ss.LunchFrom, ss.LunchTo, ss.SnackAM, ss.SnackAMFrom, ss.SnackAMTo,
-        ss.Dinner, ss.DinnerFrom, ss.DinnerTo, ss.SnackPM, ss.SnackPMFrom, ss.SnackPMTo,
-        ss.SnackNight, ss.SnackNightFrom, ss.SnackNightTo, ss.DinnerExtended, ss.DinnerExtendedFrom,
-        ss.DinnerExtendedTo, ss.DinnerAtRisk, ss.DinnerAtRiskFrom, ss.DinnerAtRiskTo,
-        ss.SnackExtended, ss.SnackExtendedFrom, ss.SnackExtendedTo, ss.SnackAtRisk,
-        ss.SnackAtRiskFrom, ss.SnackAtRiskTo, ss.CreatedAt, ss.UpdatedAt
-    FROM SiteService ss
-        INNER JOIN SiteChildGroup scg ON ss.ChildGroupId = scg.Id
-    WHERE ss.SiteId = @id;
+    -- Obtener servicios de alimentación por grupo (SiteChildGroupService)
+    SELECT scgs.Id AS id, scgs.ChildGroupId AS childgroupid, scgs.ServiceTypeId AS servicetypeid,
+        scgs.IsOffered AS isoffered, scgs.FromTime AS fromtime, scgs.ToTime AS totime,
+        scgs.CreatedAt AS createdat, scgs.UpdatedAt AS updatedat,
+        st.Name AS servicetypename, st.NameEN AS servicetypenameen
+    FROM SiteChildGroupService scgs
+    INNER JOIN SiteChildGroup scg ON scgs.ChildGroupId = scg.Id
+    INNER JOIN ServiceType st ON scgs.ServiceTypeId = st.Id
+    WHERE scg.SiteId = @id
+    ORDER BY scg.Id, scgs.ServiceTypeId;
 
     -- Obtener información específica de Day Care Home
     SELECT sdch.Id, sdch.SiteId, sdch.IsAuthorizedToOperate, sdch.HasFamilyDepartmentLicense,

@@ -300,7 +300,40 @@ public class SiteMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
-    /// Mapea un servicio de sitio desde un resultado dinámico a un SiteServiceResponse
+    /// Mapea un slot de SiteChildGroupService desde un resultado dinámico a un SiteChildGroupServiceSlotResponse.
+    /// El SP 105_GetSiteById devuelve alias en minúsculas: id, childgroupid, servicetypeid, isoffered, fromtime, totime, etc.
+    /// </summary>
+    public static SiteChildGroupServiceSlotResponse? MapSiteChildGroupServiceSlotFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            return new SiteChildGroupServiceSlotResponse
+            {
+                Id = (int)(item.Id ?? item.id ?? 0),
+                ChildGroupId = (int)(item.ChildGroupId ?? item.childgroupid ?? 0),
+                ServiceTypeId = (int)(item.ServiceTypeId ?? item.servicetypeid ?? 0),
+                IsOffered = (bool)(item.IsOffered ?? item.isoffered ?? false),
+                FromTime = item.FromTime ?? item.fromtime,
+                ToTime = item.ToTime ?? item.totime,
+                CreatedAt = item.CreatedAt ?? item.createdat ?? DateTime.MinValue,
+                UpdatedAt = item.UpdatedAt ?? item.updatedat,
+                ServiceTypeName = (string?)(item.ServiceTypeName ?? item.servicetypename),
+                ServiceTypeNameEN = (string?)(item.ServiceTypeNameEN ?? item.servicetypenameen),
+            };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea un servicio de sitio desde un resultado dinámico a un SiteServiceResponse (formato ancho, legado).
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
     /// <returns>SiteServiceResponse</returns>

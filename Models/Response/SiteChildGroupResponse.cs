@@ -11,5 +11,5 @@ public class SiteChildGroupResponse
     public int NumberOfChildren { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public List<SiteServiceResponse>? Services { get; set; }
+    public List<SiteChildGroupServiceSlotResponse>? ServiceSlots { get; set; }
 }

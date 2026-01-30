@@ -250,7 +250,15 @@ public class MappingService
     }
 
     /// <summary>
-    /// Mapea un servicio de sitio desde un resultado dinámico a un SiteServiceResponse
+    /// Mapea un slot de SiteChildGroupService desde un resultado dinámico a un SiteChildGroupServiceSlotResponse.
+    /// </summary>
+    public SiteChildGroupServiceSlotResponse? MapSiteChildGroupServiceSlot(dynamic item)
+    {
+        return SiteMapper.MapSiteChildGroupServiceSlotFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea un servicio de sitio desde un resultado dinámico a un SiteServiceResponse (formato ancho, legado).
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
     /// <returns>SiteServiceResponse</returns>

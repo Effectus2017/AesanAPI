@@ -156,12 +156,12 @@ BEGIN
         -- Solo si se insertaron nuevos días y hay servicios configurados para el sitio
         IF @insertedCount > 0
         BEGIN
-            -- Verificar si existe la tabla de servicios del sitio
-            IF EXISTS (SELECT 1 FROM SiteService WHERE SiteId = @siteId)
+            -- Verificar si existen slots de servicios (SiteChildGroupService) para los grupos del sitio
+            IF EXISTS (SELECT 1 FROM SiteChildGroupService scgs INNER JOIN SiteChildGroup scg ON scgs.ChildGroupId = scg.Id WHERE scg.SiteId = @siteId)
             BEGIN
-                -- Preparar tabla de servicios para el SP de inserción
+                -- Preparar tabla de servicios (formato ancho) desde SiteChildGroupService para el SP de inserción
                 DECLARE @services [dbo].[SiteServiceForOperatingDaysType];
-                
+
                 INSERT INTO @services (
                     ChildGroupId,
                     Breakfast, BreakfastFrom, BreakfastTo,
@@ -175,20 +175,42 @@ BEGIN
                     SnackExtended, SnackExtendedFrom, SnackExtendedTo,
                     SnackAtRisk, SnackAtRiskFrom, SnackAtRiskTo
                 )
-                SELECT 
-                    ChildGroupId,
-                    Breakfast, BreakfastFrom, BreakfastTo,
-                    Lunch, LunchFrom, LunchTo,
-                    SnackAM, SnackAMFrom, SnackAMTo,
-                    Dinner, DinnerFrom, DinnerTo,
-                    SnackPM, SnackPMFrom, SnackPMTo,
-                    SnackNight, SnackNightFrom, SnackNightTo,
-                    DinnerExtended, DinnerExtendedFrom, DinnerExtendedTo,
-                    DinnerAtRisk, DinnerAtRiskFrom, DinnerAtRiskTo,
-                    SnackExtended, SnackExtendedFrom, SnackExtendedTo,
-                    SnackAtRisk, SnackAtRiskFrom, SnackAtRiskTo
-                FROM SiteService
-                WHERE SiteId = @siteId;
+                SELECT
+                    scg.Id AS ChildGroupId,
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 1 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 1 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 1 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 2 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 2 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 2 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 3 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 3 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 3 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 4 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 4 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 4 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 5 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 5 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 5 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 6 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 6 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 6 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 7 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 7 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 7 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 8 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 8 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 8 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 9 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 9 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 9 THEN scgs.ToTime END),
+                    CAST(MAX(CAST(CASE WHEN scgs.ServiceTypeId = 10 THEN scgs.IsOffered END AS INT)) AS BIT),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 10 THEN scgs.FromTime END),
+                    MAX(CASE WHEN scgs.ServiceTypeId = 10 THEN scgs.ToTime END)
+                FROM SiteChildGroup scg
+                LEFT JOIN SiteChildGroupService scgs ON scgs.ChildGroupId = scg.Id
+                WHERE scg.SiteId = @siteId
+                GROUP BY scg.Id;
                 
                 -- Obtener rango de fechas de los nuevos días insertados
                 DECLARE @minNewDate DATE, @maxNewDate DATE;

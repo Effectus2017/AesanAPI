@@ -90,7 +90,6 @@ public class SiteRequest
 
     // ===== RELACIONES CON MODELOS REQUEST =====
     public SitePersonInChargeRequest? PersonInCharge { get; set; }
-    public List<SiteServiceRequest> Services { get; set; } = new();
     public SiteDayCareHomeRequest? DayCareHome { get; set; }
     public List<SiteParticipantRequest> Participants { get; set; } = new();
     public List<SiteChildGroupRequest> ChildGroups { get; set; } = new();
