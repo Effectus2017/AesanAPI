@@ -1596,7 +1596,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     service.ChildGroupId, service.Breakfast, service.Lunch, service.Dinner);
 
                 dataTable.Rows.Add(
-                    service.ChildGroupId ?? (object)DBNull.Value,
+                    service.ChildGroupId,
                     // Breakfast - Solo enviar true (1) si es true, DBNull.Value si es false o null
                     ConvertBoolToDbValue(service.Breakfast),
                     service.BreakfastFrom ?? (object)DBNull.Value,
@@ -1712,7 +1712,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         bool? isEnabled,
         TimeSpan? startTime,
         TimeSpan? endTime,
-        int? childGroupId,
+        int childGroupId,
         TimeSpan dayStartTime,
         TimeSpan dayEndTime)
     {

@@ -315,7 +315,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
             return new SiteChildGroupServiceSlotResponse
             {
                 Id = (int)(item.Id ?? item.id ?? 0),
-                ChildGroupId = (int)(item.ChildGroupId ?? item.childgroupid ?? 0),
+                ChildGroupId = item.ChildGroupId ?? item.childgroupid ?? 0,
                 ServiceTypeId = (int)(item.ServiceTypeId ?? item.servicetypeid ?? 0),
                 IsOffered = (bool)(item.IsOffered ?? item.isoffered ?? false),
                 FromTime = item.FromTime ?? item.fromtime,
@@ -345,9 +345,9 @@ public class SiteMapper(Lazy<MappingService> mappingService)
             {
                 Id = item.Id,
                 SiteId = item.SiteId,
-                ChildGroup = item.ChildGroupId != null ? new SiteChildGroupResponse
+                ChildGroup = item.ChildGroupId != null && item.ChildGroupId != 0 ? new SiteChildGroupResponse
                 {
-                    Id = item.ChildGroupId,
+                    Id = item.ChildGroupId ?? 0,
                     SiteId = item.SiteId,
                     GroupName = item.ChildGroupName,
                     NumberOfChildren = item.ChildGroupNumberOfChildren ?? 0,

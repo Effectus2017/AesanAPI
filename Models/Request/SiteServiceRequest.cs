@@ -5,7 +5,11 @@ namespace Api.Models.Request;
 public class SiteServiceRequest
 {
     public int? Id { get; set; }
-    public int? ChildGroupId { get; set; }
+
+    /// <summary>
+    /// ID del grupo de niños (requerido para servicios por día de funcionamiento).
+    /// </summary>
+    public int ChildGroupId { get; set; }
     public bool? Breakfast { get; set; }
     public TimeSpan? BreakfastFrom { get; set; }
     public TimeSpan? BreakfastTo { get; set; }

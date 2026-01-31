@@ -61,8 +61,9 @@ BEGIN
         sods.UpdatedAt
     FROM SiteOperatingDayService sods
         INNER JOIN ServiceType st ON sods.ServiceTypeId = st.Id
-        LEFT JOIN SiteChildGroup scg ON sods.ChildGroupId = scg.Id
+        INNER JOIN SiteChildGroup scg ON sods.ChildGroupId = scg.Id
         INNER JOIN @OperatingDayTable ids ON sods.OperatingDayId = ids.OperatingDayId
+    WHERE sods.ChildGroupId IS NOT NULL
     ORDER BY sods.OperatingDayId, st.DisplayOrder, sods.StartTime;
 
     END TRY

@@ -8,7 +8,7 @@
 CREATE OR ALTER PROCEDURE [dbo].[100_InsertSiteOperatingDayService]
     @operatingDayId INT,
     @serviceTypeId INT,
-    @childGroupId INT = NULL,
+    @childGroupId INT,
     @startTime TIME,
     @endTime TIME,
     @isEnabled BIT = 1,
@@ -35,6 +35,12 @@ BEGIN
         IF @serviceTypeId IS NULL OR @serviceTypeId <= 0
         BEGIN
         RAISERROR('ServiceTypeId es requerido y debe ser mayor a 0', 16, 1);
+        RETURN;
+    END
+
+        IF @childGroupId IS NULL OR @childGroupId <= 0
+        BEGIN
+        RAISERROR('ChildGroupId es requerido y debe ser mayor a 0', 16, 1);
         RETURN;
     END
 
@@ -90,13 +96,13 @@ BEGIN
         RETURN;
     END
 
-        -- Validar que no existe ya este servicio para este día (unique constraint)
+        -- Validar que no existe ya este servicio para este día y grupo (unique constraint)
         IF EXISTS (
             SELECT 1
     FROM SiteOperatingDayService
     WHERE OperatingDayId = @operatingDayId
         AND ServiceTypeId = @serviceTypeId
-        AND (@childGroupId IS NULL AND ChildGroupId IS NULL OR ChildGroupId = @childGroupId)
+        AND ChildGroupId = @childGroupId
         )
         BEGIN
         RAISERROR('Ya existe este servicio para este día y grupo', 16, 1);

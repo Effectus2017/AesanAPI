@@ -158,7 +158,7 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
                 dataTable.Rows.Add(
                     request.OperatingDayId!.Value,
                     request.ServiceTypeId,
-                    request.ChildGroupId ?? (object)DBNull.Value,
+                    request.ChildGroupId,
                     request.StartTime,
                     request.EndTime,
                     request.IsEnabled,

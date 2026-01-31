@@ -14,7 +14,7 @@ BEGIN
         [Id] [int] IDENTITY(1,1) NOT NULL,
         [OperatingDayId] [int] NOT NULL,
         [ServiceTypeId] [int] NOT NULL,
-        [ChildGroupId] [int] NULL,
+        [ChildGroupId] [int] NOT NULL,
         [StartTime] [time] NOT NULL,
         [EndTime] [time] NOT NULL,
         [IsEnabled] [bit] NOT NULL DEFAULT 1,
@@ -35,28 +35,22 @@ BEGIN
     CREATE INDEX [IX_SiteOperatingDayService_StartTime] ON [SiteOperatingDayService]([StartTime]);
     CREATE INDEX [IX_SiteOperatingDayService_EndTime] ON [SiteOperatingDayService]([EndTime]);
 
-    -- UNIQUE: No puede haber servicios duplicados por día (con grupo)
-    CREATE UNIQUE INDEX [UK_SiteOperatingDayService_OperatingDay_ServiceType_ChildGroup] 
-        ON [SiteOperatingDayService]([OperatingDayId], [ServiceTypeId], [ChildGroupId]) 
-        WHERE [ChildGroupId] IS NOT NULL;
-
-    -- UNIQUE: No puede haber servicios duplicados por día (sin grupo)
-    CREATE UNIQUE INDEX [UK_SiteOperatingDayService_OperatingDay_ServiceType] 
-        ON [SiteOperatingDayService]([OperatingDayId], [ServiceTypeId]) 
-        WHERE [ChildGroupId] IS NULL;
+    -- UNIQUE: No puede haber servicios duplicados por día y grupo
+    CREATE UNIQUE INDEX [UK_SiteOperatingDayService_OperatingDay_ServiceType_ChildGroup]
+        ON [SiteOperatingDayService]([OperatingDayId], [ServiceTypeId], [ChildGroupId]);
 
     -- =============================================
     -- Foreign Keys
     -- =============================================
 
-    ALTER TABLE [SiteOperatingDayService] ADD CONSTRAINT [FK_SiteOperatingDayService_OperatingDay] 
+    ALTER TABLE [SiteOperatingDayService] ADD CONSTRAINT [FK_SiteOperatingDayService_OperatingDay]
         FOREIGN KEY([OperatingDayId]) REFERENCES [SiteOperatingDays]([Id]) ON DELETE CASCADE;
 
-    ALTER TABLE [SiteOperatingDayService] ADD CONSTRAINT [FK_SiteOperatingDayService_ServiceType] 
+    ALTER TABLE [SiteOperatingDayService] ADD CONSTRAINT [FK_SiteOperatingDayService_ServiceType]
         FOREIGN KEY([ServiceTypeId]) REFERENCES [ServiceType]([Id]) ON DELETE NO ACTION;
 
-    ALTER TABLE [SiteOperatingDayService] ADD CONSTRAINT [FK_SiteOperatingDayService_ChildGroup] 
-        FOREIGN KEY([ChildGroupId]) REFERENCES [SiteChildGroup]([Id]) ON DELETE SET NULL;
+    ALTER TABLE [SiteOperatingDayService] ADD CONSTRAINT [FK_SiteOperatingDayService_ChildGroup]
+        FOREIGN KEY([ChildGroupId]) REFERENCES [SiteChildGroup]([Id]) ON DELETE NO ACTION;
 
     -- =============================================
     -- Check Constraints
@@ -111,7 +105,7 @@ BEGIN
 
     EXEC sys.sp_addextendedproperty 
     @name = N'MS_Description', 
-    @value = N'ID del grupo de niños (FK a SiteChildGroup, opcional)', 
+    @value = N'ID del grupo de niños (FK a SiteChildGroup, requerido)', 
     @level0type = N'SCHEMA', @level0name = N'dbo', 
     @level1type = N'TABLE', @level1name = N'SiteOperatingDayService', 
     @level2type = N'COLUMN', @level2name = N'ChildGroupId';

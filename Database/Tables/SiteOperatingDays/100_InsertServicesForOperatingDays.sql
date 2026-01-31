@@ -66,7 +66,7 @@ BEGIN
         Id INT IDENTITY(1,1) PRIMARY KEY,
         OperatingDayId INT NOT NULL,
         ServiceTypeId INT NOT NULL,
-        ChildGroupId INT NULL,
+        ChildGroupId INT NOT NULL,
         StartTime TIME NOT NULL,
         EndTime TIME NOT NULL,
         IsEnabled BIT NOT NULL,

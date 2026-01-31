@@ -19,10 +19,13 @@ public class SiteOperatingDayServiceResponse
     /// </summary>
     public string? ServiceTypeNameEN { get; set; }
     
-    public int? ChildGroupId { get; set; }
-    
     /// <summary>
-    /// Nombre del grupo de niños (si aplica)
+    /// ID del grupo de niños (requerido).
+    /// </summary>
+    public int ChildGroupId { get; set; }
+
+    /// <summary>
+    /// Nombre del grupo de niños.
     /// </summary>
     public string? ChildGroupName { get; set; }
     

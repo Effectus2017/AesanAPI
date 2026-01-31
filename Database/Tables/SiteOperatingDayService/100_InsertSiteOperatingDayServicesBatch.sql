@@ -18,7 +18,7 @@ BEGIN
     (
         OperatingDayId INT NOT NULL,
         ServiceTypeId INT NOT NULL,
-        ChildGroupId INT NULL,
+        ChildGroupId INT NOT NULL,
         StartTime TIME NOT NULL,
         EndTime TIME NOT NULL,
         IsEnabled BIT NOT NULL,
@@ -42,6 +42,13 @@ BEGIN
     FROM @services)
         BEGIN
         SET @rowsInserted = 0;
+        RETURN;
+    END
+
+        -- Validar que todos tienen ChildGroupId (requerido)
+        IF EXISTS (SELECT 1 FROM @services WHERE ChildGroupId IS NULL OR ChildGroupId <= 0)
+        BEGIN
+        RAISERROR('ChildGroupId es requerido y debe ser mayor a 0 para todos los servicios', 16, 1);
         RETURN;
     END
         
@@ -92,8 +99,7 @@ BEGIN
         INNER JOIN SiteOperatingDayService sods
         ON sods.OperatingDayId = s.OperatingDayId
             AND sods.ServiceTypeId = s.ServiceTypeId
-            AND (s.ChildGroupId IS NULL AND sods.ChildGroupId IS NULL
-            OR sods.ChildGroupId = s.ChildGroupId)
+            AND sods.ChildGroupId = s.ChildGroupId
         )
         BEGIN
         RAISERROR('Uno o más servicios ya existen para los días y grupos especificados', 16, 1);

@@ -21,10 +21,11 @@ public class SiteOperatingDayServiceRequest
     public int ServiceTypeId { get; set; }
 
     /// <summary>
-    /// ID del grupo de niños (opcional, para Day Care Homes)
+    /// ID del grupo de niños (requerido; los servicios siempre están asociados a un grupo).
     /// </summary>
+    [Required(ErrorMessage = "El ID del grupo de niños es requerido")]
     [Range(1, int.MaxValue, ErrorMessage = "El ID del grupo de niños debe ser mayor a 0")]
-    public int? ChildGroupId { get; set; }
+    public int ChildGroupId { get; set; }
 
     /// <summary>
     /// Hora de inicio del servicio (debe estar dentro del rango del día de funcionamiento)
