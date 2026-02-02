@@ -508,15 +508,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     await UpdateSiteEducationLevels(request.Id.Value, educationLevelIds, dbConnection);
                 }
 
-                // Actualizar días de la semana de operación
+                // Actualizar días de la semana de operación (el sync del calendario se hace después de child groups)
                 if (request.OperatingDaysOfWeek != null && request.OperatingDaysOfWeek.Count > 0)
                 {
                     await UpdateSiteOperatingDaysOfWeek(request.Id.Value, request.OperatingDaysOfWeek, dbConnection);
-                    
-                    // Sincronizar el calendario (SiteOperatingDays) con el nuevo patrón semanal
-                    // Esto elimina días que ya no corresponden al patrón (excepto los agregados manualmente)
-                    // y genera nuevos días según el patrón actualizado
-                    await SyncSiteOperatingDaysWithWeekPattern(request.Id.Value, dbConnection);
                 }
 
                 // Actualizar grupos de niños (los ServiceSlots se actualizan dentro de UpdateSiteChildGroups)
@@ -524,6 +519,37 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 if (request.ChildGroups != null && request.ChildGroups.Count != 0)
                 {
                     childGroupIds = await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups, dbConnection);
+                }
+
+                // Sincronizar calendario después de child groups para que el sync use SiteChildGroupService actualizado
+                if (request.OperatingDaysOfWeek != null && request.OperatingDaysOfWeek.Count > 0)
+                {
+                    await SyncSiteOperatingDaysWithWeekPattern(request.Id.Value, dbConnection);
+                }
+
+                // Reemplazar servicios del calendario en el rango: borrar existentes e insertar desde childGroups.serviceSlots
+                if (request.ChildGroups != null && request.ChildGroups.Count != 0
+                    && request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
+                    && childGroupIds.Count == request.ChildGroups.Count)
+                {
+                    var services = BuildServicesForOperatingDaysFromChildGroups(childGroupIds, request.ChildGroups);
+                    if (services.Count > 0)
+                    {
+                        var deleteParams = new DynamicParameters();
+                        deleteParams.Add("@siteid", request.Id.Value, DbType.Int32);
+                        deleteParams.Add("@operatingfromdate", request.OperatingFromDate.Value.Date, DbType.Date);
+                        deleteParams.Add("@operatingtodate", request.OperatingToDate.Value.Date, DbType.Date);
+                        await dbConnection.ExecuteAsync(
+                            "100_DeleteSiteOperatingDayServicesBySiteAndDateRange",
+                            deleteParams,
+                            commandType: CommandType.StoredProcedure);
+                        await InsertServicesForOperatingDays(
+                            request.Id.Value,
+                            request.OperatingFromDate.Value,
+                            request.OperatingToDate.Value,
+                            services,
+                            dbConnection);
+                    }
                 }
 
                 // Actualizar o insertar información de Persona a Cargo
