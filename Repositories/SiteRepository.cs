@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Api.Data;
@@ -81,6 +82,44 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 .Select(d => _mappingService.MapSiteChildGroup(d))
                 .OfType<SiteChildGroupResponse>()
                 .ToList();
+
+            // Enriquecer slots con OperatingDates (días reales del calendario) si el sitio tiene rango de fechas
+            // Normalizar a DateTime? por si el mapeo desde dynamic devuelve DateTime (struct) en lugar de DateTime?
+            var operatingFrom = data.OperatingFromDate is DateTime of ? (DateTime?)of : data.OperatingFromDate as DateTime?;
+            var operatingTo = data.OperatingToDate is DateTime ot ? (DateTime?)ot : data.OperatingToDate as DateTime?;
+            if (operatingFrom.HasValue && operatingTo.HasValue)
+            {
+                var slotDateParams = new DynamicParameters();
+                slotDateParams.Add("@siteid", id, DbType.Int32);
+                slotDateParams.Add("@fromdate", operatingFrom.Value.Date, DbType.Date);
+                slotDateParams.Add("@todate", operatingTo.Value.Date, DbType.Date);
+                var slotDatesRows = await dbConnection
+                    .QueryAsync<(int childgroupid, int servicetypeid, DateTime operatingdate)>(
+                        "106_GetSiteServiceSlotOperatingDates",
+                        slotDateParams,
+                        commandType: CommandType.StoredProcedure);
+
+                var esEs = CultureInfo.GetCultureInfo("es-ES");
+                var bySlot = slotDatesRows
+                    .GroupBy(r => (r.childgroupid, r.servicetypeid))
+                    .ToDictionary(g => g.Key, g => g.Select(r =>
+                    {
+                        var d = r.operatingdate;
+                        var dayName = esEs.TextInfo.ToTitleCase(esEs.DateTimeFormat.GetDayName(d.DayOfWeek));
+                        return new ServiceSlotOperatingDateDto
+                        {
+                            DayName = dayName,
+                            DayOfMonth = d.Day,
+                            Date = d,
+                        };
+                    }).OrderBy(x => x.Date).ToList());
+
+                foreach (var slot in mappedServiceSlots)
+                {
+                    var key = (slot.ChildGroupId, slot.ServiceTypeId);
+                    slot.OperatingDates = bySlot.TryGetValue(key, out var dates) ? dates : new List<ServiceSlotOperatingDateDto>();
+                }
+            }
 
             // Agrupar slots por ChildGroupId y asignarlos a cada grupo
             foreach (var group in mappedChildGroups)
@@ -564,34 +603,11 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     await UpdateSiteOperatingDaysOfWeek(request.Id.Value, request.OperatingDaysOfWeek, dbConnection);
                 }
 
-                // Actualizar grupos de niños (los ServiceSlots se actualizan dentro de UpdateSiteChildGroups)
-                List<int> childGroupIds = [];
-                if (request.ChildGroups != null && request.ChildGroups.Count != 0)
-                {
-                    childGroupIds = await UpdateSiteChildGroups(request.Id.Value, request.ChildGroups, dbConnection);
-                }
-
-                // Sincronizar calendario después de child groups para que el sync use SiteChildGroupService actualizado
+                // En modo edición los grupos se actualizan solo con update-site-child-groups; no procesar ChildGroups en UpdateSite.
+                // Sincronizar calendario con el patrón de días de la semana (no depende de grupos).
                 if (request.OperatingDaysOfWeek != null && request.OperatingDaysOfWeek.Count > 0)
                 {
                     await SyncSiteOperatingDaysWithWeekPattern(request.Id.Value, dbConnection);
-                }
-
-                // Fusionar servicios del template con el calendario: actualizar/insertar sin borrar lo agregado desde el calendario
-                if (request.ChildGroups != null && request.ChildGroups.Count != 0
-                    && request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
-                    && childGroupIds.Count == request.ChildGroups.Count)
-                {
-                    var services = BuildServicesForOperatingDaysFromChildGroups(childGroupIds, request.ChildGroups);
-                    if (services.Count > 0)
-                    {
-                        await MergeServicesForOperatingDays(
-                            request.Id.Value,
-                            request.OperatingFromDate.Value,
-                            request.OperatingToDate.Value,
-                            services,
-                            dbConnection);
-                    }
                 }
 
                 // Actualizar o insertar información de Persona a Cargo
@@ -678,6 +694,51 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al actualizar el sitio: {Message}", ex.Message);
             throw new Exception($"Error al actualizar el sitio: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza solo los grupos de niños y sus servicios de un sitio (persistencia inmediata desde el modal).
+    /// </summary>
+    public async Task<bool> UpdateSiteChildGroupsOnly(int siteId, List<SiteChildGroupRequest> childGroups)
+    {
+        if (childGroups == null)
+        {
+            childGroups = [];
+        }
+
+        SiteResponse? site = await GetSiteById(siteId);
+        if (site == null)
+        {
+            _logger.LogWarning("Sitio {SiteId} no encontrado para actualizar grupos", siteId);
+            return false;
+        }
+
+        DateTime? operatingFrom = site.OperatingFromDate;
+        DateTime? operatingTo = site.OperatingToDate;
+
+        using var dbConnection = _context.CreateConnection();
+        try
+        {
+            var childGroupIds = await UpdateSiteChildGroups(siteId, childGroups, dbConnection);
+
+            if (childGroupIds != null && childGroupIds.Count > 0)
+            {
+                await SyncSiteOperatingDaysWithWeekPattern(siteId, dbConnection);
+            }
+
+            if (operatingFrom.HasValue && operatingTo.HasValue && childGroups.Count > 0 && childGroupIds != null && childGroupIds.Count == childGroups.Count)
+            {
+                await ReplaceServicesForOperatingDaysBySlot(siteId, operatingFrom.Value, operatingTo.Value, childGroupIds, childGroups, dbConnection);
+            }
+
+            _logger.LogInformation("Grupos de niños actualizados para el sitio {SiteId}", siteId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar grupos de niños del sitio {SiteId}", siteId);
+            throw new Exception($"Error al actualizar grupos del sitio: {ex.Message}", ex);
         }
     }
 
@@ -1741,10 +1802,15 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     siteId, dataTable.Rows.Count, operatingFromDate.Date, operatingToDate.Date);
 
                 // Log adicional: verificar si existen días de funcionamiento
+                var daysCountParams = new DynamicParameters();
+                daysCountParams.Add("@siteid", siteId, DbType.Int32);
+                daysCountParams.Add("@fromdate", operatingFromDate.Date, DbType.Date);
+                daysCountParams.Add("@todate", operatingToDate.Date, DbType.Date);
                 var daysCount = await dbConnection.QuerySingleAsync<int>(
-                    "SELECT COUNT(*) FROM SiteOperatingDays WHERE SiteId = @siteId AND OperatingDate >= @fromDate AND OperatingDate <= @toDate AND IsActive = 1",
-                    new { siteId, fromDate = operatingFromDate.Date, toDate = operatingToDate.Date },
-                    transaction);
+                    "103_GetSiteOperatingDaysCountBySiteAndDateRange",
+                    daysCountParams,
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
 
                 _logger.LogWarning("Días de funcionamiento encontrados para el sitio {SiteId} en el rango {FromDate} a {ToDate}: {DaysCount}",
                     siteId, operatingFromDate.Date, operatingToDate.Date, daysCount);
@@ -1771,8 +1837,121 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Fusiona servicios del template con SiteOperatingDayService: actualiza los existentes e inserta los que no existen.
-    /// No elimina filas, preservando los servicios agregados desde el calendario.
+    /// Reemplaza los servicios de SiteOperatingDayService por slot: para cada (ChildGroupId, ServiceTypeId)
+    /// - Si slot.OperatingDates tiene fechas: borra en el rango y inserta solo en esas fechas.
+    /// - Si slot.OperatingDates está vacío (ej. grupo nuevo): inserta en todos los días operativos del sitio en el rango que aún no tengan ese servicio.
+    /// </summary>
+    private async Task ReplaceServicesForOperatingDaysBySlot(int siteId, DateTime operatingFrom, DateTime operatingTo, List<int> childGroupIds, List<SiteChildGroupRequest> childGroups, IDbConnection dbConnection)
+    {
+        var fromDate = operatingFrom.Date;
+        var toDate = operatingTo.Date;
+        var toInsert = new List<SiteOperatingDayServiceRequest>();
+
+        for (var i = 0; i < childGroups.Count; i++)
+        {
+            var childGroupId = childGroupIds[i];
+            var group = childGroups[i];
+            foreach (var slot in group.ServiceSlots ?? [])
+            {
+                if (!slot.IsOffered || !slot.FromTime.HasValue || !slot.ToTime.HasValue)
+                    continue;
+
+                var hasOperatingDates = slot.OperatingDates != null && slot.OperatingDates.Count > 0;
+
+                if (hasOperatingDates)
+                {
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@siteid", siteId, DbType.Int32);
+                    parameters.Add("@childgroupid", childGroupId, DbType.Int32);
+                    parameters.Add("@servicetypeid", slot.ServiceTypeId, DbType.Int32);
+                    parameters.Add("@operatingfromdate", fromDate, DbType.Date);
+                    parameters.Add("@operatingtodate", toDate, DbType.Date);
+                    await dbConnection.ExecuteAsync("107_DeleteSiteOperatingDayServicesByGroupServiceAndDateRange", parameters, commandType: CommandType.StoredProcedure);
+
+                    foreach (var operatingDate in slot.OperatingDates!)
+                    {
+                        var date = operatingDate.Kind == DateTimeKind.Utc ? operatingDate.Date : operatingDate.Date;
+                        if (date < fromDate || date > toDate)
+                            continue;
+
+                        var operatingDayIdParams = new DynamicParameters();
+                        operatingDayIdParams.Add("@siteid", siteId, DbType.Int32);
+                        operatingDayIdParams.Add("@operatingdate", date, DbType.Date);
+                        var operatingDayId = await dbConnection.QuerySingleOrDefaultAsync<int?>(
+                            "102_GetSiteOperatingDayIdBySiteAndDate",
+                            operatingDayIdParams,
+                            commandType: CommandType.StoredProcedure);
+                        if (!operatingDayId.HasValue || operatingDayId.Value <= 0)
+                        {
+                            _logger.LogWarning("No se encontró día de funcionamiento para sitio {SiteId} y fecha {Date}; se omite inserción para ChildGroupId={ChildGroupId}, ServiceTypeId={ServiceTypeId}",
+                                siteId, date, childGroupId, slot.ServiceTypeId);
+                            continue;
+                        }
+
+                        toInsert.Add(new SiteOperatingDayServiceRequest
+                        {
+                            OperatingDayId = operatingDayId.Value,
+                            ServiceTypeId = slot.ServiceTypeId,
+                            ChildGroupId = childGroupId,
+                            StartTime = slot.FromTime!.Value,
+                            EndTime = slot.ToTime!.Value,
+                            IsEnabled = true,
+                            Comment = null
+                        });
+                    }
+                }
+                else
+                {
+                    var allIdsParams = new DynamicParameters();
+                    allIdsParams.Add("@siteid", siteId, DbType.Int32);
+                    allIdsParams.Add("@fromdate", fromDate, DbType.Date);
+                    allIdsParams.Add("@todate", toDate, DbType.Date);
+                    var allIds = (await dbConnection.QueryAsync<int>(
+                        "104_GetSiteOperatingDayIdsBySiteAndDateRange",
+                        allIdsParams,
+                        commandType: CommandType.StoredProcedure)).ToList();
+
+                    var existingParams = new DynamicParameters();
+                    existingParams.Add("@siteid", siteId, DbType.Int32);
+                    existingParams.Add("@childgroupid", childGroupId, DbType.Int32);
+                    existingParams.Add("@servicetypeid", slot.ServiceTypeId, DbType.Int32);
+                    existingParams.Add("@fromdate", fromDate, DbType.Date);
+                    existingParams.Add("@todate", toDate, DbType.Date);
+                    var existingIds = (await dbConnection.QueryAsync<int>(
+                        "110_GetOperatingDayIdsByGroupServiceAndDateRange",
+                        existingParams,
+                        commandType: CommandType.StoredProcedure)).ToHashSet();
+
+                    var idsToInsert = allIds.Where(id => !existingIds.Contains(id)).ToList();
+                    foreach (var operatingDayId in idsToInsert)
+                    {
+                        toInsert.Add(new SiteOperatingDayServiceRequest
+                        {
+                            OperatingDayId = operatingDayId,
+                            ServiceTypeId = slot.ServiceTypeId,
+                            ChildGroupId = childGroupId,
+                            StartTime = slot.FromTime!.Value,
+                            EndTime = slot.ToTime!.Value,
+                            IsEnabled = true,
+                            Comment = null
+                        });
+                    }
+                }
+            }
+        }
+
+        if (toInsert.Count > 0)
+        {
+            await _siteOperatingDayServiceRepository.Value.CreateServicesBatch(toInsert, dbConnection, null);
+            _logger.LogInformation("Se insertaron {Count} servicios por slot para el sitio {SiteId} (rango {From} a {To})",
+                toInsert.Count, siteId, fromDate, toDate);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza horarios/estado de SiteOperatingDayService existentes con los del formulario.
+    /// No inserta filas nuevas (preserva asignaciones día/grupo/servicio del calendario).
+    /// Las nuevas asignaciones para días recién creados las crea Sync (PASO 3).
     /// </summary>
     private async Task MergeServicesForOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest> services, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
@@ -1890,11 +2069,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             await dbConnection.ExecuteAsync("101_MergeServicesForOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
 
-            var rowsInserted = parameters.Get<int>("@rowsinserted");
             var rowsUpdated = parameters.Get<int>("@rowsupdated");
             _logger.LogInformation(
-                "Merge de servicios para sitio {SiteId}: {RowsInserted} insertados, {RowsUpdated} actualizados (desde {FromDate} hasta {ToDate})",
-                siteId, rowsInserted, rowsUpdated, operatingFromDate.Date, operatingToDate.Date);
+                "Actualización de horarios de servicios para sitio {SiteId}: {RowsUpdated} filas actualizadas (desde {FromDate} hasta {ToDate})",
+                siteId, rowsUpdated, operatingFromDate.Date, operatingToDate.Date);
         }
         catch (Exception ex)
         {

@@ -43,4 +43,12 @@ public interface ISiteRepository
     /// <returns>True si se actualizó correctamente, false en caso contrario</returns>
     Task<bool> UpdateSiteActiveStatus(int siteId, bool isActive, string? inactiveJustification = null, DateTime? inactiveDate = null, bool? providedRationsService = null);
 
+    /// <summary>
+    /// Actualiza solo los grupos de niños y sus servicios de un sitio (persistencia inmediata desde el modal).
+    /// </summary>
+    /// <param name="siteId">ID del sitio</param>
+    /// <param name="childGroups">Lista de grupos de niños con sus servicios</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    Task<bool> UpdateSiteChildGroupsOnly(int siteId, List<SiteChildGroupRequest> childGroups);
+
 }

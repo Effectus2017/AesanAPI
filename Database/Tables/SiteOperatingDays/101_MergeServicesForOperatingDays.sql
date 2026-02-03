@@ -1,10 +1,11 @@
 -- =============================================
 -- Stored Procedure: 101_MergeServicesForOperatingDays
--- Descripción: Fusiona servicios del template con SiteOperatingDayService en un rango de fechas:
---              actualiza los existentes (OperatingDayId, ServiceTypeId, ChildGroupId) e inserta
---              los que no existen. No elimina filas (preserva servicios agregados desde el calendario).
+-- Descripción: Actualiza horarios/estado de SiteOperatingDayService existentes con los del
+--              formulario (template). Inserta filas nuevas cuando no existen (para el flujo
+--              update-site-child-groups: grupos recién creados obtienen días de operación).
+--              Usado solo desde UpdateSiteChildGroupsOnly; UpdateSite ya no llama a Merge.
 -- Fecha: 2026-02-02
--- Versión: 1.0
+-- Versión: 1.2 (UPDATE + INSERT cuando no existe)
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[101_MergeServicesForOperatingDays]
@@ -156,8 +157,8 @@ BEGIN
                 Comment = source.Comment,
                 UpdatedAt = GETDATE()
         WHEN NOT MATCHED BY TARGET THEN
-            INSERT (OperatingDayId, ServiceTypeId, ChildGroupId, StartTime, EndTime, IsEnabled, Comment, CreatedAt)
-            VALUES (source.OperatingDayId, source.ServiceTypeId, source.ChildGroupId, source.StartTime, source.EndTime, source.IsEnabled, source.Comment, GETDATE())
+            INSERT (OperatingDayId, ServiceTypeId, ChildGroupId, StartTime, EndTime, IsEnabled, Comment, CreatedAt, UpdatedAt)
+            VALUES (source.OperatingDayId, source.ServiceTypeId, source.ChildGroupId, source.StartTime, source.EndTime, source.IsEnabled, source.Comment, GETDATE(), NULL)
         OUTPUT $action INTO @MergeOutput (Action);
 
         SET @rowsinserted = (SELECT COUNT(*) FROM @MergeOutput WHERE Action = 'INSERT');

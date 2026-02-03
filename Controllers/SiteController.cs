@@ -99,6 +99,12 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
         {
             if (ModelState.IsValid)
             {
+                var academicRangeError = ValidateAcademicTimesWithinOperatingHours(request);
+                if (academicRangeError != null)
+                {
+                    return BadRequest(academicRangeError);
+                }
+
                 var result = await _unitOfWork.SiteRepository.InsertSite(request);
 
                 if (result)
@@ -141,6 +147,12 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
 
             if (ModelState.IsValid)
             {
+                var academicRangeError = ValidateAcademicTimesWithinOperatingHours(request);
+                if (academicRangeError != null)
+                {
+                    return BadRequest(academicRangeError);
+                }
+
                 var result = await _unitOfWork.SiteRepository.UpdateSite(request);
 
                 if (result)
@@ -160,6 +172,38 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el sitio: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Actualiza solo los grupos de niños y sus servicios de un sitio (persistencia inmediata desde el modal).
+    /// </summary>
+    /// <param name="request">SiteId y lista de ChildGroups</param>
+    /// <returns>True si se actualizó correctamente</returns>
+    [HttpPut("update-site-child-groups")]
+    [SwaggerOperation(Summary = "Actualiza grupos de niños del sitio", Description = "Persiste en el momento los grupos y servicios editados desde el modal.")]
+    public async Task<IActionResult> UpdateSiteChildGroups([FromBody] UpdateSiteChildGroupsRequest request)
+    {
+        try
+        {
+            if (request == null || request.SiteId <= 0)
+            {
+                return BadRequest("SiteId es requerido y debe ser mayor que 0");
+            }
+
+            var result = await _unitOfWork.SiteRepository.UpdateSiteChildGroupsOnly(request.SiteId, request.ChildGroups ?? []);
+
+            if (result)
+            {
+                return Ok(true);
+            }
+
+            return NotFound($"Sitio con ID {request.SiteId} no encontrado");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar grupos del sitio: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -353,5 +397,47 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
             _logger.LogError(ex, "Error al actualizar el estado activo del sitio {SiteId}: {Message}", queryParameters.SiteId, ex.Message);
             return StatusCode(500, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Valida que las horas académicas (FirstAcademicClassStartTime, LastAcademicClassEndTime) estén dentro del rango de funcionamiento (OperatingStartTime, OperatingEndTime).
+    /// </summary>
+    /// <returns>Objeto con mensaje de error para BadRequest, o null si la validación es correcta.</returns>
+    private static object? ValidateAcademicTimesWithinOperatingHours(SiteRequest request)
+    {
+        var hasAcademicStart = request.FirstAcademicClassStartTime.HasValue;
+        var hasAcademicEnd = request.LastAcademicClassEndTime.HasValue;
+        if (!hasAcademicStart && !hasAcademicEnd)
+        {
+            return null;
+        }
+
+        if (!request.OperatingStartTime.HasValue || !request.OperatingEndTime.HasValue)
+        {
+            return new { message = "Las horas de clase académica deben estar dentro del horario de funcionamiento del sitio." };
+        }
+
+        var operatingStart = request.OperatingStartTime.Value;
+        var operatingEnd = request.OperatingEndTime.Value;
+
+        if (hasAcademicStart)
+        {
+            var start = request.FirstAcademicClassStartTime!.Value;
+            if (start < operatingStart || start > operatingEnd)
+            {
+                return new { message = "Las horas de clase académica deben estar dentro del horario de funcionamiento del sitio." };
+            }
+        }
+
+        if (hasAcademicEnd)
+        {
+            var end = request.LastAcademicClassEndTime!.Value;
+            if (end < operatingStart || end > operatingEnd)
+            {
+                return new { message = "Las horas de clase académica deben estar dentro del horario de funcionamiento del sitio." };
+            }
+        }
+
+        return null;
     }
 }

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Api.Models.Request;
 
 public class SiteChildGroupServiceSlotRequest
@@ -11,4 +14,10 @@ public class SiteChildGroupServiceSlotRequest
 
     /// <summary>Hora fin. El frontend envía "toTime" (camelCase).</summary>
     public TimeSpan? ToTime { get; set; }
+
+    /// <summary>
+    /// Fechas de operación donde este servicio debe estar cargado (formato ISO o YYYY-MM-DD).
+    /// Si es null o vacío para un slot ofrecido, no se insertan días (se respeta "ningún día").
+    /// </summary>
+    public List<DateTime>? OperatingDates { get; set; }
 }
