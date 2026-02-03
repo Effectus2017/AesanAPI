@@ -63,6 +63,16 @@ public class SiteRequest
     public TimeSpan? OperatingEndTime { get; set; }
 
     /// <summary>
+    /// Inicio de la primera clase académica (Horario Académico PDAM)
+    /// </summary>
+    public TimeSpan? FirstAcademicClassStartTime { get; set; }
+
+    /// <summary>
+    /// Finalización de la última clase académica (Horario Académico PDAM)
+    /// </summary>
+    public TimeSpan? LastAcademicClassEndTime { get; set; }
+
+    /// <summary>
     /// Días de la semana en que opera el sitio (1=Lunes, 2=Martes, ..., 7=Domingo)
     /// Days of the week the site operates (1=Monday, 2=Tuesday, ..., 7=Sunday)
     /// </summary>

@@ -258,6 +258,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingStartTime", request.OperatingStartTime, DbType.Time, ParameterDirection.Input);
             parameters.Add("@operatingEndTime", request.OperatingEndTime, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@firstacademicclassstarttime", request.FirstAcademicClassStartTime, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lastacademicclassendtime", request.LastAcademicClassEndTime, DbType.Time, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
@@ -505,6 +507,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@operatingDaysCalculated", request.OperatingDaysCalculated, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@operatingStartTime", request.OperatingStartTime, DbType.Time, ParameterDirection.Input);
             parameters.Add("@operatingEndTime", request.OperatingEndTime, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@firstacademicclassstarttime", request.FirstAcademicClassStartTime, DbType.Time, ParameterDirection.Input);
+            parameters.Add("@lastacademicclassendtime", request.LastAcademicClassEndTime, DbType.Time, ParameterDirection.Input);
             parameters.Add("@kitchenTypeId", request.KitchenTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@groupTypeId", request.GroupTypeId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@deliveryTypeId", request.DeliveryTypeId, DbType.Int32, ParameterDirection.Input);
@@ -573,7 +577,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     await SyncSiteOperatingDaysWithWeekPattern(request.Id.Value, dbConnection);
                 }
 
-                // Reemplazar servicios del calendario en el rango: borrar existentes e insertar desde childGroups.serviceSlots
+                // Fusionar servicios del template con el calendario: actualizar/insertar sin borrar lo agregado desde el calendario
                 if (request.ChildGroups != null && request.ChildGroups.Count != 0
                     && request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
                     && childGroupIds.Count == request.ChildGroups.Count)
@@ -581,15 +585,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     var services = BuildServicesForOperatingDaysFromChildGroups(childGroupIds, request.ChildGroups);
                     if (services.Count > 0)
                     {
-                        var deleteParams = new DynamicParameters();
-                        deleteParams.Add("@siteid", request.Id.Value, DbType.Int32);
-                        deleteParams.Add("@operatingfromdate", request.OperatingFromDate.Value.Date, DbType.Date);
-                        deleteParams.Add("@operatingtodate", request.OperatingToDate.Value.Date, DbType.Date);
-                        await dbConnection.ExecuteAsync(
-                            "100_DeleteSiteOperatingDayServicesBySiteAndDateRange",
-                            deleteParams,
-                            commandType: CommandType.StoredProcedure);
-                        await InsertServicesForOperatingDays(
+                        await MergeServicesForOperatingDays(
                             request.Id.Value,
                             request.OperatingFromDate.Value,
                             request.OperatingToDate.Value,
@@ -1762,6 +1758,147 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
+                siteId, operatingFromDate.Date, operatingToDate.Date);
+            throw;
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+            {
+                dbConnection.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fusiona servicios del template con SiteOperatingDayService: actualiza los existentes e inserta los que no existen.
+    /// No elimina filas, preservando los servicios agregados desde el calendario.
+    /// </summary>
+    private async Task MergeServicesForOperatingDays(int siteId, DateTime operatingFromDate, DateTime operatingToDate, List<SiteServiceRequest> services, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            if (services == null || services.Count == 0)
+            {
+                _logger.LogInformation("No hay servicios para fusionar para el sitio {SiteId}", siteId);
+                return;
+            }
+
+            bool HasValidService(SiteServiceRequest service)
+            {
+                return (service.Breakfast == true && service.BreakfastFrom.HasValue && service.BreakfastTo.HasValue) ||
+                       (service.Lunch == true && service.LunchFrom.HasValue && service.LunchTo.HasValue) ||
+                       (service.SnackAM == true && service.SnackAMFrom.HasValue && service.SnackAMTo.HasValue) ||
+                       (service.Dinner == true && service.DinnerFrom.HasValue && service.DinnerTo.HasValue) ||
+                       (service.SnackPM == true && service.SnackPMFrom.HasValue && service.SnackPMTo.HasValue) ||
+                       (service.SnackNight == true && service.SnackNightFrom.HasValue && service.SnackNightTo.HasValue) ||
+                       (service.DinnerExtended == true && service.DinnerExtendedFrom.HasValue && service.DinnerExtendedTo.HasValue) ||
+                       (service.DinnerAtRisk == true && service.DinnerAtRiskFrom.HasValue && service.DinnerAtRiskTo.HasValue) ||
+                       (service.SnackExtended == true && service.SnackExtendedFrom.HasValue && service.SnackExtendedTo.HasValue) ||
+                       (service.SnackAtRisk == true && service.SnackAtRiskFrom.HasValue && service.SnackAtRiskTo.HasValue);
+            }
+
+            var validServices = services.Where(HasValidService).ToList();
+            if (validServices.Count == 0)
+            {
+                _logger.LogInformation("No hay servicios válidos para fusionar para el sitio {SiteId}", siteId);
+                return;
+            }
+
+            var dataTable = new DataTable();
+            dataTable.Columns.Add("ChildGroupId", typeof(int));
+            dataTable.Columns.Add("Breakfast", typeof(bool));
+            dataTable.Columns.Add("BreakfastFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("BreakfastTo", typeof(TimeSpan));
+            dataTable.Columns.Add("Lunch", typeof(bool));
+            dataTable.Columns.Add("LunchFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("LunchTo", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackAM", typeof(bool));
+            dataTable.Columns.Add("SnackAMFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackAMTo", typeof(TimeSpan));
+            dataTable.Columns.Add("Dinner", typeof(bool));
+            dataTable.Columns.Add("DinnerFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerTo", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackPM", typeof(bool));
+            dataTable.Columns.Add("SnackPMFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackPMTo", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackNight", typeof(bool));
+            dataTable.Columns.Add("SnackNightFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackNightTo", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerExtended", typeof(bool));
+            dataTable.Columns.Add("DinnerExtendedFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerExtendedTo", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerAtRisk", typeof(bool));
+            dataTable.Columns.Add("DinnerAtRiskFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("DinnerAtRiskTo", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackExtended", typeof(bool));
+            dataTable.Columns.Add("SnackExtendedFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackExtendedTo", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackAtRisk", typeof(bool));
+            dataTable.Columns.Add("SnackAtRiskFrom", typeof(TimeSpan));
+            dataTable.Columns.Add("SnackAtRiskTo", typeof(TimeSpan));
+
+            object ConvertBoolToDbValue(bool? value) => value == true ? (object)true : DBNull.Value;
+
+            foreach (var service in validServices)
+            {
+                dataTable.Rows.Add(
+                    service.ChildGroupId,
+                    ConvertBoolToDbValue(service.Breakfast),
+                    service.BreakfastFrom ?? (object)DBNull.Value,
+                    service.BreakfastTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.Lunch),
+                    service.LunchFrom ?? (object)DBNull.Value,
+                    service.LunchTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackAM),
+                    service.SnackAMFrom ?? (object)DBNull.Value,
+                    service.SnackAMTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.Dinner),
+                    service.DinnerFrom ?? (object)DBNull.Value,
+                    service.DinnerTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackPM),
+                    service.SnackPMFrom ?? (object)DBNull.Value,
+                    service.SnackPMTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackNight),
+                    service.SnackNightFrom ?? (object)DBNull.Value,
+                    service.SnackNightTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.DinnerExtended),
+                    service.DinnerExtendedFrom ?? (object)DBNull.Value,
+                    service.DinnerExtendedTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.DinnerAtRisk),
+                    service.DinnerAtRiskFrom ?? (object)DBNull.Value,
+                    service.DinnerAtRiskTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackExtended),
+                    service.SnackExtendedFrom ?? (object)DBNull.Value,
+                    service.SnackExtendedTo ?? (object)DBNull.Value,
+                    ConvertBoolToDbValue(service.SnackAtRisk),
+                    service.SnackAtRiskFrom ?? (object)DBNull.Value,
+                    service.SnackAtRiskTo ?? (object)DBNull.Value
+                );
+            }
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@siteid", siteId, DbType.Int32);
+            parameters.Add("@operatingfromdate", operatingFromDate.Date, DbType.Date);
+            parameters.Add("@operatingtodate", operatingToDate.Date, DbType.Date);
+            parameters.Add("@services", dataTable.AsTableValuedParameter("SiteServiceForOperatingDaysType"));
+            parameters.Add("@rowsinserted", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@rowsupdated", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("101_MergeServicesForOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
+
+            var rowsInserted = parameters.Get<int>("@rowsinserted");
+            var rowsUpdated = parameters.Get<int>("@rowsupdated");
+            _logger.LogInformation(
+                "Merge de servicios para sitio {SiteId}: {RowsInserted} insertados, {RowsUpdated} actualizados (desde {FromDate} hasta {ToDate})",
+                siteId, rowsInserted, rowsUpdated, operatingFromDate.Date, operatingToDate.Date);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al fusionar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
             throw;
         }

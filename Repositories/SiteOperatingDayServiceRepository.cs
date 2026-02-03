@@ -103,6 +103,15 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
 
             var id = parameters.Get<int>("@id");
 
+            // Sincronizar con SiteChildGroupService para que "Editar Sitio" muestre el servicio
+            var upsertParams = new DynamicParameters();
+            upsertParams.Add("@childgroupid", request.ChildGroupId, DbType.Int32);
+            upsertParams.Add("@servicetypeid", request.ServiceTypeId, DbType.Int32);
+            upsertParams.Add("@isoffered", true, DbType.Boolean);
+            upsertParams.Add("@fromtime", request.StartTime, DbType.Time);
+            upsertParams.Add("@totime", request.EndTime, DbType.Time);
+            await dbConnection.ExecuteAsync("101_UpsertSiteChildGroupService", upsertParams, commandType: CommandType.StoredProcedure);
+
             _logger.LogInformation("Servicio creado con ID {Id} para el día de funcionamiento {OperatingDayId}",
                 id, request.OperatingDayId);
 
@@ -210,6 +219,19 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
             parameters.Add("@comment", request.Comment, DbType.String);
 
             await dbConnection.ExecuteAsync("100_UpdateSiteOperatingDayService", parameters, commandType: CommandType.StoredProcedure);
+
+            // Sincronizar con SiteChildGroupService para que "Editar Sitio" refleje el cambio
+            var service = await GetServiceById(id);
+            if (service != null)
+            {
+                var upsertParams = new DynamicParameters();
+                upsertParams.Add("@childgroupid", service.ChildGroupId, DbType.Int32);
+                upsertParams.Add("@servicetypeid", service.ServiceTypeId, DbType.Int32);
+                upsertParams.Add("@isoffered", service.IsEnabled, DbType.Boolean);
+                upsertParams.Add("@fromtime", service.StartTime, DbType.Time);
+                upsertParams.Add("@totime", service.EndTime, DbType.Time);
+                await dbConnection.ExecuteAsync("101_UpsertSiteChildGroupService", upsertParams, commandType: CommandType.StoredProcedure);
+            }
 
             _logger.LogInformation("Servicio con ID {Id} actualizado exitosamente", id);
 

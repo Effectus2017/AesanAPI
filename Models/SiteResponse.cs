@@ -41,6 +41,17 @@ public class SiteResponse
     public int? OperatingDaysCalculated { get; set; }
     public TimeSpan? OperatingStartTime { get; set; }
     public TimeSpan? OperatingEndTime { get; set; }
+
+    /// <summary>
+    /// Inicio de la primera clase académica (Horario Académico PDAM)
+    /// </summary>
+    public TimeSpan? FirstAcademicClassStartTime { get; set; }
+
+    /// <summary>
+    /// Finalización de la última clase académica (Horario Académico PDAM)
+    /// </summary>
+    public TimeSpan? LastAcademicClassEndTime { get; set; }
+
     public bool? HasWarehouse { get; set; }
     public bool? HasDiningRoom { get; set; }
     public int? DiningRoomCapacity { get; set; }

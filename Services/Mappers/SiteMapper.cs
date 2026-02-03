@@ -48,6 +48,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 OperatingDaysCalculated = item.OperatingDaysCalculated,
                 OperatingStartTime = item.OperatingStartTime,
                 OperatingEndTime = item.OperatingEndTime,
+                FirstAcademicClassStartTime = item.FirstAcademicClassStartTime,
+                LastAcademicClassEndTime = item.LastAcademicClassEndTime,
                 ServiceTime = item.ServiceTime,
                 HasWarehouse = item.HasWarehouse,
                 HasDiningRoom = item.HasDiningRoom,

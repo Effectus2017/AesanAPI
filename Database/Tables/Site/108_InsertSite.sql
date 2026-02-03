@@ -1,0 +1,94 @@
+-- =============================================
+-- Stored Procedure: 104_InsertSite (versión 108)
+-- Descripción: Inserta un nuevo sitio; incluye Horario Académico (FirstAcademicClassStartTime, LastAcademicClassEndTime)
+-- Fecha: 2026-02-02
+-- =============================================
+
+CREATE OR ALTER PROCEDURE [dbo].[104_InsertSite]
+    @agencyId INT,
+    @name NVARCHAR(255),
+    @startDate DATE = NULL,
+    @address NVARCHAR(255),
+    @cityId INT,
+    @regionId INT,
+    @zipCode NVARCHAR(20),
+    @latitude FLOAT = NULL,
+    @longitude FLOAT = NULL,
+    @postalAddress NVARCHAR(255) = NULL,
+    @postalCityId INT = NULL,
+    @postalRegionId INT = NULL,
+    @postalZipCode NVARCHAR(20) = NULL,
+    @sameAsPhysicalAddress BIT = NULL,
+    @organizationTypeId INT,
+    @centerTypeId INT = NULL,
+    @nonProfit BIT = NULL,
+    @baseYear INT = NULL,
+    @renewalYear INT = NULL,
+    @operatingFromDate DATE = NULL,
+    @operatingToDate DATE = NULL,
+    @operatingDaysCalculated INT = NULL,
+    @operatingStartTime TIME = NULL,
+    @operatingEndTime TIME = NULL,
+    @firstacademicclassstarttime TIME = NULL,
+    @lastacademicclassendtime TIME = NULL,
+    @kitchenTypeId INT = NULL,
+    @groupTypeId INT = NULL,
+    @deliveryTypeId INT = NULL,
+    @sponsorTypeId INT = NULL,
+    @applicantTypeId INT = NULL,
+    @residentialTypeId INT = NULL,
+    @operatingPolicyId INT = NULL,
+    @areaTypeId INT = NULL,
+    @locationTypeId INT = NULL,
+    @hasWarehouse BIT = NULL,
+    @hasDiningRoom BIT = NULL,
+    @diningRoomCapacity INT = NULL,
+    @communityId INT = NULL,
+    @walkersId INT = NULL,
+    @siteTypeId INT = NULL,
+    @siteLocationId INT = NULL,
+    @experienceId INT = NULL,
+    @reviewResultId INT = NULL,
+    @reviewDate DATETIME = NULL,
+    @reviewJustification NVARCHAR(500) = NULL,
+    @siteCode NVARCHAR(20) = NULL,
+    @generalEnrollment INT = NULL,
+    @siteNumber INT,
+    @serviceTime DATETIME = NULL,
+    @inactiveJustification NVARCHAR(500) = NULL,
+    @inactiveDate DATETIME = NULL,
+    @organizedAthleticPrograms BIT = 0,
+    @atRiskService BIT = 0,
+    @publicAllianceContractId INT = NULL,
+    @isAffiliatedCenter BIT = NULL,
+    @isDayCareHomeId INT = NULL,
+    @id INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO Site
+        (
+        AgencyId, Name, StartDate, Address, CityId, RegionId, ZipCode, Latitude, Longitude,
+        PostalAddress, PostalCityId, PostalRegionId, PostalZipCode, SameAsPhysicalAddress,
+        OrganizationTypeId, CenterTypeId, NonProfit, BaseYear, RenewalYear, OperatingFromDate, OperatingToDate, OperatingDaysCalculated, OperatingStartTime, OperatingEndTime, FirstAcademicClassStartTime, LastAcademicClassEndTime,
+        KitchenTypeId, GroupTypeId, DeliveryTypeId, SponsorTypeId, ApplicantTypeId, ResidentialTypeId, OperatingPolicyId, AreaTypeId, LocationTypeId,
+        HasWarehouse, HasDiningRoom, DiningRoomCapacity,
+        CommunityId, WalkersId, SiteTypeId, SiteLocationId, ExperienceId, ReviewResultId, ReviewDate, ReviewJustification,
+        SiteCode, GeneralEnrollment, SiteNumber, ServiceTime, IsActive, InactiveJustification, InactiveDate,
+        OrganizedAthleticPrograms, AtRiskService, PublicAllianceContractId, IsAffiliatedCenter, IsDayCareHomeId, CreatedAt
+        )
+    VALUES
+        (
+            @agencyId, @name, @startDate, @address, @cityId, @regionId, @zipCode, @latitude, @longitude,
+            @postalAddress, @postalCityId, @postalRegionId, @postalZipCode, @sameAsPhysicalAddress,
+            @organizationTypeId, @centerTypeId, @nonProfit, @baseYear, @renewalYear, @operatingFromDate, @operatingToDate, @operatingDaysCalculated, @operatingStartTime, @operatingEndTime, @firstacademicclassstarttime, @lastacademicclassendtime,
+            @kitchenTypeId, @groupTypeId, @deliveryTypeId, @sponsorTypeId, @applicantTypeId, @residentialTypeId, @operatingPolicyId, @areaTypeId, @locationTypeId,
+            @hasWarehouse, @hasDiningRoom, @diningRoomCapacity,
+            @communityId, @walkersId, @siteTypeId, @siteLocationId, @experienceId, @reviewResultId, @reviewDate, @reviewJustification,
+            @siteCode, @generalEnrollment, @siteNumber, @serviceTime, 1, @inactiveJustification, @inactiveDate,
+            @organizedAthleticPrograms, @atRiskService, @publicAllianceContractId, @isAffiliatedCenter, @isDayCareHomeId, GETDATE()
+    );
+
+    SET @id = SCOPE_IDENTITY();
+END;
