@@ -722,10 +722,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             var childGroupIds = await UpdateSiteChildGroups(siteId, childGroups, dbConnection);
 
-            if (childGroupIds != null && childGroupIds.Count > 0)
-            {
-                await SyncSiteOperatingDaysWithWeekPattern(siteId, dbConnection);
-            }
+            // No ejecutar SyncSiteOperatingDaysWithWeekPattern aquí: al guardar solo grupos/servicios
+            // desde el modal no se debe tocar el calendario, para no eliminar días extra agregados
+            // manualmente desde el calendario (IsManuallyAdded=1). El Sync solo se ejecuta en UpdateSite
+            // cuando cambia el patrón de días de la semana.
 
             if (operatingFrom.HasValue && operatingTo.HasValue && childGroups.Count > 0 && childGroupIds != null && childGroupIds.Count == childGroups.Count)
             {

@@ -67,9 +67,22 @@ BEGIN
 
         IF @dayStartTime IS NULL
         BEGIN
-        RAISERROR('El día de funcionamiento especificado no existe', 16, 1);
-        RETURN;
-    END
+            RAISERROR('El día de funcionamiento especificado no existe', 16, 1);
+            RETURN;
+        END
+
+        -- Validar que ChildGroupId existe en SiteChildGroup y pertenece al mismo sitio que el día
+        IF NOT EXISTS (
+            SELECT 1
+            FROM SiteChildGroup scg
+            INNER JOIN SiteOperatingDays sod ON sod.SiteId = scg.SiteId
+            WHERE scg.Id = @childGroupId
+              AND sod.Id = @operatingDayId
+        )
+        BEGIN
+            RAISERROR('El ChildGroupId no existe o no pertenece al mismo sitio que el día de funcionamiento', 16, 1);
+            RETURN;
+        END
 
         -- Validar que el día no es feriado o inactivo
         IF @dayIsHoliday = 1 OR @dayIsActive = 0

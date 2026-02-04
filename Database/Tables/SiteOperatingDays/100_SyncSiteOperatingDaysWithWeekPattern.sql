@@ -67,7 +67,8 @@ BEGIN
         
         -- =============================================
         -- PASO 1: Eliminar días que ya no corresponden al patrón
-        -- Solo eliminar días que NO fueron agregados manualmente
+        -- Solo eliminar días que NO fueron agregados manualmente (IsManuallyAdded = 0 o NULL).
+        -- Los días agregados desde el calendario (IsManuallyAdded = 1) NUNCA se eliminan aquí.
         -- =============================================
         
         -- Identificar días a eliminar:

@@ -121,6 +121,14 @@ public class SiteOperatingDayServiceController(
         }
         catch (Exception ex)
         {
+            var msg = ex.Message ?? string.Empty;
+            if (msg.Contains("ChildGroupId no existe", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("no pertenece al mismo sitio", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(ex, "Validación ChildGroupId al crear servicio");
+                return BadRequest(ex.Message);
+            }
+
             _logger.LogError(ex, "Error al crear servicio para el día de funcionamiento {OperatingDayId}",
                 request.OperatingDayId);
             return StatusCode(500, ex.Message);
