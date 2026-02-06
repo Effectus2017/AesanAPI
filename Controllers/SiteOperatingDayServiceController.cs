@@ -143,7 +143,7 @@ public class SiteOperatingDayServiceController(
     /// <returns>Resultado de la operación</returns>
     [HttpPut("update-service")]
     [SwaggerOperation(Summary = "Actualiza un servicio", Description = "Actualiza la información de un servicio de alimentación existente.")]
-    public async Task<IActionResult> UpdateService([FromQuery] QueryParameters queryParameters, [FromBody] SiteOperatingDayServiceRequest request)
+    public async Task<IActionResult> UpdateService([FromQuery] QueryParameters queryParameters, [FromBody] SiteOperatingDayServiceUpdateRequest request)
     {
         try
         {

@@ -260,6 +260,24 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
     }
 
     /// <summary>
+    /// Obtiene el ID del tipo de grupo Comedor (Dining Room).
+    /// </summary>
+    public async Task<int?> GetGroupTypeIdComedorAsync()
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var result = await db.QueryFirstOrDefaultAsync<dynamic>("101_GetGroupTypeIdComedor", commandType: CommandType.StoredProcedure);
+            return result != null ? (int?)result.id : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el ID del tipo de grupo Comedor");
+            throw new Exception(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Obtiene los tipos de grupo válidos para un programa específico
     /// </summary>
     /// <param name="programId">El ID del programa</param>

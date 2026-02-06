@@ -39,4 +39,12 @@ public interface ISchoolSiteRepository
     /// Elimina una asignación School-Site (soft delete)
     /// </summary>
     Task<bool> DeleteSchoolSite(int id);
+
+    /// <summary>
+    /// Cuenta cuántos sitios con tipo de grupo Comedor tiene una escuela.
+    /// Usado para validar regla: solo un sitio Comedor por escuela.
+    /// </summary>
+    /// <param name="schoolId">ID de la escuela</param>
+    /// <param name="excludeSiteId">ID del sitio a excluir del conteo (ej. en actualización)</param>
+    Task<int> CountSitesWithComedorGroupTypeBySchoolId(int schoolId, int? excludeSiteId = null);
 }

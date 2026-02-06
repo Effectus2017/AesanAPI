@@ -15,7 +15,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository, IGroupTypeRepository groupTypeRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<SiteRepository> _logger = logger;
@@ -23,6 +23,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly Lazy<ISchoolSiteRepository> _schoolSiteRepository = schoolSiteRepository ?? throw new ArgumentNullException(nameof(schoolSiteRepository));
+    private readonly IGroupTypeRepository _groupTypeRepository = groupTypeRepository ?? throw new ArgumentNullException(nameof(groupTypeRepository));
     private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
     private readonly Lazy<ISiteOperatingDayServiceRepository> _siteOperatingDayServiceRepository = siteOperatingDayServiceRepository ?? throw new ArgumentNullException(nameof(siteOperatingDayServiceRepository));
     private readonly Lazy<ISitePersonInChargeRepository> _sitePersonInChargeRepository = sitePersonInChargeRepository ?? throw new ArgumentNullException(nameof(sitePersonInChargeRepository));
@@ -93,24 +94,31 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 slotDateParams.Add("@siteid", id, DbType.Int32);
                 slotDateParams.Add("@fromdate", operatingFrom.Value.Date, DbType.Date);
                 slotDateParams.Add("@todate", operatingTo.Value.Date, DbType.Date);
-                var slotDatesRows = await dbConnection
-                    .QueryAsync<(int childgroupid, int servicetypeid, DateTime operatingdate)>(
-                        "106_GetSiteServiceSlotOperatingDates",
-                        slotDateParams,
-                        commandType: CommandType.StoredProcedure);
+                var slotDatesRows = await dbConnection.QueryAsync(
+                    "106_GetSiteServiceSlotOperatingDates",
+                    slotDateParams,
+                    commandType: CommandType.StoredProcedure);
 
                 var esEs = CultureInfo.GetCultureInfo("es-ES");
                 var bySlot = slotDatesRows
-                    .GroupBy(r => (r.childgroupid, r.servicetypeid))
+                    .GroupBy(r => ((int)r.childgroupid, (int)r.servicetypeid))
                     .ToDictionary(g => g.Key, g => g.Select(r =>
                     {
-                        var d = r.operatingdate;
+                        var d = (DateTime)r.operatingdate;
                         var dayName = esEs.TextInfo.ToTitleCase(esEs.DateTimeFormat.GetDayName(d.DayOfWeek));
+                        var fromTs = r.starttime as TimeSpan?;
+                        var toTs = r.endtime as TimeSpan?;
+                        var isHoliday = r.isholiday as bool? ?? false;
+                        var isWeekend = r.isweekend as bool? ?? false;
                         return new ServiceSlotOperatingDateDto
                         {
                             DayName = dayName,
                             DayOfMonth = d.Day,
                             Date = d,
+                            From = fromTs.HasValue ? fromTs.Value.ToString(@"hh\:mm\:ss") : null,
+                            To = toTs.HasValue ? toTs.Value.ToString(@"hh\:mm\:ss") : null,
+                            IsHoliday = isHoliday,
+                            IsWeekend = isWeekend,
                         };
                     }).OrderBy(x => x.Date).ToList());
 
@@ -245,6 +253,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             await ValidateStrongServicesForProgramsAsync(request);
             await ValidateTimeBetweenServicesAsync(request);
+            await ValidateOneComedorPerSchoolAsync(request, null);
 
             // Recalcular OperatingDaysCalculated desde fechas y días de la semana (fuente de verdad en servidor)
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
@@ -505,6 +514,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             await ValidateStrongServicesForProgramsAsync(request);
             await ValidateTimeBetweenServicesAsync(request);
+            await ValidateOneComedorPerSchoolAsync(request, request.Id);
 
             // Recalcular OperatingDaysCalculated desde fechas y días de la semana (fuente de verdad en servidor)
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
@@ -1837,9 +1847,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Reemplaza los servicios de SiteOperatingDayService por slot: para cada (ChildGroupId, ServiceTypeId)
-    /// - Si slot.OperatingDates tiene fechas: borra en el rango y inserta solo en esas fechas.
-    /// - Si slot.OperatingDates está vacío (ej. grupo nuevo): inserta en todos los días operativos del sitio en el rango que aún no tengan ese servicio.
+    /// Reemplaza los servicios de SiteOperatingDayService por slot. Primero elimina los servicios quitados
+    /// del request (solo esos, sin tocar el resto). Luego: si slot.OperatingDates tiene fechas, borra en el
+    /// rango y inserta solo en esas fechas; si está vacío (servicio nuevo), inserta solo en días del patrón.
     /// </summary>
     private async Task ReplaceServicesForOperatingDaysBySlot(int siteId, DateTime operatingFrom, DateTime operatingTo, List<int> childGroupIds, List<SiteChildGroupRequest> childGroups, IDbConnection dbConnection)
     {
@@ -1847,6 +1857,56 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         var toDate = operatingTo.Date;
         var toInsert = new List<SiteOperatingDayServiceRequest>();
 
+        // Paso 1: Eliminar solo los servicios que el usuario quitó (sin modificar el resto)
+        var slotsToKeep = new HashSet<(int ChildGroupId, int ServiceTypeId)>();
+        for (var i = 0; i < childGroups.Count; i++)
+        {
+            var childGroupId = childGroupIds[i];
+            var group = childGroups[i];
+            foreach (var slot in group.ServiceSlots ?? [])
+            {
+                if (slot.IsOffered && slot.FromTime.HasValue && slot.ToTime.HasValue)
+                {
+                    slotsToKeep.Add((childGroupId, slot.ServiceTypeId));
+                }
+            }
+        }
+
+        var existingPairsParams = new DynamicParameters();
+        existingPairsParams.Add("@siteid", siteId, DbType.Int32);
+        existingPairsParams.Add("@fromdate", fromDate, DbType.Date);
+        existingPairsParams.Add("@todate", toDate, DbType.Date);
+        var existingPairs = await dbConnection.QueryAsync(
+            "111_GetDistinctGroupServicePairsBySiteAndDateRange",
+            existingPairsParams,
+            commandType: CommandType.StoredProcedure);
+        var childGroupIdsSet = childGroupIds.ToHashSet();
+
+        foreach (dynamic row in existingPairs)
+        {
+            var cg = (int)row.childgroupid;
+            var st = (int)row.servicetypeid;
+            if (!childGroupIdsSet.Contains(cg))
+                continue;
+            if (slotsToKeep.Contains((cg, st)))
+                continue;
+
+            var deleteParams = new DynamicParameters();
+            deleteParams.Add("@siteid", siteId, DbType.Int32);
+            deleteParams.Add("@childgroupid", cg, DbType.Int32);
+            deleteParams.Add("@servicetypeid", st, DbType.Int32);
+            deleteParams.Add("@operatingfromdate", fromDate, DbType.Date);
+            deleteParams.Add("@operatingtodate", toDate, DbType.Date);
+            await dbConnection.ExecuteAsync(
+                "107_DeleteSiteOperatingDayServicesByGroupServiceAndDateRange",
+                deleteParams,
+                commandType: CommandType.StoredProcedure);
+            _logger.LogInformation(
+                "Se eliminó servicio quitado: SiteId={SiteId}, ChildGroupId={ChildGroupId}, ServiceTypeId={ServiceTypeId}",
+                siteId, cg, st);
+        }
+
+        // Paso 2: Insertar/actualizar los servicios que permanecen
         for (var i = 0; i < childGroups.Count; i++)
         {
             var childGroupId = childGroupIds[i];
@@ -1907,7 +1967,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     allIdsParams.Add("@fromdate", fromDate, DbType.Date);
                     allIdsParams.Add("@todate", toDate, DbType.Date);
                     var allIds = (await dbConnection.QueryAsync<int>(
-                        "104_GetSiteOperatingDayIdsBySiteAndDateRange",
+                        "105_GetSiteOperatingDayIdsBySiteAndDateRangePatternOnly",
                         allIdsParams,
                         commandType: CommandType.StoredProcedure)).ToList();
 
@@ -2206,6 +2266,49 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             .Where(s => s.IsOffered && s.FromTime.HasValue && s.ToTime.HasValue)
             .Select(s => (s.ServiceTypeId, s.FromTime!.Value, s.ToTime!.Value))
             .ToList();
+    }
+
+    /// <summary>
+    /// Valida que por escuela solo exista un sitio con tipo de grupo Comedor.
+    /// </summary>
+    /// <param name="request">Solicitud del sitio (insert o update)</param>
+    /// <param name="excludeSiteId">ID del sitio a excluir del conteo (null en insert, request.Id en update)</param>
+    private async Task ValidateOneComedorPerSchoolAsync(SiteRequest request, int? excludeSiteId)
+    {
+        if (!request.GroupTypeId.HasValue)
+        {
+            return;
+        }
+
+        var comedorId = await _groupTypeRepository.GetGroupTypeIdComedorAsync();
+        if (!comedorId.HasValue || request.GroupTypeId.Value != comedorId.Value)
+        {
+            return;
+        }
+
+        int? schoolId = null;
+        if (excludeSiteId.HasValue)
+        {
+            var schoolSite = await _schoolSiteRepository.Value.GetSchoolSiteBySiteId(excludeSiteId.Value);
+            schoolId = schoolSite?.SchoolId;
+        }
+        else
+        {
+            schoolId = request.SchoolId;
+        }
+
+        if (!schoolId.HasValue || schoolId.Value <= 0)
+        {
+            return;
+        }
+
+        var count = await _schoolSiteRepository.Value.CountSitesWithComedorGroupTypeBySchoolId(schoolId.Value, excludeSiteId);
+        if (count >= 1)
+        {
+            throw new SiteValidationException(
+                "ONE_COMEDOR_PER_SCHOOL",
+                "La escuela solo puede tener un sitio con tipo de grupo Comedor.");
+        }
     }
 
     /// <summary>

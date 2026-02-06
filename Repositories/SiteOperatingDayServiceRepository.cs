@@ -205,7 +205,7 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
     /// <summary>
     /// Actualiza un servicio existente
     /// </summary>
-    public async Task<bool> UpdateService(int id, SiteOperatingDayServiceRequest request)
+    public async Task<bool> UpdateService(int id, SiteOperatingDayServiceUpdateRequest request)
     {
         try
         {
@@ -227,7 +227,7 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
                 var upsertParams = new DynamicParameters();
                 upsertParams.Add("@childgroupid", service.ChildGroupId, DbType.Int32);
                 upsertParams.Add("@servicetypeid", service.ServiceTypeId, DbType.Int32);
-                upsertParams.Add("@isoffered", service.IsEnabled, DbType.Boolean);
+                upsertParams.Add("@isoffered", true, DbType.Boolean);
                 upsertParams.Add("@fromtime", service.StartTime, DbType.Time);
                 upsertParams.Add("@totime", service.EndTime, DbType.Time);
                 await dbConnection.ExecuteAsync("101_UpsertSiteChildGroupService", upsertParams, commandType: CommandType.StoredProcedure);

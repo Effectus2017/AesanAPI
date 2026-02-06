@@ -61,4 +61,10 @@ public interface IGroupTypeRepository
     /// <param name="programId">ID del programa</param>
     /// <returns>Lista de tipos de grupo válidos para el programa</returns>
     Task<dynamic> GetGroupTypesByProgram(int programId);
+
+    /// <summary>
+    /// Obtiene el ID del tipo de grupo Comedor (Dining Room).
+    /// Usado para validar regla: solo un sitio Comedor por escuela.
+    /// </summary>
+    Task<int?> GetGroupTypeIdComedorAsync();
 }

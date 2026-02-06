@@ -166,6 +166,28 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
     }
 
     /// <summary>
+    /// Cuenta cuántos sitios con tipo de grupo Comedor tiene una escuela.
+    /// </summary>
+    public async Task<int> CountSitesWithComedorGroupTypeBySchoolId(int schoolId, int? excludeSiteId = null)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+            parameters.Add("@excludeSiteId", excludeSiteId, DbType.Int32);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("102_CountSitesWithComedorGroupTypeBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            return result != null ? (int)result.cnt : 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al contar sitios Comedor por school {SchoolId}: {Message}", schoolId, ex.Message);
+            throw new Exception($"Error al contar sitios Comedor por escuela: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// Elimina una asignación School-Site (soft delete)
     /// </summary>
     public async Task<bool> DeleteSchoolSite(int id)

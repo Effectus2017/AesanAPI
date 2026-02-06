@@ -1,9 +1,11 @@
 -- =============================================
 -- Stored Procedure: 106_GetSiteServiceSlotOperatingDates
 -- Descripción: Obtiene las fechas de operación por (ChildGroupId, ServiceTypeId)
---              para enriquecer los slots de servicio con días reales del calendario.
+--              con horas por día (StartTime, EndTime) para mostrar horarios distintos
+--              en días extra del calendario.
+--              Incluye isholiday e isweekend para diferenciar tipos de día en la UI.
 -- Parámetros: @siteid, @fromdate, @todate (rango del sitio).
--- Fecha: 2026-02-03
+-- Fecha: 2026-02-06 (v1.2: añadido isholiday, isweekend)
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[106_GetSiteServiceSlotOperatingDates]
@@ -17,7 +19,11 @@ BEGIN
     SELECT
         childgroupid = sods.ChildGroupId,
         servicetypeid = sods.ServiceTypeId,
-        operatingdate = sod.OperatingDate
+        operatingdate = sod.OperatingDate,
+        starttime = sods.StartTime,
+        endtime = sods.EndTime,
+        isholiday = ISNULL(sod.IsHoliday, 0),
+        isweekend = ISNULL(sod.IsWeekend, 0)
     FROM SiteOperatingDayService sods
     INNER JOIN SiteOperatingDays sod ON sods.OperatingDayId = sod.Id
     WHERE sod.SiteId = @siteid

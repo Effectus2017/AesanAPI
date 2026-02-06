@@ -43,9 +43,9 @@ public interface ISiteOperatingDayServiceRepository
     /// Actualiza un servicio existente
     /// </summary>
     /// <param name="id">ID del servicio</param>
-    /// <param name="request">Datos actualizados del servicio</param>
+    /// <param name="request">Datos actualizados del servicio (solo campos editables)</param>
     /// <returns>True si la operación fue exitosa</returns>
-    Task<bool> UpdateService(int id, SiteOperatingDayServiceRequest request);
+    Task<bool> UpdateService(int id, SiteOperatingDayServiceUpdateRequest request);
 
     /// <summary>
     /// Elimina un servicio
