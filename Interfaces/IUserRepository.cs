@@ -17,6 +17,7 @@ public interface IUserRepository
     /// Métodos para la autenticación
     /// ------------------------------------------------------------------------------------------------
 
+    Task<IList<string>> GetAesanRoleNames();
     Task<dynamic> Login(LoginRequest model);
     Task<dynamic> SelectRole(string userId, string role);
     Task<dynamic> RegisterUserAgency(UserAgencyRequest model);

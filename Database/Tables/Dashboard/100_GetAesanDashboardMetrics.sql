@@ -23,14 +23,14 @@ BEGIN
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsOwner = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType = 'AGENCY_OWNER' AND IsActive = 1
         ),
         AgencyMonitorsCTE
         AS
         (
             SELECT DISTINCT AgencyId, UserId
             FROM AgencyUsers
-            WHERE IsMonitor = 1 AND IsActive = 1
+            WHERE AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1
         )
     -- Obtener conteos por estado de agencia
     SELECT

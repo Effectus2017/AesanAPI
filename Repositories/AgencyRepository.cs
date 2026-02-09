@@ -1122,7 +1122,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@agencyId", agencyId, DbType.Int32);
 
             var evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
-                "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND IsMonitor = 1 AND IsActive = 1",
+                "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1",
                 parameters
             );
 
@@ -1159,14 +1159,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             using IDbConnection dbConnection = _context.CreateConnection();
 
             // 1. Obtener evaluadores asignados directamente a la agencia
-            // Desde AgencyUsers con IsMonitor = 1 y rol "Evaluador"
+            // Desde AgencyUsers con AgencyAssignmentType LIKE 'NUTRE_%' y rol "Evaluador"
             var agencyEvaluatorsQuery = @"
                 SELECT DISTINCT au.UserId
                 FROM AgencyUsers au
                     INNER JOIN AspNetUserRoles ur ON au.UserId = ur.UserId
                     INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                 WHERE au.AgencyId = @agencyId
-                    AND au.IsMonitor = 1
+                    AND au.AgencyAssignmentType LIKE 'NUTRE_%'
                     AND au.IsActive = 1
                     AND r.Name = 'Evaluador'";
 

@@ -3,7 +3,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Api.Constants;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
@@ -313,6 +312,18 @@ public class UserRepository(UserManager<User> userManager,
     /// ------------------------------------------------------------------------------------------------
 
     /// <summary>
+    /// Obtiene los nombres de roles AESAN (IsAesanRole=1) desde la base de datos.
+    /// </summary>
+    public async Task<IList<string>> GetAesanRoleNames()
+    {
+        var roles = await _roleManager.Roles
+            .Where(r => r.IsAesanRole)
+            .Select(r => r.Name!)
+            .ToListAsync();
+        return roles;
+    }
+
+    /// <summary>
     /// Inicia sesión en el sistema
     /// </summary>
     /// <param name="model">El modelo de inicio de sesión</param>
@@ -370,8 +381,9 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "El usuario no tiene un rol asignado. Por favor, contacte al administrador del sistema." });
             }
 
-            // Filtrar roles AESAN para multi-rol
-            var aesanRoles = roles.Where(AesanRoles.IsAesanRole).ToList();
+            // Filtrar roles AESAN para multi-rol (desde DB)
+            var aesanRoleNames = await GetAesanRoleNames();
+            var aesanRoles = roles.Where(r => aesanRoleNames.Contains(r)).ToList();
 
             // Si tiene 2+ roles AESAN: token con primer rol y devolver lista de roles para selección
             IList<string> rolesToUse = roles;
@@ -447,7 +459,8 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(role) || !AesanRoles.IsAesanRole(role))
+            var aesanRoleNames = await GetAesanRoleNames();
+            if (string.IsNullOrWhiteSpace(role) || !aesanRoleNames.Contains(role))
             {
                 return new BadRequestObjectResult(new { Message = "Rol no válido para selección." });
             }

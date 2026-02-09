@@ -6,9 +6,6 @@ using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Api.Services;
-using Api.Data;
-using Dapper;
-using System.Data;
 using System.Security.Claims;
 
 namespace Api.Controllers;
@@ -20,12 +17,11 @@ namespace Api.Controllers;
 /// </summary>
 [Route("site")]
 [ApiController]
-public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService, DapperContext dapperContext) : Controller
+public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService) : Controller
 {
     private readonly ILogger<SiteController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly MessageTemplateService _messageTemplateService = messageTemplateService ?? throw new ArgumentNullException(nameof(messageTemplateService));
-    private readonly DapperContext _dapperContext = dapperContext ?? throw new ArgumentNullException(nameof(dapperContext));
 
     /// <summary>
     /// Obtiene un sitio por su ID
@@ -288,43 +284,8 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                         if (agency != null)
                         {
 
-                            // NOTA: FORMA TEMPORAL DE OBTENER USUARIO ASIGNADO A SPONSOR
-                            // Esta lógica será modificada en el futuro cuando se actualice la estructura de AgencyUsers
-                            // Por ahora, consultamos directamente AgencyUsers para obtener el UserId del evaluador (monitor)
-                            string? evaluatorUserId = null;
-
-                            // Intentar obtener desde el objeto Monitor primero
-                            var monitor = ((dynamic)agency).Monitor;
-                            if (monitor != null)
-                            {
-                                evaluatorUserId = monitor.UserId?.ToString();
-                                _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId desde Monitor: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
-                            }
-
-                            // Si no se encontró, consultar directamente AgencyUsers
-                            if (string.IsNullOrEmpty(evaluatorUserId))
-                            {
-                                var agencyIdInt = (int)agencyId;
-                                _logger.LogInformation("UpdateSiteActiveStatus - Consultando AgencyUsers directamente para AgencyId: {AgencyId}", agencyIdInt);
-                                try
-                                {
-                                    using IDbConnection dbConnection = _dapperContext.CreateConnection();
-                                    var parameters = new DynamicParameters();
-                                    parameters.Add("@agencyId", agencyIdInt, DbType.Int32);
-
-                                    evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
-                                        "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND IsMonitor = 1 AND IsActive = 1",
-                                        parameters
-                                    );
-
-                                    _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId desde AgencyUsers: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogError(ex, "Error obteniendo UserId del monitor desde AgencyUsers para agencia {AgencyId}", agencyIdInt);
-                                }
-                            }
-
+                            var agencyIdInt = (int)agencyId;
+                            var evaluatorUserId = await _unitOfWork.AgencyRepository.GetEvaluatorUserIdByAgencyId(agencyIdInt);
                             _logger.LogInformation("UpdateSiteActiveStatus - EvaluatorUserId final: {EvaluatorUserId}", evaluatorUserId ?? "NULL");
 
                             if (!string.IsNullOrEmpty(evaluatorUserId))
