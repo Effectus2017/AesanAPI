@@ -18,8 +18,9 @@ public interface IUserRepository
     /// ------------------------------------------------------------------------------------------------
 
     Task<dynamic> Login(LoginRequest model);
+    Task<dynamic> SelectRole(string userId, string role);
     Task<dynamic> RegisterUserAgency(UserAgencyRequest model);
-    Task<dynamic> RegisterUser(DTOUser model, string role, int agencyId);
+    Task<dynamic> RegisterUser(DTOUser model, List<string> roles, int agencyId);
     Task<dynamic> Update(DTOUser model);
     Task<dynamic> UpdateWithSP(DTOUser model, string currentUserId);
     Task<dynamic> Delete(string userId);

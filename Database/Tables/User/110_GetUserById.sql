@@ -84,6 +84,7 @@ BEGIN
     WHERE u.Id = @userId;
 
     -- Segunda consulta: Roles del usuario como objetos completos
+    -- Incluir ur.IsActive = 1 o IS NULL para roles insertados por Identity (sin IsActive)
     SELECT
         r.Id,
         r.Name,
@@ -95,7 +96,8 @@ BEGIN
         r.UpdatedAt
     FROM AspNetUserRoles ur
         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-    WHERE ur.UserId = @userId;
+    WHERE ur.UserId = @userId
+        AND (ur.IsActive = 1 OR ur.IsActive IS NULL);
 END;
 GO
 

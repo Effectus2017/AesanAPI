@@ -227,12 +227,12 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
                     return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
                 }
 
-                if (entity.Roles == null)
+                if (entity.Roles == null || !entity.Roles.Any())
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Role' es requerido." });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Roles' es requerido. Debe asignar al menos un rol." });
                 }
 
-                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles.FirstOrDefault() ?? "Monitor", queryParameters.AgencyId);
+                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles, queryParameters.AgencyId);
                 return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
 
             }

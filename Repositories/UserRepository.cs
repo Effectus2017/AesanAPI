@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Api.Constants;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
@@ -128,6 +129,7 @@ public class UserRepository(UserManager<User> userManager,
             var dtoUser = new DTOUser
             {
                 Id = userFromDb.Id,
+                UserName = userFromDb.UserName,
                 Email = userFromDb.Email,
                 FirstName = userFromDb.FirstName,
                 MiddleName = userFromDb.MiddleName,
@@ -139,9 +141,10 @@ public class UserRepository(UserManager<User> userManager,
                 IsActive = userFromDb.IsActive,
                 IsTemporalPasswordActived = userFromDb.IsTemporalPasswordActived,
                 EmailConfirmed = userFromDb.EmailConfirmed,
-                AgencyId = userFromDb.AgencyId ?? 0,
+                AgencyId = userFromDb.AgencyId,
                 AgencyName = userFromDb.AgencyName,
-                Role = userRoles.FirstOrDefault(), // Rol completo (un solo rol por usuario)
+                Roles = userRoles.Select(r => r.Name).ToList(),
+                Role = userRoles.FirstOrDefault(), // Rol completo (primer rol, compatibilidad)
                 Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new DTOAgency { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
             };
 
@@ -228,10 +231,23 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@alls", alls, DbType.Boolean);
 
             var result = await db.QueryMultipleAsync("109_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
-            var users = result.Read<dynamic>().ToList();
+            var rows = result.Read<dynamic>().ToList();
             var count = result.ReadFirstOrDefault<int>();
 
-            var data = users.Select(_mappingService.MapUser).ToList();
+            // Agrupar por Id para usuarios con múltiples roles (1 fila por rol en el SP)
+            var grouped = rows.GroupBy(r => (string)r.Id);
+            var data = grouped.Select(g =>
+            {
+                var first = g.First();
+                var user = _mappingService.MapUser(first);
+                var roleNames = g.Select(x => (string)x.RoleName).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
+                user.Roles = roleNames;
+                if (user.Role == null && roleNames.Any())
+                {
+                    user.Role = new DTOUserRole { Id = (string)first.RoleId, Name = roleNames.First(), NormalizedName = (string)first.RoleNormalizedName ?? "" };
+                }
+                return user;
+            }).ToList();
 
             if (isList)
             {
@@ -354,47 +370,101 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "El usuario no tiene un rol asignado. Por favor, contacte al administrador del sistema." });
             }
 
-            var permissions = await GetPermissionsByUserId(_user.Id);
+            // Filtrar roles AESAN para multi-rol
+            var aesanRoles = roles.Where(AesanRoles.IsAesanRole).ToList();
 
-            // Generar el token de acceso
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
-            var days = 2;
-            var issuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-            var audience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
-
-            _loggingService.LogInformation("Obteniendo la agencia del usuario");
-
-            // Obtener la agencia del usuario
-            var agency = await _agencyUsersRepository.GetUserAssignedAgency(_user.Id);
-            var userPrograms = await _agencyRepository.GetAgencyProgramsByUserId(_user.Id);
-
-            // Obtener los datos de Staff asociados al usuario
-            Staff? staff = null;
-            try
+            // Si tiene 2+ roles AESAN: token con primer rol y devolver lista de roles para selección
+            IList<string> rolesToUse = roles;
+            List<string>? rolesForSelection = null;
+            if (aesanRoles.Count >= 2)
             {
-                staff = await _staffRepository.GetStaffByUserId(_user.Id);
-            }
-            catch (Exception ex)
-            {
-                _loggingService.LogWarning($"No se pudo obtener Staff para el usuario {_user.Id}: {ex.Message}");
-                // Continuar sin Staff si hay error
+                rolesToUse = new List<string> { aesanRoles[0] };
+                rolesForSelection = aesanRoles;
             }
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            var (access_token, expires_in) = await GenerateTokenForUserAsync(_user, rolesToUse);
+
+            if (rolesForSelection != null)
             {
-                Subject = GetClaims(_user, roles, agency, userPrograms, permissions, staff),
-                Expires = DateTime.UtcNow.AddDays(days),
-                Issuer = issuer,
-                Audience = audience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+                return new { token_type = "Bearer", access_token, expires_in, roles = rolesForSelection };
+            }
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var access_token = tokenHandler.WriteToken(token);
+            return new { token_type = "Bearer", access_token, expires_in };
+        }
+        catch (Exception ex)
+        {
+            return new BadRequestObjectResult(ex.Message);
+        }
+    }
 
-            var expires_in = TimeSpan.FromDays(days).TotalSeconds;
+    /// <summary>
+    /// Genera un token JWT para el usuario con los roles especificados.
+    /// Reutilizable para Login y SelectRole.
+    /// </summary>
+    private async Task<(string access_token, double expires_in)> GenerateTokenForUserAsync(User user, IList<string> rolesToUse)
+    {
+        var permissions = await GetPermissionsByUserId(user.Id);
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
+        var days = 2;
+        var issuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
+        var audience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+
+        var agency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
+        var userPrograms = await _agencyRepository.GetAgencyProgramsByUserId(user.Id);
+
+        Staff? staff = null;
+        try
+        {
+            staff = await _staffRepository.GetStaffByUserId(user.Id);
+        }
+        catch (Exception ex)
+        {
+            _loggingService.LogWarning($"No se pudo obtener Staff para el usuario {user.Id}: {ex.Message}");
+        }
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff),
+            Expires = DateTime.UtcNow.AddDays(days),
+            Issuer = issuer,
+            Audience = audience,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var access_token = tokenHandler.WriteToken(token);
+        var expires_in = TimeSpan.FromDays(days).TotalSeconds;
+
+        return (access_token, expires_in);
+    }
+
+    /// <summary>
+    /// Genera un nuevo token con el rol seleccionado para usuarios multi-rol AESAN.
+    /// </summary>
+    public async Task<dynamic> SelectRole(string userId, string role)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(role) || !AesanRoles.IsAesanRole(role))
+            {
+                return new BadRequestObjectResult(new { Message = "Rol no válido para selección." });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            if (userRoles == null || !userRoles.Contains(role))
+            {
+                return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado." });
+            }
+
+            var (access_token, expires_in) = await GenerateTokenForUserAsync(user, new List<string> { role });
 
             return new { token_type = "Bearer", access_token, expires_in };
         }
@@ -442,14 +512,18 @@ public class UserRepository(UserManager<User> userManager,
                 lastName = string.Join(" ", lastNameParts);
             }
 
+            var programsList = userPrograms ?? new List<DTOProgram>();
+            var programNames = string.Join(",", programsList.Select(p => p.Name));
+            var programIds = string.Join(",", programsList.Select(p => p.Id.ToString()));
+
             if (roles.Contains("Monitor"))
             {
                 claims.AddClaim(new Claim("userId", user.Id));
                 claims.AddClaim(new Claim("name", name));
                 claims.AddClaim(new Claim("lastName", lastName));
                 claims.AddClaim(new Claim("email", user.Email ?? ""));
-                claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
-                claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
+                claims.AddClaim(new Claim("programs", programNames));
+                claims.AddClaim(new Claim("programIds", programIds));
 
                 return claims;
             }
@@ -458,11 +532,21 @@ public class UserRepository(UserManager<User> userManager,
             claims.AddClaim(new Claim("name", name));
             claims.AddClaim(new Claim("lastName", lastName));
             claims.AddClaim(new Claim("email", user.Email ?? ""));
-            claims.AddClaim(new Claim("agency", agency.Name ?? ""));
-            claims.AddClaim(new Claim("agencyId", agency.Id.ToString()));
 
-            claims.AddClaim(new Claim("programs", string.Join(",", userPrograms.Select(p => p.Name))));
-            claims.AddClaim(new Claim("programIds", string.Join(",", userPrograms.Select(p => p.Id.ToString()))));
+            // Usuarios con roles administrativos pueden no tener agencia asignada
+            if (agency != null)
+            {
+                claims.AddClaim(new Claim("agency", agency.Name ?? ""));
+                claims.AddClaim(new Claim("agencyId", agency.Id.ToString()));
+            }
+            else
+            {
+                claims.AddClaim(new Claim("agency", ""));
+                claims.AddClaim(new Claim("agencyId", ""));
+            }
+
+            claims.AddClaim(new Claim("programs", programNames));
+            claims.AddClaim(new Claim("programIds", programIds));
 
             if (permissions != null)
             {
@@ -719,23 +803,23 @@ public class UserRepository(UserManager<User> userManager,
     /// Registra un usuario en el sistema
     /// </summary>
     /// <param name="model">El modelo de registro de usuario</param>
-    /// <param name="role">El rol del usuario</param>
+    /// <param name="roles">Los roles del usuario</param>
     /// <returns>El resultado de la operación</returns>
-    public async Task<dynamic> RegisterUser(DTOUser model, string role, int agencyId)
+    public async Task<dynamic> RegisterUser(DTOUser model, List<string> roles, int agencyId)
     {
         try
         {
             // 1. Crear usuario en Identity (solo datos de login)
             User? user = new()
             {
-                UserName = model.Email,
+                UserName = !string.IsNullOrWhiteSpace(model.UserName) ? model.UserName : model.Email,
                 Email = model.Email,
-                EmailConfirmed = false,
+                EmailConfirmed = model.EmailConfirmed,
                 TwoFactorEnabled = false,
                 LockoutEnabled = false,
                 AccessFailedCount = 0,
-                IsTemporalPasswordActived = true,
-                IsActive = true
+                IsTemporalPasswordActived = model.IsTemporalPasswordActived,
+                IsActive = model.IsActive
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -777,13 +861,20 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
             }
 
-            // 3. Asignar el rol al usuario
-            var resultRole = await _userManager.AddToRoleAsync(user, role);
-
-            if (!resultRole.Succeeded)
+            // 3. Asignar los roles al usuario (usar SP para compatibilidad con AspNetUserRoles.IsActive y CreatedAt)
+            var rolesToAssign = roles?.Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? [];
+            if (rolesToAssign.Count == 0)
             {
-                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
-                return new BadRequestObjectResult(resultRole.Errors);
+                rolesToAssign = ["Monitor"];
+            }
+
+            var roleNamesCsv = string.Join(",", rolesToAssign);
+            using (var db = _context.CreateConnection())
+            {
+                var roleParams = new DynamicParameters();
+                roleParams.Add("@userId", user.Id, DbType.String);
+                roleParams.Add("@roleNames", roleNamesCsv, DbType.String);
+                await db.ExecuteAsync("113_InsertUserRoles", roleParams, commandType: CommandType.StoredProcedure);
             }
 
             // Asignar la agencia al usuario
@@ -838,33 +929,34 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@phoneNumber", entity.PhoneNumber, DbType.String);
             parameters.Add("@agencyId", entity.AgencyId, DbType.Int32);
 
-            // Parámetro de rol
-            var roleName = entity.Role?.Name
-                ?? (entity.Roles != null && entity.Roles.Any() ? entity.Roles.First() : null);
+            // Parámetro de roles (múltiples, separados por coma)
+            var roleNamesList = GetRoleNamesFromEntity(entity);
 
-            if (string.IsNullOrEmpty(roleName))
+            if (roleNamesList == null || !roleNamesList.Any())
             {
-                // Si no hay rol, obtener el rol actual del usuario
+                // Si no hay roles, obtener los roles actuales del usuario
                 var user = await _userManager.FindByIdAsync(entity.Id);
                 if (user != null)
                 {
                     var currentRoles = await _userManager.GetRolesAsync(user);
-                    roleName = currentRoles.FirstOrDefault();
+                    roleNamesList = currentRoles.ToList();
                 }
-                
-                if (string.IsNullOrEmpty(roleName))
+
+                if (roleNamesList == null || !roleNamesList.Any())
                 {
                     throw new Exception($"El usuario {entity.Id} no tiene un rol asignado");
                 }
             }
 
-            parameters.Add("@roleName", roleName, DbType.String);
+            var roleNames = string.Join(",", roleNamesList.Where(r => !string.IsNullOrWhiteSpace(r)));
+
+            parameters.Add("@roleNames", roleNames, DbType.String);
 
             // Parámetro de usuario que realiza la asignación
             parameters.Add("@assignedBy", currentUserId, DbType.String);
 
-            // Usar nuevo SP con nueva lógica
-            var result = await db.QueryFirstOrDefaultAsync<int>("111_UpdateUser", parameters, commandType: CommandType.StoredProcedure);
+            // Usar SP 112 con soporte para múltiples roles
+            var result = await db.QueryFirstOrDefaultAsync<int>("112_UpdateUser", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == 1)
             {
@@ -872,7 +964,7 @@ public class UserRepository(UserManager<User> userManager,
                 {
                     { "UserId", entity.Id },
                     { "Email", entity.Email },
-                    { "RoleName", roleName ?? "Sin rol" }
+                    { "RoleNames", roleNames ?? "Sin rol" }
                 });
                 return true;
             }
@@ -895,6 +987,24 @@ public class UserRepository(UserManager<User> userManager,
             });
             throw new Exception($"Error al actualizar el usuario con SP: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Extrae la lista de nombres de rol desde la entidad (Roles o Role).
+    /// </summary>
+    private static List<string>? GetRoleNamesFromEntity(DTOUser entity)
+    {
+        if (entity.Roles != null && entity.Roles.Any())
+        {
+            return entity.Roles.Where(r => !string.IsNullOrWhiteSpace(r)).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(entity.Role?.Name))
+        {
+            return [entity.Role.Name];
+        }
+
+        return null;
     }
 
     /// <summary>

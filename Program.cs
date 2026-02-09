@@ -72,33 +72,38 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"])),
+            ClockSkew = TimeSpan.FromMinutes(5)
         };
 
         // Habilitar detalles de error para debugging
         options.IncludeErrorDetails = true;
 
-        // Configurar SignalR para leer el token desde query string
+        // Configurar SignalR para leer el token desde query string;
+        // para rutas API, leer explícitamente desde Authorization header
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                var accessToken = context.Request.Query["access_token"].ToString();
                 var path = context.HttpContext.Request.Path;
 
-                SignalRLogger.LogToFile($"[JWT] OnMessageReceived - Path: {path}");
-                SignalRLogger.LogToFile($"[JWT] OnMessageReceived - Token presente: {!string.IsNullOrEmpty(accessToken)}");
-
-                // Si la ruta es del hub de mensajes y hay token en query string
-                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/messages"))
+                if (path.StartsWithSegments("/hubs/messages"))
                 {
-                    context.Token = accessToken;
-                    var tokenPreview = accessToken.Length > 20 ? accessToken.Substring(0, 20) + "..." : accessToken;
-                    SignalRLogger.LogToFile($"[JWT] Token establecido para SignalR: {tokenPreview}");
+                    var accessToken = context.Request.Query["access_token"].ToString();
+                    SignalRLogger.LogToFile($"[JWT] OnMessageReceived - Path: {path}, Token presente: {!string.IsNullOrEmpty(accessToken)}");
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        context.Token = accessToken;
+                    }
                 }
                 else
                 {
-                    SignalRLogger.LogToFile($"[JWT] Token NO establecido - Path: {path}, Token vacío: {string.IsNullOrEmpty(accessToken)}");
+                    // Para rutas API (auth/select-role, etc.): leer Bearer desde Authorization header
+                    var authHeader = context.Request.Headers.Authorization.ToString();
+                    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Token = authHeader.Substring(7).Trim();
+                    }
                 }
 
                 return Task.CompletedTask;
@@ -141,6 +146,22 @@ builder.Services
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+// Evitar redirección a Account/Login en APIs: devolver 401 en lugar de redirigir
+// (Identity por defecto redirige a /Account/Login, incompatible con SPA/JWT)
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
 
 // Agregar repositorios a la inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();

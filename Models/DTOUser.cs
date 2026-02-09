@@ -4,6 +4,7 @@ public class DTOUser
 {
     public string Id { get; set; } = "";
     public int StaffId { get; set; } = 0; // StaffId para comparación con DTOStaff
+    public string? UserName { get; set; }
     public string Email { get; set; } = "";
     public string FirstName { get; set; } = "";
     public string? MiddleName { get; set; } = "";
@@ -14,6 +15,8 @@ public class DTOUser
     public bool IsTemporalPasswordActived { get; set; } = false;
     public List<string> Roles { get; set; } = [];
     public DTOUserRole? Role { get; set; } = null; // Rol completo (un solo rol por usuario)
+    /// <summary>Texto para mostrar en listados: roles unidos por coma, o el primer rol si solo hay uno.</summary>
+    public string RolesDisplay => Roles != null && Roles.Count > 0 ? string.Join(", ", Roles) : (Role?.Name ?? "");
     public DTOAgency? Agency { get; set; } = null;
     public string PhoneNumber { get; set; } = "";
     public string Password { get; set; } = "";
