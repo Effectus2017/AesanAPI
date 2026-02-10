@@ -22,6 +22,8 @@ CREATE OR ALTER PROCEDURE [112_UpdateUser]
     @agencyId INT,
     -- Roles (lista separada por comas, ej: 'Administrator,Monitor')
     @roleNames NVARCHAR(MAX),
+    -- Programa asignado al usuario (opcional; para filtrado de información)
+    @programId INT = NULL,
     -- Usuario que está realizando la asignación
     @assignedBy NVARCHAR(450) = NULL
 AS
@@ -190,6 +192,43 @@ BEGIN
                     (UserId, AgencyId, AgencyAssignmentType, IsActive, AssignedBy, CreatedAt, AssignedDate)
                 VALUES
                     (@userId, @agencyId, @agencyAssignmentType, 1, @assignedBy, GETUTCDATE(), GETUTCDATE());
+            END
+        END
+
+        -- 5. Sincronizar programa asignado al usuario (un solo programa desde Admin)
+        IF @programId IS NULL OR @programId = 0
+        BEGIN
+            -- Quitar asignación de programa: desactivar filas en UserProgram
+            UPDATE UserProgram
+            SET IsActive = 0,
+                UpdatedAt = GETUTCDATE()
+            WHERE UserId = @userId;
+        END
+        ELSE
+        BEGIN
+            -- Validar que el programa existe
+            IF EXISTS (SELECT 1 FROM Program WHERE Id = @programId AND IsActive = 1)
+            BEGIN
+                -- Desactivar otras asignaciones del usuario
+                UPDATE UserProgram
+                SET IsActive = 0,
+                    UpdatedAt = GETUTCDATE()
+                WHERE UserId = @userId;
+
+                -- Insertar o reactivar la asignación al programa elegido
+                IF EXISTS (SELECT 1 FROM UserProgram WHERE UserId = @userId AND ProgramId = @programId)
+                BEGIN
+                    UPDATE UserProgram
+                    SET IsActive = 1,
+                        UpdatedAt = GETUTCDATE()
+                    WHERE UserId = @userId
+                        AND ProgramId = @programId;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO UserProgram (UserId, ProgramId, IsActive, CreatedAt)
+                    VALUES (@userId, @programId, 1, GETUTCDATE());
+                END
             END
         END
 

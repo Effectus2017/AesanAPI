@@ -39,5 +39,9 @@ public class DTOUserById
     public string AgencyName { get; set; } = "";
     public string AgencyCode { get; set; } = "";
 
+    // Programa asignado al usuario (para filtrado de información)
+    public int? ProgramId { get; set; }
+    public string? ProgramName { get; set; }
+
     // Roles del usuario (se manejan por separado en el SP)
 }

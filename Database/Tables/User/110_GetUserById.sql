@@ -49,20 +49,9 @@ BEGIN
         a.Id AS AgencyId,
         a.Name AS AgencyName,
         a.AgencyCode,
-        -- Información de UserProgram para saber si tiene asignaciones
-        CASE 
-            WHEN EXISTS (
-                SELECT 1
-        FROM UserProgram up
-        WHERE up.UserId = u.Id
-            AND up.IsActive = 1
-            ) THEN 1 
-            ELSE 0 
-        END AS HasProgramAssignments,
-        (SELECT COUNT(*)
-        FROM UserProgram up
-        WHERE up.UserId = u.Id
-            AND up.IsActive = 1) AS ProgramAssignmentsCount
+        -- Programa asignado al usuario (uno solo, para filtrado de información)
+        p.Id AS ProgramId,
+        p.Name AS ProgramName
     FROM AspNetUsers u
         LEFT JOIN Staff s ON u.Id = s.UserId
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -81,6 +70,9 @@ BEGIN
             au.CreatedAt DESC
         ) au_filtered ON u.Id = au_filtered.UserId
         LEFT JOIN Agency a ON au_filtered.AgencyId = a.Id
+        -- Programa asignado al usuario (primera fila activa en UserProgram)
+        LEFT JOIN (SELECT TOP 1 UserId, ProgramId FROM UserProgram WHERE UserId = @userId AND IsActive = 1) up ON up.UserId = u.Id
+        LEFT JOIN Program p ON p.Id = up.ProgramId
     WHERE u.Id = @userId;
 
     -- Segunda consulta: Roles del usuario como objetos completos

@@ -25,4 +25,8 @@ public class DTOUser
     public string Phone { get; set; } = "";
     public int? AgencyId { get; set; }
     public string? AgencyName { get; set; }
+
+    /// <summary>Programa asignado al usuario (para filtrado de información). Solo en Admin Portal se asigna.</summary>
+    public int? ProgramId { get; set; }
+    public string? ProgramName { get; set; }
 }

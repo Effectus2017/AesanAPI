@@ -21,7 +21,7 @@ BEGIN
         FROM STRING_SPLIT(@names, ',');
     END
 
-    -- Consulta principal
+    -- Consulta principal (excluir AESAN: es agencia, no programa)
     SELECT Id,
         Name,
         Description,
@@ -31,20 +31,22 @@ BEGIN
         CreatedAt,
         UpdatedAt
     FROM Program
-    WHERE (@alls = 1)
-        OR (@names IS NULL)
-        OR (Name IN (SELECT Name
-        FROM #ProgramNames))
+    WHERE Name <> 'AESAN'
+        AND ((@alls = 1)
+            OR (@names IS NULL)
+            OR (Name IN (SELECT Name
+            FROM #ProgramNames)))
     ORDER BY Name
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
     -- Obtener el conteo total
     SELECT COUNT(*)
     FROM Program
-    WHERE (@alls = 1)
-        OR (@names IS NULL)
-        OR (Name IN (SELECT Name
-        FROM #ProgramNames));
+    WHERE Name <> 'AESAN'
+        AND ((@alls = 1)
+            OR (@names IS NULL)
+            OR (Name IN (SELECT Name
+            FROM #ProgramNames)));
 
     -- Limpiar
     DROP TABLE #ProgramNames;

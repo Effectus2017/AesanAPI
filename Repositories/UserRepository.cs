@@ -142,6 +142,8 @@ public class UserRepository(UserManager<User> userManager,
                 EmailConfirmed = userFromDb.EmailConfirmed,
                 AgencyId = userFromDb.AgencyId,
                 AgencyName = userFromDb.AgencyName,
+                ProgramId = userFromDb.ProgramId,
+                ProgramName = userFromDb.ProgramName,
                 Roles = userRoles.Select(r => r.Name).ToList(),
                 Role = userRoles.FirstOrDefault(), // Rol completo (primer rol, compatibilidad)
                 Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new DTOAgency { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
@@ -895,6 +897,20 @@ public class UserRepository(UserManager<User> userManager,
             string agencyAssignmentType = await _agencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(user.Id);
             await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, agencyAssignmentType);
 
+            // Asignar programa al usuario si viene en el modelo (Admin add user)
+            if (model.ProgramId.HasValue && model.ProgramId.Value > 0)
+            {
+                using (var dbProgram = _context.CreateConnection())
+                {
+                    var programParams = new DynamicParameters();
+                    programParams.Add("@userId", user.Id, DbType.String);
+                    programParams.Add("@programId", model.ProgramId.Value, DbType.Int32);
+                    await dbProgram.ExecuteAsync(
+                        "INSERT INTO UserProgram (UserId, ProgramId, IsActive, CreatedAt) VALUES (@userId, @programId, 1, GETUTCDATE())",
+                        programParams);
+                }
+            }
+
             // Enviar correo con la contraseña temporal
             await InsertTemporaryPassword(user.Id, model.Password);
             await _emailService.SendTemporaryPasswordEmail(model.Email, model.Password);
@@ -965,10 +981,13 @@ public class UserRepository(UserManager<User> userManager,
 
             parameters.Add("@roleNames", roleNames, DbType.String);
 
+            // Programa asignado al usuario (opcional)
+            parameters.Add("@programId", entity.ProgramId, DbType.Int32);
+
             // Parámetro de usuario que realiza la asignación
             parameters.Add("@assignedBy", currentUserId, DbType.String);
 
-            // Usar SP 112 con soporte para múltiples roles
+            // Usar SP 112 con soporte para múltiples roles y programa
             var result = await db.QueryFirstOrDefaultAsync<int>("112_UpdateUser", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == 1)
