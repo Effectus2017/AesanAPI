@@ -51,9 +51,17 @@ public interface IKitchenTypeRepository
     Task<bool> DeleteKitchenType(int id);
 
     /// <summary>
-    /// Obtiene los tipos de cocina válidos para un tipo de grupo específico.
+    /// Obtiene los tipos de cocina válidos para un programa.
+    /// </summary>
+    /// <param name="programId">El ID del programa.</param>
+    /// <returns>Los tipos de cocina válidos para el programa.</returns>
+    Task<dynamic> GetKitchenTypesByProgram(int programId);
+
+    /// <summary>
+    /// Obtiene los tipos de cocina válidos para un tipo de grupo y programa específicos.
     /// </summary>
     /// <param name="groupTypeId">El ID del tipo de grupo.</param>
-    /// <returns>Los tipos de cocina válidos para el tipo de grupo.</returns>
-    Task<dynamic> GetKitchenTypesByGroupType(int groupTypeId);
+    /// <param name="programId">El ID del programa.</param>
+    /// <returns>Los tipos de cocina válidos para el tipo de grupo y programa.</returns>
+    Task<dynamic> GetKitchenTypesByGroupType(int groupTypeId, int programId);
 }

@@ -220,26 +220,26 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     }
 
     /// <summary>
-    /// Obtiene los tipos de cocina válidos para un tipo de grupo específico
+    /// Obtiene los tipos de cocina válidos para un programa
     /// </summary>
-    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del tipo de grupo</param>
-    /// <returns>Lista de tipos de cocina válidos para el tipo de grupo, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
-    [HttpGet("get-kitchen-types-by-group-type")]
-    [SwaggerOperation(Summary = "Obtiene tipos de cocina por tipo de grupo", Description = "Devuelve los tipos de cocina válidos para un tipo de grupo específico.")]
-    public async Task<ActionResult> GetKitchenTypesByGroupType([FromQuery] QueryParameters queryParameters)
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del programa</param>
+    /// <returns>Lista de tipos de cocina válidos para el programa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-kitchen-types-by-program")]
+    [SwaggerOperation(Summary = "Obtiene tipos de cocina por programa", Description = "Devuelve los tipos de cocina válidos para un programa específico.")]
+    public async Task<ActionResult> GetKitchenTypesByProgram([FromQuery] QueryParameters queryParameters)
     {
         try
         {
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Obteniendo tipos de cocina para el tipo de grupo: {GroupTypeId}", queryParameters.GroupTypeId);
+                _logger.LogInformation("Obteniendo tipos de cocina para el programa: {ProgramId}", queryParameters.ProgramId);
 
-                if (queryParameters.GroupTypeId == 0)
+                if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
                 {
-                    return BadRequest("El ID del tipo de grupo es requerido");
+                    return BadRequest("El ID del programa es requerido");
                 }
 
-                var result = await _kitchenTypeRepository.GetKitchenTypesByGroupType(queryParameters.GroupTypeId);
+                var result = await _kitchenTypeRepository.GetKitchenTypesByProgram(queryParameters.ProgramId.Value);
 
                 return Ok(result);
             }
@@ -248,7 +248,46 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina para el tipo de grupo {GroupTypeId}", queryParameters.GroupTypeId);
+            _logger.LogError(ex, "Error al obtener los tipos de cocina para el programa {ProgramId}", queryParameters.ProgramId);
+            return StatusCode(500, "Error interno del servidor al obtener los tipos de cocina");
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los tipos de cocina válidos para un tipo de grupo y programa específicos
+    /// </summary>
+    /// <param name="queryParameters">Parámetros de consulta que incluyen el ID del tipo de grupo y del programa</param>
+    /// <returns>Lista de tipos de cocina válidos para el tipo de grupo y programa, BadRequest si los datos son inválidos, o Error interno del servidor en caso de error</returns>
+    [HttpGet("get-kitchen-types-by-group-type")]
+    [SwaggerOperation(Summary = "Obtiene tipos de cocina por tipo de grupo y programa", Description = "Devuelve los tipos de cocina válidos para un tipo de grupo y programa específicos.")]
+    public async Task<ActionResult> GetKitchenTypesByGroupType([FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                _logger.LogInformation("Obteniendo tipos de cocina para el tipo de grupo: {GroupTypeId}, programa: {ProgramId}", queryParameters.GroupTypeId, queryParameters.ProgramId);
+
+                if (queryParameters.GroupTypeId == 0)
+                {
+                    return BadRequest("El ID del tipo de grupo es requerido");
+                }
+
+                if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
+                {
+                    return BadRequest("El ID del programa es requerido");
+                }
+
+                var result = await _kitchenTypeRepository.GetKitchenTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId.Value);
+
+                return Ok(result);
+            }
+
+            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener los tipos de cocina para el tipo de grupo {GroupTypeId} y programa {ProgramId}", queryParameters.GroupTypeId, queryParameters.ProgramId);
             return StatusCode(500, "Error interno del servidor al obtener los tipos de cocina");
         }
     }

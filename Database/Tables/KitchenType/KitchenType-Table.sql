@@ -24,7 +24,7 @@ END
 -- (CC) Cocina Central-Solo Satélites
 -- (CCC) Cocina Central Combinada- Grupos en Comedor y Satélites
 -- (PSS) Preparadas y Servidas en el Sitio- Grupos solo en Comedor
--- Empresa de Gestión de Alimentos (“Food Management Company”)
+-- (CGA) Compañía de Gestión de Alimentos = (FMC) Food Management Company
 
 INSERT INTO KitchenType
     (Name, NameEN, DisplayOrder)
@@ -45,4 +45,4 @@ VALUES
 INSERT INTO KitchenType
     (Name, NameEN, DisplayOrder)
 VALUES
-    ('Empresa de Gestión de Alimentos (“Food Management Company”)', 'Food Management Company', 40);
+    ('(CGA) Compañía de Gestión de Alimentos', '(FMC) Food Management Company', 40);

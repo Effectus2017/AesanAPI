@@ -63,9 +63,9 @@ END
 DECLARE @KitchenTypeNA INT = (SELECT Id
 FROM KitchenType
 WHERE Name = 'N/A');
-DECLARE @KitchenTypeFoodCompany INT = (SELECT Id
+DECLARE @KitchenTypeCGA INT = (SELECT Id
 FROM KitchenType
-WHERE Name LIKE '%Empresa de Gestión de Alimentos%');
+WHERE Name = N'(CGA) Compañía de Gestión de Alimentos');
 
 -- Obtener IDs adicionales de GroupType
 DECLARE @GroupTypeNA INT = (SELECT Id
@@ -91,7 +91,7 @@ FROM GroupType
 WHERE Name = 'Servicio en Camiones');
 
 -- Insertar relaciones para los otros tipos de grupo
--- N/A -> N/A y Empresa de Gestión de Alimentos
+-- N/A -> N/A y (CGA) Compañía de Gestión de Alimentos
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeNA IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -100,15 +100,7 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeNA);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeNA IS NOT NULL
-BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeNA);
-END
-
--- Consume en Comedor-Grupo Externo -> N/A y Empresa de Gestión de Alimentos
+-- Consume en Comedor-Grupo Externo -> N/A y CGA
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeConsumeExterno IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -117,15 +109,7 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeConsumeExterno);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeConsumeExterno IS NOT NULL
-BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeConsumeExterno);
-END
-
--- Consume en Comedor-Grupo Interno -> N/A y Empresa de Gestión de Alimentos
+-- Consume en Comedor-Grupo Interno -> N/A y CGA
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeConsumeInterno IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -134,15 +118,7 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeConsumeInterno);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeConsumeInterno IS NOT NULL
-BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeConsumeInterno);
-END
-
--- Domicilio -> N/A y Empresa de Gestión de Alimentos
+-- Domicilio -> N/A y CGA
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeDomicilio IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -151,15 +127,7 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeDomicilio);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeDomicilio IS NOT NULL
-BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeDomicilio);
-END
-
--- Non-Congregate -> N/A y Empresa de Gestión de Alimentos
+-- Non-Congregate -> N/A y CGA
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeNonCongregate IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -168,15 +136,7 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeNonCongregate);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeNonCongregate IS NOT NULL
-BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeNonCongregate);
-END
-
--- Servi-Expreso/Carro -> N/A y Empresa de Gestión de Alimentos
+-- Servi-Expreso/Carro -> N/A y CGA
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeServiExpreso IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -185,15 +145,7 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeServiExpreso);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeServiExpreso IS NOT NULL
-BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeServiExpreso);
-END
-
--- Servicio en Camiones -> N/A y Empresa de Gestión de Alimentos
+-- Servicio en Camiones -> N/A y CGA
 IF @KitchenTypeNA IS NOT NULL AND @GroupTypeServicioCamiones IS NOT NULL
 BEGIN
     INSERT INTO KitchenTypeGroupType
@@ -202,10 +154,32 @@ BEGIN
         (@KitchenTypeNA, @GroupTypeServicioCamiones);
 END
 
-IF @KitchenTypeFoodCompany IS NOT NULL AND @GroupTypeServicioCamiones IS NOT NULL
+-- (CGA) Compañía de Gestión de Alimentos = (FMC) Food Management Company
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeNA IS NOT NULL
 BEGIN
-    INSERT INTO KitchenTypeGroupType
-        (KitchenTypeId, GroupTypeId)
-    VALUES
-        (@KitchenTypeFoodCompany, @GroupTypeServicioCamiones);
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeNA);
+END
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeConsumeExterno IS NOT NULL
+BEGIN
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeConsumeExterno);
+END
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeConsumeInterno IS NOT NULL
+BEGIN
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeConsumeInterno);
+END
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeDomicilio IS NOT NULL
+BEGIN
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeDomicilio);
+END
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeNonCongregate IS NOT NULL
+BEGIN
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeNonCongregate);
+END
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeServiExpreso IS NOT NULL
+BEGIN
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeServiExpreso);
+END
+IF @KitchenTypeCGA IS NOT NULL AND @GroupTypeServicioCamiones IS NOT NULL
+BEGIN
+    INSERT INTO KitchenTypeGroupType (KitchenTypeId, GroupTypeId) VALUES (@KitchenTypeCGA, @GroupTypeServicioCamiones);
 END
