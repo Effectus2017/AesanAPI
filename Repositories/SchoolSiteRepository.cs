@@ -74,7 +74,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
                 return null;
             }
 
-            return _mappingService.MapSchoolSite(result);
+                return _mappingService.MapSchoolSiteBySiteId(result);
         }
         catch (Exception ex)
         {

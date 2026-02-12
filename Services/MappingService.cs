@@ -215,6 +215,42 @@ public class MappingService
         };
     }
 
+    /// <summary>
+    /// Mapea el resultado de 100_GetSchoolSiteBySiteId a un SchoolSiteResponse.
+    /// El procedimiento almacenado devuelve datos de School y Agency, no del Site.
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>SchoolSiteResponse</returns>
+    public SchoolSiteResponse MapSchoolSiteBySiteId(dynamic item)
+    {
+        return new SchoolSiteResponse
+        {
+            Id = item.Id,
+            SchoolId = item.SchoolId,
+            SiteId = item.SiteId,
+            AssignmentDate = item.AssignmentDate,
+            Comment = item.Comment,
+            IsActive = item.IsActive,
+            CreatedAt = item.CreatedAt,
+            UpdatedAt = item.UpdatedAt,
+            School = new SchoolResponse
+            {
+                Id = item.SchoolId,
+                // El SP devuelve datos de la escuela y la agencia asociada
+                Name = item.SchoolName,
+                SchoolCode = item.SchoolCode,
+                SchoolNumber = item.SchoolNumber,
+                IsActive = item.SchoolIsActive,
+                Agency = new DTOAgency
+                {
+                    Name = item.AgencyName,
+                    Code = item.AgencyCode
+                }
+            }
+            // Site queda null porque el SP no devuelve datos del sitio
+        };
+    }
+
     #endregion
 
     #region Site Mappings
