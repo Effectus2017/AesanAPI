@@ -1,7 +1,7 @@
 -- Insertar relaciones entre OrganizationType y Program
 -- Basado en las reglas de negocio:
 -- PDAM (Id=1): Escuela, Institución Residencial, Satélite (NO Municipios)
--- PSAV (Id=2): Todos (Escuela, Institución Residencial, Municipios, Satélite)
+-- PSAV (Id=2): Escuela y Municipios (NO Satélite, NO Institución Residencial)
 -- PACNA (Id=3): Todos (Escuela, Institución Residencial, Municipios, Satélite)
 
 -- Obtener IDs de Program
@@ -34,29 +34,17 @@ BEGIN
     VALUES (@OrganizationTypeSatelite, @ProgramPDAM);
 END
 
--- Insertar relaciones para PSAV (Id=2) - TODOS
+-- Insertar relaciones para PSAV (Id=2) - Escuela y Municipios
 IF @ProgramPSAV IS NOT NULL AND @OrganizationTypeEscuela IS NOT NULL
 BEGIN
     INSERT INTO OrganizationTypeProgram (OrganizationTypeId, ProgramId)
     VALUES (@OrganizationTypeEscuela, @ProgramPSAV);
 END
 
-IF @ProgramPSAV IS NOT NULL AND @OrganizationTypeInstitucionResidencial IS NOT NULL
-BEGIN
-    INSERT INTO OrganizationTypeProgram (OrganizationTypeId, ProgramId)
-    VALUES (@OrganizationTypeInstitucionResidencial, @ProgramPSAV);
-END
-
 IF @ProgramPSAV IS NOT NULL AND @OrganizationTypeMunicipios IS NOT NULL
 BEGIN
     INSERT INTO OrganizationTypeProgram (OrganizationTypeId, ProgramId)
     VALUES (@OrganizationTypeMunicipios, @ProgramPSAV);
-END
-
-IF @ProgramPSAV IS NOT NULL AND @OrganizationTypeSatelite IS NOT NULL
-BEGIN
-    INSERT INTO OrganizationTypeProgram (OrganizationTypeId, ProgramId)
-    VALUES (@OrganizationTypeSatelite, @ProgramPSAV);
 END
 
 -- Insertar relaciones para PACNA (Id=3) - TODOS

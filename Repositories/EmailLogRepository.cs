@@ -16,7 +16,7 @@ public class EmailLogRepository(DapperContext context, ILoggingService loggingSe
     /// <summary>
     /// Inserta un nuevo registro de envío de correo electrónico
     /// </summary>
-    public async Task<int> InsertEmailLogAsync(EmailLogRequest request)
+    public async Task<int> InsertEmailLog(EmailLogRequest request)
     {
         try
         {
@@ -59,7 +59,7 @@ public class EmailLogRepository(DapperContext context, ILoggingService loggingSe
     /// <summary>
     /// Obtiene todos los logs de correo electrónico de un usuario específico
     /// </summary>
-    public async Task<List<DTOEmailLog>> GetEmailLogsByUserIdAsync(string userId)
+    public async Task<List<DTOEmailLog>> GetEmailLogsByUserId(string userId)
     {
         try
         {
@@ -85,7 +85,7 @@ public class EmailLogRepository(DapperContext context, ILoggingService loggingSe
     /// <summary>
     /// Obtiene todos los logs de correo electrónico para un email específico
     /// </summary>
-    public async Task<List<DTOEmailLog>> GetEmailLogsByEmailAsync(string email)
+    public async Task<List<DTOEmailLog>> GetEmailLogsByEmail(string email)
     {
         try
         {
@@ -111,7 +111,7 @@ public class EmailLogRepository(DapperContext context, ILoggingService loggingSe
     /// <summary>
     /// Obtiene un log de correo electrónico específico por su ID
     /// </summary>
-    public async Task<DTOEmailLog?> GetEmailLogByIdAsync(int id)
+    public async Task<DTOEmailLog?> GetEmailLogById(int id)
     {
         try
         {
@@ -137,7 +137,7 @@ public class EmailLogRepository(DapperContext context, ILoggingService loggingSe
     /// <summary>
     /// Actualiza el estado de un log de correo electrónico
     /// </summary>
-    public async Task<bool> UpdateEmailLogStatusAsync(int id, string status, string? errorMessage = null)
+    public async Task<bool> UpdateEmailLogStatus(int id, string status, string? errorMessage = null)
     {
         try
         {
@@ -171,7 +171,7 @@ public class EmailLogRepository(DapperContext context, ILoggingService loggingSe
     /// <summary>
     /// Obtiene los logs de correos fallidos para un email específico (o todos si email es null)
     /// </summary>
-    public async Task<List<DTOEmailLog>> GetFailedEmailLogsAsync(string? email = null)
+    public async Task<List<DTOEmailLog>> GetFailedEmailLogs(string? email = null)
     {
         try
         {

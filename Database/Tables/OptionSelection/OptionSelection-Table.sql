@@ -125,10 +125,21 @@ VALUES
 INSERT INTO OptionSelection
     (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
 VALUES
-    ('administrativePosition', 'Administrador', 'Administrator', 350, 1, GETDATE()),
-    ('administrativePosition', 'Auxiliar Administrativo', 'Administrative Assistant', 360, 1, GETDATE()),
-    ('administrativePosition', 'Contable', 'Accountant', 370, 1, GETDATE()),
-    ('administrativePosition', 'Director', 'Director', 380, 1, GETDATE());
+    ('Administrador', 'Administrator', 'administrativePosition', 0, 1, 350),
+    ('Auxiliar Administrativo', 'Administrative Assistant', 'administrativePosition', 0, 1, 360),
+    ('Contable', 'Accountant', 'administrativePosition', 0, 1, 370),
+    ('Director', 'Director', 'administrativePosition', 0, 1, 380),
+    ('Director y sub-directora', 'Director and Deputy Director', 'administrativePosition', 0, 1, 385),
+    ('Gerente Apoyo Técnico', 'Technical Support Manager', 'administrativePosition', 0, 1, 390),
+    ('Supervisor de Finanzas', 'Finance Supervisor', 'administrativePosition', 0, 1, 395),
+    ('Coordinadora de Monitoría', 'Monitoring Coordinator', 'administrativePosition', 0, 1, 400),
+    ('Oficial de Cumplimiento', 'Compliance Officer', 'administrativePosition', 0, 1, 405),
+    ('Especialista', 'Specialist', 'administrativePosition', 0, 1, 410),
+    ('Analista', 'Analyst', 'administrativePosition', 0, 1, 415),
+    ('Coordinadora de Programa', 'Program Coordinator', 'administrativePosition', 0, 1, 420),
+    ('Evaluadora', 'Evaluator', 'administrativePosition', 0, 1, 425),
+    ('Nutricionista', 'Nutritionist', 'administrativePosition', 0, 1, 430),
+    ('Asesor Legal', 'Legal Advisor', 'administrativePosition', 0, 1, 435);
 
 -- Puestos para Empleados Operacionales (optionKey = 'operationalPosition')
 INSERT INTO OptionSelection

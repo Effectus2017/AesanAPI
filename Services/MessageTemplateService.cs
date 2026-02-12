@@ -162,8 +162,8 @@ public class MessageTemplateService
 
                 try
                 {
-                    SignalRLogger.LogToFile($"[MessageTemplateService] Llamando a SendEmailWithGmailAsync. Email: {user.Email}, Subject: {emailSubject}");
-                    await _emailService.SendEmailWithGmailAsync(user.Email, emailSubject, emailBody);
+                    SignalRLogger.LogToFile($"[MessageTemplateService] Llamando a SendEmailWithGmail. Email: {user.Email}, Subject: {emailSubject}");
+                    await _emailService.SendEmailWithGmail(user.Email, emailSubject, emailBody);
                     SignalRLogger.LogToFile($"[MessageTemplateService] Email enviado exitosamente a {user.Email}");
                     _logger.LogInformation("Email enviado a {Email} usando template {TemplateKey}", user.Email, emailTemplateKey);
                 }

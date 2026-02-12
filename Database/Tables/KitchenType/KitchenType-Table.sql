@@ -20,16 +20,13 @@ BEGIN
 END
 
 
--- N/A
+-- Orden alfabético por Name:
 -- (CC) Cocina Central-Solo Satélites
 -- (CCC) Cocina Central Combinada- Grupos en Comedor y Satélites
--- (PSS) Preparadas y Servidas en el Sitio- Grupos solo en Comedor
 -- (CGA) Compañía de Gestión de Alimentos = (FMC) Food Management Company
+-- N/A
+-- (PSS) Preparadas y Servidas en el Sitio- Grupos solo en Comedor
 
-INSERT INTO KitchenType
-    (Name, NameEN, DisplayOrder)
-VALUES
-    ('N/A', 'N/A', 0);
 INSERT INTO KitchenType
     (Name, NameEN, DisplayOrder)
 VALUES
@@ -41,8 +38,12 @@ VALUES
 INSERT INTO KitchenType
     (Name, NameEN, DisplayOrder)
 VALUES
-    ('(PSS) Preparadas y Servidas en el Sitio- Grupos solo en Comedor', '(PSS) Prepared and Served on Site- Groups only in Dining Room', 30);
+    ('(CGA) Compañía de Gestión de Alimentos', '(FMC) Food Management Company', 30);
 INSERT INTO KitchenType
     (Name, NameEN, DisplayOrder)
 VALUES
-    ('(CGA) Compañía de Gestión de Alimentos', '(FMC) Food Management Company', 40);
+    ('N/A', 'N/A', 40);
+INSERT INTO KitchenType
+    (Name, NameEN, DisplayOrder)
+VALUES
+    ('(PSS) Preparadas y Servidas en el Sitio- Grupos solo en Comedor', '(PSS) Prepared and Served on Site- Groups only in Dining Room', 50);

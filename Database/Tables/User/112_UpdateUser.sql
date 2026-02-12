@@ -3,7 +3,7 @@
 -- Fecha: 2025-02-XX
 -- Descripción: Actualiza un usuario y su asignación de agencia.
 --              Reemplaza 111_UpdateUser con soporte para múltiples roles.
---              @roleNames: lista de nombres de rol separados por coma (ej: 'Administrator,Monitor').
+--              @roleNames: lista de nombres de rol separados por coma (ej: 'Administrator,Coordinadora de Monitoría').
 --              Para AgencyAssignmentType se usa el primer rol de la lista.
 -- =============================================
 
@@ -20,7 +20,7 @@ CREATE OR ALTER PROCEDURE [112_UpdateUser]
     @motherLastName NVARCHAR(100),
     @phoneNumber NVARCHAR(50),
     @agencyId INT,
-    -- Roles (lista separada por comas, ej: 'Administrator,Monitor')
+    -- Roles (lista separada por comas, ej: 'Administrator,Coordinadora de Monitoría')
     @roleNames NVARCHAR(MAX),
     -- Programa asignado al usuario (opcional; para filtrado de información)
     @programId INT = NULL,
@@ -84,6 +84,13 @@ BEGIN
         -- 3. Actualizar roles si es necesario
         IF @roleNames IS NOT NULL AND LTRIM(RTRIM(@roleNames)) <> ''
         BEGIN
+            -- Capturar roles actuales para auditoría (antes del DELETE)
+            DECLARE @oldRoleNames NVARCHAR(MAX) = NULL;
+            SELECT @oldRoleNames = STRING_AGG(r.Name, ',') WITHIN GROUP (ORDER BY r.Name)
+            FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = @userId;
+
             -- Eliminar roles existentes
             DELETE FROM AspNetUserRoles WHERE UserId = @userId;
 
@@ -93,6 +100,19 @@ BEGIN
             SELECT @userId, r.Id, 1, GETDATE()
             FROM AspNetRoles r
             INNER JOIN STRING_SPLIT(@roleNames, ',') ss ON LTRIM(RTRIM(ss.value)) = r.Name;
+
+            -- Registrar en auditoría (ChangedBy: quien asigna o el propio usuario)
+            DECLARE @auditOpId UNIQUEIDENTIFIER = NULL;
+            DECLARE @changedBy NVARCHAR(450) = COALESCE(NULLIF(LTRIM(RTRIM(@assignedBy)), ''), @userId);
+            EXEC [100_LogAuditChange]
+                @TableName = 'AspNetUserRoles',
+                @EntityId = @userId,
+                @Action = 'UPDATE',
+                @ChangedBy = @changedBy,
+                @OldValues = @oldRoleNames,
+                @NewValues = @roleNames,
+                @BusinessContext = 'UserRolesUpdate',
+                @OperationId = @auditOpId OUTPUT;
         END
 
         -- 4. Actualizar asignación de agencia (CRÍTICO: NO eliminar todas las asignaciones)

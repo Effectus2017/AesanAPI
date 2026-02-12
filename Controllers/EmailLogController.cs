@@ -38,7 +38,7 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
                 }
 
                 _loggingService.LogInformation("Obteniendo logs de correo para usuario {UserId}", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-                var logs = await _emailLogRepository.GetEmailLogsByUserIdAsync(queryParameters.UserId);
+                var logs = await _emailLogRepository.GetEmailLogsByUserId(queryParameters.UserId);
                 return StatusCode(StatusCodes.Status200OK, logs);
             }
 
@@ -70,7 +70,7 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
                 }
 
                 _loggingService.LogInformation("Obteniendo logs de correo para email {Email}", new Dictionary<string, string> { { "Email", queryParameters.Email } });
-                var logs = await _emailLogRepository.GetEmailLogsByEmailAsync(queryParameters.Email);
+                var logs = await _emailLogRepository.GetEmailLogsByEmail(queryParameters.Email);
                 return StatusCode(StatusCodes.Status200OK, logs);
             }
 
@@ -102,7 +102,7 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
                 }
 
                 _loggingService.LogInformation("Obteniendo log de correo con ID {Id}", new Dictionary<string, string> { { "Id", queryParameters.Id.ToString() } });
-                var log = await _emailLogRepository.GetEmailLogByIdAsync(queryParameters.Id);
+                var log = await _emailLogRepository.GetEmailLogById(queryParameters.Id);
                 
                 if (log == null)
                 {
@@ -135,7 +135,7 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
             if (ModelState.IsValid)
             {
                 _loggingService.LogInformation("Obteniendo logs de correos fallidos", new Dictionary<string, string> { { "Email", queryParameters.Email ?? "Todos" } });
-                var logs = await _emailLogRepository.GetFailedEmailLogsAsync(queryParameters.Email);
+                var logs = await _emailLogRepository.GetFailedEmailLogs(queryParameters.Email);
                 return StatusCode(StatusCodes.Status200OK, logs);
             }
 
@@ -170,7 +170,7 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
                 { "ForceResend", request.ForceResend.ToString() }
             });
 
-            var result = await _emailService.ResendEmailAsync(request.EmailLogId, request.ForceResend);
+            var result = await _emailService.ResendEmail(request.EmailLogId, request.ForceResend);
             
             if (result)
             {

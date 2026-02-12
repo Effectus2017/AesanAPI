@@ -12,7 +12,7 @@ BEGIN
     -- Marcar roles AESAN existentes
     UPDATE AspNetRoles
     SET IsAesanRole = 1
-    WHERE Name IN ('Administrator', 'Monitor', 'SuperAdmin', 'Program-Coordinator');
+    WHERE Name IN ('Administrator', 'SuperAdmin', 'Super-Administrador', 'Program-Coordinator', 'Coordinador', 'Evaluador', 'Especialista', 'Nutrición', 'Contable', 'Finanzas', 'Coordinadora de Monitoría', 'Oficial de Cumplimiento', 'Analista', 'Nutricionista', 'Asesor Legal');
 
     PRINT 'Columna IsAesanRole añadida a AspNetRoles.';
 END

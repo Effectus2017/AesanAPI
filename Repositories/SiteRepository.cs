@@ -251,9 +251,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
         try
         {
-            await ValidateStrongServicesForProgramsAsync(request);
-            await ValidateTimeBetweenServicesAsync(request);
-            await ValidateOneComedorPerSchoolAsync(request, null);
+            await ValidateStrongServicesForPrograms(request);
+            await ValidateTimeBetweenServices(request);
+            await ValidateOneComedorPerSchool(request, null);
 
             // Recalcular OperatingDaysCalculated desde fechas y días de la semana (fuente de verdad en servidor)
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
@@ -512,9 +512,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     {
         try
         {
-            await ValidateStrongServicesForProgramsAsync(request);
-            await ValidateTimeBetweenServicesAsync(request);
-            await ValidateOneComedorPerSchoolAsync(request, request.Id);
+            await ValidateStrongServicesForPrograms(request);
+            await ValidateTimeBetweenServices(request);
+            await ValidateOneComedorPerSchool(request, request.Id);
 
             // Recalcular OperatingDaysCalculated desde fechas y días de la semana (fuente de verdad en servidor)
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
@@ -2273,20 +2273,22 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// </summary>
     /// <param name="request">Solicitud del sitio (insert o update)</param>
     /// <param name="excludeSiteId">ID del sitio a excluir del conteo (null en insert, request.Id en update)</param>
-    private async Task ValidateOneComedorPerSchoolAsync(SiteRequest request, int? excludeSiteId)
+    private async Task ValidateOneComedorPerSchool(SiteRequest request, int? excludeSiteId)
     {
         if (!request.GroupTypeId.HasValue)
         {
             return;
         }
 
-        var comedorId = await _groupTypeRepository.GetGroupTypeIdComedorAsync();
+        var comedorId = await _groupTypeRepository.GetGroupTypeIdComedor();
+
         if (!comedorId.HasValue || request.GroupTypeId.Value != comedorId.Value)
         {
             return;
         }
 
-        int? schoolId = null;
+        int? schoolId;
+        
         if (excludeSiteId.HasValue)
         {
             var schoolSite = await _schoolSiteRepository.Value.GetSchoolSiteBySiteId(excludeSiteId.Value);
@@ -2303,6 +2305,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
 
         var count = await _schoolSiteRepository.Value.CountSitesWithComedorGroupTypeBySchoolId(schoolId.Value, excludeSiteId);
+
         if (count >= 1)
         {
             throw new SiteValidationException(
@@ -2314,7 +2317,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <summary>
     /// Valida que para cada programa PDAM(1), PSAV(2), PACNA(3) del sitio haya al menos un servicio fuerte seleccionado. AESAN-257.
     /// </summary>
-    private async Task ValidateStrongServicesForProgramsAsync(SiteRequest request)
+    private async Task ValidateStrongServicesForPrograms(SiteRequest request)
     {
         var programIdsToCheck = (request.ProgramIds ?? [])
             .Where(id => id == 1 || id == 2 || id == 3)
@@ -2360,7 +2363,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <summary>
     /// Valida que entre cada par de servicios consecutivos (por hora) se respete el mínimo de minutos. AESAN-257.
     /// </summary>
-    private async Task ValidateTimeBetweenServicesAsync(SiteRequest request)
+    private async Task ValidateTimeBetweenServices(SiteRequest request)
     {
         var programIdsToCheck = (request.ProgramIds ?? [])
             .Where(id => id == 1 || id == 2 || id == 3)

@@ -15,7 +15,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly ILogger<FileStorageService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public async Task<(string fileName, string relativePath)> SaveFileAsync(IFormFile file, string folder, FileType fileType)
+    public async Task<(string fileName, string relativePath)> SaveFile(IFormFile file, string folder, FileType fileType)
     {
         try
         {
@@ -39,18 +39,18 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
             {
                 try
                 {
-                    await SaveToAzureStorageAsync(file, fullFolder, fileName);
+                    await SaveToAzureStorage(file, fullFolder, fileName);
                     _logger.LogInformation("Archivo guardado exitosamente en Azure Storage: {FileName}", fileName);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error al guardar archivo en Azure Storage. Usando almacenamiento local como fallback");
-                    await SaveToLocalStorageAsync(file, fullFolder, fileName);
+                    await SaveToLocalStorage(file, fullFolder, fileName);
                 }
             }
             else
             {
-                await SaveToLocalStorageAsync(file, fullFolder, fileName);
+                await SaveToLocalStorage(file, fullFolder, fileName);
             }
 
             // Construir la ruta relativa del archivo (sin la URL base)
@@ -76,7 +76,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         };
     }
 
-    private async Task SaveToAzureStorageAsync(IFormFile file, string folder, string fileName)
+    private async Task SaveToAzureStorage(IFormFile file, string folder, string fileName)
     {
         var blobServiceClient = new BlobServiceClient(_appSettings.AzureStorageConnectionString);
         string containerName = folder.ToLower().Replace('/', '-');
@@ -91,7 +91,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         }
     }
 
-    private async Task SaveToLocalStorageAsync(IFormFile file, string folder, string fileName)
+    private async Task SaveToLocalStorage(IFormFile file, string folder, string fileName)
     {
         // Crear la ruta física donde se guardará el archivo
         string uploadsRootFolder = Path.Combine(_environment.ContentRootPath, "uploads", folder);
@@ -106,7 +106,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         _logger.LogInformation("Archivo guardado localmente: {FilePath}", filePath);
     }
 
-    public async Task<bool> DeleteFileAsync(string fileName, FileType fileType)
+    public async Task<bool> DeleteFile(string fileName, FileType fileType)
     {
         try
         {
@@ -128,11 +128,11 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error al eliminar archivo de Azure Storage. Intentando eliminar localmente como fallback");
-                    return await DeleteFromLocalStorageAsync(subFolder, fileName);
+                    return await DeleteFromLocalStorage(subFolder, fileName);
                 }
             }
 
-            return await DeleteFromLocalStorageAsync(subFolder, fileName);
+            return await DeleteFromLocalStorage(subFolder, fileName);
         }
         catch (Exception ex)
         {
@@ -141,7 +141,7 @@ public class FileStorageService(IWebHostEnvironment environment, IOptions<Applic
         }
     }
 
-    private async Task<bool> DeleteFromLocalStorageAsync(string subFolder, string fileName)
+    private async Task<bool> DeleteFromLocalStorage(string subFolder, string fileName)
     {
         string filePath = Path.Combine(_environment.ContentRootPath, "uploads", subFolder, fileName);
         if (File.Exists(filePath))

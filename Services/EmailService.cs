@@ -23,9 +23,9 @@ public class EmailService(
     private readonly IWebHostEnvironment _environment = environment;
     private readonly IEmailTemplateRepository _emailTemplateRepository = emailTemplateRepository;
     private readonly IEmailLogRepository _emailLogRepository = emailLogRepository;
-    public async Task SendEmailAsync(string email, string subject, string message)
+    public async Task SendEmail(string email, string subject, string message)
     {
-        await SendEmailWithGmailAsync(email, subject, message, "Generic");
+        await SendEmailWithGmail(email, subject, message, "Generic");
     }
 
     public async Task SendTemporaryPasswordEmail(string email, string temporaryPassword)
@@ -38,14 +38,14 @@ public class EmailService(
         var template = await GetTemplateAndReplaceVariables("TemporaryPassword", variables);
         if (template.HasValue)
         {
-            await SendEmailWithGmailAsync(email, template.Value.subject, template.Value.body, "TemporaryPassword", null, null, "TemporaryPassword");
+            await SendEmailWithGmail(email, template.Value.subject, template.Value.body, "TemporaryPassword", null, null, "TemporaryPassword");
         }
         else
         {
             // Fallback a código hardcodeado
             var subject = "Tu contraseña temporera";
             var message = $"Tu contraseña temporera es: {temporaryPassword}";
-            await SendEmailWithGmailAsync(email, subject, message, "TemporaryPassword");
+            await SendEmailWithGmail(email, subject, message, "TemporaryPassword");
         }
     }
 
@@ -59,7 +59,7 @@ public class EmailService(
     /// <param name="userId">ID del usuario relacionado (opcional)</param>
     /// <param name="agencyId">ID de la agencia relacionada (opcional)</param>
     /// <param name="emailTemplateKey">Clave del template usado (opcional)</param>
-    public async Task SendEmailWithGmailAsync(string email, string subject, string message, string emailType = "Generic", string? userId = null, int? agencyId = null, string? emailTemplateKey = null)
+    public async Task SendEmailWithGmail(string email, string subject, string message, string emailType = "Generic", string? userId = null, int? agencyId = null, string? emailTemplateKey = null)
     {
         // El logging ahora se maneja en EmailServiceDecorator
         _logger.LogInformation("Enviando correo electrónico con Gmail a {Email}", email);
@@ -196,7 +196,7 @@ public class EmailService(
         var template = await GetTemplateAndReplaceVariables("WelcomeAgency", variables);
         if (template.HasValue)
         {
-            await SendEmailWithGmailAsync(userRequest.Staff.Email, template.Value.subject, template.Value.body, "WelcomeAgency", userId, null, "WelcomeAgency");
+            await SendEmailWithGmail(userRequest.Staff.Email, template.Value.subject, template.Value.body, "WelcomeAgency", userId, null, "WelcomeAgency");
         }
         else
         {
@@ -231,7 +231,7 @@ public class EmailService(
                     (787) 759-2000 / Exts. 4625751, 4625753</p>
                 </div>";
 
-            await SendEmailWithGmailAsync(userRequest.Staff.Email, subject, htmlBody, "WelcomeAgency", userId);
+            await SendEmailWithGmail(userRequest.Staff.Email, subject, htmlBody, "WelcomeAgency", userId);
         }
     }
 
@@ -259,7 +259,7 @@ public class EmailService(
         if (template.HasValue)
         {
 #if !DEBUG
-            await SendEmailWithGmailAsync(user.Email, template.Value.subject, template.Value.body, "ApprovalSponsor", user.Id, null, "ApprovalSponsor");
+            await SendEmailWithGmail(user.Email, template.Value.subject, template.Value.body, "ApprovalSponsor", user.Id, null, "ApprovalSponsor");
 #endif
         }
         else
@@ -295,7 +295,7 @@ public class EmailService(
                 </div>";
 
 #if !DEBUG
-            await SendEmailWithGmailAsync(user.Email, subject, htmlBody, "ApprovalSponsor", user.Id);
+            await SendEmailWithGmail(user.Email, subject, htmlBody, "ApprovalSponsor", user.Id);
 #endif
         }
     }
@@ -321,7 +321,7 @@ public class EmailService(
         if (template.HasValue)
         {
 #if !DEBUG
-            await SendEmailWithGmailAsync(email, template.Value.subject, template.Value.body, "DenialSponsor", null, null, "DenialSponsor");
+            await SendEmailWithGmail(email, template.Value.subject, template.Value.body, "DenialSponsor", null, null, "DenialSponsor");
 #endif
         }
         else
@@ -346,7 +346,7 @@ public class EmailService(
                 </div>";
 
 #if !DEBUG
-            await SendEmailWithGmailAsync(email, subject, htmlBody, "DenialSponsor");
+            await SendEmailWithGmail(email, subject, htmlBody, "DenialSponsor");
 #endif
         }
     }
@@ -408,7 +408,7 @@ public class EmailService(
             }
 #endif
 
-            await SendEmailWithGmailAsync(recipientEmail, subject, body, "AgencyAssignment", user.Id, agency.Id, "AgencyAssignment");
+            await SendEmailWithGmail(recipientEmail, subject, body, "AgencyAssignment", user.Id, agency.Id, "AgencyAssignment");
             _logger.LogInformation($"Correo de asignación de agencia enviado exitosamente a {recipientEmail}");
         }
         catch (Exception ex)
@@ -461,7 +461,7 @@ public class EmailService(
         }
 #endif
 
-        await SendEmailWithGmailAsync(recipientEmail, subject, body, "AgencyUnassignment", user.Id, agency.Id, "AgencyUnassignment");
+        await SendEmailWithGmail(recipientEmail, subject, body, "AgencyUnassignment", user.Id, agency.Id, "AgencyUnassignment");
         _logger.LogInformation($"Correo de desasignación de agencia enviado exitosamente a {recipientEmail}");
     }
 
@@ -519,7 +519,7 @@ public class EmailService(
         }
 #endif
 
-        await SendEmailWithGmailAsync(recipientEmail, subject, htmlContent, "PasswordChanged", user.Id, null, "PasswordChanged");
+        await SendEmailWithGmail(recipientEmail, subject, htmlContent, "PasswordChanged", user.Id, null, "PasswordChanged");
     }
 
     public async Task SendPasswordResetEmail(string email, string resetLink)
@@ -568,7 +568,7 @@ public class EmailService(
             }
 #endif
 
-            await SendEmailWithGmailAsync(email, subject, htmlContent, "PasswordReset", null, null, "PasswordReset");
+            await SendEmailWithGmail(email, subject, htmlContent, "PasswordReset", null, null, "PasswordReset");
             _logger.LogInformation("Correo de restablecimiento de contraseña enviado a: {Email}", email);
         }
         catch (Exception ex)
@@ -583,11 +583,11 @@ public class EmailService(
     /// </summary>
     /// <param name="emailLogId">ID del log de correo original</param>
     /// <param name="forceResend">Si es true, reenvía incluso si el correo original fue exitoso</param>
-    public async Task<bool> ResendEmailAsync(int emailLogId, bool forceResend = false)
+    public async Task<bool> ResendEmail(int emailLogId, bool forceResend = false)
     {
         try
         {
-            var originalLog = await _emailLogRepository.GetEmailLogByIdAsync(emailLogId);
+            var originalLog = await _emailLogRepository.GetEmailLogById(emailLogId);
             
             if (originalLog == null)
             {
@@ -603,7 +603,7 @@ public class EmailService(
             }
 
             // Reenviar el correo con la información del log original
-            await SendEmailWithGmailAsync(
+            await SendEmailWithGmail(
                 originalLog.RecipientEmail,
                 originalLog.Subject,
                 "", // El body no se guarda en el log, se reconstruye desde el template si es necesario
@@ -613,7 +613,7 @@ public class EmailService(
                 originalLog.EmailTemplateKey
             );
 
-            // El nuevo log se crea automáticamente en SendEmailWithGmailAsync
+            // El nuevo log se crea automáticamente en SendEmailWithGmail
             // Aquí podríamos actualizar el retryCount del log original si fuera necesario
             
             _logger.LogInformation("Correo reenviado exitosamente desde log {EmailLogId}", emailLogId);

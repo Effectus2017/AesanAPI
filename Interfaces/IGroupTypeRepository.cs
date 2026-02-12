@@ -66,5 +66,5 @@ public interface IGroupTypeRepository
     /// Obtiene el ID del tipo de grupo Comedor (Dining Room).
     /// Usado para validar regla: solo un sitio Comedor por escuela.
     /// </summary>
-    Task<int?> GetGroupTypeIdComedorAsync();
+    Task<int?> GetGroupTypeIdComedor();
 }

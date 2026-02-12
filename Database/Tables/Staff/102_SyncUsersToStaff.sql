@@ -162,7 +162,7 @@ BEGIN
 
             -- Asegurar que tenemos un email válido
             IF @email IS NULL OR LEN(LTRIM(RTRIM(@email))) = 0
-                SET @email = @userName + '@aesan.local';
+                SET @email = @userName + '@nutre.local';
             -- Email por defecto basado en UserName
 
             -- Obtener AgencyId desde AgencyUsers si no se obtuvo del cursor

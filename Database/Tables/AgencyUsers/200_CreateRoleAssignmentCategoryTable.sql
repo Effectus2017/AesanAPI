@@ -76,23 +76,7 @@ END
 
 -- Roles NUTRE (roles internos de NUTRE)
 -- Estos roles pueden tener AgencyAssignmentType = 'NUTRE_COORDINATOR', 'NUTRE_EVALUATOR', etc.
-
--- Monitor
-IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = 'Monitor' AND IsActive = 1)
-BEGIN
-    MERGE RoleAssignmentCategory AS target
-    USING (
-        SELECT TOP 1 Id
-        FROM AspNetRoles
-        WHERE Name = 'Monitor' AND IsActive = 1
-    ) AS source ON target.RoleId = source.Id
-    WHEN NOT MATCHED THEN
-        INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt)
-        VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
-    WHEN MATCHED THEN
-        UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
-    PRINT '  - Mapeo para Monitor insertado';
-END
+-- Nota: El rol Monitor fue eliminado; no se incluye en RoleAssignmentCategory.
 
 -- Coordinador
 IF EXISTS (SELECT 1 FROM AspNetRoles WHERE (Name = 'Coordinador' OR Name LIKE '%Coordinador%') AND IsActive = 1)

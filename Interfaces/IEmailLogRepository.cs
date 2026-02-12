@@ -5,10 +5,10 @@ namespace Api.Interfaces;
 
 public interface IEmailLogRepository
 {
-    Task<int> InsertEmailLogAsync(EmailLogRequest request);
-    Task<List<DTOEmailLog>> GetEmailLogsByUserIdAsync(string userId);
-    Task<List<DTOEmailLog>> GetEmailLogsByEmailAsync(string email);
-    Task<DTOEmailLog?> GetEmailLogByIdAsync(int id);
-    Task<bool> UpdateEmailLogStatusAsync(int id, string status, string? errorMessage = null);
-    Task<List<DTOEmailLog>> GetFailedEmailLogsAsync(string? email = null);
+    Task<int> InsertEmailLog(EmailLogRequest request);
+    Task<List<DTOEmailLog>> GetEmailLogsByUserId(string userId);
+    Task<List<DTOEmailLog>> GetEmailLogsByEmail(string email);
+    Task<DTOEmailLog?> GetEmailLogById(int id);
+    Task<bool> UpdateEmailLogStatus(int id, string status, string? errorMessage = null);
+    Task<List<DTOEmailLog>> GetFailedEmailLogs(string? email = null);
 }

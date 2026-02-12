@@ -262,7 +262,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
     /// <summary>
     /// Obtiene el ID del tipo de grupo Comedor (Dining Room).
     /// </summary>
-    public async Task<int?> GetGroupTypeIdComedorAsync()
+    public async Task<int?> GetGroupTypeIdComedor()
     {
         try
         {

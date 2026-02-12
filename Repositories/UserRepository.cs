@@ -29,9 +29,11 @@ public class UserRepository(UserManager<User> userManager,
     IAgencyUsersRepository agencyUsersRepository,
     IStaffRepository staffRepository,
     IProgramRepository programRepository,
-    MappingService mappingService) : IUserRepository
+    MappingService mappingService,
+    IAuditLogger auditLogger) : IUserRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly IAuditLogger _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
     private readonly UserManager<User> _userManager = userManager;
     private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
@@ -396,7 +398,7 @@ public class UserRepository(UserManager<User> userManager,
                 rolesForSelection = aesanRoles;
             }
 
-            var (access_token, expires_in) = await GenerateTokenForUserAsync(_user, rolesToUse);
+            var (access_token, expires_in) = await GenerateTokenForUserAsync(_user, rolesToUse, rolesForSelection);
 
             if (rolesForSelection != null)
             {
@@ -415,7 +417,8 @@ public class UserRepository(UserManager<User> userManager,
     /// Genera un token JWT para el usuario con los roles especificados.
     /// Reutilizable para Login y SelectRole.
     /// </summary>
-    private async Task<(string access_token, double expires_in)> GenerateTokenForUserAsync(User user, IList<string> rolesToUse)
+    /// <param name="allAesanRolesForSelection">Cuando el usuario tiene 2+ roles AESAN, lista de roles disponibles para cambio en el menú; se incluye como claim "roles" en el JWT.</param>
+    private async Task<(string access_token, double expires_in)> GenerateTokenForUserAsync(User user, IList<string> rolesToUse, IList<string>? allAesanRolesForSelection = null)
     {
         var permissions = await GetPermissionsByUserId(user.Id);
 
@@ -440,7 +443,7 @@ public class UserRepository(UserManager<User> userManager,
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff),
+            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff, allAesanRolesForSelection),
             Expires = DateTime.UtcNow.AddDays(days),
             Issuer = issuer,
             Audience = audience,
@@ -479,7 +482,16 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado." });
             }
 
-            var (access_token, expires_in) = await GenerateTokenForUserAsync(user, new List<string> { role });
+            var aesanRoles = userRoles.Where(r => aesanRoleNames.Contains(r)).ToList();
+            var (access_token, expires_in) = await GenerateTokenForUserAsync(user, new List<string> { role }, aesanRoles);
+
+            await _auditLogger.LogChangeAsync(
+                tableName: "UserSession",
+                entityId: userId,
+                action: "ROLE_SWITCH",
+                userId,
+                newEntity: new { Role = role },
+                businessContext: "RoleSwitch");
 
             return new { token_type = "Bearer", access_token, expires_in };
         }
@@ -498,8 +510,9 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="userPrograms">Los programas del usuario</param>
     /// <param name="permissions">Los permisos del usuario</param>
     /// <param name="staff">Los datos de Staff asociados al usuario (opcional)</param>
+    /// <param name="allAesanRolesForSelection">Lista de roles AESAN para cambio en el menú (claim "roles" en JWT)</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null, IList<string>? allAesanRolesForSelection = null)
     {
         try
         {
@@ -508,6 +521,11 @@ public class UserRepository(UserManager<User> userManager,
             foreach (var role in roles)
             {
                 claims.AddClaim(new Claim(ClaimTypes.Role, role));
+            }
+
+            if (allAesanRolesForSelection != null && allAesanRolesForSelection.Count > 0)
+            {
+                claims.AddClaim(new Claim("roles", string.Join(",", allAesanRolesForSelection)));
             }
 
             // Obtener name y lastName de Staff si existe
@@ -531,7 +549,8 @@ public class UserRepository(UserManager<User> userManager,
             var programNames = string.Join(",", programsList.Select(p => p.Name));
             var programIds = string.Join(",", programsList.Select(p => p.Id.ToString()));
 
-            if (roles.Contains("Monitor"))
+            // Roles NUTRE "por programa" (Coordinador, Evaluador) reciben claims de programas
+            if (roles.Any(r => r != null && (r.Contains("Coordinador", StringComparison.OrdinalIgnoreCase) || r.Contains("Evaluador", StringComparison.OrdinalIgnoreCase))))
             {
                 claims.AddClaim(new Claim("userId", user.Id));
                 claims.AddClaim(new Claim("name", name));
@@ -878,10 +897,7 @@ public class UserRepository(UserManager<User> userManager,
 
             // 3. Asignar los roles al usuario (usar SP para compatibilidad con AspNetUserRoles.IsActive y CreatedAt)
             var rolesToAssign = roles?.Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? [];
-            if (rolesToAssign.Count == 0)
-            {
-                rolesToAssign = ["Monitor"];
-            }
+            // Sin rol por defecto: el usuario debe tener al menos un rol asignado (lista canónica NUTRE o Agencia)
 
             var roleNamesCsv = string.Join(",", rolesToAssign);
             using (var db = _context.CreateConnection())

@@ -24,9 +24,9 @@ public class EmailServiceDecorator : IEmailService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task SendEmailAsync(string email, string subject, string message)
+    public async Task SendEmail(string email, string subject, string message)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: email,
             subject: subject,
             message: message,
@@ -34,13 +34,13 @@ public class EmailServiceDecorator : IEmailService
             userId: null,
             agencyId: null,
             emailTemplateKey: null,
-            sendAction: () => _emailService.SendEmailAsync(email, subject, message)
+            sendAction: () => _emailService.SendEmail(email, subject, message)
         );
     }
 
     public async Task SendTemporaryPasswordEmail(string email, string temporaryPassword)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: email,
             subject: "Contraseña Temporal",
             message: $"Su contraseña temporal es: {temporaryPassword}",
@@ -52,9 +52,9 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
-    public async Task SendEmailWithGmailAsync(string email, string subject, string message, string emailType = "Generic", string? userId = null, int? agencyId = null, string? emailTemplateKey = null)
+    public async Task SendEmailWithGmail(string email, string subject, string message, string emailType = "Generic", string? userId = null, int? agencyId = null, string? emailTemplateKey = null)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: email,
             subject: subject,
             message: message,
@@ -62,13 +62,13 @@ public class EmailServiceDecorator : IEmailService
             userId: userId,
             agencyId: agencyId,
             emailTemplateKey: emailTemplateKey,
-            sendAction: () => _emailService.SendEmailWithGmailAsync(email, subject, message, emailType, userId, agencyId, emailTemplateKey)
+            sendAction: () => _emailService.SendEmailWithGmail(email, subject, message, emailType, userId, agencyId, emailTemplateKey)
         );
     }
 
     public async Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword, string? userId = null)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: userRequest.Staff.Email,
             subject: "Bienvenida a AESAN",
             message: $"Bienvenido {userRequest.Staff.FirstName}",
@@ -82,7 +82,7 @@ public class EmailServiceDecorator : IEmailService
 
     public async Task SendApprovalSponsorEmail(User userRequest, string temporaryPassword, string? fullName = null)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: userRequest.Email ?? "",
             subject: "Aprobación de Auspiciador",
             message: "Su solicitud ha sido aprobada",
@@ -96,7 +96,7 @@ public class EmailServiceDecorator : IEmailService
 
     public async Task SendDenialSponsorEmail(string email, string fullName, string rejectionReason)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: email,
             subject: "Denegación de Auspiciador",
             message: rejectionReason,
@@ -110,7 +110,7 @@ public class EmailServiceDecorator : IEmailService
 
     public async Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: user.Email ?? "",
             subject: "Asignación de Agencia",
             message: $"Ha sido asignado a la agencia {agency.Name}",
@@ -124,7 +124,7 @@ public class EmailServiceDecorator : IEmailService
 
     public async Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: user.Email ?? "",
             subject: "Desasignación de Agencia",
             message: $"Ha sido desasignado de la agencia {agency.Name}",
@@ -138,7 +138,7 @@ public class EmailServiceDecorator : IEmailService
 
     public async Task SendPasswordChangedEmail(DTOUser user, string newPassword)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: user.Email ?? "",
             subject: "Contraseña Cambiada",
             message: "Su contraseña ha sido cambiada",
@@ -152,7 +152,7 @@ public class EmailServiceDecorator : IEmailService
 
     public async Task SendPasswordResetEmail(string email, string resetLink)
     {
-        await LogAndSendEmailAsync(
+        await LogAndSendEmail(
             email: email,
             subject: "Restablecimiento de Contraseña",
             message: $"Link: {resetLink}",
@@ -164,12 +164,12 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
-    public async Task<bool> ResendEmailAsync(int emailLogId, bool forceResend = false)
+    public async Task<bool> ResendEmail(int emailLogId, bool forceResend = false)
     {
         // Para reenvío, obtener el log existente y crear uno nuevo
         try
         {
-            var existingLog = await _emailLogRepository.GetEmailLogByIdAsync(emailLogId);
+            var existingLog = await _emailLogRepository.GetEmailLogById(emailLogId);
             if (existingLog == null)
             {
                 _logger.LogWarning("No se encontró el log de correo con ID {EmailLogId} para reenvío", emailLogId);
@@ -189,20 +189,20 @@ public class EmailServiceDecorator : IEmailService
                 EmailTemplateKey = existingLog.EmailTemplateKey
             };
 
-            var newLogId = await _emailLogRepository.InsertEmailLogAsync(logRequest);
+            var newLogId = await _emailLogRepository.InsertEmailLog(logRequest);
             _logger.LogInformation("Nuevo log creado para reenvío con ID {NewLogId} basado en log {OriginalLogId}", newLogId, emailLogId);
 
             // Ejecutar el reenvío
-            var result = await _emailService.ResendEmailAsync(emailLogId, forceResend);
+            var result = await _emailService.ResendEmail(emailLogId, forceResend);
 
             // Actualizar el nuevo log según el resultado
             if (result)
             {
-                await _emailLogRepository.UpdateEmailLogStatusAsync(newLogId, "Sent");
+                await _emailLogRepository.UpdateEmailLogStatus(newLogId, "Sent");
             }
             else
             {
-                await _emailLogRepository.UpdateEmailLogStatusAsync(newLogId, "Failed", "Error al reenviar correo");
+                await _emailLogRepository.UpdateEmailLogStatus(newLogId, "Failed", "Error al reenviar correo");
             }
 
             return result;
@@ -211,14 +211,14 @@ public class EmailServiceDecorator : IEmailService
         {
             _logger.LogError(ex, "Error al registrar reenvío de correo con ID {EmailLogId}", emailLogId);
             // Continuar con el reenvío aunque falle el logging
-            return await _emailService.ResendEmailAsync(emailLogId, forceResend);
+            return await _emailService.ResendEmail(emailLogId, forceResend);
         }
     }
 
     /// <summary>
     /// Método helper que registra el envío de correo antes y después de ejecutarlo
     /// </summary>
-    private async Task LogAndSendEmailAsync(
+    private async Task LogAndSendEmail(
         string email,
         string subject,
         string message,
@@ -245,7 +245,7 @@ public class EmailServiceDecorator : IEmailService
                 EmailTemplateKey = emailTemplateKey
             };
 
-            emailLogId = await _emailLogRepository.InsertEmailLogAsync(logRequest);
+            emailLogId = await _emailLogRepository.InsertEmailLog(logRequest);
             _logger.LogInformation("Log de correo creado con ID {EmailLogId} para {Email}", emailLogId, email);
         }
         catch (Exception logEx)
@@ -264,7 +264,7 @@ public class EmailServiceDecorator : IEmailService
             {
                 try
                 {
-                    await _emailLogRepository.UpdateEmailLogStatusAsync(emailLogId, "Sent");
+                    await _emailLogRepository.UpdateEmailLogStatus(emailLogId, "Sent");
                     _logger.LogInformation("Log de correo actualizado a 'Sent' para ID {EmailLogId}", emailLogId);
                 }
                 catch (Exception logEx)
@@ -282,7 +282,7 @@ public class EmailServiceDecorator : IEmailService
             {
                 try
                 {
-                    await _emailLogRepository.UpdateEmailLogStatusAsync(emailLogId, "Failed", ex.Message);
+                    await _emailLogRepository.UpdateEmailLogStatus(emailLogId, "Failed", ex.Message);
                     _logger.LogInformation("Log de correo actualizado a 'Failed' para ID {EmailLogId}", emailLogId);
                 }
                 catch (Exception logEx)

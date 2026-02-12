@@ -502,6 +502,9 @@ app.UseHttpsRedirection();
 // Configuración global
 app.UseRouting();
 
+// Validar X-Api-Key para rutas /notifications (uso interno / Web Job)
+app.UseMiddleware<Api.Middleware.InternalApiKeyMiddleware>();
+
 // Asegurar que la carpeta uploads existe
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 if (!Directory.Exists(uploadsPath))

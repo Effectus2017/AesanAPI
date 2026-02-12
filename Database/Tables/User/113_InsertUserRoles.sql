@@ -23,5 +23,16 @@ BEGIN
     SELECT @userId, r.Id, 1, GETDATE()
     FROM AspNetRoles r
     INNER JOIN STRING_SPLIT(@roleNames, ',') ss ON LTRIM(RTRIM(ss.value)) = r.Name;
+
+    -- Registrar en auditoría (ChangedBy: usuario afectado cuando no hay asignador explícito)
+    DECLARE @auditOpId UNIQUEIDENTIFIER = NULL;
+    EXEC [100_LogAuditChange]
+        @TableName = 'AspNetUserRoles',
+        @EntityId = @userId,
+        @Action = 'INSERT',
+        @ChangedBy = @userId,
+        @NewValues = @roleNames,
+        @BusinessContext = 'UserRolesInsert',
+        @OperationId = @auditOpId OUTPUT;
 END;
 GO

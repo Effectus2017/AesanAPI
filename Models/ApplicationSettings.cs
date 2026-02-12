@@ -1,4 +1,4 @@
-﻿namespace Api.Models;
+namespace Api.Models;
 
 public class ApplicationSettings
 {
@@ -31,6 +31,9 @@ public class ApplicationSettings
     public CacheSettings Cache { get; set; } = new CacheSettings();
     // Gmail settings
     public GmailSettings Gmail { get; set; } = new GmailSettings();
+
+    // Internal API (Web Job / notificaciones): clave para header X-Api-Key
+    public string? InternalApiKey { get; set; }
 }
 
 public class CacheSettings

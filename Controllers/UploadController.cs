@@ -1,4 +1,4 @@
-﻿using Api.Interfaces;
+using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +41,7 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
             }
 
             // Guardar el archivo usando el servicio
-            var (storedFileName, relativePath) = await _fileStorageService.SaveFileAsync(
+            var (storedFileName, relativePath) = await _fileStorageService.SaveFile(
                 file,
                 $"agency_{agencyId}",
                 FileType.AgencyDocument
@@ -69,7 +69,7 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
             catch (InvalidOperationException ex)
             {
                 // Si la agencia no existe, eliminamos el archivo que acabamos de guardar
-                await _fileStorageService.DeleteFileAsync(storedFileName, FileType.AgencyDocument);
+                await _fileStorageService.DeleteFile(storedFileName, FileType.AgencyDocument);
                 _logger.LogWarning(ex, "Error al agregar archivo: {Message}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
@@ -111,7 +111,7 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
             }
 
             // Guardar el archivo usando el servicio
-            var (storedFileName, fileUrl) = await _fileStorageService.SaveFileAsync(
+            var (storedFileName, fileUrl) = await _fileStorageService.SaveFile(
                 file,
                 $"agency_{agencyId}",
                 FileType.AgencyLogo
@@ -159,7 +159,7 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
             }
 
             // Guardar el archivo usando el servicio
-            var (storedFileName, fileUrl) = await _fileStorageService.SaveFileAsync(
+            var (storedFileName, fileUrl) = await _fileStorageService.SaveFile(
                 file,
                 $"user_{userId}",
                 FileType.UserAvatar
