@@ -454,6 +454,16 @@ BEGIN
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de TemporaryPasswords';
     END
 
+        -- Eliminar EmailLog (logs de correo de los usuarios)
+        IF OBJECT_ID('EmailLog', 'U') IS NOT NULL
+        BEGIN
+        DELETE el FROM EmailLog el
+            INNER JOIN #UserIdsFromAgencyUsers u ON el.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de EmailLog';
+    END
+
         -- Eliminar AspNetUserClaims (claims de usuarios)
         IF OBJECT_ID('AspNetUserClaims', 'U') IS NOT NULL
         BEGIN

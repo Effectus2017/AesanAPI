@@ -47,4 +47,16 @@ public interface ISchoolSiteRepository
     /// <param name="schoolId">ID de la escuela</param>
     /// <param name="excludeSiteId">ID del sitio a excluir del conteo (ej. en actualización)</param>
     Task<int> CountSitesWithComedorGroupTypeBySchoolId(int schoolId, int? excludeSiteId = null);
+
+    /// <summary>
+    /// Cuenta cuántos sitios activos tiene una escuela.
+    /// Usado para validar regla: el primer sitio de la escuela debe ser Comedor.
+    /// </summary>
+    Task<int> CountSitesBySchoolId(int schoolId);
+
+    /// <summary>
+    /// Obtiene el rango de fechas de funcionamiento (OperatingFromDate, OperatingToDate) del sitio Comedor de la escuela.
+    /// Si la escuela no tiene sitio Comedor, devuelve null.
+    /// </summary>
+    Task<(DateTime? From, DateTime? To)?> GetComedorOperatingDateRangeBySchoolId(int schoolId);
 }

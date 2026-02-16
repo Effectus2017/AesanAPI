@@ -174,7 +174,7 @@ public class MappingService
             IsActive = item.IsActive,
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
-            SitesCount = item.SitesCount,
+            SitesCount = (int?)item.SitesCount ?? 0,
             Agency = new DTOAgency
             {
                 Id = item.AgencyId,

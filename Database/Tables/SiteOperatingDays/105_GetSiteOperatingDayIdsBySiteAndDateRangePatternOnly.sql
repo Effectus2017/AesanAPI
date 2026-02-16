@@ -22,6 +22,7 @@ BEGIN
       AND OperatingDate >= @fromdate
       AND OperatingDate <= @todate
       AND IsActive = 1
+      AND (IsHoliday = 0 OR IsHoliday IS NULL)
       AND COALESCE(IsManuallyAdded, 0) = 0;
 END;
 GO

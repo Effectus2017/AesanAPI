@@ -165,6 +165,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 // Agregar repositorios a la inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserRoleExtensionRequestRepository, UserRoleExtensionRequestRepository>();
 builder.Services.AddScoped<IGeoRepository, GeoRepository>();
 builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
 builder.Services.AddScoped<IAgencyRepository, AgencyRepository>();
@@ -223,6 +224,7 @@ builder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
 builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository>();
 builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
 builder.Services.AddScoped<IEmailLogRepository, EmailLogRepository>();
+builder.Services.AddScoped<INotificationMailJobLogRepository, NotificationMailJobLogRepository>();
 
 // Registrar EmailService primero (sin interfaz)
 builder.Services.AddScoped<EmailService>();

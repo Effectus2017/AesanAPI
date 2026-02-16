@@ -3,7 +3,7 @@
 -- Fecha: 2025-01-XX
 -- Descripción: Obtener todas las agencias con nueva lógica de acceso simplificada.
 --              Reemplaza 117_GetAgencies con nueva lógica de acceso.
---              Solo SuperAdministrator y Administrator ven todas las agencias.
+--              Solo Super-Administrator y Administrator ven todas las agencias.
 --              Todos los demás roles solo ven agencias asignadas en AgencyUsers.
 -- =============================================
 
@@ -119,7 +119,7 @@ BEGIN
                 FROM AspNetUserRoles ur
                 INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                 WHERE ur.UserId = @userId
-                    AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                    AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
             )
             OR EXISTS (
                 SELECT 1 FROM AgencyUsers au 
@@ -183,7 +183,7 @@ BEGIN
                         FROM AspNetUserRoles ur
                         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                         WHERE ur.UserId = @userId
-                            AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                            AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
                     )
                     OR EXISTS (
                         SELECT 1 FROM AgencyUsers au 
@@ -261,7 +261,7 @@ BEGIN
                         FROM AspNetUserRoles ur
                         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                         WHERE ur.UserId = @userId
-                            AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                            AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
                     )
                     OR EXISTS (
                         SELECT 1 FROM AgencyUsers au 
@@ -361,7 +361,7 @@ BEGIN
                         FROM AspNetUserRoles ur
                         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                         WHERE ur.UserId = @userId
-                            AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                            AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
                     )
                     OR EXISTS (
                         SELECT 1 FROM AgencyUsers au 
@@ -459,7 +459,7 @@ BEGIN
                 FROM AspNetUserRoles ur
                 INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                 WHERE ur.UserId = @userId
-                    AND r.Name IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+                    AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
             )
             OR EXISTS (
                 SELECT 1 FROM AgencyUsers au 

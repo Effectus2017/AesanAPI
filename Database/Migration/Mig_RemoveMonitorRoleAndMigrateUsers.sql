@@ -65,7 +65,7 @@ BEGIN TRY
     PRINT 'Rol Monitor eliminado de AspNetRoles.';
 
     COMMIT TRANSACTION;
-    PRINT 'Migración 118_RemoveMonitorRoleAndMigrateUsers completada.';
+    PRINT 'Migración Mig_RemoveMonitorRoleAndMigrateUsers completada.';
 
 END TRY
 BEGIN CATCH

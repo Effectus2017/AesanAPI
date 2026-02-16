@@ -7,18 +7,12 @@ namespace Api.Middleware;
 /// Valida el header X-Api-Key para rutas bajo /notifications (uso interno / Web Job).
 /// Si la ruta no es /notifications*, no hace nada. Si es /notifications* y el API Key no coincide, devuelve 401.
 /// </summary>
-public class InternalApiKeyMiddleware
+public class InternalApiKeyMiddleware(RequestDelegate next, IOptions<ApplicationSettings> appSettings)
 {
     private const string ApiKeyHeaderName = "X-Api-Key";
     private const string NotificationsPathPrefix = "/notifications";
-    private readonly RequestDelegate _next;
-    private readonly string? _expectedApiKey;
-
-    public InternalApiKeyMiddleware(RequestDelegate next, IOptions<ApplicationSettings> appSettings)
-    {
-        _next = next;
-        _expectedApiKey = appSettings?.Value?.InternalApiKey;
-    }
+    private readonly RequestDelegate _next = next;
+    private readonly string? _expectedApiKey = appSettings?.Value?.InternalApiKey;
 
     public async Task InvokeAsync(HttpContext context)
     {

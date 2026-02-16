@@ -254,6 +254,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             await ValidateStrongServicesForPrograms(request);
             await ValidateTimeBetweenServices(request);
             await ValidateOneComedorPerSchool(request, null);
+            await ValidateFirstSiteMustBeComedor(request);
+            await ValidateSiteOperatingDatesWithinComedorRange(request, null);
 
             // Recalcular OperatingDaysCalculated desde fechas y días de la semana (fuente de verdad en servidor)
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
@@ -515,6 +517,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             await ValidateStrongServicesForPrograms(request);
             await ValidateTimeBetweenServices(request);
             await ValidateOneComedorPerSchool(request, request.Id);
+            await ValidateSiteOperatingDatesWithinComedorRange(request, request.Id);
 
             // Recalcular OperatingDaysCalculated desde fechas y días de la semana (fuente de verdad en servidor)
             if (request.OperatingFromDate.HasValue && request.OperatingToDate.HasValue
@@ -2311,6 +2314,96 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             throw new SiteValidationException(
                 "ONE_COMEDOR_PER_SCHOOL",
                 "La escuela solo puede tener un sitio con tipo de grupo Comedor.");
+        }
+    }
+
+    /// <summary>
+    /// Valida que el primer sitio de la escuela sea de tipo Comedor (solo aplica en Insert).
+    /// </summary>
+    private async Task ValidateFirstSiteMustBeComedor(SiteRequest request)
+    {
+        if (!request.SchoolId.HasValue || request.SchoolId.Value <= 0)
+        {
+            return;
+        }
+
+        var count = await _schoolSiteRepository.Value.CountSitesBySchoolId(request.SchoolId.Value);
+
+        if (count != 0)
+        {
+            return;
+        }
+
+        var comedorId = await _groupTypeRepository.GetGroupTypeIdComedor();
+
+        if (!comedorId.HasValue || request.GroupTypeId != comedorId.Value)
+        {
+            throw new SiteValidationException(
+                "FirstSiteMustBeComedor",
+                "El primer sitio de la escuela debe ser de tipo Comedor.");
+        }
+    }
+
+    /// <summary>
+    /// Valida que las fechas de funcionamiento del sitio estén dentro del rango del Comedor de la escuela (Insert y Update).
+    /// </summary>
+    private async Task ValidateSiteOperatingDatesWithinComedorRange(SiteRequest request, int? excludeSiteId)
+    {
+        if (!request.GroupTypeId.HasValue)
+        {
+            return;
+        }
+
+        var comedorId = await _groupTypeRepository.GetGroupTypeIdComedor();
+        if (comedorId.HasValue && request.GroupTypeId.Value == comedorId.Value)
+        {
+            return;
+        }
+
+        int? schoolId;
+        if (excludeSiteId.HasValue)
+        {
+            var schoolSite = await _schoolSiteRepository.Value.GetSchoolSiteBySiteId(excludeSiteId.Value);
+            schoolId = schoolSite?.SchoolId;
+        }
+        else
+        {
+            schoolId = request.SchoolId;
+        }
+
+        if (!schoolId.HasValue || schoolId.Value <= 0)
+        {
+            return;
+        }
+
+        var comedorRange = await _schoolSiteRepository.Value.GetComedorOperatingDateRangeBySchoolId(schoolId.Value);
+        if (!comedorRange.HasValue)
+        {
+            throw new SiteValidationException(
+                "SchoolMustHaveComedorFirst",
+                "La escuela debe tener un sitio Comedor antes de agregar otros sitios. El primer sitio de la escuela debe ser de tipo Comedor.");
+        }
+
+        var (comedorFrom, comedorTo) = comedorRange.Value;
+        if (!comedorFrom.HasValue || !comedorTo.HasValue)
+        {
+            return;
+        }
+
+        if (!request.OperatingFromDate.HasValue || !request.OperatingToDate.HasValue)
+        {
+            return;
+        }
+
+        var fromDate = request.OperatingFromDate.Value.Date;
+        var toDate = request.OperatingToDate.Value.Date;
+        var fromLimit = comedorFrom.Value.Date;
+        var toLimit = comedorTo.Value.Date;
+
+        if (fromDate < fromLimit || toDate > toLimit)
+        {
+            var message = $"Las fechas de funcionamiento del sitio deben estar dentro del periodo del Comedor de la escuela ({fromLimit:yyyy-MM-dd} a {toLimit:yyyy-MM-dd}).";
+            throw new SiteValidationException("SiteDatesOutsideComedorRange", message);
         }
     }
 

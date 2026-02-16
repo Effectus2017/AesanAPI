@@ -188,6 +188,55 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
     }
 
     /// <summary>
+    /// Cuenta cuántos sitios activos tiene una escuela.
+    /// </summary>
+    public async Task<int> CountSitesBySchoolId(int schoolId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("103_CountSitesBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            return result != null ? (int)result.cnt : 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al contar sitios por school {SchoolId}: {Message}", schoolId, ex.Message);
+            throw new Exception($"Error al contar sitios por escuela: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene el rango de fechas de funcionamiento del sitio Comedor de la escuela.
+    /// </summary>
+    public async Task<(DateTime? From, DateTime? To)?> GetComedorOperatingDateRangeBySchoolId(int schoolId)
+    {
+        try
+        {
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("104_GetComedorOperatingDateRangeBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            if (result == null)
+            {
+                return null;
+            }
+
+            var from = result.operatingfromdate as DateTime?;
+            var to = result.operatingtodate as DateTime?;
+            return (from, to);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener rango Comedor por school {SchoolId}: {Message}", schoolId, ex.Message);
+            throw new Exception($"Error al obtener rango del Comedor por escuela: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// Elimina una asignación School-Site (soft delete)
     /// </summary>
     public async Task<bool> DeleteSchoolSite(int id)

@@ -123,10 +123,23 @@ public class UserRepository(UserManager<User> userManager,
                 return null;
             }
 
-            // Leer el segundo resultado: roles del usuario
-            var userRoles = await result.ReadAsync<DTOUserRole>();
+            // Leer el segundo resultado: roles del usuario (con isprimary, validfrom, validto, isvigent)
+            var userRoles = (await result.ReadAsync<DTOUserRole>()).ToList();
 
-            // Convertir el resultado del SP a DTOUser
+            var primaryRole = userRoles.FirstOrDefault(r => r.IsPrimary);
+            var secondaryRolesList = userRoles.Where(r => !r.IsPrimary).Select(r => new DTOUserSecondaryRole
+            {
+                RoleId = r.Id,
+                RoleName = r.Name,
+                ValidFrom = r.ValidFrom ?? DateTime.MinValue,
+                ValidTo = r.ValidTo ?? DateTime.MinValue,
+                IsActive = r.IsVigent
+            }).ToList();
+            var roleNamesForDisplay = new List<string>();
+            if (primaryRole != null) roleNamesForDisplay.Add(primaryRole.Name);
+            foreach (var sec in secondaryRolesList.Where(s => s.IsActive))
+                roleNamesForDisplay.Add(sec.RoleName);
+
             var dtoUser = new DTOUser
             {
                 Id = userFromDb.Id,
@@ -146,8 +159,10 @@ public class UserRepository(UserManager<User> userManager,
                 AgencyName = userFromDb.AgencyName,
                 ProgramId = userFromDb.ProgramId,
                 ProgramName = userFromDb.ProgramName,
-                Roles = userRoles.Select(r => r.Name).ToList(),
-                Role = userRoles.FirstOrDefault(), // Rol completo (primer rol, compatibilidad)
+                Roles = roleNamesForDisplay,
+                Role = primaryRole ?? userRoles.FirstOrDefault(),
+                PrimaryRoleName = primaryRole?.Name,
+                SecondaryRoles = secondaryRolesList,
                 Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new DTOAgency { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
             };
 
@@ -278,8 +293,8 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            var _result = _roleManager.Roles.ToList();
-            var _count = _roleManager.Roles.ToList().Count;
+            var _result = _roleManager.Roles.OrderBy(r => r.Name).ToList();
+            var _count = _result.Count;
             var _currentRoles = _mapper.Map<List<Role>, List<DTORole>>(_result);
             var _complete = new { data = _currentRoles, count = _count };
 
@@ -322,9 +337,63 @@ public class UserRepository(UserManager<User> userManager,
     {
         var roles = await _roleManager.Roles
             .Where(r => r.IsAesanRole)
+            .OrderBy(r => r.Name)
             .Select(r => r.Name!)
             .ToListAsync();
         return roles;
+    }
+
+    /// <summary>
+    /// Obtiene los nombres de roles efectivos del usuario: rol principal + roles secundarios vigentes (hoy entre ValidFrom y ValidTo).
+    /// </summary>
+    public async Task<List<string>> GetEffectiveRoleNamesForUser(string userId)
+    {
+        using IDbConnection db = _context.CreateConnection();
+        const string sql = @"
+            SELECT r.Name
+            FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = @userId AND (ur.IsActive = 1 OR ur.IsActive IS NULL)
+              AND (ur.IsPrimary = 1 OR (ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
+                   AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo))";
+        var names = await db.QueryAsync<string>(sql, new { userId });
+        return names?.Where(n => !string.IsNullOrEmpty(n)).ToList() ?? [];
+    }
+
+    /// <summary>
+    /// Obtiene los emails de usuarios que tienen el rol indicado (ej. Administrator para notificaciones).
+    /// </summary>
+    public async Task<List<string>> GetUserEmailsByRoleNameAsync(string roleName)
+    {
+        var role = await _roleManager.FindByNameAsync(roleName);
+        if (role == null) return new List<string>();
+        var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
+        return usersInRole?.Where(u => !string.IsNullOrWhiteSpace(u.Email)).Select(u => u.Email!).Distinct().ToList() ?? new List<string>();
+    }
+
+    /// <summary>
+    /// Obtiene el Id del rol por nombre.
+    /// </summary>
+    public async Task<string?> GetRoleIdByNameAsync(string roleName)
+    {
+        var role = await _roleManager.FindByNameAsync(roleName);
+        return role?.Id;
+    }
+
+    /// <summary>
+    /// Obtiene la fecha tope (ValidTo) del rol secundario para el usuario, o null si es rol principal o no existe.
+    /// </summary>
+    public async Task<DateTime?> GetRoleValidToForUser(string userId, string roleName)
+    {
+        using IDbConnection db = _context.CreateConnection();
+        const string sql = @"
+            SELECT ur.ValidTo
+            FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = @userId AND r.Name = @roleName AND ur.IsPrimary = 0
+              AND (ur.IsActive = 1 OR ur.IsActive IS NULL)";
+        var validTo = await db.QueryFirstOrDefaultAsync<DateTime?>(sql, new { userId, roleName });
+        return validTo;
     }
 
     /// <summary>
@@ -375,21 +444,18 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Contraseña incorrecta" });
             }
 
-            // Obtener los roles del usuario
-            var roles = await _userManager.GetRolesAsync(_user);
+            // Obtener roles efectivos (principal + secundarios vigentes)
+            var roles = await GetEffectiveRoleNamesForUser(_user.Id);
 
-            // Validar que el usuario tenga al menos un rol asignado
             if (roles == null || roles.Count == 0)
             {
-                _loggingService.LogWarning($"Usuario {_user.UserName} intentó iniciar sesión sin roles asignados");
-                return new BadRequestObjectResult(new { Message = "El usuario no tiene un rol asignado. Por favor, contacte al administrador del sistema." });
+                _loggingService.LogWarning($"Usuario {_user.UserName} intentó iniciar sesión sin roles asignados o vigentes");
+                return new BadRequestObjectResult(new { Message = "El usuario no tiene un rol asignado o vigente. Por favor, contacte al administrador del sistema." });
             }
 
-            // Filtrar roles AESAN para multi-rol (desde DB)
             var aesanRoleNames = await GetAesanRoleNames();
             var aesanRoles = roles.Where(r => aesanRoleNames.Contains(r)).ToList();
 
-            // Si tiene 2+ roles AESAN: token con primer rol y devolver lista de roles para selección
             IList<string> rolesToUse = roles;
             List<string>? rolesForSelection = null;
             if (aesanRoles.Count >= 2)
@@ -398,7 +464,8 @@ public class UserRepository(UserManager<User> userManager,
                 rolesForSelection = aesanRoles;
             }
 
-            var (access_token, expires_in) = await GenerateTokenForUserAsync(_user, rolesToUse, rolesForSelection);
+            var roleValidTo = await GetRoleValidToForUser(_user.Id, rolesToUse.FirstOrDefault() ?? "");
+            var (access_token, expires_in) = await GenerateTokenForUserAsync(_user, rolesToUse, rolesForSelection, roleValidTo);
 
             if (rolesForSelection != null)
             {
@@ -418,7 +485,8 @@ public class UserRepository(UserManager<User> userManager,
     /// Reutilizable para Login y SelectRole.
     /// </summary>
     /// <param name="allAesanRolesForSelection">Cuando el usuario tiene 2+ roles AESAN, lista de roles disponibles para cambio en el menú; se incluye como claim "roles" en el JWT.</param>
-    private async Task<(string access_token, double expires_in)> GenerateTokenForUserAsync(User user, IList<string> rolesToUse, IList<string>? allAesanRolesForSelection = null)
+    /// <param name="roleValidTo">Si el rol actual es secundario, fecha tope de vigencia (claim "roleValidTo" en el JWT).</param>
+    private async Task<(string access_token, double expires_in)> GenerateTokenForUserAsync(User user, IList<string> rolesToUse, IList<string>? allAesanRolesForSelection = null, DateTime? roleValidTo = null)
     {
         var permissions = await GetPermissionsByUserId(user.Id);
 
@@ -443,7 +511,7 @@ public class UserRepository(UserManager<User> userManager,
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff, allAesanRolesForSelection),
+            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff, allAesanRolesForSelection, roleValidTo),
             Expires = DateTime.UtcNow.AddDays(days),
             Issuer = issuer,
             Audience = audience,
@@ -459,6 +527,7 @@ public class UserRepository(UserManager<User> userManager,
 
     /// <summary>
     /// Genera un nuevo token con el rol seleccionado para usuarios multi-rol AESAN.
+    /// Valida que el rol sea efectivo (principal o secundario vigente) e incluye roleValidTo en el JWT si es secundario.
     /// </summary>
     public async Task<dynamic> SelectRole(string userId, string role)
     {
@@ -476,14 +545,15 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-            var userRoles = await _userManager.GetRolesAsync(user);
-            if (userRoles == null || !userRoles.Contains(role))
+            var effectiveRoles = await GetEffectiveRoleNamesForUser(userId);
+            if (effectiveRoles == null || !effectiveRoles.Contains(role))
             {
-                return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado." });
+                return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado o el rol secundario ya no está vigente." });
             }
 
-            var aesanRoles = userRoles.Where(r => aesanRoleNames.Contains(r)).ToList();
-            var (access_token, expires_in) = await GenerateTokenForUserAsync(user, new List<string> { role }, aesanRoles);
+            var aesanRoles = effectiveRoles.Where(r => aesanRoleNames.Contains(r)).ToList();
+            var roleValidTo = await GetRoleValidToForUser(userId, role);
+            var (access_token, expires_in) = await GenerateTokenForUserAsync(user, new List<string> { role }, aesanRoles, roleValidTo);
 
             await _auditLogger.LogChangeAsync(
                 tableName: "UserSession",
@@ -511,8 +581,9 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="permissions">Los permisos del usuario</param>
     /// <param name="staff">Los datos de Staff asociados al usuario (opcional)</param>
     /// <param name="allAesanRolesForSelection">Lista de roles AESAN para cambio en el menú (claim "roles" en JWT)</param>
+    /// <param name="roleValidTo">Si el rol actual es secundario, fecha tope de vigencia (claim "roleValidTo" en el JWT)</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null, IList<string>? allAesanRolesForSelection = null)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null, IList<string>? allAesanRolesForSelection = null, DateTime? roleValidTo = null)
     {
         try
         {
@@ -526,6 +597,11 @@ public class UserRepository(UserManager<User> userManager,
             if (allAesanRolesForSelection != null && allAesanRolesForSelection.Count > 0)
             {
                 claims.AddClaim(new Claim("roles", string.Join(",", allAesanRolesForSelection)));
+            }
+
+            if (roleValidTo.HasValue)
+            {
+                claims.AddClaim(new Claim("roleValidTo", roleValidTo.Value.ToString("o")));
             }
 
             // Obtener name y lastName de Staff si existe
@@ -895,17 +971,36 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
             }
 
-            // 3. Asignar los roles al usuario (usar SP para compatibilidad con AspNetUserRoles.IsActive y CreatedAt)
-            var rolesToAssign = roles?.Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? [];
-            // Sin rol por defecto: el usuario debe tener al menos un rol asignado (lista canónica NUTRE o Agencia)
-
-            var roleNamesCsv = string.Join(",", rolesToAssign);
+            // 3. Asignar roles: flujo principal+secundarios (114) o legacy (113)
             using (var db = _context.CreateConnection())
             {
-                var roleParams = new DynamicParameters();
-                roleParams.Add("@userId", user.Id, DbType.String);
-                roleParams.Add("@roleNames", roleNamesCsv, DbType.String);
-                await db.ExecuteAsync("113_InsertUserRoles", roleParams, commandType: CommandType.StoredProcedure);
+                if (!string.IsNullOrWhiteSpace(model.PrimaryRoleName))
+                {
+                    var roleParams = new DynamicParameters();
+                    roleParams.Add("@userId", user.Id, DbType.String);
+                    roleParams.Add("@primaryRoleName", model.PrimaryRoleName.Trim(), DbType.String);
+                    string? secondaryJson = null;
+                    if (model.SecondaryRoles != null && model.SecondaryRoles.Any())
+                    {
+                        var items = model.SecondaryRoles
+                            .Where(s => !string.IsNullOrWhiteSpace(s.RoleName))
+                            .Select(s => new { roleName = s.RoleName.Trim(), validFrom = s.ValidFrom.ToString("yyyy-MM-dd"), validTo = s.ValidTo.ToString("yyyy-MM-dd") })
+                            .ToList();
+                        secondaryJson = System.Text.Json.JsonSerializer.Serialize(items);
+                    }
+                    roleParams.Add("@secondaryRolesJson", secondaryJson, DbType.String);
+                    roleParams.Add("@assignedBy", (string?)null, DbType.String);
+                    await db.ExecuteAsync("100_UpdateUserRolesPrimarySecondary", roleParams, commandType: CommandType.StoredProcedure);
+                }
+                else
+                {
+                    var rolesToAssign = roles?.Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? [];
+                    var roleNamesCsv = string.Join(",", rolesToAssign);
+                    var roleParams = new DynamicParameters();
+                    roleParams.Add("@userId", user.Id, DbType.String);
+                    roleParams.Add("@roleNames", roleNamesCsv, DbType.String);
+                    await db.ExecuteAsync("113_InsertUserRoles", roleParams, commandType: CommandType.StoredProcedure);
+                }
             }
 
             // Asignar la agencia al usuario
@@ -974,28 +1069,45 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@phoneNumber", entity.PhoneNumber, DbType.String);
             parameters.Add("@agencyId", entity.AgencyId, DbType.Int32);
 
-            // Parámetro de roles (múltiples, separados por coma)
-            var roleNamesList = GetRoleNamesFromEntity(entity);
-
-            if (roleNamesList == null || !roleNamesList.Any())
+            string? rolesForLog = null;
+            // Roles: flujo principal+secundarios o legacy (roleNames)
+            if (!string.IsNullOrWhiteSpace(entity.PrimaryRoleName))
             {
-                // Si no hay roles, obtener los roles actuales del usuario
-                var user = await _userManager.FindByIdAsync(entity.Id);
-                if (user != null)
+                parameters.Add("@primaryRoleName", entity.PrimaryRoleName.Trim(), DbType.String);
+                rolesForLog = entity.PrimaryRoleName.Trim();
+                if (entity.SecondaryRoles != null && entity.SecondaryRoles.Any())
                 {
-                    var currentRoles = await _userManager.GetRolesAsync(user);
-                    roleNamesList = currentRoles.ToList();
+                    var items = entity.SecondaryRoles
+                        .Where(s => !string.IsNullOrWhiteSpace(s.RoleName))
+                        .Select(s => new { roleName = s.RoleName.Trim(), validFrom = s.ValidFrom.ToString("yyyy-MM-dd"), validTo = s.ValidTo.ToString("yyyy-MM-dd") })
+                        .ToList();
+                    var secondaryJson = System.Text.Json.JsonSerializer.Serialize(items);
+                    parameters.Add("@secondaryRolesJson", secondaryJson, DbType.String);
+                    rolesForLog += "," + string.Join(",", items.Select(i => i.roleName));
                 }
-
+                else
+                    parameters.Add("@secondaryRolesJson", null, DbType.String);
+                parameters.Add("@roleNames", null, DbType.String);
+            }
+            else
+            {
+                var roleNamesList = GetRoleNamesFromEntity(entity);
                 if (roleNamesList == null || !roleNamesList.Any())
                 {
-                    throw new Exception($"El usuario {entity.Id} no tiene un rol asignado");
+                    var user = await _userManager.FindByIdAsync(entity.Id);
+                    if (user != null)
+                    {
+                        var currentRoles = await _userManager.GetRolesAsync(user);
+                        roleNamesList = currentRoles.ToList();
+                    }
+                    if (roleNamesList == null || !roleNamesList.Any())
+                        throw new Exception($"El usuario {entity.Id} no tiene un rol asignado");
                 }
+                rolesForLog = string.Join(",", roleNamesList.Where(r => !string.IsNullOrWhiteSpace(r)));
+                parameters.Add("@primaryRoleName", null, DbType.String);
+                parameters.Add("@secondaryRolesJson", null, DbType.String);
+                parameters.Add("@roleNames", rolesForLog, DbType.String);
             }
-
-            var roleNames = string.Join(",", roleNamesList.Where(r => !string.IsNullOrWhiteSpace(r)));
-
-            parameters.Add("@roleNames", roleNames, DbType.String);
 
             // Programa asignado al usuario (opcional)
             parameters.Add("@programId", entity.ProgramId, DbType.Int32);
@@ -1012,7 +1124,7 @@ public class UserRepository(UserManager<User> userManager,
                 {
                     { "UserId", entity.Id },
                     { "Email", entity.Email },
-                    { "RoleNames", roleNames ?? "Sin rol" }
+                    { "RoleNames", rolesForLog ?? "Sin rol" }
                 });
                 return true;
             }

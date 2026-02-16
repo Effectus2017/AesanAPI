@@ -169,6 +169,7 @@ VALUES
 INSERT INTO OptionSelection
     (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
 VALUES
+    ('N/A', 'N/A', 'community', 0, 1, 530),
     ('Comunidad especial/bolsillo de pobreza', 'Special Community/Poverty Pocket', 'community', 0, 1, 540),
     ('Vivienda Pública', 'Public Housing', 'community', 0, 1, 550),
     ('Desarrollo Rural', 'Rural Development', 'community', 0, 1, 560),

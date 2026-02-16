@@ -164,6 +164,21 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
+    public async Task SendRoleExtensionRequestToAdmins(IEnumerable<string> adminEmails, string userName, string userEmail, string roleName, DateTime requestedValidTo, string? reason)
+    {
+        await _emailService.SendRoleExtensionRequestToAdmins(adminEmails, userName, userEmail, roleName, requestedValidTo, reason);
+    }
+
+    public async Task SendRoleExtensionApprovedEmail(string userEmail, string userName, string roleName, DateTime newValidTo)
+    {
+        await _emailService.SendRoleExtensionApprovedEmail(userEmail, userName, roleName, newValidTo);
+    }
+
+    public async Task SendRoleExtensionRejectedEmail(string userEmail, string userName, string roleName)
+    {
+        await _emailService.SendRoleExtensionRejectedEmail(userEmail, userName, roleName);
+    }
+
     public async Task<bool> ResendEmail(int emailLogId, bool forceResend = false)
     {
         // Para reenvío, obtener el log existente y crear uno nuevo

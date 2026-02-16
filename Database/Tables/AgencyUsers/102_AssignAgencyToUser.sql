@@ -43,13 +43,13 @@ BEGIN
     FROM RoleAssignmentCategory rac
     WHERE rac.RoleId = @userRoleId;
     
-    -- Si el rol no está en RoleAssignmentCategory, es SuperAdministrator o Administrator
+    -- Si el rol no está en RoleAssignmentCategory, es Super-Administrator o Administrator
     -- Estos roles no necesitan validación porque ven todas las agencias
     IF @assignmentCategory IS NULL
     BEGIN
-        -- SuperAdministrator y Administrator no se asignan a agencias específicas
+        -- Super-Administrator y Administrator no se asignan a agencias específicas
         -- Pero permitimos la asignación si se requiere
-        IF @userRoleName NOT IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+        IF @userRoleName NOT IN ('Super-Administrator', 'Administrator', 'Administrador')
         BEGIN
             RAISERROR('El rol del usuario no está configurado en RoleAssignmentCategory.', 16, 1);
             RETURN -2;

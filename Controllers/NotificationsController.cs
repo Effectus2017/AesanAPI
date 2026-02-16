@@ -16,12 +16,14 @@ public class NotificationsController(
     ILogger<NotificationsController> logger,
     IUnitOfWork unitOfWork,
     IEmailService emailService,
-    IPasswordService passwordService) : ControllerBase
+    IPasswordService passwordService,
+    INotificationMailJobLogRepository notificationMailJobLogRepository) : ControllerBase
 {
     private readonly ILogger<NotificationsController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IEmailService _emailService = emailService;
     private readonly IPasswordService _passwordService = passwordService;
+    private readonly INotificationMailJobLogRepository _notificationMailJobLogRepository = notificationMailJobLogRepository;
 
     /// <summary>
     /// Dispara el envío del correo de bienvenida a la agencia (WelcomeAgency).
@@ -59,6 +61,26 @@ public class NotificationsController(
 
         _logger.LogInformation("SendWelcomeAgency ejecutado para AgencyId {AgencyId}", request.AgencyId);
         return Ok(new { message = "Correo de bienvenida enviado." });
+    }
+
+    /// <summary>
+    /// Registra un evento de log de ejecución del job de notificaciones mail.
+    /// Uso interno / Web Job. Requiere X-Api-Key.
+    /// </summary>
+    [HttpPost("job-log")]
+    [SwaggerOperation(Summary = "Registrar log de ejecución del job", Description = "Uso interno / Web Job. Persiste en BD que el job se está ejecutando (o finalizó).")]
+    public async Task<IActionResult> LogJob([FromBody] NotificationMailJobLogRequest request, CancellationToken cancellationToken)
+    {
+        if (request == null ||
+            string.IsNullOrWhiteSpace(request.JobName) ||
+            string.IsNullOrWhiteSpace(request.Status) ||
+            request.StartedAt == default)
+        {
+            return BadRequest(new { message = "JobName, Status y StartedAt son requeridos." });
+        }
+
+        var id = await _notificationMailJobLogRepository.InsertAsync(request, cancellationToken);
+        return Ok(new { id });
     }
 
     private static UserAgencyRequest MapToUserAgencyRequest(DTOAgency agency)

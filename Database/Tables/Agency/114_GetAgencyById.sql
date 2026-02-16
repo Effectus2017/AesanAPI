@@ -29,8 +29,8 @@ BEGIN
         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
         WHERE ur.UserId = @userId;
 
-        -- Si es SuperAdministrator o Administrator → ver todas las agencias
-        IF @userRoleName IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+        -- Si es Super-Administrator o Administrator → ver todas las agencias
+        IF @userRoleName IN ('Super-Administrator', 'Administrator', 'Administrador')
         BEGIN
             SET @canSeeAllAgencies = 1;
             SET @hasAccess = 1;

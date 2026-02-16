@@ -30,6 +30,11 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     {
         try
         {
+            if (queryParameters.Id == 0)
+            {
+                return BadRequest("El parámetro id es requerido.");
+            }
+
             var result = await _unitOfWork.SchoolRepository.GetSchoolById(queryParameters.Id);
 
             if (result == null)

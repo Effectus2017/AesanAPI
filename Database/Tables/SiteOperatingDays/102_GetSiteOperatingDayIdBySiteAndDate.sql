@@ -17,6 +17,7 @@ BEGIN
     FROM SiteOperatingDays
     WHERE SiteId = @siteid
       AND OperatingDate = @operatingdate
-      AND IsActive = 1;
+      AND IsActive = 1
+      AND (IsHoliday = 0 OR IsHoliday IS NULL);
 END;
 GO

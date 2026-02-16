@@ -10,4 +10,12 @@ public class DTOUserRole
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    /// <summary>True = rol principal; False = rol secundario temporal.</summary>
+    public bool IsPrimary { get; set; } = true;
+    /// <summary>Vigencia desde (solo secundarios).</summary>
+    public DateTime? ValidFrom { get; set; }
+    /// <summary>Vigencia hasta (solo secundarios).</summary>
+    public DateTime? ValidTo { get; set; }
+    /// <summary>True si el rol secundario está vigente hoy.</summary>
+    public bool IsVigent { get; set; }
 }

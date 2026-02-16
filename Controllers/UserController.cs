@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
+using Api.Interfaces;
 using Api.Models;
+using Api.Models.Request;
 using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -15,10 +17,12 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión de usuarios, roles y programas,
 /// incluyendo el registro de usuarios y agencias.
 /// </summary>
-public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingService) : Controller
+public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingService, IUserRoleExtensionRequestRepository extensionRequestRepository, IEmailService emailService) : Controller
 {
     private readonly ILoggingService _loggingService = loggingService;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IUserRoleExtensionRequestRepository _extensionRequestRepository = extensionRequestRepository;
+    private readonly IEmailService _emailService = emailService;
 
     /// ------------------------------------------------------------------------------------------------
     /// Métodos para obtener información de usuarios
@@ -227,12 +231,13 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
                     return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
                 }
 
-                if (entity.Roles == null || !entity.Roles.Any())
+                var usePrimarySecondary = !string.IsNullOrWhiteSpace(entity.PrimaryRoleName);
+                if (!usePrimarySecondary && (entity.Roles == null || !entity.Roles.Any()))
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'Roles' es requerido. Debe asignar al menos un rol." });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe asignar al menos un rol: use 'Roles' (lista) o 'PrimaryRoleName' (y opcionalmente 'SecondaryRoles')." });
                 }
 
-                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles, queryParameters.AgencyId);
+                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles ?? new List<string>(), queryParameters.AgencyId);
                 return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
 
             }
@@ -308,7 +313,122 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         }
     }
 
+    /// <summary>
+    /// Solicitar extensión de vigencia de un rol secundario temporal.
+    /// </summary>
+    [HttpPost("role-extension-request")]
+    [SwaggerOperation(Summary = "Solicitar extensión de rol temporal", Description = "Crea una solicitud de extensión y notifica por email a administradores.")]
+    public async Task<IActionResult> RequestRoleExtension([FromBody] RoleExtensionRequestRequest request, [FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            var userId = queryParameters.CurrentUserId ?? queryParameters.UserId;
+            if (string.IsNullOrEmpty(userId))
+                return StatusCode(StatusCodes.Status401Unauthorized, new { Message = "Usuario no identificado." });
 
+            if (request.RequestedValidTo == default)
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "RequestedValidTo es requerido." });
+
+            var roleId = request.RoleId;
+            if (string.IsNullOrEmpty(roleId) && !string.IsNullOrWhiteSpace(request.RoleName))
+                roleId = await _unitOfWork.UserRepository.GetRoleIdByNameAsync(request.RoleName!.Trim());
+            if (string.IsNullOrEmpty(roleId))
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe indicar RoleId o RoleName válido." });
+
+            var id = await _extensionRequestRepository.InsertAsync(userId, roleId, request.RequestedValidTo, request.Reason);
+            if (id <= 0)
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "No se pudo crear la solicitud." });
+
+            var user = await _unitOfWork.UserRepository.GetUserByIdWithSP(userId);
+            var userName = user != null ? $"{user.FirstName} {user.FatherLastName}".Trim() : "Usuario";
+            var userEmail = user?.Email ?? "";
+            var roleName = request.RoleName ?? (user?.SecondaryRoles?.FirstOrDefault(r => r.RoleId == roleId)?.RoleName) ?? "Rol temporal";
+            var adminEmails = await _unitOfWork.UserRepository.GetUserEmailsByRoleNameAsync("Administrator");
+            if (adminEmails != null && adminEmails.Any())
+                await _emailService.SendRoleExtensionRequestToAdmins(adminEmails, userName, userEmail, roleName, request.RequestedValidTo, request.Reason);
+
+            return StatusCode(StatusCodes.Status200OK, new { Id = id, Message = "Solicitud enviada. Un administrador revisará su petición." });
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al solicitar extensión de rol");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Listar solicitudes de extensión de rol (admin). Filtro por estado: Pending, Approved, Rejected o null para todas.
+    /// </summary>
+    [HttpGet("role-extension-requests")]
+    [SwaggerOperation(Summary = "Listar solicitudes de extensión", Description = "Solo administradores. Por defecto devuelve pendientes.")]
+    public async Task<IActionResult> GetRoleExtensionRequests([FromQuery] string? status = "Pending", [FromQuery] int take = 50, [FromQuery] int skip = 0)
+    {
+        try
+        {
+            var (rows, total) = await _extensionRequestRepository.GetAsync(status, take, skip);
+            return StatusCode(StatusCodes.Status200OK, new { data = rows, total });
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al listar solicitudes de extensión");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Aprobar una solicitud de extensión de rol (admin).
+    /// </summary>
+    [HttpPost("role-extension-requests/{id:int}/approve")]
+    [SwaggerOperation(Summary = "Aprobar solicitud de extensión", Description = "Opcionalmente indicar newValidTo para una fecha distinta a la solicitada.")]
+    public async Task<IActionResult> ApproveRoleExtensionRequest([FromRoute] int id, [FromBody] ApproveExtensionRequest? body, [FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            var processedBy = queryParameters.CurrentUserId ?? queryParameters.UserId;
+            var newValidTo = body?.NewValidTo;
+            var ok = await _extensionRequestRepository.ApproveAsync(id, newValidTo, processedBy);
+            if (!ok)
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Solicitud no encontrada o ya procesada." });
+
+            var request = await _extensionRequestRepository.GetByIdAsync(id);
+            if (request != null && !string.IsNullOrEmpty(request.UserEmail))
+                await _emailService.SendRoleExtensionApprovedEmail(request.UserEmail, request.UserName ?? "Usuario", request.RoleName, newValidTo ?? request.RequestedValidTo);
+
+            return StatusCode(StatusCodes.Status200OK, new { Message = "Solicitud aprobada." });
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al aprobar solicitud de extensión");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Rechazar una solicitud de extensión de rol (admin).
+    /// </summary>
+    [HttpPost("role-extension-requests/{id:int}/reject")]
+    [SwaggerOperation(Summary = "Rechazar solicitud de extensión")]
+    public async Task<IActionResult> RejectRoleExtensionRequest([FromRoute] int id, [FromQuery] QueryParameters queryParameters)
+    {
+        try
+        {
+            var processedBy = queryParameters.CurrentUserId ?? queryParameters.UserId;
+            var ok = await _extensionRequestRepository.RejectAsync(id, processedBy);
+            if (!ok)
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Solicitud no encontrada o ya procesada." });
+
+            var request = await _extensionRequestRepository.GetByIdAsync(id);
+            if (request != null && !string.IsNullOrEmpty(request.UserEmail))
+                await _emailService.SendRoleExtensionRejectedEmail(request.UserEmail, request.UserName ?? "Usuario", request.RoleName);
+
+            return StatusCode(StatusCodes.Status200OK, new { Message = "Solicitud rechazada." });
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogError(ex, "Error al rechazar solicitud de extensión");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+        }
+    }
 
     /// <summary>
     /// Actualiza modelo de usuario (método original mantenido para compatibilidad)

@@ -15,6 +15,10 @@ public class DTOUser
     public bool IsTemporalPasswordActived { get; set; } = false;
     public List<string> Roles { get; set; } = [];
     public DTOUserRole? Role { get; set; } = null; // Rol completo (un solo rol por usuario)
+    /// <summary>Rol principal (nombre). Para create/update.</summary>
+    public string? PrimaryRoleName { get; set; }
+    /// <summary>Roles secundarios con vigencia. Para create/update y respuesta.</summary>
+    public List<DTOUserSecondaryRole>? SecondaryRoles { get; set; }
     /// <summary>Texto para mostrar en listados: roles unidos por coma, o el primer rol si solo hay uno.</summary>
     public string RolesDisplay => Roles != null && Roles.Count > 0 ? string.Join(", ", Roles) : (Role?.Name ?? "");
     public DTOAgency? Agency { get; set; } = null;

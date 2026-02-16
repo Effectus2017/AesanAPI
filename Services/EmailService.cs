@@ -625,4 +625,26 @@ public class EmailService(
             throw new Exception($"Error al reenviar correo: {ex.Message}", ex);
         }
     }
+
+    public async Task SendRoleExtensionRequestToAdmins(IEnumerable<string> adminEmails, string userName, string userEmail, string roleName, DateTime requestedValidTo, string? reason)
+    {
+        var subject = "[AESAN] Solicitud de extensión de rol temporal";
+        var body = $"El usuario {userName} ({userEmail}) ha solicitado extender la vigencia del rol temporal \"{roleName}\" hasta el {requestedValidTo:yyyy-MM-dd}.{(string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason}")} Acceda al panel de administración para aprobar o rechazar.";
+        foreach (var email in adminEmails.Where(e => !string.IsNullOrWhiteSpace(e)))
+            await SendEmail(email, subject, body);
+    }
+
+    public async Task SendRoleExtensionApprovedEmail(string userEmail, string userName, string roleName, DateTime newValidTo)
+    {
+        var subject = "[AESAN] Extensión de rol temporal aprobada";
+        var body = $"Estimado/a {userName}: Su solicitud de extensión del rol temporal \"{roleName}\" ha sido aprobada. Podrá usar este rol hasta el {newValidTo:yyyy-MM-dd}.";
+        await SendEmail(userEmail, subject, body);
+    }
+
+    public async Task SendRoleExtensionRejectedEmail(string userEmail, string userName, string roleName)
+    {
+        var subject = "[AESAN] Solicitud de extensión de rol temporal rechazada";
+        var body = $"Estimado/a {userName}: Su solicitud de extensión del rol temporal \"{roleName}\" ha sido rechazada. Contacte al administrador si tiene dudas.";
+        await SendEmail(userEmail, subject, body);
+    }
 }

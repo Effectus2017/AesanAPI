@@ -15,4 +15,10 @@ public interface IEmailService
     Task SendPasswordChangedEmail(DTOUser user, string newPassword);
     Task SendPasswordResetEmail(string email, string resetLink);
     Task<bool> ResendEmail(int emailLogId, bool forceResend = false);
+    /// <summary>Notifica a administradores sobre una solicitud de extensión de rol secundario.</summary>
+    Task SendRoleExtensionRequestToAdmins(IEnumerable<string> adminEmails, string userName, string userEmail, string roleName, DateTime requestedValidTo, string? reason);
+    /// <summary>Notifica al usuario que su solicitud de extensión fue aprobada.</summary>
+    Task SendRoleExtensionApprovedEmail(string userEmail, string userName, string roleName, DateTime newValidTo);
+    /// <summary>Notifica al usuario que su solicitud de extensión fue rechazada.</summary>
+    Task SendRoleExtensionRejectedEmail(string userEmail, string userName, string roleName);
 }

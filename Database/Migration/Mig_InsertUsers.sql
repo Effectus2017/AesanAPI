@@ -1,11 +1,11 @@
 -- =============================================
--- 101_InsertUsers: Insertar usuarios NUTRE y administradores (seed)
+-- Migración: Insertar usuarios NUTRE y administradores (seed)
 -- =============================================
 -- REQUISITO: Los roles deben existir en AspNetRoles antes de ejecutar este script.
 --   - NUTRE: 'Coordinadora de Monitoría' o 'Coordinador'
---   - SuperAdministrator: 'SuperAdministrator' o 'Super-Administrador'
+--   - Super-Administrator: 'Super-Administrator'
 --   - Administrator: 'Administrator' o 'Administrador'
--- Ejecutar antes, si aplica: Database/Migration/MigrateRolesToNewStructure.sql (o el script que cree los roles).
+-- Ejecutar antes, si aplica: Database/Migration/Mig_AesanRolesNuevos.sql (o el script que cree los roles).
 -- AspNetUsers: solo columnas de Identity. FirstName, MiddleName, FatherLastName, MotherLastName van en Staff (INSERT más abajo).
 -- =============================================
 
@@ -111,7 +111,7 @@ GO
 -- Asignar rol NUTRE (Coordinadora de Monitoría o Coordinador). Si el rol no existe, fallar para no dejar usuarios sin rol.
 IF NOT EXISTS (SELECT 1 FROM AspNetRoles WHERE (Name = N'Coordinadora de Monitoría' OR Name = N'Coordinador') AND IsActive = 1)
 BEGIN
-    RAISERROR(N'No existe rol Coordinadora de Monitoría ni Coordinador en AspNetRoles. Ejecute antes la migración de roles (p. ej. MigrateRolesToNewStructure.sql).', 16, 1);
+    RAISERROR(N'No existe rol Coordinadora de Monitoría ni Coordinador en AspNetRoles. Ejecute antes la migración de roles (p. ej. Mig_AesanRolesNuevos.sql).', 16, 1);
     RETURN;
 END
 
@@ -137,7 +137,7 @@ WHERE u.Email IN (
 );
 GO
 
--- Insertar usuarios Administradores (SuperAdministrator) y Empleados Administrativos (Administrator)
+-- Insertar usuarios Administradores (Super-Administrator) y Empleados Administrativos (Administrator)
 -- FirstName, MiddleName, FatherLastName, MotherLastName van en Staff (INSERT más abajo).
 INSERT INTO AspNetUsers
     (Id, AccessFailedCount, ConcurrencyStamp, Email, EmailConfirmed, LockoutEnabled,
@@ -178,11 +178,11 @@ FROM (VALUES
 INNER JOIN AspNetUsers u ON u.Email = v.Email;
 GO
 
--- Asignar rol SuperAdministrator a Marta Meléndez y Alberto Miranda (resolver RoleId por nombre)
+-- Asignar rol Super-Administrator a Marta Meléndez y Alberto Miranda (resolver RoleId por nombre)
 INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt)
 SELECT u.Id, r.Id, 1, GETDATE()
 FROM AspNetUsers u
-CROSS JOIN (SELECT TOP 1 Id FROM AspNetRoles WHERE Name IN (N'SuperAdministrator', N'Super-Administrador') AND IsActive = 1) r
+CROSS JOIN (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Super-Administrator' AND IsActive = 1) r
 WHERE u.Email IN (
     'marta.melendez@nutre.com',
     'alberto.miranda@nutre.com'

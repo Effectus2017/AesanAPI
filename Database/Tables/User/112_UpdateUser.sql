@@ -20,8 +20,12 @@ CREATE OR ALTER PROCEDURE [112_UpdateUser]
     @motherLastName NVARCHAR(100),
     @phoneNumber NVARCHAR(50),
     @agencyId INT,
-    -- Roles (lista separada por comas, ej: 'Administrator,Coordinadora de Monitoría')
-    @roleNames NVARCHAR(MAX),
+    -- Roles: modo legacy (lista separada por comas) o nuevo (principal + secundarios)
+    @roleNames NVARCHAR(MAX) = NULL,
+    -- Rol principal (un solo nombre). Si se indica, se usa flujo primary/secondary con @secondaryRolesJson.
+    @primaryRoleName NVARCHAR(256) = NULL,
+    -- Roles secundarios en JSON: [{"roleName":"X","validFrom":"2025-01-01","validTo":"2025-12-31"}, ...]
+    @secondaryRolesJson NVARCHAR(MAX) = NULL,
     -- Programa asignado al usuario (opcional; para filtrado de información)
     @programId INT = NULL,
     -- Usuario que está realizando la asignación
@@ -81,27 +85,15 @@ BEGIN
         SET @LogMessage = 'Paso 2 completado - Staff actualizado/insertado';
         RAISERROR(@LogMessage, 10, 1) WITH NOWAIT;
 
-        -- 3. Actualizar roles si es necesario
-        IF @roleNames IS NOT NULL AND LTRIM(RTRIM(@roleNames)) <> ''
+        -- 3. Actualizar roles (flujo principal+secundarios o legacy roleNames)
+        IF @primaryRoleName IS NOT NULL AND LTRIM(RTRIM(@primaryRoleName)) <> ''
         BEGIN
-            -- Capturar roles actuales para auditoría (antes del DELETE)
-            DECLARE @oldRoleNames NVARCHAR(MAX) = NULL;
-            SELECT @oldRoleNames = STRING_AGG(r.Name, ',') WITHIN GROUP (ORDER BY r.Name)
-            FROM AspNetUserRoles ur
-            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-            WHERE ur.UserId = @userId;
+            EXEC [100_UpdateUserRolesPrimarySecondary]
+                @userId = @userId,
+                @primaryRoleName = @primaryRoleName,
+                @secondaryRolesJson = @secondaryRolesJson,
+                @assignedBy = @assignedBy;
 
-            -- Eliminar roles existentes
-            DELETE FROM AspNetUserRoles WHERE UserId = @userId;
-
-            -- Insertar cada rol de la lista
-            INSERT INTO AspNetUserRoles
-                (UserId, RoleId, IsActive, CreatedAt)
-            SELECT @userId, r.Id, 1, GETDATE()
-            FROM AspNetRoles r
-            INNER JOIN STRING_SPLIT(@roleNames, ',') ss ON LTRIM(RTRIM(ss.value)) = r.Name;
-
-            -- Registrar en auditoría (ChangedBy: quien asigna o el propio usuario)
             DECLARE @auditOpId UNIQUEIDENTIFIER = NULL;
             DECLARE @changedBy NVARCHAR(450) = COALESCE(NULLIF(LTRIM(RTRIM(@assignedBy)), ''), @userId);
             EXEC [100_LogAuditChange]
@@ -109,10 +101,36 @@ BEGIN
                 @EntityId = @userId,
                 @Action = 'UPDATE',
                 @ChangedBy = @changedBy,
+                @NewValues = @primaryRoleName,
+                @BusinessContext = 'UserRolesUpdate',
+                @OperationId = @auditOpId OUTPUT;
+        END
+        ELSE IF @roleNames IS NOT NULL AND LTRIM(RTRIM(@roleNames)) <> ''
+        BEGIN
+            DECLARE @oldRoleNames NVARCHAR(MAX) = NULL;
+            SELECT @oldRoleNames = STRING_AGG(r.Name, ',') WITHIN GROUP (ORDER BY r.Name)
+            FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = @userId;
+
+            DELETE FROM AspNetUserRoles WHERE UserId = @userId;
+
+            INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt, IsPrimary, ValidFrom, ValidTo)
+            SELECT @userId, r.Id, 1, GETDATE(), 1, NULL, NULL
+            FROM AspNetRoles r
+            INNER JOIN STRING_SPLIT(@roleNames, ',') ss ON LTRIM(RTRIM(ss.value)) = r.Name;
+
+            DECLARE @auditOpIdLegacy UNIQUEIDENTIFIER = NULL;
+            DECLARE @changedByLegacy NVARCHAR(450) = COALESCE(NULLIF(LTRIM(RTRIM(@assignedBy)), ''), @userId);
+            EXEC [100_LogAuditChange]
+                @TableName = 'AspNetUserRoles',
+                @EntityId = @userId,
+                @Action = 'UPDATE',
+                @ChangedBy = @changedByLegacy,
                 @OldValues = @oldRoleNames,
                 @NewValues = @roleNames,
                 @BusinessContext = 'UserRolesUpdate',
-                @OperationId = @auditOpId OUTPUT;
+                @OperationId = @auditOpIdLegacy OUTPUT;
         END
 
         -- 4. Actualizar asignación de agencia (CRÍTICO: NO eliminar todas las asignaciones)
@@ -130,7 +148,8 @@ BEGIN
                 @userRoleName = r.Name
             FROM AspNetUserRoles ur
             INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-            WHERE ur.UserId = @userId;
+            WHERE ur.UserId = @userId
+            ORDER BY ur.IsPrimary DESC, ur.CreatedAt ASC;
 
             IF @userRoleId IS NOT NULL
             BEGIN

@@ -75,8 +75,7 @@ BEGIN
         LEFT JOIN Program p ON p.Id = up.ProgramId
     WHERE u.Id = @userId;
 
-    -- Segunda consulta: Roles del usuario como objetos completos
-    -- Incluir ur.IsActive = 1 o IS NULL para roles insertados por Identity (sin IsActive)
+    -- Segunda consulta: Roles del usuario con IsPrimary, ValidFrom, ValidTo (rol principal y secundarios)
     SELECT
         r.Id,
         r.Name,
@@ -85,7 +84,13 @@ BEGIN
         r.ConcurrencyStamp,
         r.IsActive,
         r.CreatedAt,
-        r.UpdatedAt
+        r.UpdatedAt,
+        ur.IsPrimary AS isprimary,
+        ur.ValidFrom AS validfrom,
+        ur.ValidTo AS validto,
+        (CASE WHEN ur.IsPrimary = 0 AND ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
+              AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo
+              THEN 1 ELSE 0 END) AS isvigent
     FROM AspNetUserRoles ur
         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
     WHERE ur.UserId = @userId

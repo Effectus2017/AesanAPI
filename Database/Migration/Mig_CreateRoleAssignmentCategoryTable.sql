@@ -1,6 +1,5 @@
 -- =============================================
--- Script: Crear tabla RoleAssignmentCategory
--- Fecha: 2025-01-XX
+-- Migración: Crear tabla RoleAssignmentCategory
 -- Descripción: Tabla de mapeo para categorizar roles (AGENCY, NUTRE)
 --              y validar qué AgencyAssignmentType es válido para cada rol.
 --              NO se usa para determinar acceso a agencias.
@@ -30,7 +29,7 @@ END
 GO
 
 -- Insertar mapeos para roles existentes
--- IMPORTANTE: Los nombres de roles pueden variar (ej: 'SuperAdministrator' vs 'Super-Administrador')
+-- IMPORTANTE: Los nombres de roles pueden variar (ej: 'Super-Administrator')
 -- Por eso usamos LIKE para buscar variaciones
 
 PRINT 'Insertando mapeos de roles...';
@@ -248,7 +247,73 @@ BEGIN
     PRINT '  - Mapeo para Funcionario Revisión Independiente insertado';
 END
 
--- NOTA: SuperAdministrator y Administrator NO se insertan aquí porque:
+-- Roles NUTRE (lista AESAN): Finanzas, Coordinadora de Monitoría, Oficial de Cumplimiento, Analista, Coordinadora, Evaluadora, Nutricionista, Asesor Legal
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Finanzas' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Finanzas' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Finanzas insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Coordinadora de Monitoría' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Coordinadora de Monitoría' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Coordinadora de Monitoría insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Oficial de Cumplimiento' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Oficial de Cumplimiento' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Oficial de Cumplimiento insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Analista' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Analista' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Analista insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Coordinadora' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Coordinadora' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Coordinadora insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Evaluadora' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Evaluadora' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Evaluadora insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Nutricionista' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Nutricionista' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Nutricionista insertado';
+END
+IF EXISTS (SELECT 1 FROM AspNetRoles WHERE Name = N'Asesor Legal' AND IsActive = 1)
+BEGIN
+    MERGE RoleAssignmentCategory AS target
+    USING (SELECT TOP 1 Id FROM AspNetRoles WHERE Name = N'Asesor Legal' AND IsActive = 1) AS source ON target.RoleId = source.Id
+    WHEN NOT MATCHED THEN INSERT (RoleId, AssignmentCategory, CanBeOwner, CreatedAt) VALUES (source.Id, 'NUTRE', 0, GETUTCDATE())
+    WHEN MATCHED THEN UPDATE SET AssignmentCategory = 'NUTRE', CanBeOwner = 0, UpdatedAt = GETUTCDATE();
+    PRINT '  - Mapeo para Asesor Legal insertado';
+END
+
+-- NOTA: Super-Administrator y Administrator NO se insertan aquí porque:
 -- 1. Ven TODAS las agencias (sin filtro AgencyUsers)
 -- 2. No necesitan validación de AgencyAssignmentType
 -- 3. No se asignan a agencias específicas mediante AgencyUsers
@@ -256,18 +321,18 @@ END
 PRINT 'Mapeos de roles insertados exitosamente.';
 PRINT '';
 
--- Verificación: Mostrar roles sin mapeo
+-- Verificación: Mostrar roles sin mapeo (alias de salida en lowercase según convención)
 PRINT 'Verificando roles sin mapeo...';
-SELECT 
-    r.Id,
-    r.Name AS RoleName,
-    'Sin mapeo en RoleAssignmentCategory' AS Estado
+SELECT
+    id = r.Id,
+    rolename = r.Name,
+    estado = 'Sin mapeo en RoleAssignmentCategory'
 FROM AspNetRoles r
 WHERE r.IsActive = 1
-    AND r.Name NOT IN ('SuperAdministrator', 'Super-Administrador', 'Administrator', 'Administrador')
+    AND r.Name NOT IN ('Super-Administrator', 'Administrator', 'Administrador')
     AND NOT EXISTS (
-        SELECT 1 
-        FROM RoleAssignmentCategory rac 
+        SELECT 1
+        FROM RoleAssignmentCategory rac
         WHERE rac.RoleId = r.Id
     );
 

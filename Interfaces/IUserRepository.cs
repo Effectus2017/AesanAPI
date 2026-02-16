@@ -18,6 +18,8 @@ public interface IUserRepository
     /// ------------------------------------------------------------------------------------------------
 
     Task<IList<string>> GetAesanRoleNames();
+    Task<List<string>> GetUserEmailsByRoleNameAsync(string roleName);
+    Task<string?> GetRoleIdByNameAsync(string roleName);
     Task<dynamic> Login(LoginRequest model);
     Task<dynamic> SelectRole(string userId, string role);
     Task<dynamic> RegisterUserAgency(UserAgencyRequest model);

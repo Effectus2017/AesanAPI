@@ -270,6 +270,17 @@ BEGIN
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de TemporaryPasswords';
     END
 
+        -- Eliminar EmailLog (logs de correo asociados al usuario)
+        IF OBJECT_ID('EmailLog', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM EmailLog
+            WHERE UserId = @userId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de EmailLog';
+        END
+
         -- =============================================
         -- 4. Eliminar AgencyUsers (donde UserId = @userId)
         -- =============================================
