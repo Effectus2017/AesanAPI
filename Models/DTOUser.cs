@@ -30,7 +30,11 @@ public class DTOUser
     public int? AgencyId { get; set; }
     public string? AgencyName { get; set; }
 
-    /// <summary>Programa asignado al usuario (para filtrado de información). Solo en Admin Portal se asigna.</summary>
+    /// <summary>Programa asignado al usuario (para filtrado de información). Solo en Admin Portal se asigna. Compatibilidad: primer programa.</summary>
     public int? ProgramId { get; set; }
     public string? ProgramName { get; set; }
+    /// <summary>Lista de programas asignados al usuario (Admin Portal). Para create/update usar ProgramIds.</summary>
+    public List<DTOProgram>? Programs { get; set; }
+    /// <summary>IDs de programas para create/update (envío desde Web/API).</summary>
+    public List<int>? ProgramIds { get; set; }
 }

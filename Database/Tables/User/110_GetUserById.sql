@@ -49,9 +49,9 @@ BEGIN
         a.Id AS AgencyId,
         a.Name AS AgencyName,
         a.AgencyCode,
-        -- Programa asignado al usuario (uno solo, para filtrado de información)
-        p.Id AS ProgramId,
-        p.Name AS ProgramName
+        -- Primer programa (compatibilidad); lista completa en tercer result set
+        (SELECT TOP 1 p2.Id FROM UserProgram up2 INNER JOIN Program p2 ON up2.ProgramId = p2.Id WHERE up2.UserId = u.Id AND up2.IsActive = 1) AS ProgramId,
+        (SELECT TOP 1 p2.Name FROM UserProgram up2 INNER JOIN Program p2 ON up2.ProgramId = p2.Id WHERE up2.UserId = u.Id AND up2.IsActive = 1) AS ProgramName
     FROM AspNetUsers u
         LEFT JOIN Staff s ON u.Id = s.UserId
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
@@ -70,9 +70,6 @@ BEGIN
             au.CreatedAt DESC
         ) au_filtered ON u.Id = au_filtered.UserId
         LEFT JOIN Agency a ON au_filtered.AgencyId = a.Id
-        -- Programa asignado al usuario (primera fila activa en UserProgram)
-        LEFT JOIN (SELECT TOP 1 UserId, ProgramId FROM UserProgram WHERE UserId = @userId AND IsActive = 1) up ON up.UserId = u.Id
-        LEFT JOIN Program p ON p.Id = up.ProgramId
     WHERE u.Id = @userId;
 
     -- Segunda consulta: Roles del usuario con IsPrimary, ValidFrom, ValidTo (rol principal y secundarios)
@@ -95,6 +92,17 @@ BEGIN
         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
     WHERE ur.UserId = @userId
         AND (ur.IsActive = 1 OR ur.IsActive IS NULL);
+
+    -- Tercera consulta: Programas asignados al usuario (UserProgram activos)
+    SELECT
+        id = p.Id,
+        name = p.Name
+    FROM UserProgram up
+        INNER JOIN Program p ON up.ProgramId = p.Id
+    WHERE up.UserId = @userId
+        AND up.IsActive = 1
+        AND p.IsActive = 1
+    ORDER BY p.Name;
 END;
 GO
 

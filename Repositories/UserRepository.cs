@@ -126,6 +126,9 @@ public class UserRepository(UserManager<User> userManager,
             // Leer el segundo resultado: roles del usuario (con isprimary, validfrom, validto, isvigent)
             var userRoles = (await result.ReadAsync<DTOUserRole>()).ToList();
 
+            // Leer el tercer resultado: programas asignados al usuario
+            var userProgramsList = (await result.ReadAsync<DTOProgram>()).ToList();
+
             var primaryRole = userRoles.FirstOrDefault(r => r.IsPrimary);
             var secondaryRolesList = userRoles.Where(r => !r.IsPrimary).Select(r => new DTOUserSecondaryRole
             {
@@ -159,6 +162,7 @@ public class UserRepository(UserManager<User> userManager,
                 AgencyName = userFromDb.AgencyName,
                 ProgramId = userFromDb.ProgramId,
                 ProgramName = userFromDb.ProgramName,
+                Programs = userProgramsList.Count > 0 ? userProgramsList : null,
                 Roles = roleNamesForDisplay,
                 Role = primaryRole ?? userRoles.FirstOrDefault(),
                 PrimaryRoleName = primaryRole?.Name,
@@ -187,6 +191,26 @@ public class UserRepository(UserManager<User> userManager,
             };
             await _loggingService.LogError(ex, "Error al obtener usuario con SP", properties);
             throw new Exception($"Error al obtener el usuario con SP: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los programas asignados al usuario desde UserProgram (Admin Portal). Usado para claims JWT.
+    /// </summary>
+    private async Task<List<DTOProgram>> GetUserProgramsByUserId(string userId)
+    {
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+            var result = await db.QueryAsync<DTOProgram>("100_GetUserProgramsByUserId", parameters, commandType: CommandType.StoredProcedure);
+            return result?.ToList() ?? new List<DTOProgram>();
+        }
+        catch (Exception ex)
+        {
+            _loggingService.LogWarning(ex, "Error al obtener programas del usuario desde UserProgram para {UserId}", userId);
+            return new List<DTOProgram>();
         }
     }
 
@@ -497,7 +521,10 @@ public class UserRepository(UserManager<User> userManager,
         var audience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
 
         var agency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
-        var userPrograms = await _agencyRepository.GetAgencyProgramsByUserId(user.Id);
+        var userProgramsFromAdmin = await GetUserProgramsByUserId(user.Id);
+        var userPrograms = (userProgramsFromAdmin != null && userProgramsFromAdmin.Any())
+            ? userProgramsFromAdmin
+            : (await _agencyRepository.GetAgencyProgramsByUserId(user.Id) as List<DTOProgram>) ?? new List<DTOProgram>();
 
         Staff? staff = null;
         try
@@ -1008,17 +1035,21 @@ public class UserRepository(UserManager<User> userManager,
             string agencyAssignmentType = await _agencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(user.Id);
             await _agencyUsersRepository.AssignAgencyToUser(user.Id, agencyId, user.Id, agencyAssignmentType);
 
-            // Asignar programa al usuario si viene en el modelo (Admin add user)
-            if (model.ProgramId.HasValue && model.ProgramId.Value > 0)
+            // Asignar programas al usuario si vienen en el modelo (Admin add user)
+            var addProgramIds = model.ProgramIds ?? (model.ProgramId.HasValue && model.ProgramId.Value > 0 ? new List<int> { model.ProgramId.Value } : null);
+            if (addProgramIds != null && addProgramIds.Any())
             {
                 using (var dbProgram = _context.CreateConnection())
                 {
-                    var programParams = new DynamicParameters();
-                    programParams.Add("@userId", user.Id, DbType.String);
-                    programParams.Add("@programId", model.ProgramId.Value, DbType.Int32);
-                    await dbProgram.ExecuteAsync(
-                        "INSERT INTO UserProgram (UserId, ProgramId, IsActive, CreatedAt) VALUES (@userId, @programId, 1, GETUTCDATE())",
-                        programParams);
+                    foreach (var programId in addProgramIds.Where(id => id > 0))
+                    {
+                        var programParams = new DynamicParameters();
+                        programParams.Add("@userId", user.Id, DbType.String);
+                        programParams.Add("@programId", programId, DbType.Int32);
+                        await dbProgram.ExecuteAsync(
+                            "INSERT INTO UserProgram (UserId, ProgramId, IsActive, CreatedAt) VALUES (@userId, @programId, 1, GETUTCDATE())",
+                            programParams);
+                    }
                 }
             }
 
@@ -1109,8 +1140,14 @@ public class UserRepository(UserManager<User> userManager,
                 parameters.Add("@roleNames", rolesForLog, DbType.String);
             }
 
-            // Programa asignado al usuario (opcional)
-            parameters.Add("@programId", entity.ProgramId, DbType.Int32);
+            // Programas asignados al usuario (IDs separados por coma, ej. "1,2,3")
+            var programIds = entity.ProgramIds ?? (entity.Programs?.Select(p => p.Id).ToList());
+            if (programIds == null && entity.ProgramId.HasValue && entity.ProgramId.Value > 0)
+                programIds = new List<int> { entity.ProgramId.Value };
+            var programIdsCsv = programIds != null && programIds.Any()
+                ? string.Join(",", programIds.Where(id => id > 0))
+                : null;
+            parameters.Add("@programIds", programIdsCsv, DbType.String);
 
             // Parámetro de usuario que realiza la asignación
             parameters.Add("@assignedBy", currentUserId, DbType.String);

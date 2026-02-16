@@ -26,8 +26,8 @@ CREATE OR ALTER PROCEDURE [112_UpdateUser]
     @primaryRoleName NVARCHAR(256) = NULL,
     -- Roles secundarios en JSON: [{"roleName":"X","validFrom":"2025-01-01","validTo":"2025-12-31"}, ...]
     @secondaryRolesJson NVARCHAR(MAX) = NULL,
-    -- Programa asignado al usuario (opcional; para filtrado de información)
-    @programId INT = NULL,
+    -- Programas asignados al usuario: IDs separados por coma, ej. '1,2,3'. NULL o vacío = desactivar todos.
+    @programIds NVARCHAR(500) = NULL,
     -- Usuario que está realizando la asignación
     @assignedBy NVARCHAR(450) = NULL
 AS
@@ -234,10 +234,9 @@ BEGIN
             END
         END
 
-        -- 5. Sincronizar programa asignado al usuario (un solo programa desde Admin)
-        IF @programId IS NULL OR @programId = 0
+        -- 5. Sincronizar programas asignados al usuario (lista desde Admin, IDs separados por coma)
+        IF @programIds IS NULL OR LTRIM(RTRIM(@programIds)) = ''
         BEGIN
-            -- Quitar asignación de programa: desactivar filas en UserProgram
             UPDATE UserProgram
             SET IsActive = 0,
                 UpdatedAt = GETUTCDATE()
@@ -245,30 +244,38 @@ BEGIN
         END
         ELSE
         BEGIN
-            -- Validar que el programa existe
-            IF EXISTS (SELECT 1 FROM Program WHERE Id = @programId AND IsActive = 1)
-            BEGIN
-                -- Desactivar otras asignaciones del usuario
-                UPDATE UserProgram
-                SET IsActive = 0,
-                    UpdatedAt = GETUTCDATE()
-                WHERE UserId = @userId;
+            -- Desactivar asignaciones cuyo ProgramId no esté en la lista
+            UPDATE UserProgram
+            SET IsActive = 0,
+                UpdatedAt = GETUTCDATE()
+            WHERE UserId = @userId
+                AND ProgramId NOT IN (
+                    SELECT DISTINCT TRY_CAST(LTRIM(RTRIM(ss.value)) AS INT)
+                    FROM STRING_SPLIT(@programIds, ',') ss
+                    WHERE TRY_CAST(LTRIM(RTRIM(ss.value)) AS INT) > 0
+                );
 
-                -- Insertar o reactivar la asignación al programa elegido
-                IF EXISTS (SELECT 1 FROM UserProgram WHERE UserId = @userId AND ProgramId = @programId)
-                BEGIN
-                    UPDATE UserProgram
-                    SET IsActive = 1,
-                        UpdatedAt = GETUTCDATE()
-                    WHERE UserId = @userId
-                        AND ProgramId = @programId;
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO UserProgram (UserId, ProgramId, IsActive, CreatedAt)
-                    VALUES (@userId, @programId, 1, GETUTCDATE());
-                END
-            END
+            -- Por cada ID en la lista: validar que existe en Program y activo; insertar o reactivar
+            INSERT INTO UserProgram (UserId, ProgramId, IsActive, CreatedAt)
+            SELECT @userId, pid.id, 1, GETUTCDATE()
+            FROM (
+                SELECT DISTINCT TRY_CAST(LTRIM(RTRIM(ss.value)) AS INT) AS id
+                FROM STRING_SPLIT(@programIds, ',') ss
+                WHERE TRY_CAST(LTRIM(RTRIM(ss.value)) AS INT) > 0
+            ) pid
+            WHERE EXISTS (SELECT 1 FROM Program WHERE Id = pid.id AND IsActive = 1)
+                AND NOT EXISTS (SELECT 1 FROM UserProgram WHERE UserId = @userId AND ProgramId = pid.id AND IsActive = 1);
+
+            UPDATE UserProgram
+            SET IsActive = 1,
+                UpdatedAt = GETUTCDATE()
+            WHERE UserId = @userId
+                AND ProgramId IN (
+                    SELECT DISTINCT TRY_CAST(LTRIM(RTRIM(ss.value)) AS INT)
+                    FROM STRING_SPLIT(@programIds, ',') ss
+                    WHERE TRY_CAST(LTRIM(RTRIM(ss.value)) AS INT) > 0
+                )
+                AND IsActive = 0;
         END
 
         COMMIT TRANSACTION;
