@@ -72,26 +72,53 @@ BEGIN
         LEFT JOIN Agency a ON au_filtered.AgencyId = a.Id
     WHERE u.Id = @userId;
 
-    -- Segunda consulta: Roles del usuario con IsPrimary, ValidFrom, ValidTo (rol principal y secundarios)
-    SELECT
-        r.Id,
-        r.Name,
-        r.Description,
-        r.NormalizedName,
-        r.ConcurrencyStamp,
-        r.IsActive,
-        r.CreatedAt,
-        r.UpdatedAt,
-        ur.IsPrimary AS isprimary,
-        ur.ValidFrom AS validfrom,
-        ur.ValidTo AS validto,
-        (CASE WHEN ur.IsPrimary = 0 AND ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
-              AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo
-              THEN 1 ELSE 0 END) AS isvigent
-    FROM AspNetUserRoles ur
-        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-    WHERE ur.UserId = @userId
-        AND (ur.IsActive = 1 OR ur.IsActive IS NULL);
+    -- Segunda consulta: Roles del usuario con IsPrimary, ValidFrom, ValidTo (y Comment si existe la columna)
+    IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUserRoles') AND name = 'Comment')
+    BEGIN
+        SELECT
+            r.Id,
+            r.Name,
+            r.Description,
+            r.NormalizedName,
+            r.ConcurrencyStamp,
+            r.IsActive,
+            r.CreatedAt,
+            r.UpdatedAt,
+            ur.IsPrimary AS isprimary,
+            ur.ValidFrom AS validfrom,
+            ur.ValidTo AS validto,
+            ur.Comment AS comment,
+            (CASE WHEN ur.IsPrimary = 0 AND ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
+                  AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo
+                  THEN 1 ELSE 0 END) AS isvigent
+        FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+        WHERE ur.UserId = @userId
+            AND (ur.IsActive = 1 OR ur.IsActive IS NULL);
+    END
+    ELSE
+    BEGIN
+        SELECT
+            r.Id,
+            r.Name,
+            r.Description,
+            r.NormalizedName,
+            r.ConcurrencyStamp,
+            r.IsActive,
+            r.CreatedAt,
+            r.UpdatedAt,
+            ur.IsPrimary AS isprimary,
+            ur.ValidFrom AS validfrom,
+            ur.ValidTo AS validto,
+            CAST(NULL AS NVARCHAR(500)) AS comment,
+            (CASE WHEN ur.IsPrimary = 0 AND ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
+                  AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo
+                  THEN 1 ELSE 0 END) AS isvigent
+        FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+        WHERE ur.UserId = @userId
+            AND (ur.IsActive = 1 OR ur.IsActive IS NULL);
+    END
 
     -- Tercera consulta: Programas asignados al usuario (UserProgram activos)
     SELECT

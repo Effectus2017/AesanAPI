@@ -18,4 +18,6 @@ public class DTOUserRole
     public DateTime? ValidTo { get; set; }
     /// <summary>True si el rol secundario está vigente hoy.</summary>
     public bool IsVigent { get; set; }
+    /// <summary>Motivo por el cual se asigna el rol secundario (opcional).</summary>
+    public string? Comment { get; set; }
 }

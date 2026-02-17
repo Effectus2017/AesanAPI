@@ -42,7 +42,11 @@ BEGIN
         r.NormalizedName AS RoleNormalizedName,
         s.ContractStartDate,
         s.ContractEndDate,
-        s.AgencyId
+        s.AgencyId,
+        (SELECT STRING_AGG(p.Name, ', ') WITHIN GROUP (ORDER BY p.Name)
+         FROM UserProgram up
+         INNER JOIN Program p ON up.ProgramId = p.Id
+         WHERE up.UserId = u.Id AND up.IsActive = 1 AND p.IsActive = 1) AS ProgramName
     FROM AspNetUsers u
         -- JOIN con Staff para obtener datos personales
         LEFT JOIN Staff s ON u.Id = s.UserId

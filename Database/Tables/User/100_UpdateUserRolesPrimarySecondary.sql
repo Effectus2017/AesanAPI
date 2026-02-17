@@ -44,18 +44,35 @@ BEGIN
         FROM AspNetRoles r
         WHERE r.Name = LTRIM(RTRIM(@primaryRoleName));
 
-        -- 4. Insertar roles secundarios desde JSON (IsPrimary=0, ValidFrom, ValidTo)
+        -- 4. Insertar roles secundarios desde JSON (IsPrimary=0, ValidFrom, ValidTo, Comment si existe la columna)
         IF @secondaryRolesJson IS NOT NULL AND LTRIM(RTRIM(@secondaryRolesJson)) <> ''
         BEGIN
-            INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt, IsPrimary, ValidFrom, ValidTo)
-            SELECT @userId, r.Id, 1, GETDATE(), 0, CAST(j.validFrom AS DATE), CAST(j.validTo AS DATE)
-            FROM OPENJSON(@secondaryRolesJson) WITH (
-                roleName NVARCHAR(256) N'$.roleName',
-                validFrom DATE N'$.validFrom',
-                validTo DATE N'$.validTo'
-            ) j
-            INNER JOIN AspNetRoles r ON r.Name = LTRIM(RTRIM(j.roleName))
-            WHERE j.validFrom IS NOT NULL AND j.validTo IS NOT NULL;
+            IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUserRoles') AND name = 'Comment')
+            BEGIN
+                INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt, IsPrimary, ValidFrom, ValidTo, Comment)
+                SELECT @userId, r.Id, 1, GETDATE(), 0, CAST(j.validFrom AS DATE), CAST(j.validTo AS DATE), NULLIF(LTRIM(RTRIM(j.comment)), N'')
+                FROM OPENJSON(@secondaryRolesJson) WITH (
+                    roleName NVARCHAR(256) N'$.roleName',
+                    validFrom DATE N'$.validFrom',
+                    validTo DATE N'$.validTo',
+                    comment NVARCHAR(500) N'$.comment'
+                ) j
+                INNER JOIN AspNetRoles r ON r.Name = LTRIM(RTRIM(j.roleName))
+                WHERE j.validFrom IS NOT NULL AND j.validTo IS NOT NULL;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt, IsPrimary, ValidFrom, ValidTo)
+                SELECT @userId, r.Id, 1, GETDATE(), 0, CAST(j.validFrom AS DATE), CAST(j.validTo AS DATE)
+                FROM OPENJSON(@secondaryRolesJson) WITH (
+                    roleName NVARCHAR(256) N'$.roleName',
+                    validFrom DATE N'$.validFrom',
+                    validTo DATE N'$.validTo',
+                    comment NVARCHAR(500) N'$.comment'
+                ) j
+                INNER JOIN AspNetRoles r ON r.Name = LTRIM(RTRIM(j.roleName))
+                WHERE j.validFrom IS NOT NULL AND j.validTo IS NOT NULL;
+            END
         END
 
         COMMIT TRANSACTION;

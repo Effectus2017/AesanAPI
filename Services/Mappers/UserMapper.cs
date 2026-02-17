@@ -42,7 +42,8 @@ public static class UserMapper
                     Id = user.RoleId ?? string.Empty,
                     Name = user.RoleName ?? string.Empty,
                     NormalizedName = user.RoleNormalizedName ?? string.Empty
-                } : null
+                } : null,
+                ProgramName = user.ProgramName ?? (string?)null
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

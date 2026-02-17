@@ -134,6 +134,7 @@ public class UserRepository(UserManager<User> userManager,
             {
                 RoleId = r.Id,
                 RoleName = r.Name,
+                Comment = r.Comment,
                 ValidFrom = r.ValidFrom ?? DateTime.MinValue,
                 ValidTo = r.ValidTo ?? DateTime.MinValue,
                 IsActive = r.IsVigent
@@ -205,12 +206,12 @@ public class UserRepository(UserManager<User> userManager,
             var parameters = new DynamicParameters();
             parameters.Add("@userId", userId, DbType.String);
             var result = await db.QueryAsync<DTOProgram>("100_GetUserProgramsByUserId", parameters, commandType: CommandType.StoredProcedure);
-            return result?.ToList() ?? new List<DTOProgram>();
+            return result?.ToList() ?? [];
         }
         catch (Exception ex)
         {
-            _loggingService.LogWarning(ex, "Error al obtener programas del usuario desde UserProgram para {UserId}", userId);
-            return new List<DTOProgram>();
+            _ = _loggingService.LogError(ex, "Error al obtener programas del usuario desde UserProgram para {UserId}", new Dictionary<string, string> { { "UserId", userId } });
+            return [];
         }
     }
 
@@ -363,6 +364,23 @@ public class UserRepository(UserManager<User> userManager,
             .Where(r => r.IsAesanRole)
             .OrderBy(r => r.Name)
             .Select(r => r.Name!)
+            .ToListAsync();
+        return roles;
+    }
+
+    /// <summary>
+    /// Obtiene los roles AESAN con Name y NameEN para la UI (traducción desde DB).
+    /// </summary>
+    public async Task<List<DTOAesanRoleItem>> GetAesanRoles()
+    {
+        var roles = await _roleManager.Roles
+            .Where(r => r.IsAesanRole)
+            .OrderBy(r => r.Name)
+            .Select(r => new DTOAesanRoleItem
+            {
+                Name = r.Name ?? "",
+                NameEN = r.NameEN ?? r.Name
+            })
             .ToListAsync();
         return roles;
     }
@@ -1011,7 +1029,7 @@ public class UserRepository(UserManager<User> userManager,
                     {
                         var items = model.SecondaryRoles
                             .Where(s => !string.IsNullOrWhiteSpace(s.RoleName))
-                            .Select(s => new { roleName = s.RoleName.Trim(), validFrom = s.ValidFrom.ToString("yyyy-MM-dd"), validTo = s.ValidTo.ToString("yyyy-MM-dd") })
+                            .Select(s => new { roleName = s.RoleName.Trim(), comment = s.Comment ?? (string?)null, validFrom = s.ValidFrom.ToString("yyyy-MM-dd"), validTo = s.ValidTo.ToString("yyyy-MM-dd") })
                             .ToList();
                         secondaryJson = System.Text.Json.JsonSerializer.Serialize(items);
                     }
@@ -1110,7 +1128,7 @@ public class UserRepository(UserManager<User> userManager,
                 {
                     var items = entity.SecondaryRoles
                         .Where(s => !string.IsNullOrWhiteSpace(s.RoleName))
-                        .Select(s => new { roleName = s.RoleName.Trim(), validFrom = s.ValidFrom.ToString("yyyy-MM-dd"), validTo = s.ValidTo.ToString("yyyy-MM-dd") })
+                        .Select(s => new { roleName = s.RoleName.Trim(), comment = s.Comment ?? (string?)null, validFrom = s.ValidFrom.ToString("yyyy-MM-dd"), validTo = s.ValidTo.ToString("yyyy-MM-dd") })
                         .ToList();
                     var secondaryJson = System.Text.Json.JsonSerializer.Serialize(items);
                     parameters.Add("@secondaryRolesJson", secondaryJson, DbType.String);
