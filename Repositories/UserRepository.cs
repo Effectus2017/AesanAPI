@@ -258,20 +258,29 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="isList">Si es true, retorna solo la lista sin paginación</param>
     /// <param name="roles">Lista de roles para filtrar</param>
     /// <param name="alls">Si es true, retorna todos los usuarios sin filtros ni paginación</param>
+    /// <param name="excludeAdministrators">Si es true, excluye usuarios con rol Administrator o Super-Administrator</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false)
+    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false)
     {
         try
         {
             _loggingService.LogInformation("Obteniendo usuarios con SP");
+            // Quitar Monitor de la lista de roles (rol ya no existe); si queda vacía, no filtrar por rol
+            var rolesForSp = roles != null ? roles.Where(r => !string.Equals(r, "Monitor", StringComparison.OrdinalIgnoreCase)).ToList() : null;
+            if (rolesForSp != null && rolesForSp.Count == 0)
+            {
+                rolesForSp = null;
+            }
+
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@take", take, DbType.Int32);
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
-            parameters.Add("@roles", roles == null ? null : string.Join(",", roles), DbType.String);
+            parameters.Add("@roles", rolesForSp == null ? null : string.Join(",", rolesForSp), DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
+            parameters.Add("@excludeAdministrators", excludeAdministrators, DbType.Boolean);
 
             var result = await db.QueryMultipleAsync("109_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
             var rows = result.Read<dynamic>().ToList();

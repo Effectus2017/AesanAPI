@@ -9,6 +9,7 @@
 --   @agencyId: ID de la agencia para filtrar
 --   @roles: Roles para filtrar (separados por coma)
 --   @alls: Si es true, retorna todos los usuarios sin filtros ni paginación
+--   @excludeAdministrators: Si es 1, excluye usuarios con rol Administrator o Super-Administrator
 
 CREATE OR ALTER PROCEDURE [109_GetAllUsersFromDb]
     @take INT = 15,
@@ -16,7 +17,8 @@ CREATE OR ALTER PROCEDURE [109_GetAllUsersFromDb]
     @name NVARCHAR(255) = NULL,
     @agencyId INT = NULL,
     @roles NVARCHAR(MAX) = NULL,
-    @alls BIT = 0
+    @alls BIT = 0,
+    @excludeAdministrators BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -59,7 +61,8 @@ BEGIN
         OR ((@agencyId IS NULL OR s.AgencyId = @agencyId)
         AND (@name IS NULL OR s.FirstName LIKE '%' + @name + '%' OR s.FatherLastName LIKE '%' + @name + '%')
         AND (@roles IS NULL OR r.Name IN (SELECT value
-        FROM STRING_SPLIT(@roles, ','))))
+        FROM STRING_SPLIT(@roles, ',')))
+        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'Administrator', N'Super-Administrator'))))
     ORDER BY s.FirstName, s.FatherLastName
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
@@ -73,19 +76,20 @@ BEGIN
         OR ((@agencyId IS NULL OR s.AgencyId = @agencyId)
         AND (@name IS NULL OR s.FirstName LIKE '%' + @name + '%' OR s.FatherLastName LIKE '%' + @name + '%')
         AND (@roles IS NULL OR r.Name IN (SELECT value
-        FROM STRING_SPLIT(@roles, ','))));
+        FROM STRING_SPLIT(@roles, ',')))
+        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'Administrator', N'Super-Administrator'))));
 END;
 GO
 
 -- Ejemplos de uso:
 -- Obtener usuarios paginados
--- EXEC [109_GetAllUsersFromDb] 10, 0, NULL, NULL, NULL, 0;
+-- EXEC [109_GetAllUsersFromDb] 10, 0, NULL, NULL, NULL, 0, 0;
 
 -- Obtener todos los usuarios
 -- EXEC [109_GetAllUsersFromDb] @alls = 1;
 
 -- Filtrar por nombre
--- EXEC [109_GetAllUsersFromDb] 10, 0, 'Juan', NULL, NULL, 0;
+-- EXEC [109_GetAllUsersFromDb] 10, 0, 'Juan', NULL, NULL, 0, 0;
 
--- Filtrar por roles
--- EXEC [109_GetAllUsersFromDb] 10, 0, NULL, NULL, 'Admin,Monitor', 0;
+-- Filtrar por roles (sin Monitor; excluir administradores)
+-- EXEC [109_GetAllUsersFromDb] 10, 0, NULL, NULL, 'Admin', 0, 1;

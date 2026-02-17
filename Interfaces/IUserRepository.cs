@@ -9,7 +9,7 @@ public interface IUserRepository
     Task<DTOUser> GetUserById(string userId);
     Task<DTOUser> GetUserByIdWithSP(string userId);
     dynamic GetAllUsersFromDb(int take, int skip, string name, string userId, bool isList);
-    Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false);
+    Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false);
     dynamic GetAllRolesFromDb();
     //dynamic GetAllProgramsFromDb(int take, int skip, string name, bool alls);
 

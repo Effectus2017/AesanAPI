@@ -156,7 +156,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         {
             if (ModelState.IsValid)
             {
-                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls);
+                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 

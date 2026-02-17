@@ -36,6 +36,7 @@ public class QueryParameters
     public string? RejectionJustification { get; set; } // Justification for rejection
     public string? UserId { get; set; } // ID del usuario
     public List<string>? Roles { get; set; } // Lista de roles
+    public bool ExcludeAdministrators { get; set; } = false; // Excluir usuarios con rol Administrator o Super-Administrator
     public string? Password { get; set; } // Contraseña actual
     public string? NewPassword { get; set; } // Nueva contraseña
     public string? TemporaryPassword { get; set; } // Contraseña temporal
