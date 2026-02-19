@@ -53,6 +53,9 @@ public class DTOStaff
     public string? ReceivesProgramSalaryName { get; set; } = "";
     public string? ReceivesProgramSalaryNameEN { get; set; } = "";
 
+    // Origen del Salario (selección múltiple)
+    public List<int>? SalaryOriginIds { get; set; }
+
     // Datos de la relación SiteStaff
     public int? SiteId { get; set; }
     public bool? IsPrimary { get; set; }

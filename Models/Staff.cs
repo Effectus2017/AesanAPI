@@ -33,6 +33,9 @@ public class Staff
     public int? TenureDurationUnitId { get; set; } // Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
     public int? ReceivesProgramSalaryId { get; set; } // Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
 
+    // Origen del Salario (selección múltiple: IDs de OptionSelection con optionKey = 'salaryOrigin')
+    public List<int>? SalaryOriginIds { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;

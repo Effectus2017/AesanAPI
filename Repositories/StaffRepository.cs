@@ -46,7 +46,7 @@ public class StaffRepository(
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetStaffById", param, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("101_GetStaffById", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -195,9 +195,10 @@ public class StaffRepository(
             parameters.Add("@tenureDuration", staffRequest.TenureDuration, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@tenureDurationUnitId", staffRequest.TenureDurationUnitId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@receivesProgramSalaryId", staffRequest.ReceivesProgramSalaryId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@salaryoriginids", staffRequest.SalaryOriginIds != null && staffRequest.SalaryOriginIds.Count > 0 ? string.Join(",", staffRequest.SalaryOriginIds) : null, DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("101_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
 
             int staffId = parameters.Get<int>("@id");
             {
@@ -286,9 +287,10 @@ public class StaffRepository(
             parameters.Add("@tenureDuration", staffRequest.TenureDuration, DbType.Int32);
             parameters.Add("@tenureDurationUnitId", staffRequest.TenureDurationUnitId, DbType.Int32);
             parameters.Add("@receivesProgramSalaryId", staffRequest.ReceivesProgramSalaryId, DbType.Int32);
+            parameters.Add("@salaryoriginids", staffRequest.SalaryOriginIds != null && staffRequest.SalaryOriginIds.Count > 0 ? string.Join(",", staffRequest.SalaryOriginIds) : null, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("100_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("101_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
 
             int rowsAffected = parameters.Get<int>("@rowsAffected");
 

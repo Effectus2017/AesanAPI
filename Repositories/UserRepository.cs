@@ -48,6 +48,15 @@ public class UserRepository(UserManager<User> userManager,
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
+    /// Nombres de rol que requieren agencia asignada (coherentes con 104_GetUserAssignedAgency).
+    /// </summary>
+    private static readonly HashSet<string> AgencyRoleNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "agency_administrator",
+        "agency_user"
+    };
+
+    /// <summary>
     /// Obtiene un usuario por su ID
     /// </summary>
     /// <param name="id">El ID del usuario</param>
@@ -516,6 +525,17 @@ public class UserRepository(UserManager<User> userManager,
                 rolesForSelection = aesanRoles;
             }
 
+            var primaryRole = rolesToUse?.FirstOrDefault();
+            if (!string.IsNullOrEmpty(primaryRole) && AgencyRoleNames.Contains(primaryRole))
+            {
+                var agency = await _agencyUsersRepository.GetUserAssignedAgency(_user.Id);
+                if (agency == null)
+                {
+                    _loggingService.LogWarning($"Usuario {_user.UserName} con rol de agencia no tiene agencia asignada");
+                    return new ObjectResult(new { Message = "No tiene una agencia asignada. Contacte al administrador del sistema." }) { StatusCode = 403 };
+                }
+            }
+
             var roleValidTo = await GetRoleValidToForUser(_user.Id, rolesToUse.FirstOrDefault() ?? "");
             var (access_token, expires_in) = await GenerateTokenForUserAsync(_user, rolesToUse, rolesForSelection, roleValidTo);
 
@@ -629,6 +649,11 @@ public class UserRepository(UserManager<User> userManager,
             if (effectiveRoles == null || !effectiveRoles.Contains(role))
             {
                 return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado o el rol secundario ya no está vigente." });
+            }
+
+            if (AgencyRoleNames.Contains(role) && userAgency == null)
+            {
+                return new ObjectResult(new { Message = "No tiene una agencia asignada. Contacte al administrador del sistema." }) { StatusCode = 403 };
             }
 
             var aesanRoles = effectiveRoles.Where(r => aesanRoleNames.Contains(r)).ToList();

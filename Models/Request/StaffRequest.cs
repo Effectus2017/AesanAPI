@@ -39,6 +39,9 @@ public class StaffRequest
     public int? TenureDurationUnitId { get; set; } // Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
     public int? ReceivesProgramSalaryId { get; set; } // Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
 
+    // Origen del Salario (selección múltiple: IDs de OptionSelection con optionKey = 'salaryOrigin')
+    public List<int>? SalaryOriginIds { get; set; }
+
     // Campos de asignación de sitio (Site Assignment)
     public int? SiteId { get; set; } = null;
     public bool IsPrimary { get; set; } = false;
