@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de certificaciones, incluyendo creación,
 /// lectura, actualización y eliminación de registros de certificaciones federales.
 /// </summary>
-[Route("federal-funding-certification")]
 [ApiController]
+[Route("federal-funding-certification")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class FederalFundingCertificationController(IFederalFundingCertificationRepository federalFundingCertificationRepository, ILogger<FederalFundingCertificationController> logger) : ControllerBase
 {
     private readonly IFederalFundingCertificationRepository _federalFundingCertificationRepository = federalFundingCertificationRepository;

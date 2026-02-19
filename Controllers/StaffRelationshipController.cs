@@ -12,6 +12,7 @@ namespace Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("staff-relationship")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class StaffRelationshipController(IStaffRelationshipRepository staffRelationshipRepository, ILogger<StaffRelationshipController> logger) : ControllerBase
 {
     private readonly IStaffRelationshipRepository _staffRelationshipRepository = staffRelationshipRepository;

@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de cocina, incluyendo creación,
 /// lectura, actualización y eliminación de tipos de cocina.
 /// </summary>
-[Route("kitchen-type")]
 [ApiController]
+[Route("kitchen-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository, ILogger<KitchenTypeController> logger) : ControllerBase
 {
     private readonly IKitchenTypeRepository _kitchenTypeRepository = kitchenTypeRepository;

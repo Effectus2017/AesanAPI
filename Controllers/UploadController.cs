@@ -1,11 +1,18 @@
 using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Enums;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
+/// <summary>
+/// Controlador que maneja la subida de archivos.
+/// </summary>
+[ApiController]
 [Route("upload")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileStorageService, ILogger<UploadController> logger) : Controller
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));

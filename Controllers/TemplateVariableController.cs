@@ -1,5 +1,7 @@
 using Api.Models;
 using Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -9,6 +11,7 @@ namespace Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class TemplateVariableController : ControllerBase
 {
     private readonly TemplateVariableService _templateVariableService;

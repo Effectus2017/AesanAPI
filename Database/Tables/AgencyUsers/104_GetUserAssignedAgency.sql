@@ -19,8 +19,9 @@ BEGIN
     INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
     WHERE ur.UserId = @userId;
 
-    -- Si el usuario es Agency-Administrator o Sponsor-Administrador, obtener la agencia donde es owner
-    IF @userRoleName IN ('Agency-Administrator', 'Sponsor-Administrador', 'Sponsor-User', 'Agency-User')
+    -- Si el usuario es administrador/usuario de agencia o sponsor, obtener la agencia donde es owner.
+    -- Incluye claves nuevas (Mig_RoleDisplayNameAndKey) y legacy por compatibilidad.
+    IF @userRoleName IN ('agency_administrator', 'agency_user', 'Agency-Administrator', 'Sponsor-Administrador', 'Sponsor-User', 'Agency-User')
     BEGIN
         SELECT TOP 1
             a.Id,

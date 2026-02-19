@@ -11,8 +11,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de programas, incluyendo creación,
 /// lectura, actualización y eliminación de programas, así como la gestión de inscripciones a programas.
 /// </summary>
-[Route("program")]
 [ApiController]
+[Route("program")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<ProgramController> _logger = logger;
@@ -203,7 +204,6 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     /// <param name="request">Request con userId, programId y assignedBy</param>
     /// <returns>True si la asignación fue exitosa</returns>
     [HttpPost("assign-evaluator")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [SwaggerOperation(Summary = "Asigna un evaluador a un programa", Description = "Asigna un usuario con rol 'Evaluador' a un programa específico.")]
     public async Task<IActionResult> AssignEvaluatorToProgram([FromBody] AssignEvaluatorToProgramRequest request)
     {
@@ -253,7 +253,6 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     /// <param name="programId">ID del programa</param>
     /// <returns>True si la remoción fue exitosa</returns>
     [HttpDelete("remove-evaluator")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [SwaggerOperation(Summary = "Remueve la asignación de un evaluador a un programa", Description = "Remueve la asignación de un evaluador a un programa específico.")]
     public async Task<IActionResult> RemoveEvaluatorFromProgram([FromQuery] string userId, [FromQuery] int programId)
     {
@@ -295,7 +294,6 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     /// <param name="programId">ID del programa</param>
     /// <returns>Lista de UserIds de los evaluadores</returns>
     [HttpGet("{programId}/evaluators")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [SwaggerOperation(Summary = "Obtiene todos los evaluadores asignados a un programa", Description = "Devuelve una lista de UserIds de los evaluadores asignados a un programa específico.")]
     public async Task<IActionResult> GetEvaluatorsByProgramId(int programId)
     {

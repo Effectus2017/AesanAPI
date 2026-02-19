@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de niveles educativos, incluyendo creación,
 /// lectura, actualización y eliminación de niveles educativos.
 /// </summary>
-[Route("education-level")]
 [ApiController]
+[Route("education-level")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class EducationLevelController(IEducationLevelRepository educationLevelRepository, ILogger<EducationLevelController> logger) : ControllerBase
 {
     private readonly IEducationLevelRepository _educationLevelRepository = educationLevelRepository;

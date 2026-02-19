@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -9,8 +11,9 @@ namespace Api.Controllers;
 /// Controlador para tipos de servicio por programa (AESAN-257).
 /// Los servicios se obtienen desde ServiceType/ServiceTypeProgram, no desde OptionSelection.
 /// </summary>
-[Route("service-type")]
 [ApiController]
+[Route("service-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ServiceTypeController(IServiceTypeRepository serviceTypeRepository, ILogger<ServiceTypeController> logger)
     : ControllerBase
 {

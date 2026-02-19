@@ -23,25 +23,6 @@ public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logg
     private readonly IConfiguration _configuration = configuration;
 
     /// <summary>
-    /// Obtiene los roles AESAN con Name y NameEN desde la DB (para selección multi-rol y etiquetas por idioma).
-    /// </summary>
-    [AllowAnonymous]
-    [HttpGet("aesan-roles")]
-    public async Task<ActionResult<object>> GetAesanRoles()
-    {
-        try
-        {
-            var roles = await _unitOfWork.UserRepository.GetAesanRoles();
-            return Ok(new { roles });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "GetAesanRoles error");
-            return BadRequest(ex.Message);
-        }
-    }
-
-    /// <summary>
     /// Login
     /// </summary>
     [HttpPost("login")]

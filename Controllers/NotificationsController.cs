@@ -1,6 +1,8 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Endpoints de notificación por correo (uso interno / Web Job).
 /// Protegidos por X-Api-Key; no requieren JWT.
 /// </summary>
-[Route("notifications")]
 [ApiController]
+[Route("notifications")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class NotificationsController(
     ILogger<NotificationsController> logger,
     IUnitOfWork unitOfWork,

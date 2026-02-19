@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -9,8 +11,9 @@ namespace Api.Controllers;
 /// Controller that manages all operations related to agency statuses.
 /// Provides endpoints for full CRUD management of agency statuses.
 /// </summary>
-[Route("agency-status")]
 [ApiController]
+[Route("agency-status")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AgencyStatusController(IAgencyStatusRepository agencyStatusRepository, ILogger<AgencyStatusController> logger) : ControllerBase
 {
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;

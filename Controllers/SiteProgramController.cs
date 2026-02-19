@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Response;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -10,9 +11,9 @@ namespace Api.Controllers;
 /// <summary>
 /// Controlador para gestionar relaciones sitio-programa
 /// </summary>
-[Route("site-program")]
 [ApiController]
-[Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)]
+[Route("site-program")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteProgramController(
     ISiteProgramService service,
     ILogger<SiteProgramController> logger) : Controller

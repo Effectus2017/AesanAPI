@@ -3,7 +3,12 @@ namespace Api.Models;
 public class DTOUserRole
 {
     public string Id { get; set; } = "";
+    /// <summary>Clave única del rol (Identity).</summary>
     public string Name { get; set; } = "";
+    /// <summary>Nombre a mostrar en español.</summary>
+    public string? DisplayName { get; set; }
+    /// <summary>Nombre a mostrar en inglés.</summary>
+    public string? DisplayNameEN { get; set; }
     public string? Description { get; set; } = "";
     public string? NormalizedName { get; set; } = "";
     public string? ConcurrencyStamp { get; set; } = "";

@@ -84,10 +84,12 @@ BEGIN
             r.IsActive,
             r.CreatedAt,
             r.UpdatedAt,
-            ur.IsPrimary AS isprimary,
-            ur.ValidFrom AS validfrom,
-            ur.ValidTo AS validto,
-            ur.Comment AS comment,
+            r.DisplayName,
+            r.DisplayNameEN,
+            ur.IsPrimary,
+            ur.ValidFrom,
+            ur.ValidTo,
+            ur.Comment,
             (CASE WHEN ur.IsPrimary = 0 AND ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
                   AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo
                   THEN 1 ELSE 0 END) AS isvigent
@@ -107,10 +109,12 @@ BEGIN
             r.IsActive,
             r.CreatedAt,
             r.UpdatedAt,
-            ur.IsPrimary AS isprimary,
-            ur.ValidFrom AS validfrom,
-            ur.ValidTo AS validto,
-            CAST(NULL AS NVARCHAR(500)) AS comment,
+            r.DisplayName,
+            r.DisplayNameEN,
+            ur.IsPrimary,
+            ur.ValidFrom,
+            ur.ValidTo,
+            CAST(NULL AS NVARCHAR(500)) AS Comment,
             (CASE WHEN ur.IsPrimary = 0 AND ur.ValidFrom IS NOT NULL AND ur.ValidTo IS NOT NULL
                   AND CAST(GETDATE() AS DATE) >= ur.ValidFrom AND CAST(GETDATE() AS DATE) <= ur.ValidTo
                   THEN 1 ELSE 0 END) AS isvigent

@@ -13,9 +13,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de clasificaciones de staff, incluyendo creación,
 /// lectura, actualización y eliminación de clasificaciones de staff.
 /// </summary>
-[Route("staff-classification")]
 [ApiController]
-// [Authorize]
+[Route("staff-classification")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class StaffClassificationController(ILogger<StaffClassificationController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<StaffClassificationController> _logger = logger;

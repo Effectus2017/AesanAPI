@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de políticas operativas, incluyendo creación,
 /// lectura, actualización y eliminación de políticas operativas.
 /// </summary>
-[Route("operating-policy")]
 [ApiController]
+[Route("operating-policy")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class OperatingPolicyController(IOperatingPolicyRepository operatingPolicyRepository, ILogger<OperatingPolicyController> logger) : ControllerBase
 {
     private readonly IOperatingPolicyRepository _operatingPolicyRepository = operatingPolicyRepository;

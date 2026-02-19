@@ -12,7 +12,9 @@ namespace Api.Controllers;
 /// Controlador que maneja todas las operaciones relacionadas con el dashboard.
 /// Proporciona endpoints para obtener métricas del dashboard AESAN y de agencia.
 /// </summary>
+[ApiController]
 [Route("dashboard")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class DashboardController(ILogger<DashboardController> logger, IAesanDashboardRepository aesanDashboardRepository, IAgencyDashboardRepository agencyDashboardRepository) : Controller
 {
     private readonly ILogger<DashboardController> _logger = logger;

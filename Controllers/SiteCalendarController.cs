@@ -14,8 +14,8 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de días de funcionamiento,
 /// incluyendo consulta, creación, actualización y eliminación de días específicos.
 /// </summary>
-[Route("site-calendar")]
 [ApiController]
+[Route("site-calendar")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISiteCalendarRepository siteCalendarRepository) : Controller
 {

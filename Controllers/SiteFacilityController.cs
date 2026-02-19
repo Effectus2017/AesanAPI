@@ -14,8 +14,8 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de instalaciones específicas de sitios,
 /// incluyendo consulta, creación, actualización y eliminación.
 /// </summary>
-[Route("site-facility")]
 [ApiController]
+[Route("site-facility")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISiteFacilityRepository siteFacilityRepository) : Controller
 {

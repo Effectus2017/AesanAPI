@@ -42,6 +42,8 @@ BEGIN
         r.Id AS RoleId,
         r.Name AS RoleName,
         r.NormalizedName AS RoleNormalizedName,
+        r.DisplayName,
+        r.DisplayNameEN,
         s.ContractStartDate,
         s.ContractEndDate,
         s.AgencyId,
@@ -62,7 +64,7 @@ BEGIN
         AND (@name IS NULL OR s.FirstName LIKE '%' + @name + '%' OR s.FatherLastName LIKE '%' + @name + '%')
         AND (@roles IS NULL OR r.Name IN (SELECT value
         FROM STRING_SPLIT(@roles, ',')))
-        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'Administrator', N'Super-Administrator'))))
+        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'administrator', N'super_administrator'))))
     ORDER BY s.FirstName, s.FatherLastName
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
@@ -77,7 +79,7 @@ BEGIN
         AND (@name IS NULL OR s.FirstName LIKE '%' + @name + '%' OR s.FatherLastName LIKE '%' + @name + '%')
         AND (@roles IS NULL OR r.Name IN (SELECT value
         FROM STRING_SPLIT(@roles, ',')))
-        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'Administrator', N'Super-Administrator'))));
+        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'administrator', N'super_administrator'))));
 END;
 GO
 

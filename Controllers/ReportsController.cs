@@ -12,6 +12,7 @@ namespace Api.Controllers;
 /// Controlador que maneja todas las operaciones relacionadas con reportes.
 /// Proporciona endpoints para generar y obtener diferentes tipos de reportes del sistema.
 /// </summary>
+[ApiController]
 [Route("reports")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ReportsController(ILogger<ReportsController> logger, IReportsRepository reportsRepository) : Controller

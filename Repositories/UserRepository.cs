@@ -46,6 +46,7 @@ public class UserRepository(UserManager<User> userManager,
     private readonly IStaffRepository _staffRepository = staffRepository;
     private readonly IProgramRepository _programRepository = programRepository;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+
     /// <summary>
     /// Obtiene un usuario por su ID
     /// </summary>
@@ -288,16 +289,15 @@ public class UserRepository(UserManager<User> userManager,
 
             // Agrupar por Id para usuarios con múltiples roles (1 fila por rol en el SP)
             var grouped = rows.GroupBy(r => (string)r.Id);
+
             var data = grouped.Select(g =>
             {
                 var first = g.First();
                 var user = _mappingService.MapUser(first);
                 var roleNames = g.Select(x => (string)x.RoleName).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
+
                 user.Roles = roleNames;
-                if (user.Role == null && roleNames.Any())
-                {
-                    user.Role = new DTOUserRole { Id = (string)first.RoleId, Name = roleNames.First(), NormalizedName = (string)first.RoleNormalizedName ?? "" };
-                }
+
                 return user;
             }).ToList();
 
@@ -378,7 +378,7 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
-    /// Obtiene los roles AESAN con Name y NameEN para la UI (traducción desde DB).
+    /// Obtiene los roles AESAN con Name (clave), DisplayName y DisplayNameEN para la UI.
     /// </summary>
     public async Task<List<DTOAesanRoleItem>> GetAesanRoles()
     {
@@ -388,7 +388,8 @@ public class UserRepository(UserManager<User> userManager,
             .Select(r => new DTOAesanRoleItem
             {
                 Name = r.Name ?? "",
-                NameEN = r.NameEN ?? r.Name
+                DisplayName = r.DisplayName,
+                DisplayNameEN = r.DisplayNameEN
             })
             .ToListAsync();
         return roles;
@@ -563,9 +564,24 @@ public class UserRepository(UserManager<User> userManager,
             _loggingService.LogWarning($"No se pudo obtener Staff para el usuario {user.Id}: {ex.Message}");
         }
 
+        var currentRoleKey = rolesToUse?.FirstOrDefault();
+        string? roleDisplay = null;
+        string? roleDisplayEN = null;
+
+        if (!string.IsNullOrEmpty(currentRoleKey))
+        {
+            var roleEntity = await _roleManager.FindByNameAsync(currentRoleKey);
+
+            if (roleEntity != null)
+            {
+                roleDisplay = roleEntity.DisplayName;
+                roleDisplayEN = roleEntity.DisplayNameEN;
+            }
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff, allAesanRolesForSelection, roleValidTo),
+            Subject = GetClaims(user, rolesToUse, agency, userPrograms, permissions, staff, allAesanRolesForSelection, roleValidTo, roleDisplay, roleDisplayEN),
             Expires = DateTime.UtcNow.AddDays(days),
             Issuer = issuer,
             Audience = audience,
@@ -588,18 +604,28 @@ public class UserRepository(UserManager<User> userManager,
         try
         {
             var aesanRoleNames = await GetAesanRoleNames();
+
             if (string.IsNullOrWhiteSpace(role) || !aesanRoleNames.Contains(role))
             {
                 return new BadRequestObjectResult(new { Message = "Rol no válido para selección." });
             }
 
             var user = await _userManager.FindByIdAsync(userId);
+
             if (user == null)
             {
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
+            var userAgency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
+
+            if (userAgency != null)
+            {
+                return new ObjectResult(new { Message = "Cambiar rol solo está disponible para usuarios AESAN." }) { StatusCode = 403 };
+            }
+
             var effectiveRoles = await GetEffectiveRoleNamesForUser(userId);
+
             if (effectiveRoles == null || !effectiveRoles.Contains(role))
             {
                 return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado o el rol secundario ya no está vigente." });
@@ -636,8 +662,10 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="staff">Los datos de Staff asociados al usuario (opcional)</param>
     /// <param name="allAesanRolesForSelection">Lista de roles AESAN para cambio en el menú (claim "roles" en JWT)</param>
     /// <param name="roleValidTo">Si el rol actual es secundario, fecha tope de vigencia (claim "roleValidTo" en el JWT)</param>
+    /// <param name="roleDisplay">Nombre a mostrar del rol actual (español)</param>
+    /// <param name="roleDisplayEN">Nombre a mostrar del rol actual (inglés)</param>
     /// <returns>Los claims del usuario</returns>
-    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null, IList<string>? allAesanRolesForSelection = null, DateTime? roleValidTo = null)
+    private static ClaimsIdentity GetClaims(User user, IList<string> roles, dynamic agency, List<DTOProgram> userPrograms, dynamic permissions, Staff? staff = null, IList<string>? allAesanRolesForSelection = null, DateTime? roleValidTo = null, string? roleDisplay = null, string? roleDisplayEN = null)
     {
         try
         {
@@ -656,6 +684,15 @@ public class UserRepository(UserManager<User> userManager,
             if (roleValidTo.HasValue)
             {
                 claims.AddClaim(new Claim("roleValidTo", roleValidTo.Value.ToString("o")));
+            }
+
+            if (!string.IsNullOrEmpty(roleDisplay))
+            {
+                claims.AddClaim(new Claim("roleDisplay", roleDisplay));
+            }
+            if (!string.IsNullOrEmpty(roleDisplayEN))
+            {
+                claims.AddClaim(new Claim("roleDisplayEN", roleDisplayEN));
             }
 
             // Obtener name y lastName de Staff si existe
@@ -679,8 +716,8 @@ public class UserRepository(UserManager<User> userManager,
             var programNames = string.Join(",", programsList.Select(p => p.Name));
             var programIds = string.Join(",", programsList.Select(p => p.Id.ToString()));
 
-            // Roles NUTRE "por programa" (Coordinador, Evaluador) reciben claims de programas
-            if (roles.Any(r => r != null && (r.Contains("Coordinador", StringComparison.OrdinalIgnoreCase) || r.Contains("Evaluador", StringComparison.OrdinalIgnoreCase))))
+            // Roles NUTRE "por programa" (coordinator, evaluator) reciben claims de programas
+            if (roles.Any(r => r != null && (r.Contains("coordinator", StringComparison.OrdinalIgnoreCase) || r.Contains("evaluator", StringComparison.OrdinalIgnoreCase))))
             {
                 claims.AddClaim(new Claim("userId", user.Id));
                 claims.AddClaim(new Claim("name", name));

@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de grupo, incluyendo creación,
 /// lectura, actualización y eliminación de tipos de grupo.
 /// </summary>
-[Route("group-type")]
 [ApiController]
+[Route("group-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogger<GroupTypeController> logger) : ControllerBase
 {
     private readonly IGroupTypeRepository _groupTypeRepository = groupTypeRepository;

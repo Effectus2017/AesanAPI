@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de comida, incluyendo creación,
 /// lectura, actualización y eliminación de registros.
 /// </summary>
-[Route("meal-type")]
 [ApiController]
+[Route("meal-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<MealTypeController> logger) : ControllerBase
 {
     private readonly IMealTypeRepository _mealTypeRepository = mealTypeRepository;

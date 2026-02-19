@@ -2,14 +2,17 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Api.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers
 {
-    [ApiController]
-    [Route("household-member-income")]
     /// <summary>
     /// Controlador que maneja todas las operaciones relacionadas con los ingresos de miembros del hogar.
     /// </summary>
+    [ApiController]
+    [Route("household-member-income")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class HouseholdMemberIncomeController(IHouseholdMemberIncomeRepository repository, ILogger<HouseholdMemberIncomeController> logger) : ControllerBase
     {
         private readonly IHouseholdMemberIncomeRepository _repository = repository;

@@ -14,9 +14,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de organización, incluyendo creación,
 /// lectura, actualización y eliminación de registros.
 /// </summary>
-[Route("organization-type")]
 [ApiController]
-
+[Route("organization-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class OrganizationTypeController(IOrganizationTypeRepository organizationTypeRepository, ILogger<OrganizationTypeController> logger) : ControllerBase
 {
     private readonly IOrganizationTypeRepository _organizationTypeRepository = organizationTypeRepository;

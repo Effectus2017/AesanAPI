@@ -1,3 +1,4 @@
+using Api;
 using Api.Models;
 
 namespace Api.Services.Mappers;
@@ -41,7 +42,9 @@ public static class UserMapper
                 {
                     Id = user.RoleId ?? string.Empty,
                     Name = user.RoleName ?? string.Empty,
-                    NormalizedName = user.RoleNormalizedName ?? string.Empty
+                    NormalizedName = user.RoleNormalizedName ?? string.Empty,
+                    DisplayName = Utilities.GetDynamicRowString(user, "DisplayName"),
+                    DisplayNameEN = Utilities.GetDynamicRowString(user, "DisplayNameEN")
                 } : null,
                 ProgramName = user.ProgramName ?? (string?)null
             };

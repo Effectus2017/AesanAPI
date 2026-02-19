@@ -16,7 +16,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para crear, leer, actualizar y gestionar agencias,
 /// incluyendo sus programas, estados y logos.
 /// </summary>
+[ApiController]
 [Route("agency")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService, DapperContext dapperContext) : Controller
 {
     private readonly ILogger<AgencyController> _logger = logger;
@@ -343,52 +345,33 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Actualiza la fecha de registro completado de una agencia", Description = "Actualiza la fecha de registro completado de una agencia específica.")]
     public async Task<IActionResult> UpdateCompletedRegistrationDate([FromQuery] QueryParameters queryParameters)
     {
-        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - INICIO");
-        SignalRLogger.LogToFile($"[AgencyController] QueryParameters recibidos - AgencyId: {queryParameters.AgencyId}, CompletedRegistrationDate: {queryParameters.CompletedRegistrationDate}");
-
-        // Log de todos los query parameters recibidos
-        var queryString = Request.QueryString.ToString();
-        SignalRLogger.LogToFile($"[AgencyController] QueryString completo: {queryString}");
-
         try
         {
             if (ModelState.IsValid)
             {
                 if (queryParameters.AgencyId == 0)
                 {
-                    SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - ERROR: AgencyId es 0");
                     return BadRequest("El ID de la agencia es requerido");
                 }
 
                 if (queryParameters.CompletedRegistrationDate == null)
                 {
-                    SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - ERROR: CompletedRegistrationDate es null");
                     return BadRequest("La fecha de registro completado es requerida");
                 }
 
-                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Actualizando fecha en BD para AgencyId: {queryParameters.AgencyId}");
                 var result = await _unitOfWork.AgencyRepository.UpdateCompletedRegistrationDate(queryParameters.AgencyId, queryParameters.CompletedRegistrationDate.Value);
-                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Fecha actualizada. Result: {result}");
 
-                // Obtener la agencia para obtener los evaluadores asignados
-                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Obteniendo agencia con ID: {queryParameters.AgencyId}");
                 var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
 
                 if (agency != null)
                 {
-                    SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - Agencia obtenida correctamente");
-
-                    // Obtener todos los evaluadores relacionados (agencia + programas)
                     List<string> evaluatorUserIds = new List<string>();
                     try
                     {
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Obteniendo todos los evaluadores para AgencyId: {queryParameters.AgencyId}");
                         evaluatorUserIds = await _unitOfWork.AgencyRepository.GetAllEvaluatorUserIdsByAgencyId(queryParameters.AgencyId);
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Se encontraron {evaluatorUserIds.Count} evaluadores");
                     }
                     catch (Exception ex)
                     {
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR obteniendo evaluadores: {ex.Message}");
                         _logger.LogError(ex, "Error obteniendo todos los evaluadores para agencia {AgencyId}", queryParameters.AgencyId);
                     }
 
@@ -398,8 +381,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                         var agencyName = agency.Name?.ToString() ?? "";
                         var agencyCode = agency.AgencyCode?.ToString() ?? agency.Code?.ToString() ?? "";
                         var completionDate = queryParameters.CompletedRegistrationDate.Value.ToString("dd/MM/yyyy");
-
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Variables preparadas: SponsorName={agencyName}, SponsorCode={agencyCode}, CompletionDate={completionDate}");
 
                         var variables = new Dictionary<string, string>
                         {
@@ -421,7 +402,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
 
                             try
                             {
-                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Enviando mensaje a evaluador UserId: {evaluatorUserId}");
                                 await _messageTemplateService.SendMessageAndEmailFromTemplate(
                                     messageTemplateKey: "SponsorRegistrationCompleted",
                                     emailTemplateKey: "SponsorRegistrationCompleted",
@@ -430,43 +410,29 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                                     language: "es"
                                 );
                                 successCount++;
-                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Mensaje enviado exitosamente a evaluador {evaluatorUserId}");
                             }
                             catch (Exception ex)
                             {
                                 errorCount++;
-                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - ERROR enviando mensaje a evaluador {evaluatorUserId}: {ex.Message}");
-                                SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - StackTrace: {ex.StackTrace}");
                                 _logger.LogError(ex, "Error al enviar mensaje y email al evaluador {EvaluatorUserId}: {Message}", evaluatorUserId, ex.Message);
-                                // Continuar con el siguiente evaluador sin interrumpir el proceso
                             }
                         }
 
-                        SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - Resumen: {successCount} mensajes enviados exitosamente, {errorCount} errores");
                         _logger.LogInformation("Notificaciones enviadas a {SuccessCount} de {TotalCount} evaluadores para agencia {AgencyId}", successCount, evaluatorUserIds.Count, queryParameters.AgencyId);
                     }
                     else
                     {
-                        SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - WARNING: No se encontraron evaluadores asignados (lista vacía o null)");
                         _logger.LogWarning("No se encontraron evaluadores asignados para la agencia {AgencyId}", queryParameters.AgencyId);
                     }
                 }
-                else
-                {
-                    SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - WARNING: Agencia es null para AgencyId: {queryParameters.AgencyId}");
-                }
 
-                SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - FIN - Retornando Ok");
                 return Ok(result);
             }
 
-            SignalRLogger.LogToFile("[AgencyController] UpdateCompletedRegistrationDate - ERROR: ModelState no es válido");
             return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
         }
         catch (Exception ex)
         {
-            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - EXCEPCIÓN: {ex.Message}");
-            SignalRLogger.LogToFile($"[AgencyController] UpdateCompletedRegistrationDate - StackTrace: {ex.StackTrace}");
             _logger.LogError(ex, "Error al actualizar la fecha de registro completado de la agencia: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }

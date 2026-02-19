@@ -2,17 +2,21 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
+
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con los tipos de entrega.
 /// Proporciona endpoints para la gestión completa de tipos de entrega, incluyendo creación,
 /// lectura, actualización y eliminación de tipos de entrega.
 /// </summary>
-[Route("delivery-type")]
 [ApiController]
+[Route("delivery-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeRepository, ILogger<DeliveryTypeController> logger) : ControllerBase
 {
     private readonly IDeliveryTypeRepository _deliveryTypeRepository = deliveryTypeRepository;

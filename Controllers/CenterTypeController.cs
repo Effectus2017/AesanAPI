@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers;
 
@@ -9,8 +11,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de centro, incluyendo creación,
 /// lectura, actualización y eliminación de registros.
 /// </summary>
-[Route("center-type")]
 [ApiController]
+[Route("center-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class CenterTypeController(ILogger<CenterTypeController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<CenterTypeController> _logger = logger;

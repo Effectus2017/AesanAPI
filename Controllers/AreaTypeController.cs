@@ -1,13 +1,19 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.DTO;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
-[Route("area-type")]
+/// <summary>
+/// Controlador que maneja todas las operaciones relacionadas con los tipos de área.
+/// </summary>
 [ApiController]
+[Route("area-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<AreaTypeController> logger) : ControllerBase
 {
     private readonly IAreaTypeRepository _areaTypeRepository = areaTypeRepository;

@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de opciones de selección, incluyendo creación,
 /// lectura, actualización y eliminación de opciones.
 /// </summary>
-[Route("option-selection")]
 [ApiController]
+[Route("option-selection")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class OptionSelectionController(IOptionSelectionRepository optionSelectionRepository, ILogger<OptionSelectionController> logger) : ControllerBase
 {
     private readonly IOptionSelectionRepository _optionSelectionRepository = optionSelectionRepository;

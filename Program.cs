@@ -17,8 +17,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Api.Telemetry;
-using ElmahCore.Mvc;
-using ElmahCore.Sql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
@@ -90,7 +88,6 @@ builder.Services
                 if (path.StartsWithSegments("/hubs/messages"))
                 {
                     var accessToken = context.Request.Query["access_token"].ToString();
-                    SignalRLogger.LogToFile($"[JWT] OnMessageReceived - Path: {path}, Token presente: {!string.IsNullOrEmpty(accessToken)}");
                     if (!string.IsNullOrEmpty(accessToken))
                     {
                         context.Token = accessToken;
@@ -108,30 +105,8 @@ builder.Services
 
                 return Task.CompletedTask;
             },
-            OnTokenValidated = context =>
-            {
-                var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                             ?? context.Principal?.FindFirst("nameid")?.Value
-                             ?? context.Principal?.FindFirst("sub")?.Value;
-                SignalRLogger.LogToFile($"[JWT] Token validado - UserId: {userId ?? "NULL"}");
-                SignalRLogger.LogToFile($"[JWT] Token validado - Claims Count: {context.Principal?.Claims?.Count() ?? 0}");
-
-                if (context.Principal?.Claims != null)
-                {
-                    foreach (var claim in context.Principal.Claims)
-                    {
-                        SignalRLogger.LogToFile($"[JWT] Claim validado: {claim.Type} = {claim.Value}");
-                    }
-                }
-
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = context =>
-            {
-                SignalRLogger.LogToFile($"[JWT] Error de autenticación: {context.Exception?.Message}");
-                SignalRLogger.LogToFile($"[JWT] Error de autenticación - InnerException: {context.Exception?.InnerException?.Message}");
-                return Task.CompletedTask;
-            }
+            OnTokenValidated = _ => Task.CompletedTask,
+            OnAuthenticationFailed = _ => Task.CompletedTask
         };
     });
 
@@ -225,6 +200,9 @@ builder.Services.AddScoped<IMessageTemplateRepository, MessageTemplateRepository
 builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
 builder.Services.AddScoped<IEmailLogRepository, EmailLogRepository>();
 builder.Services.AddScoped<INotificationMailJobLogRepository, NotificationMailJobLogRepository>();
+builder.Services.AddScoped<ILogApplicationRepository, LogApplicationRepository>();
+builder.Services.AddScoped<ICentralLogService, CentralLogService>();
+builder.Services.AddScoped<ILogsQueryService, LogsQueryService>();
 
 // Registrar EmailService primero (sin interfaz)
 builder.Services.AddScoped<EmailService>();
@@ -356,24 +334,6 @@ builder.Services.Configure<TelemetryConfiguration>((config) =>
     config.TelemetryInitializers.Add(new EnvironmentTelemetryInitializer(builder.Environment));
 });
 
-// Configuración de ELMAH con SQL Server
-var elmahConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddElmah<SqlErrorLog>(options =>
-{
-    options.ConnectionString = elmahConnectionString ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found for ELMAH");
-    options.Path = "/elmah"; // Ruta para acceder al dashboard de ELMAH
-    options.OnPermissionCheck = context => context.User.Identity?.IsAuthenticated ?? false; // Solo usuarios autenticados pueden ver el dashboard
-    // Asegurar que el nombre de la tabla y esquema sean correctos
-    options.SqlServerDatabaseSchemaName = "dbo";
-    options.SqlServerDatabaseTableName = "ELMAH_Error";
-});
-
-// Agregar logging para diagnosticar problemas de Elmah
-builder.Services.AddLogging(logging =>
-{
-    logging.AddFilter("ElmahCore", LogLevel.Debug);
-});
-
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 
 // Registrar AuditLogger
@@ -450,7 +410,6 @@ app.Use(async (context, next) =>
 });
 
 // Configuración de middleware
-// IMPORTANTE: UseElmah debe ir ANTES de UseExceptionHandler para capturar todos los errores
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -462,25 +421,21 @@ else
         errorApp.Run(async context =>
         {
             var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            var loggingService = context.RequestServices.GetRequiredService<ILoggingService>();
             var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
             var exception = exceptionHandlerPathFeature?.Error;
 
-            // Registrar en ELMAH
-            try
+            if (exception != null)
             {
-                await context.RaiseError(exception);
+                try
+                {
+                    await loggingService.LogError(exception, "Error no manejado", new Dictionary<string, string> { ["Path"] = exceptionHandlerPathFeature?.Path ?? "" });
+                }
+                catch
+                {
+                    logger.LogError(exception, "Error no manejado: {Message}. Path: {Path}", exception.Message, exceptionHandlerPathFeature?.Path);
+                }
             }
-            catch (Exception elmahEx)
-            {
-                logger.LogError(elmahEx, "Error al registrar en ELMAH: {Message}", elmahEx.Message);
-            }
-
-            logger.LogError(
-                exception,
-                "Error no manejado: {Message}. Path: {Path}",
-                exception?.Message,
-                exceptionHandlerPathFeature?.Path
-            );
 
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
@@ -524,10 +479,6 @@ app.UseStaticFiles(new StaticFileOptions
 // Restaurando autenticación y autorización para el resto de la API
 app.UseAuthentication();
 app.UseAuthorization();
-
-// Habilitar ELMAH - Debe ir después de Routing y Authentication, pero antes de los endpoints
-// Esto permite que Elmah capture errores de manera automática
-app.UseElmah();
 
 // Habilitar Swagger
 if (app.Environment.IsDevelopment())
@@ -579,14 +530,14 @@ app.Use(async (context, next) =>
     }
         catch (Exception ex)
         {
-            // Registrar errores no capturados en Elmah
             try
             {
-                await context.RaiseError(ex);
+                var loggingService = context.RequestServices.GetRequiredService<ILoggingService>();
+                await loggingService.LogError(ex, "Error no capturado en middleware");
             }
-            catch (Exception elmahEx)
+            catch
             {
-                logger.LogError(elmahEx, "Error al registrar excepción en ELMAH: {Message}", elmahEx.Message);
+                logger.LogError(ex, "Error no capturado: {Message}", ex.Message);
             }
             throw;
         }

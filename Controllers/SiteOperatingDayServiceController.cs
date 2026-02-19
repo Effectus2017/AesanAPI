@@ -14,8 +14,8 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de servicios relacionados con días operativos,
 /// incluyendo consulta, creación, actualización, eliminación y habilitación/deshabilitación.
 /// </summary>
-[Route("site-operating-day-service")]
 [ApiController]
+[Route("site-operating-day-service")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteOperatingDayServiceController(
     ILogger<SiteOperatingDayServiceController> logger,

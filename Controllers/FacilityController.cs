@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de instalaciones, incluyendo creación,
 /// lectura, actualización y eliminación de registros de instalaciones.
 /// </summary>
-[Route("facility")]
 [ApiController]
+[Route("facility")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class FacilityController(IFacilityRepository facilityRepository, ILogger<FacilityController> logger) : ControllerBase
 {
     private readonly IFacilityRepository _facilityRepository = facilityRepository;

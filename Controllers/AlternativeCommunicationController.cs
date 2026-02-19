@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -9,8 +11,9 @@ namespace Api.Controllers;
 /// Controller that manages all operations related to alternative communications.
 /// Provides endpoints for full CRUD management of alternative communications.
 /// </summary>
-[Route("alternative-communication")]
 [ApiController]
+[Route("alternative-communication")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AlternativeCommunicationController(IAlternativeCommunicationRepository alternativeCommunicationRepository, ILogger<AlternativeCommunicationController> logger) : ControllerBase
 {
     private readonly IAlternativeCommunicationRepository _alternativeCommunicationRepository = alternativeCommunicationRepository;

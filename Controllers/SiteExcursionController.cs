@@ -12,8 +12,8 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de excursiones, incluyendo creación,
 /// lectura, actualización y eliminación de registros de excursiones.
 /// </summary>
-[Route("api/site-excursion")]
 [ApiController]
+[Route("api/site-excursion")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteExcursionController : Controller
 {

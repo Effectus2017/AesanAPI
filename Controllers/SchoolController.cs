@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de escuelas, incluyendo creación,
 /// lectura, actualización y eliminación de registros de escuelas.
 /// </summary>
-[Route("school")]
 [ApiController]
+[Route("school")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolController> _logger = logger;

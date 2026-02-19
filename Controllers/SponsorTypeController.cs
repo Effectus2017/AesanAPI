@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de auspiciador, incluyendo creación,
 /// lectura, actualización y eliminación de tipos de auspiciador.
 /// </summary>
-[Route("sponsor-type")]
 [ApiController]
+[Route("sponsor-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository, ILogger<SponsorTypeController> logger) : ControllerBase
 {
     private readonly ISponsorTypeRepository _sponsorTypeRepository = sponsorTypeRepository;

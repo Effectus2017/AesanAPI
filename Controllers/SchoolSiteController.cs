@@ -11,8 +11,9 @@ namespace Api.Controllers;
 /// Controlador que maneja todas las operaciones relacionadas con las asignaciones School-Site.
 /// Proporciona endpoints para la gestión de asignaciones entre escuelas y sitios.
 /// </summary>
-[Route("school-site")]
 [ApiController]
+[Route("school-site")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SchoolSiteController(ILogger<SchoolSiteController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolSiteController> _logger = logger;

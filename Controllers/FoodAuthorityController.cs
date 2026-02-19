@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de autoridades alimentarias, incluyendo creación,
 /// lectura, actualización y eliminación de registros.
 /// </summary>
-[Route("food-authority")]
 [ApiController]
+[Route("food-authority")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepository, ILogger<FoodAuthorityController> logger) : ControllerBase
 {
     private readonly IFoodAuthorityRepository _foodAuthorityRepository = foodAuthorityRepository;

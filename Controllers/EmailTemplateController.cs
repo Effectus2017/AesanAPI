@@ -1,6 +1,8 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -11,8 +13,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de templates de email, incluyendo creación,
 /// lectura, actualización de templates.
 /// </summary>
-[Route("email-template")]
 [ApiController]
+[Route("email-template")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepository, ILogger<EmailTemplateController> logger) : ControllerBase
 {
     private readonly IEmailTemplateRepository _emailTemplateRepository = emailTemplateRepository;

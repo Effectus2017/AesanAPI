@@ -1,10 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers;
 
+/// <summary>
+/// Controlador que maneja las asignaciones de usuarios a agencias.
+/// </summary>
+[ApiController]
 [Route("agency-user-assignment")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyUserAssignmentController> _logger = logger;

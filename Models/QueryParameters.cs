@@ -57,4 +57,11 @@ public class QueryParameters
     public long? UieNumber { get; set; } // Identificador Único de Entidad (IUE)
     public long? SdrNumber { get; set; } // Número de Registro del Departamento de Estado (SDR)
     public int? EinNumber { get; set; } // Número de Seguro Social Patronal (EIN)
+
+    // Centro de logs unificado (GET /api/logs)
+    public string? LogCategory { get; set; } // Audit, Email, Job, Application
+    public DateTime? LogFrom { get; set; }
+    public DateTime? LogTo { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 20;
 }

@@ -12,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de períodos operativos, incluyendo creación,
 /// lectura, actualización y eliminación de registros.
 /// </summary>
-[Route("operating-period")]
 [ApiController]
+[Route("operating-period")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class OperatingPeriodController(IOperatingPeriodRepository operatingPeriodRepository, ILogger<OperatingPeriodController> logger) : ControllerBase
 {
     private readonly IOperatingPeriodRepository _operatingPeriodRepository = operatingPeriodRepository;

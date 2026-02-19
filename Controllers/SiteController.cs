@@ -15,8 +15,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de sitios, incluyendo creación,
 /// lectura, actualización y eliminación de registros de sitios.
 /// </summary>
-[Route("site")]
 [ApiController]
+[Route("site")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService) : Controller
 {
     private readonly ILogger<SiteController> _logger = logger;

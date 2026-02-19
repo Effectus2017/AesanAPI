@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Api.Models.Request;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers;
 
@@ -10,9 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de miembros del staff, incluyendo creación,
 /// lectura, actualización y eliminación de miembros del staff.
 /// </summary>
-[Route("staff")]
 [ApiController]
-// [Authorize]
+[Route("staff")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<StaffController> _logger = logger;

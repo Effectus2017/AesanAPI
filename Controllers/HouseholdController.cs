@@ -5,6 +5,8 @@ using Api.Models.Request;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers
 {
@@ -13,9 +15,9 @@ namespace Api.Controllers
     /// Proporciona endpoints para la gestión completa de hogares, incluyendo creación,
     /// lectura, actualización y eliminación de registros de hogares.
     /// </summary>
-    [Route("household")]
     [ApiController]
-
+    [Route("household")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class HouseholdController(ILogger<HouseholdController> logger, IUnitOfWork unitOfWork) : ControllerBase
     {
 

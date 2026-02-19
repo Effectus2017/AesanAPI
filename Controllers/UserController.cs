@@ -11,12 +11,14 @@ using System.Text.Json;
 
 namespace Api.Controllers;
 
-[Route("user")]
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con los usuarios.
 /// Proporciona endpoints para la gestión de usuarios, roles y programas,
 /// incluyendo el registro de usuarios y agencias.
 /// </summary>
+[ApiController]
+[Route("user")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingService, IUserRoleExtensionRequestRepository extensionRequestRepository, IEmailService emailService) : Controller
 {
     private readonly ILoggingService _loggingService = loggingService;
@@ -121,22 +123,27 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     }
 
     /// <summary>
-    /// Obtiene todos los roles de la base de datos
+    /// Obtiene todos los roles de la base de datos. Con aesanOnly=true devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN) en formato { roles }.
     /// </summary>
-    /// <returns>Los roles</returns>
+    /// <param name="aesanOnly">Si true, devuelve solo roles AESAN con DisplayName/DisplayNameEN; si false, devuelve { data, count }.</param>
+    /// <returns>Los roles (formato según aesanOnly).</returns>
     [HttpGet("get-all-roles-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Devuelve una lista de todos los roles.")]
-    public IActionResult GetAllRolesFromDb()
+    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Devuelve una lista de todos los roles. Con aesanOnly=true solo roles AESAN en { roles }.")]
+    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false)
     {
         try
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+
+            if (aesanOnly)
             {
-                dynamic _result = _unitOfWork.UserRepository.GetAllRolesFromDb();
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+                var roles = await _unitOfWork.UserRepository.GetAesanRoles();
+                return Ok(new { roles });
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            dynamic _result = _unitOfWork.UserRepository.GetAllRolesFromDb();
+            return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {

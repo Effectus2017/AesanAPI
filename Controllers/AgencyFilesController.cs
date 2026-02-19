@@ -8,14 +8,18 @@ using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Api.Controllers;
 
-[Route("agency-files")]
+
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con los archivos de agencias.
 /// Proporciona endpoints para subir, obtener, actualizar y eliminar archivos asociados a agencias.
 /// </summary>
+[ApiController]
+[Route("agency-files")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyFilesController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));

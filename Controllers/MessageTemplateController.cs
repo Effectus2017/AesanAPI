@@ -1,6 +1,8 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -11,8 +13,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de templates de mensajes, incluyendo creación,
 /// lectura, actualización de templates.
 /// </summary>
-[Route("message-template")]
 [ApiController]
+[Route("message-template")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class MessageTemplateController(IMessageTemplateRepository messageTemplateRepository, ILogger<MessageTemplateController> logger) : ControllerBase
 {
     private readonly IMessageTemplateRepository _messageTemplateRepository = messageTemplateRepository;

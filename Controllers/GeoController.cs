@@ -11,8 +11,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión de ciudades y regiones,
 /// incluyendo búsquedas por ID y listados completos.
 /// </summary>
-[Route("geo")]
 [ApiController]
+[Route("geo")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<GeoController> _logger = logger;

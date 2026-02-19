@@ -1,5 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -10,8 +12,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de permisos, incluyendo creación,
 /// lectura, actualización y eliminación de permisos, así como la asignación y eliminación de permisos a usuarios y roles.
 /// </summary>
-[Route("permission")]
 [ApiController]
+[Route("permission")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class PermissionController(IPermissionRepository permissionRepository, ILogger<PermissionController> logger) : ControllerBase
 {
     private readonly IPermissionRepository _permissionRepository = permissionRepository;

@@ -13,9 +13,9 @@ namespace Api.Controllers;
 /// Proporciona endpoints para la gestión completa de tipos de staff, incluyendo creación,
 /// lectura, actualización y eliminación de tipos de staff.
 /// </summary>
-[Route("staff-type")]
 [ApiController]
-// [Authorize]
+[Route("staff-type")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<StaffTypeController> _logger = logger;

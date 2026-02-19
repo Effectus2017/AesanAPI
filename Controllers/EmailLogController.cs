@@ -2,17 +2,20 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
-[ApiController]
-[Route("emaillog")]
 /// <summary>
 /// Controlador que maneja todas las operaciones relacionadas con los logs de correos electrónicos.
 /// Proporciona endpoints para consultar el historial de envíos y reenviar correos.
 /// </summary>
+[ApiController]
+[Route("emaillog")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailService emailService, ILoggingService loggingService) : ControllerBase
 {
     private readonly IEmailLogRepository _emailLogRepository = emailLogRepository;

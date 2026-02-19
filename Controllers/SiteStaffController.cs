@@ -11,8 +11,8 @@ namespace Api.Controllers;
 /// Controlador para gestionar las asignaciones de empleados a sitios
 /// Proporciona endpoints para asignar, desasignar y consultar empleados en sitios
 /// </summary>
-[Route("site-staff")]
 [ApiController]
+[Route("site-staff")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class SiteStaffController(ILogger<SiteStaffController> logger, IUnitOfWork unitOfWork) : Controller
 {

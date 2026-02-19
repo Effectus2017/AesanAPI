@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Response;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -10,9 +11,9 @@ namespace Api.Controllers;
 /// <summary>
 /// Controlador para gestionar períodos de programas
 /// </summary>
-[Route("program-period")]
 [ApiController]
-[Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)]
+[Route("program-period")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ProgramPeriodController(
     IProgramPeriodService service,
     ILogger<ProgramPeriodController> logger) : Controller

@@ -95,6 +95,18 @@ public static class Utilities
         return url;
     }
 
+    /// <summary>
+    /// Obtiene un string de una fila dinámica por clave (p. ej. resultado de Dapper Read&lt;dynamic&gt;).
+    /// Devuelve null si la fila es null, la clave no existe o el valor es null.
+    /// </summary>
+    public static string? GetDynamicRowString(dynamic? row, string key)
+    {
+        if (row == null) return null;
+        if (row is IDictionary<string, object> dict && dict.TryGetValue(key, out var val) && val != null)
+            return val.ToString();
+        return null;
+    }
+
     public static string RemoveSpecialCharacters(string str)
     {
         string _modifier = Regex.Replace(str, "[^a-zA-Z0-9_.]+", "_", RegexOptions.Compiled);
