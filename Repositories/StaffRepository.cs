@@ -5,6 +5,7 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Services;
+using Api.Services.Mappers;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -53,7 +54,15 @@ public class StaffRepository(
                 return null;
             }
 
-            return _mappingService.MapStaffDetails(result);
+            var dto = _mappingService.MapStaffDetails(result);
+            var contractParam = new DynamicParameters();
+            contractParam.Add("@staffid", id, DbType.Int32);
+            var contractRows = await dbConnection.QueryAsync<dynamic>("100_GetStaffContractByClassificationByStaffId", contractParam, commandType: CommandType.StoredProcedure);
+            if (dto is DTOStaff dtoStaff)
+            {
+                dtoStaff.ClassificationContracts = StaffMapper.MapContractByClassificationList(contractRows);
+            }
+            return dto;
         }
         catch (Exception ex)
         {
@@ -157,6 +166,17 @@ public class StaffRepository(
         {
             _logger.LogInformation("Insertando nuevo miembro del staff - Email: {Email}, PositionId: {PositionId}, StaffTypeId: {StaffTypeId}, StatusId: {StatusId}, UserId: {UserId}", staffRequest.Email, staffRequest.PositionId, staffRequest.StaffTypeId, staffRequest.StatusId, staffRequest.UserId);
 
+            int positionIdForStaff = staffRequest.PositionId;
+            DateTime? contractStartForStaff = staffRequest.ContractStartDate;
+            DateTime? contractEndForStaff = staffRequest.ContractEndDate;
+            if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
+            {
+                var first = staffRequest.ClassificationContracts[0];
+                positionIdForStaff = first.PositionId;
+                contractStartForStaff = first.ContractStartDate;
+                contractEndForStaff = first.ContractEndDate;
+            }
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String, ParameterDirection.Input);
@@ -164,8 +184,7 @@ public class StaffRepository(
             parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            // Enviar positionId directamente sin convertir a NULL
-            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@positionId", positionIdForStaff, DbType.Int32, ParameterDirection.Input);
             // StaffTypeId: usar 1 por defecto si es 0
             var finalStaffTypeId = staffRequest.StaffTypeId == 0 ? 1 : staffRequest.StaffTypeId;
             parameters.Add("@staffTypeId", finalStaffTypeId, DbType.Int32, ParameterDirection.Input);
@@ -175,8 +194,8 @@ public class StaffRepository(
                 finalStaffClassificationId = 1;
             parameters.Add("@staffClassificationId", finalStaffClassificationId, DbType.Int32, ParameterDirection.Input);
             // Fechas seguras para SQL Server
-            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractStartDate", contractStartForStaff?.Year >= 1753 ? contractStartForStaff : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractEndDate", contractEndForStaff?.Year >= 1753 ? contractEndForStaff : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@phoneNumber", staffRequest.PhoneNumber ?? "", DbType.String, ParameterDirection.Input);
@@ -228,6 +247,11 @@ public class StaffRepository(
                 }
             }
 
+            if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
+            {
+                await SaveClassificationContractsAsync(dbConnection, staffId, staffRequest.ClassificationContracts);
+            }
+
             if (staffId <= 0)
             {
                 throw new Exception($"Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
@@ -252,6 +276,17 @@ public class StaffRepository(
         {
             _logger.LogInformation("Actualizando miembro del staff con ID {StaffId}", staffRequest.Id);
 
+            int positionIdForStaff = staffRequest.PositionId;
+            DateTime? contractStartForStaff = staffRequest.ContractStartDate;
+            DateTime? contractEndForStaff = staffRequest.ContractEndDate;
+            if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
+            {
+                var first = staffRequest.ClassificationContracts[0];
+                positionIdForStaff = first.PositionId;
+                contractStartForStaff = first.ContractStartDate;
+                contractEndForStaff = first.ContractEndDate;
+            }
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
@@ -260,13 +295,13 @@ public class StaffRepository(
             parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String);
             parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32);
-            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32);
+            parameters.Add("@positionId", positionIdForStaff, DbType.Int32);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32);
 
             // Fechas seguras para SQL Server
-            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime);
-            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime);
+            parameters.Add("@contractStartDate", contractStartForStaff?.Year >= 1753 ? contractStartForStaff : DBNull.Value, DbType.DateTime);
+            parameters.Add("@contractEndDate", contractEndForStaff?.Year >= 1753 ? contractEndForStaff : DBNull.Value, DbType.DateTime);
             parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime);
 
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
@@ -296,6 +331,10 @@ public class StaffRepository(
 
             if (rowsAffected > 0)
             {
+                if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
+                {
+                    await SaveClassificationContractsAsync(dbConnection, staffRequest.Id.Value, staffRequest.ClassificationContracts);
+                }
                 InvalidateCache(staffRequest.Id.Value);
                 // Manejar la asignación de sitio
                 await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SiteId, staffRequest.IsPrimary);
@@ -309,6 +348,44 @@ public class StaffRepository(
             _logger.LogError(ex, "Error al actualizar el miembro del staff con ID {StaffId}", staffRequest.Id);
             throw new Exception($"Error al actualizar el miembro del staff con ID {staffRequest.Id}: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Guarda los contratos por clasificación: borra los existentes e inserta los de la lista.
+    /// </summary>
+    private async Task SaveClassificationContractsAsync(IDbConnection dbConnection, int staffId, List<StaffClassificationContractItemRequest> contracts)
+    {
+        var deleteParam = new DynamicParameters();
+        deleteParam.Add("@staffid", staffId, DbType.Int32);
+        await dbConnection.ExecuteAsync("100_DeleteStaffContractByClassificationByStaffId", deleteParam, commandType: CommandType.StoredProcedure);
+        foreach (var c in contracts)
+        {
+            var p = new DynamicParameters();
+            p.Add("@staffid", staffId, DbType.Int32);
+            p.Add("@staffclassificationid", c.StaffClassificationId, DbType.Int32);
+            p.Add("@positionid", c.PositionId, DbType.Int32);
+            p.Add("@contractstartdate", c.ContractStartDate?.Year >= 1753 ? c.ContractStartDate : null, DbType.DateTime);
+            p.Add("@contractenddate", c.ContractEndDate?.Year >= 1753 ? c.ContractEndDate : null, DbType.DateTime);
+            var scheduleFrom = ParseTimeToTimeSpan(c.ScheduleFrom);
+            var scheduleTo = ParseTimeToTimeSpan(c.ScheduleTo);
+            p.Add("@schedulefrom", (object?)scheduleFrom ?? DBNull.Value, DbType.Time);
+            p.Add("@scheduleto", (object?)scheduleTo ?? DBNull.Value, DbType.Time);
+            p.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            await dbConnection.ExecuteAsync("100_InsertStaffContractByClassification", p, commandType: CommandType.StoredProcedure);
+        }
+    }
+
+    private static TimeSpan? ParseTimeToTimeSpan(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (TimeSpan.TryParse(value, out var t)) return t;
+        if (System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d{1,2}:\d{2}$"))
+        {
+            var parts = value.Split(':');
+            if (int.TryParse(parts[0], out var h) && int.TryParse(parts[1], out var m))
+                return new TimeSpan(h, m, 0);
+        }
+        return null;
     }
 
     /// <summary>

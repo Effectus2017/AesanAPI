@@ -45,4 +45,10 @@ public class StaffRequest
     // Campos de asignación de sitio (Site Assignment)
     public int? SiteId { get; set; } = null;
     public bool IsPrimary { get; set; } = false;
+
+    /// <summary>
+    /// Contratos por clasificación (1 ítem si Administrativo u Operacional; 2 ítems si Ambos).
+    /// Si está vacío o null, se usa PositionId/ContractStartDate/ContractEndDate del request para un solo contrato.
+    /// </summary>
+    public List<StaffClassificationContractItemRequest>? ClassificationContracts { get; set; }
 }

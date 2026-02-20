@@ -78,7 +78,11 @@ public static class StaffMapper
                 result.UserName,
                 result.IsActive,
                 result.HasRelationships,
-                result.IsSiteAdmin
+                result.IsSiteAdmin,
+                result.AdministrativePositionName,
+                result.AdministrativePositionNameEN,
+                result.OperationalPositionName,
+                result.OperationalPositionNameEN
             };
         }
         catch (Exception ex)
@@ -252,5 +256,68 @@ public static class StaffMapper
         {
             throw new InvalidOperationException($"Error inesperado al mapear el staff: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Convierte TimeSpan? o valor dinámico a string "HH:mm" o null.
+    /// </summary>
+    private static string? ScheduleFromDynamicToHHmm(object? value)
+    {
+        if (value == null) return null;
+        if (value is TimeSpan ts) return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}";
+        if (value is string s && !string.IsNullOrWhiteSpace(s)) return s;
+        return null;
+    }
+
+    /// <summary>
+    /// Obtiene un valor de un diccionario (fila Dapper con alias lowercase). Para tipos valor devuelve default si falta.
+    /// </summary>
+    private static T? Get<T>(IDictionary<string, object> d, string key) where T : struct
+    {
+        if (!d.TryGetValue(key, out var v) || v == null || v == DBNull.Value) return null;
+        return (T)Convert.ChangeType(v, typeof(T));
+    }
+
+    private static object? GetValue(IDictionary<string, object> d, string key)
+    {
+        if (!d.TryGetValue(key, out var v) || v == DBNull.Value) return null;
+        return v;
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico de 100_GetStaffContractByClassificationByStaffId a DTO.
+    /// El SP devuelve alias en lowercase; ScheduleFrom/ScheduleTo vienen como TIME (TimeSpan).
+    /// </summary>
+    public static DTOStaffContractByClassification MapContractByClassificationFromResult(dynamic row)
+    {
+        if (row == null) throw new ArgumentNullException(nameof(row));
+        var d = (IDictionary<string, object>)row;
+        return new DTOStaffContractByClassification
+        {
+            Id = Get<int>(d, "id").GetValueOrDefault(),
+            StaffId = Get<int>(d, "staffid").GetValueOrDefault(),
+            StaffClassificationId = Get<int>(d, "staffclassificationid").GetValueOrDefault(),
+            StaffClassificationName = (string?)GetValue(d, "staffclassificationname") ?? "",
+            StaffClassificationNameEn = (string?)GetValue(d, "staffclassificationnameen") ?? "",
+            PositionId = Get<int>(d, "positionid").GetValueOrDefault(),
+            PositionName = (string?)GetValue(d, "positionname") ?? "",
+            PositionNameEn = (string?)GetValue(d, "positionnameen") ?? "",
+            ContractStartDate = Get<DateTime>(d, "contractstartdate"),
+            ContractEndDate = Get<DateTime>(d, "contractenddate"),
+            ScheduleFrom = ScheduleFromDynamicToHHmm(GetValue(d, "schedulefrom")),
+            ScheduleTo = ScheduleFromDynamicToHHmm(GetValue(d, "scheduleto")),
+            CreatedAt = Get<DateTime>(d, "createdat").GetValueOrDefault(),
+            UpdatedAt = Get<DateTime>(d, "updatedat"),
+            IsActive = Get<bool>(d, "isactive").GetValueOrDefault(true)
+        };
+    }
+
+    /// <summary>
+    /// Mapea una lista de resultados dinámicos a lista de DTOs.
+    /// </summary>
+    public static List<DTOStaffContractByClassification> MapContractByClassificationList(IEnumerable<dynamic>? rows)
+    {
+        if (rows == null) return new List<DTOStaffContractByClassification>();
+        return rows.Cast<dynamic>().Select(MapContractByClassificationFromResult).ToList();
     }
 }

@@ -66,6 +66,10 @@ BEGIN
             s.ReceivesProgramSalaryId,
             os_salary.Name AS ReceivesProgramSalaryName,
             os_salary.NameEN AS ReceivesProgramSalaryNameEN,
+            os_admin_position.Name AS AdministrativePositionName,
+            os_admin_position.NameEN AS AdministrativePositionNameEN,
+            os_oper_position.Name AS OperationalPositionName,
+            os_oper_position.NameEN AS OperationalPositionNameEN,
             s.CreatedAt,
             s.UpdatedAt,
             s.IsActive,
@@ -104,6 +108,10 @@ BEGIN
             LEFT JOIN AspNetUsers u ON s.UserId = u.Id
             LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
             LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
+            LEFT JOIN StaffContractByClassification scbc_admin ON s.Id = scbc_admin.StaffId AND scbc_admin.StaffClassificationId = 1 AND scbc_admin.IsActive = 1
+            LEFT JOIN OptionSelection os_admin_position ON scbc_admin.PositionId = os_admin_position.Id
+            LEFT JOIN StaffContractByClassification scbc_oper ON s.Id = scbc_oper.StaffId AND scbc_oper.StaffClassificationId = 2 AND scbc_oper.IsActive = 1
+            LEFT JOIN OptionSelection os_oper_position ON scbc_oper.PositionId = os_oper_position.Id
         WHERE s.IsActive = 1
             AND (
                 @alls = 1
@@ -169,6 +177,10 @@ BEGIN
             s.ReceivesProgramSalaryId,
             os_salary.Name AS ReceivesProgramSalaryName,
             os_salary.NameEN AS ReceivesProgramSalaryNameEN,
+            os_admin_position.Name AS AdministrativePositionName,
+            os_admin_position.NameEN AS AdministrativePositionNameEN,
+            os_oper_position.Name AS OperationalPositionName,
+            os_oper_position.NameEN AS OperationalPositionNameEN,
             s.CreatedAt,
             s.UpdatedAt,
             s.IsActive,
@@ -207,6 +219,10 @@ BEGIN
             LEFT JOIN Agency a ON s.AgencyId = a.Id
             LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
             LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
+            LEFT JOIN StaffContractByClassification scbc_admin ON s.Id = scbc_admin.StaffId AND scbc_admin.StaffClassificationId = 1 AND scbc_admin.IsActive = 1
+            LEFT JOIN OptionSelection os_admin_position ON scbc_admin.PositionId = os_admin_position.Id
+            LEFT JOIN StaffContractByClassification scbc_oper ON s.Id = scbc_oper.StaffId AND scbc_oper.StaffClassificationId = 2 AND scbc_oper.IsActive = 1
+            LEFT JOIN OptionSelection os_oper_position ON scbc_oper.PositionId = os_oper_position.Id
         WHERE s.IsActive = 1
             AND (
                 @alls = 1

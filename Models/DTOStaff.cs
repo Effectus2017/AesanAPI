@@ -70,4 +70,9 @@ public class DTOStaff
     public DTOOptionSelection? TenureDurationUnit { get; set; }
     public DTOOptionSelection? ReceivesProgramSalary { get; set; }
     public SiteListItemResponse? Site { get; set; }
+
+    /// <summary>
+    /// Contratos por clasificación (Administrativo/Operacional), poblado en GetById.
+    /// </summary>
+    public List<DTOStaffContractByClassification>? ClassificationContracts { get; set; }
 }

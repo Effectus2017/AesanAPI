@@ -1,0 +1,292 @@
+-- =============================================
+-- Migration: Mig_GetAllStaff_AddBothPositions
+-- Description: Agrega columnas para mostrar ambos cargos (Administrativo y Operacional) en el listado de staff
+-- Date: 2026-02-19
+-- =============================================
+
+-- Verificar si el SP existe antes de modificarlo
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[100_GetAllStaff]') AND type in (N'P', N'PC'))
+BEGIN
+    PRINT 'Actualizando SP 100_GetAllStaff para incluir ambos cargos...'
+    EXEC('
+    -- =============================================
+    -- Stored Procedure: 100_GetAllStaff
+    -- =============================================
+    -- Obtiene todos los miembros del staff con paginación y filtros
+    -- Parámetros:
+    --   @take: Número de registros a tomar
+    --   @skip: Número de registros a saltar
+    --   @name: Nombre para filtrar (busca en FirstName y FatherLastName)
+    --   @alls: Si es true, retorna solo lista simple sin paginación
+    --   @staffTypeId: ID del tipo de staff para filtrar
+    --   @agencyId: ID de la agencia para filtrar
+    --   @excludeRelated: Si es true, excluye staff ya relacionados en StaffRelationship (usado en modal Add)
+
+    ALTER PROCEDURE [dbo].[100_GetAllStaff]
+        @take INT = 15,
+        @skip INT = 0,
+        @name NVARCHAR(255) = NULL,
+        @alls BIT = 0,
+        @staffTypeId INT = NULL,
+        @agencyId INT = NULL,
+        @excludeRelated BIT = 0
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+
+        IF @alls = 1
+        BEGIN
+            -- Retorna lista simple para dropdowns
+            SELECT
+                s.Id,
+                s.FirstName,
+                s.MiddleName,
+                s.FatherLastName,
+                s.MotherLastName,
+                s.StatusId,
+                os_status.Name AS StatusName,
+                os_status.NameEN AS StatusNameEN,
+                s.PositionId,
+                os_position.Name AS PositionName,
+                os_position.NameEN AS PositionNameEN,
+                s.StaffTypeId,
+                st.Name AS StaffTypeName,
+                st.NameEn AS StaffTypeNameEn,
+                s.StaffClassificationId,
+                sc.Name AS StaffClassificationName,
+                sc.NameEn AS StaffClassificationNameEn,
+                s.ContractStartDate,
+                s.ContractEndDate,
+                s.BirthDate,
+                s.Email,
+                s.PostalAddress,
+                s.CityId,
+                c.Name AS CityName,
+                s.RegionId,
+                r.Name AS RegionName,
+                s.ZipCode,
+                s.AgencyId,
+                a.Name AS AgencyName,
+                s.Comments,
+                s.UserId,
+                u.UserName,
+                s.TenureDuration,
+                s.TenureDurationUnitId,
+                os_tenure_unit.Name AS TenureDurationUnitName,
+                os_tenure_unit.NameEN AS TenureDurationUnitNameEN,
+                s.ReceivesProgramSalaryId,
+                os_salary.Name AS ReceivesProgramSalaryName,
+                os_salary.NameEN AS ReceivesProgramSalaryNameEN,
+                os_admin_position.Name AS AdministrativePositionName,
+                os_admin_position.NameEN AS AdministrativePositionNameEN,
+                os_oper_position.Name AS OperationalPositionName,
+                os_oper_position.NameEN AS OperationalPositionNameEN,
+                s.CreatedAt,
+                s.UpdatedAt,
+                s.IsActive,
+                CAST(
+                    CASE 
+                        WHEN EXISTS (
+                            SELECT 1
+                FROM StaffRelationship sr
+                WHERE (sr.StaffId = s.Id OR sr.RelatedStaffId = s.Id)
+                    AND sr.IsActive = 1
+                        ) THEN 1 
+                        ELSE 0 
+                    END AS BIT
+                ) AS HasRelationships,
+                CAST(
+                    CASE 
+                        WHEN (SELECT TOP 1
+                    r.Name
+                FROM AspNetUserRoles ur
+                    INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE ur.UserId = s.UserId
+                    AND ur.IsActive = 1
+                    AND r.Name = ''Agency-Administrator'') = ''Agency-Administrator'' 
+                        THEN 1 
+                        ELSE 0 
+                    END AS BIT
+                ) AS isSiteAdmin
+            FROM Staff s
+                LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
+                LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
+                LEFT JOIN StaffType st ON s.StaffTypeId = st.Id
+                LEFT JOIN StaffClassification sc ON s.StaffClassificationId = sc.Id
+                LEFT JOIN City c ON s.CityId = c.Id
+                LEFT JOIN Region r ON s.RegionId = r.Id
+                LEFT JOIN Agency a ON s.AgencyId = a.Id
+                LEFT JOIN AspNetUsers u ON s.UserId = u.Id
+                LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
+                LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
+                LEFT JOIN StaffContractByClassification scbc_admin ON s.Id = scbc_admin.StaffId AND scbc_admin.StaffClassificationId = 1 AND scbc_admin.IsActive = 1
+                LEFT JOIN OptionSelection os_admin_position ON scbc_admin.PositionId = os_admin_position.Id
+                LEFT JOIN StaffContractByClassification scbc_oper ON s.Id = scbc_oper.StaffId AND scbc_oper.StaffClassificationId = 2 AND scbc_oper.IsActive = 1
+                LEFT JOIN OptionSelection os_oper_position ON scbc_oper.PositionId = os_oper_position.Id
+            WHERE s.IsActive = 1
+                AND (
+                    @alls = 1
+                OR (
+                        (@name IS NULL OR
+                s.FirstName LIKE ''%'' + @name + ''%'' OR
+                s.FatherLastName LIKE ''%'' + @name + ''%'' OR
+                s.MiddleName LIKE ''%'' + @name + ''%'' OR
+                s.MotherLastName LIKE ''%'' + @name + ''%'')
+                AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
+                AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+                AND (@excludeRelated = 0 OR s.Id NOT IN (
+                                    SELECT DISTINCT sr.StaffId
+                    FROM StaffRelationship sr
+                    WHERE sr.IsActive = 1
+                UNION
+                    SELECT DISTINCT sr.RelatedStaffId
+                    FROM StaffRelationship sr
+                    WHERE sr.IsActive = 1)))
+                )
+            ORDER BY s.FirstName, s.FatherLastName;
+        END
+        ELSE
+        BEGIN
+            -- Retorna lista paginada con filtros
+            SELECT
+                s.Id,
+                s.FirstName,
+                s.MiddleName,
+                s.FatherLastName,
+                s.MotherLastName,
+                s.StatusId,
+                os_status.Name AS StatusName,
+                os_status.NameEN AS StatusNameEN,
+                s.PositionId,
+                os_position.Name AS PositionName,
+                os_position.NameEN AS PositionNameEN,
+                s.StaffTypeId,
+                st.Name AS StaffTypeName,
+                st.NameEn AS StaffTypeNameEn,
+                s.StaffClassificationId,
+                sc.Name AS StaffClassificationName,
+                sc.NameEn AS StaffClassificationNameEn,
+                s.ContractStartDate,
+                s.ContractEndDate,
+                s.BirthDate,
+                s.Email,
+                s.PostalAddress,
+                s.CityId,
+                c.Name AS CityName,
+                s.RegionId,
+                r.Name AS RegionName,
+                s.ZipCode,
+                s.AgencyId,
+                a.Name AS AgencyName,
+                s.Comments,
+                s.UserId,
+                u.UserName,
+                s.TenureDuration,
+                s.TenureDurationUnitId,
+                os_tenure_unit.Name AS TenureDurationUnitName,
+                os_tenure_unit.NameEN AS TenureDurationUnitNameEN,
+                s.ReceivesProgramSalaryId,
+                os_salary.Name AS ReceivesProgramSalaryName,
+                os_salary.NameEN AS ReceivesProgramSalaryNameEN,
+                os_admin_position.Name AS AdministrativePositionName,
+                os_admin_position.NameEN AS AdministrativePositionNameEN,
+                os_oper_position.Name AS OperationalPositionName,
+                os_oper_position.NameEN AS OperationalPositionNameEN,
+                s.CreatedAt,
+                s.UpdatedAt,
+                s.IsActive,
+                CAST(
+                    CASE 
+                        WHEN EXISTS (
+                            SELECT 1
+                FROM StaffRelationship sr
+                WHERE (sr.StaffId = s.Id OR sr.RelatedStaffId = s.Id)
+                    AND sr.IsActive = 1
+                        ) THEN 1 
+                        ELSE 0 
+                    END AS BIT
+                ) AS HasRelationships,
+                CAST(
+                    CASE 
+                        WHEN (SELECT TOP 1
+                    r.Name
+                FROM AspNetUserRoles ur
+                    INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                WHERE ur.UserId = s.UserId
+                    AND ur.IsActive = 1
+                    AND r.Name = ''Agency-Administrator'') = ''Agency-Administrator'' 
+                        THEN 1 
+                        ELSE 0 
+                    END AS BIT
+                ) AS IsSiteAdmin
+            FROM Staff s
+                LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
+                LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
+                LEFT JOIN StaffType st ON s.StaffTypeId = st.Id
+                LEFT JOIN StaffClassification sc ON s.StaffClassificationId = sc.Id
+                LEFT JOIN City c ON s.CityId = c.Id
+                LEFT JOIN Region r ON s.RegionId = r.Id
+                LEFT JOIN AspNetUsers u ON s.UserId = u.Id
+                LEFT JOIN Agency a ON s.AgencyId = a.Id
+                LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
+                LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
+                LEFT JOIN StaffContractByClassification scbc_admin ON s.Id = scbc_admin.StaffId AND scbc_admin.StaffClassificationId = 1 AND scbc_admin.IsActive = 1
+                LEFT JOIN OptionSelection os_admin_position ON scbc_admin.PositionId = os_admin_position.Id
+                LEFT JOIN StaffContractByClassification scbc_oper ON s.Id = scbc_oper.StaffId AND scbc_oper.StaffClassificationId = 2 AND scbc_oper.IsActive = 1
+                LEFT JOIN OptionSelection os_oper_position ON scbc_oper.PositionId = os_oper_position.Id
+            WHERE s.IsActive = 1
+                AND (
+                    @alls = 1
+                OR (
+                        (@name IS NULL OR
+                s.FirstName LIKE ''%'' + @name + ''%'' OR
+                s.FatherLastName LIKE ''%'' + @name + ''%'' OR
+                s.MiddleName LIKE ''%'' + @name + ''%'' OR
+                s.MotherLastName LIKE ''%'' + @name + ''%'')
+                AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
+                AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+                AND (@excludeRelated = 0 OR s.Id NOT IN (
+                                                    SELECT DISTINCT sr.StaffId
+                    FROM StaffRelationship sr
+                    WHERE sr.IsActive = 1
+                UNION
+                    SELECT DISTINCT sr.RelatedStaffId
+                    FROM StaffRelationship sr
+                    WHERE sr.IsActive = 1)))
+                )
+            ORDER BY s.FirstName, s.FatherLastName
+            OFFSET @skip ROWS
+            FETCH NEXT @take ROWS ONLY;
+
+            -- Total de registros para paginación
+            SELECT COUNT(*)
+            FROM Staff s
+            WHERE s.IsActive = 1
+                AND (
+                    @alls = 1
+                OR ((@name IS NULL OR
+                s.FirstName LIKE ''%'' + @name + ''%'' OR
+                s.FatherLastName LIKE ''%'' + @name + ''%'' OR
+                s.MiddleName LIKE ''%'' + @name + ''%'' OR
+                s.MotherLastName LIKE ''%'' + @name + ''%'')
+                AND (@staffTypeId IS NULL OR s.StaffTypeId = @staffTypeId)
+                AND (@agencyId IS NULL OR s.AgencyId = @agencyId)
+                AND (@excludeRelated = 0 OR s.Id NOT IN (
+                                                    SELECT DISTINCT sr.StaffId
+                    FROM StaffRelationship sr
+                    WHERE sr.IsActive = 1
+                UNION
+                    SELECT DISTINCT sr.RelatedStaffId
+                    FROM StaffRelationship sr
+                    WHERE sr.IsActive = 1)))
+                );
+        END
+    END
+    ')
+    PRINT 'SP 100_GetAllStaff actualizado exitosamente.'
+END
+ELSE
+BEGIN
+    PRINT 'SP 100_GetAllStaff no existe. Por favor, ejecute el script de creación primero.'
+END
+GO
