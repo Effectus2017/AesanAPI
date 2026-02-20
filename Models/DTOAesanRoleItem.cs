@@ -5,10 +5,20 @@ namespace Api.Models;
 /// </summary>
 public class DTOAesanRoleItem
 {
-    /// <summary>Clave única del rol (para lógica y envío en API).</summary>
+    /// <summary>
+    /// Clave técnica del rol (ej: "administrator", "program_coordinator").
+    /// Se usa como identificador único en lógica de negocio, comparaciones y como value en selects del frontend.
+    /// NO se debe mostrar directamente al usuario; usar DisplayName o DisplayNameEN.
+    /// </summary>
     public string Name { get; set; } = "";
-    /// <summary>Nombre a mostrar en español.</summary>
+    
+    /// <summary>
+    /// Nombre legible del rol en español para mostrar al usuario (ej: "Administrador", "Coordinador de Programa").
+    /// </summary>
     public string? DisplayName { get; set; }
-    /// <summary>Nombre a mostrar en inglés.</summary>
+    
+    /// <summary>
+    /// Nombre legible del rol en inglés para mostrar al usuario (ej: "Administrator", "Program Coordinator").
+    /// </summary>
     public string? DisplayNameEN { get; set; }
 }

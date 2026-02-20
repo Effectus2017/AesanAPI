@@ -123,12 +123,12 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     }
 
     /// <summary>
-    /// Obtiene todos los roles de la base de datos. Con aesanOnly=true devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN) en formato { roles }.
+    /// Obtiene todos los roles de la base de datos. Siempre devuelve formato unificado { data, count }.
     /// </summary>
-    /// <param name="aesanOnly">Si true, devuelve solo roles AESAN con DisplayName/DisplayNameEN; si false, devuelve { data, count }.</param>
-    /// <returns>Los roles (formato según aesanOnly).</returns>
+    /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN); si false, devuelve todos los roles. En ambos casos la respuesta es { data, count }.</param>
+    /// <returns>Objeto con data (lista de roles) y count (total).</returns>
     [HttpGet("get-all-roles-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Devuelve una lista de todos los roles. Con aesanOnly=true solo roles AESAN en { roles }.")]
+    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Devuelve una lista de todos los roles en formato { data, count }. Con aesanOnly=true solo roles AESAN.")]
     public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false)
     {
         try
@@ -139,11 +139,64 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
             if (aesanOnly)
             {
                 var roles = await _unitOfWork.UserRepository.GetAesanRoles();
-                return Ok(new { roles });
+                return Ok(new { data = roles, count = roles.Count });
             }
 
             dynamic _result = _unitOfWork.UserRepository.GetAllRolesFromDb();
             return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Obtiene roles AESAN disponibles para asignar como roles secundarios.
+    /// Excluye el rol primario y roles secundarios ya asignados.
+    /// </summary>
+    /// <param name="primaryRoleId">ID del rol primario a excluir (opcional)</param>
+    /// <param name="excludeRoleIds">Lista de IDs de roles secundarios ya asignados a excluir (opcional)</param>
+    /// <returns>Objeto con data (lista de roles disponibles) y count (total)</returns>
+    [HttpGet("get-available-secondary-roles")]
+    [SwaggerOperation(Summary = "Obtiene roles disponibles para asignar como secundarios", Description = "Devuelve roles AESAN que no sean el primario ni estén ya asignados como secundarios.")]
+    public async Task<IActionResult> GetAvailableSecondaryRoles(
+        [FromQuery] string? primaryRoleId = null,
+        [FromQuery] List<string>? excludeRoleIds = null)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+
+            var roles = await _unitOfWork.UserRepository.GetAvailableSecondaryRoles(primaryRoleId, excludeRoleIds);
+            return Ok(new { data = roles, count = roles.Count });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los roles asignados a un usuario específico (primario + secundarios activos).
+    /// </summary>
+    /// <param name="userId">ID del usuario</param>
+    /// <returns>Objeto con data (lista de roles del usuario) y count (total)</returns>
+    [HttpGet("get-user-roles/{userId}")]
+    [SwaggerOperation(Summary = "Obtiene los roles de un usuario", Description = "Devuelve todos los roles asignados al usuario (primario + secundarios activos).")]
+    public async Task<IActionResult> GetUserRoles(string userId)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "UserId es requerido" });
+
+            var roles = await _unitOfWork.UserRepository.GetUserRoles(userId);
+            return Ok(new { data = roles, count = roles.Count });
         }
         catch (Exception ex)
         {

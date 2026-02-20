@@ -405,6 +405,46 @@ public class UserRepository(UserManager<User> userManager,
     }
 
     /// <summary>
+    /// Obtiene roles AESAN disponibles para asignar como roles secundarios.
+    /// Excluye el rol primario y roles secundarios ya asignados.
+    /// </summary>
+    public async Task<List<DTOAesanRoleItem>> GetAvailableSecondaryRoles(string? primaryRoleId, List<string>? excludeRoleIds)
+    {
+        using IDbConnection db = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@primaryroleid", primaryRoleId, DbType.String);
+        parameters.Add("@excluderoleids", excludeRoleIds != null && excludeRoleIds.Any() 
+            ? string.Join(",", excludeRoleIds) 
+            : null, DbType.String);
+
+        var roles = await db.QueryAsync<DTOAesanRoleItem>(
+            "100_GetAvailableSecondaryRoles",
+            parameters,
+            commandType: CommandType.StoredProcedure
+        );
+
+        return roles.ToList();
+    }
+
+    /// <summary>
+    /// Obtiene todos los roles asignados a un usuario específico (primario + secundarios activos).
+    /// </summary>
+    public async Task<List<DTOAesanRoleItem>> GetUserRoles(string userId)
+    {
+        using IDbConnection db = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@userid", userId, DbType.String);
+
+        var roles = await db.QueryAsync<DTOAesanRoleItem>(
+            "100_GetUserRoles",
+            parameters,
+            commandType: CommandType.StoredProcedure
+        );
+
+        return roles.ToList();
+    }
+
+    /// <summary>
     /// Obtiene los nombres de roles efectivos del usuario: rol principal + roles secundarios vigentes (hoy entre ValidFrom y ValidTo).
     /// </summary>
     public async Task<List<string>> GetEffectiveRoleNamesForUser(string userId)
@@ -519,13 +559,15 @@ public class UserRepository(UserManager<User> userManager,
 
             IList<string> rolesToUse = roles;
             List<string>? rolesForSelection = null;
+
             if (aesanRoles.Count >= 2)
             {
-                rolesToUse = new List<string> { aesanRoles[0] };
+                rolesToUse = [aesanRoles[0]];
                 rolesForSelection = aesanRoles;
             }
 
             var primaryRole = rolesToUse?.FirstOrDefault();
+
             if (!string.IsNullOrEmpty(primaryRole) && AgencyRoleNames.Contains(primaryRole))
             {
                 var agency = await _agencyUsersRepository.GetUserAssignedAgency(_user.Id);
