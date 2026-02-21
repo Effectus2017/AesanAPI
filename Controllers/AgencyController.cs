@@ -128,7 +128,12 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     queryParameters.UserId,
                     queryParameters.Alls,
                     queryParameters.IsList,
-                    queryParameters.IsPropietary
+                    queryParameters.IsPropietary,
+                    queryParameters.UserFirstName,
+                    queryParameters.StatusName,
+                    queryParameters.MonitorFirstName,
+                    queryParameters.CreatedAtFrom,
+                    queryParameters.CreatedAtTo
                 );
 
                 return Ok(agencies);

@@ -3,7 +3,7 @@
 -- Fecha: 2025-01-XX
 -- Descripción: Obtener todas las agencias con nueva lógica de acceso simplificada.
 --              Reemplaza 117_GetAgencies con nueva lógica de acceso.
---              Solo Super-Administrator y Administrator ven todas las agencias.
+--              Solo roles super_administrator y administrator ven todas las agencias.
 --              Todos los demás roles solo ven agencias asignadas en AgencyUsers.
 -- =============================================
 
@@ -17,7 +17,12 @@ CREATE OR ALTER PROCEDURE [118_GetAgencies]
     @statusId INT = NULL,
     @userId NVARCHAR(450) = NULL,
     @alls BIT = 0,
-    @isPropietary BIT = NULL
+    @isPropietary BIT = NULL,
+    @userFirstName NVARCHAR(255) = NULL,
+    @statusName NVARCHAR(255) = NULL,
+    @monitorFirstName NVARCHAR(255) = NULL,
+    @createdAtFrom DATETIME2 = NULL,
+    @createdAtTo DATETIME2 = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -110,7 +115,10 @@ BEGIN
         LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
         LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
         LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+        LEFT JOIN Staff ownerStaff ON ownerStaff.UserId = own.UserId
+        LEFT JOIN Staff monitorStaff ON monitorStaff.UserId = mon.UserId
     WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+        AND (@name IS NULL OR @name = '' OR a.Name LIKE '%' + @name + '%')
         -- NUEVA LÓGICA DE ACCESO: Filtrar por AgencyUsers si no es SuperAdmin/Admin
         AND (
             @userId IS NULL
@@ -119,7 +127,7 @@ BEGIN
                 FROM AspNetUserRoles ur
                 INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                 WHERE ur.UserId = @userId
-                    AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
+                    AND r.Name IN ('super_administrator', 'administrator')
             )
             OR EXISTS (
                 SELECT 1 FROM AgencyUsers au 
@@ -131,14 +139,18 @@ BEGIN
         AND (
             @alls = 1
             OR (
-                (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                AND (@regionId IS NULL OR a.RegionId = @regionId)
+                (@regionId IS NULL OR a.RegionId = @regionId)
                 AND (@cityId IS NULL OR a.CityId = @cityId)
                 AND (@programId IS NULL OR ap.ProgramId = @programId)
                 AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
                 AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
             )
         )
+        AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
+        AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
+        AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
+        AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
+        AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
     ORDER BY a.CreatedAt DESC, a.Name
     OFFSET @skip ROWS
     FETCH NEXT @take ROWS ONLY;
@@ -171,10 +183,14 @@ BEGIN
         (
             SELECT DISTINCT a.Id
             FROM Agency a
+                INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
                 LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
                 LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
                 LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+                LEFT JOIN Staff ownerStaff ON ownerStaff.UserId = own.UserId
+                LEFT JOIN Staff monitorStaff ON monitorStaff.UserId = mon.UserId
             WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+                AND (@name IS NULL OR @name = '' OR a.Name LIKE '%' + @name + '%')
                 -- NUEVA LÓGICA DE ACCESO
                 AND (
                     @userId IS NULL
@@ -183,7 +199,7 @@ BEGIN
                         FROM AspNetUserRoles ur
                         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                         WHERE ur.UserId = @userId
-                            AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
+                            AND r.Name IN ('super_administrator', 'administrator')
                     )
                     OR EXISTS (
                         SELECT 1 FROM AgencyUsers au 
@@ -195,14 +211,18 @@ BEGIN
                 AND (
                     @alls = 1
                     OR (
-                        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                        AND (@regionId IS NULL OR a.RegionId = @regionId)
+                        (@regionId IS NULL OR a.RegionId = @regionId)
                         AND (@cityId IS NULL OR a.CityId = @cityId)
                         AND (@programId IS NULL OR ap.ProgramId = @programId)
                         AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
                         AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
                     )
                 )
+                AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
+                AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
+                AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
+                AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
+                AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -249,10 +269,14 @@ BEGIN
         (
             SELECT DISTINCT a.Id
             FROM Agency a
+                INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
                 LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
                 LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
                 LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+                LEFT JOIN Staff ownerStaff ON ownerStaff.UserId = own.UserId
+                LEFT JOIN Staff monitorStaff ON monitorStaff.UserId = mon.UserId
             WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+                AND (@name IS NULL OR @name = '' OR a.Name LIKE '%' + @name + '%')
                 -- NUEVA LÓGICA DE ACCESO
                 AND (
                     @userId IS NULL
@@ -261,7 +285,7 @@ BEGIN
                         FROM AspNetUserRoles ur
                         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                         WHERE ur.UserId = @userId
-                            AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
+                            AND r.Name IN ('super_administrator', 'administrator')
                     )
                     OR EXISTS (
                         SELECT 1 FROM AgencyUsers au 
@@ -273,14 +297,18 @@ BEGIN
                 AND (
                     @alls = 1
                     OR (
-                        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                        AND (@regionId IS NULL OR a.RegionId = @regionId)
+                        (@regionId IS NULL OR a.RegionId = @regionId)
                         AND (@cityId IS NULL OR a.CityId = @cityId)
                         AND (@programId IS NULL OR ap.ProgramId = @programId)
                         AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
                         AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
                     )
                 )
+                AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
+                AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
+                AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
+                AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
+                AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -349,10 +377,14 @@ BEGIN
         (
             SELECT DISTINCT a.Id
             FROM Agency a
+                INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
                 LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
                 LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
                 LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+                LEFT JOIN Staff ownerStaff ON ownerStaff.UserId = own.UserId
+                LEFT JOIN Staff monitorStaff ON monitorStaff.UserId = mon.UserId
             WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+                AND (@name IS NULL OR @name = '' OR a.Name LIKE '%' + @name + '%')
                 -- NUEVA LÓGICA DE ACCESO
                 AND (
                     @userId IS NULL
@@ -361,7 +393,7 @@ BEGIN
                         FROM AspNetUserRoles ur
                         INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                         WHERE ur.UserId = @userId
-                            AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
+                            AND r.Name IN ('super_administrator', 'administrator')
                     )
                     OR EXISTS (
                         SELECT 1 FROM AgencyUsers au 
@@ -373,14 +405,18 @@ BEGIN
                 AND (
                     @alls = 1
                     OR (
-                        (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                        AND (@regionId IS NULL OR a.RegionId = @regionId)
+                        (@regionId IS NULL OR a.RegionId = @regionId)
                         AND (@cityId IS NULL OR a.CityId = @cityId)
                         AND (@programId IS NULL OR ap.ProgramId = @programId)
                         AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
                         AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
                     )
                 )
+                AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
+                AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
+                AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
+                AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
+                AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -446,11 +482,15 @@ BEGIN
         )
     SELECT COUNT(DISTINCT a.Id)
     FROM Agency a
+        INNER JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
         LEFT JOIN AgencyInscription ai ON a.Id = ai.AgencyId
         LEFT JOIN AgencyProgramsCTE ap ON a.Id = ap.AgencyId
         LEFT JOIN AgencyOwnersCTE own ON a.Id = own.AgencyId
         LEFT JOIN AgencyMonitorsCTE mon ON a.Id = mon.AgencyId
+        LEFT JOIN Staff ownerStaff ON ownerStaff.UserId = own.UserId
+        LEFT JOIN Staff monitorStaff ON monitorStaff.UserId = mon.UserId
     WHERE (@isPropietary IS NULL OR a.IsPropietary = @isPropietary)
+        AND (@name IS NULL OR @name = '' OR a.Name LIKE '%' + @name + '%')
         -- NUEVA LÓGICA DE ACCESO
         AND (
             @userId IS NULL
@@ -459,7 +499,7 @@ BEGIN
                 FROM AspNetUserRoles ur
                 INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
                 WHERE ur.UserId = @userId
-                    AND r.Name IN ('Super-Administrator', 'Administrator', 'Administrador')
+                    AND r.Name IN ('super_administrator', 'administrator')
             )
             OR EXISTS (
                 SELECT 1 FROM AgencyUsers au 
@@ -471,14 +511,18 @@ BEGIN
         AND (
             @alls = 1
             OR (
-                (@name IS NULL OR a.Name LIKE '%' + @name + '%')
-                AND (@regionId IS NULL OR a.RegionId = @regionId)
+                (@regionId IS NULL OR a.RegionId = @regionId)
                 AND (@cityId IS NULL OR a.CityId = @cityId)
                 AND (@programId IS NULL OR ap.ProgramId = @programId)
                 AND (@statusId IS NULL OR a.AgencyStatusId = @statusId)
                 AND (@userId IS NULL OR own.UserId = @userId OR mon.UserId = @userId)
                 AND (a.IsListable = 1)
             )
-        );
+        )
+        AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
+        AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
+        AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
+        AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
+        AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo);
 END;
 GO

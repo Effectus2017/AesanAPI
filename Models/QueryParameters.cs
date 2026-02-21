@@ -50,6 +50,13 @@ public class QueryParameters
     public string? CurrentUserId { get; set; } // ID del usuario actual logueado
     public bool? IsPropietary { get; set; } // Si es agencia propietaria (NUTRE)
     public DateTime? CompletedRegistrationDate { get; set; } // Fecha de registro completado
+
+    // Filtros lista validation-to-program (get-all-agencies-from-db)
+    public string? UserFirstName { get; set; } // Creado por (owner)
+    public string? StatusName { get; set; } // Nombre del estado
+    public string? MonitorFirstName { get; set; } // Asignado a (monitor)
+    public DateTime? CreatedAtFrom { get; set; }
+    public DateTime? CreatedAtTo { get; set; }
     public int? Month { get; set; } // Mes para filtrar días de funcionamiento (1-12)
     public int? Year { get; set; } // Año para filtrar días de funcionamiento
     public int? OperatingDayId { get; set; } // ID del día de funcionamiento
