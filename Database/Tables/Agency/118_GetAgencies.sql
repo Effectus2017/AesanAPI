@@ -21,8 +21,8 @@ CREATE OR ALTER PROCEDURE [118_GetAgencies]
     @userFirstName NVARCHAR(255) = NULL,
     @statusName NVARCHAR(255) = NULL,
     @monitorFirstName NVARCHAR(255) = NULL,
-    @createdAtFrom DATETIME2 = NULL,
-    @createdAtTo DATETIME2 = NULL,
+    @createdatfrom DATETIME2 = NULL,
+    @createdatto DATETIME2 = NULL,
     @uieNumber BIGINT = NULL,
     @einNumber INT = NULL,
     @sdrNumber BIGINT = NULL
@@ -152,11 +152,11 @@ BEGIN
         AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
         AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
         AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
-        AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
-        AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
-        AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
-        AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
-        AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
+        AND (@createdatfrom IS NULL OR a.CreatedAt >= @createdatfrom)
+        AND (@createdatto IS NULL OR a.CreatedAt <= @createdatto)
+        AND (@uieNumber IS NULL OR CAST(a.UieNumber AS NVARCHAR(20)) LIKE CAST(@uieNumber AS NVARCHAR(20)) + N'%')
+        AND (@einNumber IS NULL OR CAST(a.EinNumber AS NVARCHAR(20)) LIKE CAST(@einNumber AS NVARCHAR(20)) + N'%')
+        AND (@sdrNumber IS NULL OR CAST(a.SdrNumber AS NVARCHAR(20)) LIKE CAST(@sdrNumber AS NVARCHAR(20)) + N'%')
     ORDER BY a.CreatedAt DESC, a.Name
     OFFSET @skip ROWS
     FETCH NEXT @take ROWS ONLY;
@@ -227,11 +227,11 @@ BEGIN
                 AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
                 AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
                 AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
-                AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
-                AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
-                AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
-                AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
-                AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
+                AND (@createdatfrom IS NULL OR a.CreatedAt >= @createdatfrom)
+                AND (@createdatto IS NULL OR a.CreatedAt <= @createdatto)
+                AND (@uieNumber IS NULL OR CAST(a.UieNumber AS NVARCHAR(20)) LIKE CAST(@uieNumber AS NVARCHAR(20)) + N'%')
+                AND (@einNumber IS NULL OR CAST(a.EinNumber AS NVARCHAR(20)) LIKE CAST(@einNumber AS NVARCHAR(20)) + N'%')
+                AND (@sdrNumber IS NULL OR CAST(a.SdrNumber AS NVARCHAR(20)) LIKE CAST(@sdrNumber AS NVARCHAR(20)) + N'%')
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -316,11 +316,11 @@ BEGIN
                 AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
                 AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
                 AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
-                AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
-                AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
-                AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
-                AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
-                AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
+                AND (@createdatfrom IS NULL OR a.CreatedAt >= @createdatfrom)
+                AND (@createdatto IS NULL OR a.CreatedAt <= @createdatto)
+                AND (@uieNumber IS NULL OR CAST(a.UieNumber AS NVARCHAR(20)) LIKE CAST(@uieNumber AS NVARCHAR(20)) + N'%')
+                AND (@einNumber IS NULL OR CAST(a.EinNumber AS NVARCHAR(20)) LIKE CAST(@einNumber AS NVARCHAR(20)) + N'%')
+                AND (@sdrNumber IS NULL OR CAST(a.SdrNumber AS NVARCHAR(20)) LIKE CAST(@sdrNumber AS NVARCHAR(20)) + N'%')
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -427,11 +427,11 @@ BEGIN
                 AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
                 AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
                 AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
-                AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
-                AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
-                AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
-                AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
-                AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
+                AND (@createdatfrom IS NULL OR a.CreatedAt >= @createdatfrom)
+                AND (@createdatto IS NULL OR a.CreatedAt <= @createdatto)
+                AND (@uieNumber IS NULL OR CAST(a.UieNumber AS NVARCHAR(20)) LIKE CAST(@uieNumber AS NVARCHAR(20)) + N'%')
+                AND (@einNumber IS NULL OR CAST(a.EinNumber AS NVARCHAR(20)) LIKE CAST(@einNumber AS NVARCHAR(20)) + N'%')
+                AND (@sdrNumber IS NULL OR CAST(a.SdrNumber AS NVARCHAR(20)) LIKE CAST(@sdrNumber AS NVARCHAR(20)) + N'%')
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -537,10 +537,10 @@ BEGIN
         AND (@userFirstName IS NULL OR @userFirstName = '' OR ownerStaff.FirstName LIKE '%' + @userFirstName + '%')
         AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
         AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
-        AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
-        AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
-        AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
-        AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
-        AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber);
+        AND (@createdatfrom IS NULL OR a.CreatedAt >= @createdatfrom)
+        AND (@createdatto IS NULL OR a.CreatedAt <= @createdatto)
+        AND (@uieNumber IS NULL OR CAST(a.UieNumber AS NVARCHAR(20)) LIKE CAST(@uieNumber AS NVARCHAR(20)) + N'%')
+        AND (@einNumber IS NULL OR CAST(a.EinNumber AS NVARCHAR(20)) LIKE CAST(@einNumber AS NVARCHAR(20)) + N'%')
+        AND (@sdrNumber IS NULL OR CAST(a.SdrNumber AS NVARCHAR(20)) LIKE CAST(@sdrNumber AS NVARCHAR(20)) + N'%');
 END;
 GO

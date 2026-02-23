@@ -211,8 +211,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@userFirstName", userFirstName);
             param.Add("@statusName", statusName);
             param.Add("@monitorFirstName", monitorFirstName);
-            param.Add("@createdAtFrom", createdAtFrom);
-            param.Add("@createdAtTo", createdAtTo);
+            param.Add("@createdatfrom", createdAtFrom);
+            param.Add("@createdatto", createdAtTo);
             param.Add("@uieNumber", uieNumber);
             param.Add("@einNumber", einNumber);
             param.Add("@sdrNumber", sdrNumber);
