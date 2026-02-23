@@ -9,7 +9,7 @@ public interface IAgencyRepository
     /// ------------------------------------------------------------------------------------------------
     Task<dynamic> GetAgencyById(int id);
     Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId);
-    Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, string? monitorFirstName, DateTime? createdAtFrom, DateTime? createdAtTo);
+    Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, string? monitorFirstName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber);
     Task<dynamic> GetAgencyProgramsByUserId(string userId);
 
     /// ------------------------------------------------------------------------------------------------

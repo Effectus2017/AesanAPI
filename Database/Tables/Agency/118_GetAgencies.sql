@@ -22,7 +22,10 @@ CREATE OR ALTER PROCEDURE [118_GetAgencies]
     @statusName NVARCHAR(255) = NULL,
     @monitorFirstName NVARCHAR(255) = NULL,
     @createdAtFrom DATETIME2 = NULL,
-    @createdAtTo DATETIME2 = NULL
+    @createdAtTo DATETIME2 = NULL,
+    @uieNumber BIGINT = NULL,
+    @einNumber INT = NULL,
+    @sdrNumber BIGINT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -151,6 +154,9 @@ BEGIN
         AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
         AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
         AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
+        AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
+        AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
+        AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
     ORDER BY a.CreatedAt DESC, a.Name
     OFFSET @skip ROWS
     FETCH NEXT @take ROWS ONLY;
@@ -223,6 +229,9 @@ BEGIN
                 AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
                 AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
                 AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
+                AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
+                AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
+                AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -309,6 +318,9 @@ BEGIN
                 AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
                 AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
                 AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
+                AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
+                AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
+                AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -417,6 +429,9 @@ BEGIN
                 AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
                 AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
                 AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
+                AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
+                AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
+                AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber)
             ORDER BY a.Id
             OFFSET @skip ROWS
             FETCH NEXT @take ROWS ONLY
@@ -523,6 +538,9 @@ BEGIN
         AND (@statusName IS NULL OR @statusName = '' OR ast.Name LIKE '%' + @statusName + '%')
         AND (@monitorFirstName IS NULL OR @monitorFirstName = '' OR monitorStaff.FirstName LIKE '%' + @monitorFirstName + '%')
         AND (@createdAtFrom IS NULL OR a.CreatedAt >= @createdAtFrom)
-        AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo);
+        AND (@createdAtTo IS NULL OR a.CreatedAt <= @createdAtTo)
+        AND (@uieNumber IS NULL OR a.UieNumber = @uieNumber)
+        AND (@einNumber IS NULL OR a.EinNumber = @einNumber)
+        AND (@sdrNumber IS NULL OR a.SdrNumber = @sdrNumber);
 END;
 GO

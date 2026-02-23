@@ -192,7 +192,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, string? monitorFirstName, DateTime? createdAtFrom, DateTime? createdAtTo)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, string? monitorFirstName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
     {
         try
         {
@@ -213,6 +213,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@monitorFirstName", monitorFirstName);
             param.Add("@createdAtFrom", createdAtFrom);
             param.Add("@createdAtTo", createdAtTo);
+            param.Add("@uieNumber", uieNumber);
+            param.Add("@einNumber", einNumber);
+            param.Add("@sdrNumber", sdrNumber);
 
             // Usar nuevo SP con nueva lógica de acceso
             if (isList)

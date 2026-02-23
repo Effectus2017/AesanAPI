@@ -133,7 +133,10 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     queryParameters.StatusName,
                     queryParameters.MonitorFirstName,
                     queryParameters.CreatedAtFrom,
-                    queryParameters.CreatedAtTo
+                    queryParameters.CreatedAtTo,
+                    queryParameters.UieNumber,
+                    queryParameters.EinNumber,
+                    queryParameters.SdrNumber
                 );
 
                 return Ok(agencies);
