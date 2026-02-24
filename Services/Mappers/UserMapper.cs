@@ -10,6 +10,41 @@ namespace Api.Services.Mappers;
 public static class UserMapper
 {
     /// <summary>
+    /// Mapea una fila tipada del SP 109_GetAllUsersFromDb a DTOUser (DisplayName/DisplayNameEN desde la fila).
+    /// </summary>
+    public static DTOUser MapFromResult(DTOUserListItem row)
+    {
+        if (row == null)
+            throw new ArgumentNullException(nameof(row));
+
+        return new DTOUser
+        {
+            Id = row.Id ?? string.Empty,
+            StaffId = row.StaffId,
+            Email = row.Email ?? string.Empty,
+            FirstName = row.FirstName ?? string.Empty,
+            MiddleName = row.MiddleName ?? string.Empty,
+            FatherLastName = row.FatherLastName ?? string.Empty,
+            MotherLastName = row.MotherLastName ?? string.Empty,
+            AdministrationTitle = row.Position ?? string.Empty,
+            PhoneNumber = row.PhoneNumber ?? string.Empty,
+            ImageURL = row.ImageURL ?? string.Empty,
+            IsActive = row.IsActive,
+            IsTemporalPasswordActived = row.IsTemporalPasswordActived,
+            EmailConfirmed = row.EmailConfirmed,
+            Role = row.RoleId != null ? new DTOUserRole
+            {
+                Id = row.RoleId ?? string.Empty,
+                Name = row.RoleName ?? string.Empty,
+                NormalizedName = row.RoleNormalizedName ?? string.Empty,
+                DisplayName = row.DisplayName,
+                DisplayNameEN = row.DisplayNameEN
+            } : null,
+            ProgramName = row.ProgramName
+        };
+    }
+
+    /// <summary>
     /// Mapea un objeto dynamic a DTOUser
     /// </summary>
     /// <param name="user">Objeto dynamic con datos del usuario</param>

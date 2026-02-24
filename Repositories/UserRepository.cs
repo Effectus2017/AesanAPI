@@ -6,6 +6,7 @@ using System.Text;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
@@ -139,20 +140,33 @@ public class UserRepository(UserManager<User> userManager,
             // Leer el tercer resultado: programas asignados al usuario
             var userProgramsList = (await result.ReadAsync<DTOProgram>()).ToList();
 
+            var roleDisplayMap = _roleManager.Roles
+                .ToDictionary(r => r.Id, r => new { r.DisplayName, r.DisplayNameEN });
+
+            foreach (var role in userRoles)
+            {
+                if (roleDisplayMap.TryGetValue(role.Id, out var info))
+                {
+                    role.DisplayName = info.DisplayName;
+                    role.DisplayNameEN = info.DisplayNameEN;
+                }
+            }
+
             var primaryRole = userRoles.FirstOrDefault(r => r.IsPrimary);
             var secondaryRolesList = userRoles.Where(r => !r.IsPrimary).Select(r => new DTOUserSecondaryRole
             {
                 RoleId = r.Id,
-                RoleName = r.Name,
+                RoleName = r.DisplayName,
                 Comment = r.Comment,
                 ValidFrom = r.ValidFrom ?? DateTime.MinValue,
                 ValidTo = r.ValidTo ?? DateTime.MinValue,
                 IsActive = r.IsVigent
             }).ToList();
+
             var roleNamesForDisplay = new List<string>();
-            if (primaryRole != null) roleNamesForDisplay.Add(primaryRole.Name);
-            foreach (var sec in secondaryRolesList.Where(s => s.IsActive))
-                roleNamesForDisplay.Add(sec.RoleName);
+            if (primaryRole != null) roleNamesForDisplay.Add(primaryRole.DisplayName);
+            foreach (var sec in userRoles.Where(r => !r.IsPrimary && r.IsVigent))
+                roleNamesForDisplay.Add(sec.DisplayName);
 
             var dtoUser = new DTOUser
             {
@@ -175,6 +189,7 @@ public class UserRepository(UserManager<User> userManager,
                 ProgramName = userFromDb.ProgramName,
                 Programs = userProgramsList.Count > 0 ? userProgramsList : null,
                 Roles = roleNamesForDisplay,
+                RolesDisplay = string.Join(", ", roleNamesForDisplay),
                 Role = primaryRole ?? userRoles.FirstOrDefault(),
                 PrimaryRoleName = primaryRole?.Name,
                 SecondaryRoles = secondaryRolesList,
@@ -187,7 +202,7 @@ public class UserRepository(UserManager<User> userManager,
                 { "Email", userFromDb.Email },
                 { "FirstName", userFromDb.FirstName },
                 { "LastName", userFromDb.FatherLastName },
-                { "RolesCount", userRoles.Count().ToString() },
+                { "RolesCount", userRoles.Count.ToString() },
                 { "RoleName", userRoles.FirstOrDefault()?.Name ?? "Sin rol" }
             });
 
@@ -275,12 +290,7 @@ public class UserRepository(UserManager<User> userManager,
         try
         {
             _loggingService.LogInformation("Obteniendo usuarios con SP");
-            // Quitar Monitor de la lista de roles (rol ya no existe); si queda vacía, no filtrar por rol
-            var rolesForSp = roles != null ? roles.Where(r => !string.Equals(r, "Monitor", StringComparison.OrdinalIgnoreCase)).ToList() : null;
-            if (rolesForSp != null && rolesForSp.Count == 0)
-            {
-                rolesForSp = null;
-            }
+            var rolesForSp = roles != null && roles.Count > 0 ? roles : null;
 
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
@@ -293,20 +303,33 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@excludeAdministrators", excludeAdministrators, DbType.Boolean);
 
             var result = await db.QueryMultipleAsync("109_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
-            var rows = result.Read<dynamic>().ToList();
+            var rows = result.Read<DTOUserListItem>().ToList();
             var count = result.ReadFirstOrDefault<int>();
 
-            // Agrupar por Id para usuarios con múltiples roles (1 fila por rol en el SP)
-            var grouped = rows.GroupBy(r => (string)r.Id);
+            var roleDisplayMap = _roleManager.Roles
+                .ToDictionary(r => r.Id, r => new { r.DisplayName, r.DisplayNameEN });
+
+            var grouped = rows.GroupBy(r => r.Id);
 
             var data = grouped.Select(g =>
             {
                 var first = g.First();
                 var user = _mappingService.MapUser(first);
-                var roleNames = g.Select(x => (string)x.RoleName).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
 
-                user.Roles = roleNames;
+                if (user.Role != null && roleDisplayMap.TryGetValue(user.Role.Id, out var roleInfo))
+                {
+                    user.Role.DisplayName = roleInfo.DisplayName;
+                    user.Role.DisplayNameEN = roleInfo.DisplayNameEN;
+                }
 
+                var roleDisplayNames = g
+                    .Where(x => x.RoleId != null)
+                    .Select(x => roleDisplayMap.TryGetValue(x.RoleId!, out var info) ? info.DisplayName : x.RoleName)
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .Distinct()
+                    .ToList();
+                user.Roles = roleDisplayNames;
+                user.RolesDisplay = string.Join(", ", roleDisplayNames);
                 return user;
             }).ToList();
 

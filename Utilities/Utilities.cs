@@ -107,6 +107,22 @@ public static class Utilities
         return null;
     }
 
+    /// <summary>
+    /// Obtiene un string de una fila dinámica por clave, sin distinguir mayúsculas/minúsculas.
+    /// Útil cuando el proveedor (p. ej. SQL Server/Dapper) devuelve nombres de columna en distinta capitalización.
+    /// </summary>
+    public static string? GetDynamicRowStringIgnoreCase(dynamic? row, string key)
+    {
+        if (row == null) return null;
+        if (row is not IDictionary<string, object> dict) return null;
+        foreach (var kvp in dict)
+        {
+            if (kvp.Key != null && string.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase) && kvp.Value != null)
+                return kvp.Value.ToString();
+        }
+        return null;
+    }
+
     public static string RemoveSpecialCharacters(string str)
     {
         string _modifier = Regex.Replace(str, "[^a-zA-Z0-9_.]+", "_", RegexOptions.Compiled);

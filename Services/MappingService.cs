@@ -446,6 +446,14 @@ public class MappingService
     }
 
     /// <summary>
+    /// Mapea un item tipado del SP 109_GetAllUsersFromDb a DTOUser (usa DisplayName/DisplayNameEN de la fila).
+    /// </summary>
+    public DTOUser MapUser(DTOUserListItem row)
+    {
+        return UserMapper.MapFromResult(row);
+    }
+
+    /// <summary>
     /// Mapea una lista de usuarios desde resultados dinámicos
     /// </summary>
     /// <param name="items">Resultados dinámicos</param>
