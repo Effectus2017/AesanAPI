@@ -702,19 +702,21 @@ public class UserRepository(UserManager<User> userManager,
                 return new UnauthorizedObjectResult(new { Message = "Usuario no encontrado" });
             }
 
-            var userAgency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
+            var effectiveRoles = await GetEffectiveRoleNamesForUser(userId);
 
-            if (userAgency != null)
+            var hasAesanRole = effectiveRoles != null && effectiveRoles.Any(r => aesanRoleNames.Contains(r));
+
+            if (!hasAesanRole)
             {
                 return new ObjectResult(new { Message = "Cambiar rol solo está disponible para usuarios AESAN." }) { StatusCode = 403 };
             }
-
-            var effectiveRoles = await GetEffectiveRoleNamesForUser(userId);
 
             if (effectiveRoles == null || !effectiveRoles.Contains(role))
             {
                 return new BadRequestObjectResult(new { Message = "El usuario no tiene asignado el rol indicado o el rol secundario ya no está vigente." });
             }
+
+            var userAgency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
 
             if (AgencyRoleNames.Contains(role) && userAgency == null)
             {

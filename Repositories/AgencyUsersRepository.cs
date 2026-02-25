@@ -112,16 +112,14 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@userId", userId, DbType.String);
-            
+            parameters.Add("@userid", userId, DbType.String);
+
             var roleName = await db.QueryFirstOrDefaultAsync<string>(
-                @"SELECT TOP 1 r.Name
-                  FROM AspNetUserRoles ur
-                  INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-                  WHERE ur.UserId = @userId",
-                parameters
+                "100_GetUserRole",
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
-            
+
             return roleName;
         }
         catch (Exception ex)
@@ -140,16 +138,14 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@roleName", roleName, DbType.String);
-            
+            parameters.Add("@rolename", roleName, DbType.String);
+
             var assignmentCategory = await db.QueryFirstOrDefaultAsync<string>(
-                @"SELECT rac.AssignmentCategory
-                  FROM RoleAssignmentCategory rac
-                  INNER JOIN AspNetRoles r ON rac.RoleId = r.Id
-                  WHERE r.Name = @roleName",
-                parameters
+                "100_GetAssignmentCategoryByRoleName",
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
-            
+
             return assignmentCategory;
         }
         catch (Exception ex)
@@ -168,16 +164,14 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@userId", userId, DbType.String);
-            
+            parameters.Add("@userid", userId, DbType.String);
+
             var canBeOwner = await db.QueryFirstOrDefaultAsync<bool?>(
-                @"SELECT rac.CanBeOwner
-                  FROM RoleAssignmentCategory rac
-                  INNER JOIN AspNetUserRoles ur ON rac.RoleId = ur.RoleId
-                  WHERE ur.UserId = @userId",
-                parameters
+                "100_GetCanBeOwnerByUserId",
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
-            
+
             return canBeOwner ?? false;
         }
         catch (Exception ex)
@@ -212,22 +206,19 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         }
         else if (assignmentCategory == "NUTRE")
         {
-            // Determinar tipo específico según el nombre del rol
-            if (userRole.Contains("Coordinador", StringComparison.OrdinalIgnoreCase) || 
-                userRole.Contains("Coordinator", StringComparison.OrdinalIgnoreCase))
+            // Determinar tipo específico según la clave del rol (Name en AspNetRoles tras Mig_RoleDisplayNameAndKey)
+            var roleKey = userRole.Trim().ToLowerInvariant();
+
+            if (roleKey is "coordinator" or "monitoring_coordinator" or "program_coordinator")
                 return "NUTRE_COORDINATOR";
-            else if (userRole.Contains("Evaluador", StringComparison.OrdinalIgnoreCase) || 
-                     userRole.Contains("Evaluator", StringComparison.OrdinalIgnoreCase))
+            if (roleKey == "evaluator")
                 return "NUTRE_EVALUATOR";
-            else if (userRole.Contains("Admin", StringComparison.OrdinalIgnoreCase) || 
-                     userRole.Contains("Administrador", StringComparison.OrdinalIgnoreCase))
+            if (roleKey == "administrator")
                 return "NUTRE_ADMIN";
-            else if (userRole.Contains("Contaduría", StringComparison.OrdinalIgnoreCase) || 
-                     userRole.Contains("Accounting", StringComparison.OrdinalIgnoreCase) ||
-                     userRole.Contains("Contable", StringComparison.OrdinalIgnoreCase))
+            if (roleKey is "accountant" or "accounting")
                 return "NUTRE_ACCOUNTING";
-            else
-                return "NUTRE_EVALUATOR"; // Default para roles NUTRE
+
+            return "NUTRE_EVALUATOR"; // Default para roles NUTRE
         }
         
         throw new Exception($"No se puede determinar AgencyAssignmentType para el rol: {userRole}");

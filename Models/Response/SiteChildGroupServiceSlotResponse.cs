@@ -20,6 +20,8 @@ public class ServiceSlotOperatingDateDto
     public bool IsHoliday { get; set; }
     /// <summary>True si el día es fin de semana (para mostrar color distinto en la UI).</summary>
     public bool IsWeekend { get; set; }
+    /// <summary>True si el día fue agregado manualmente (día extra; para mostrar color distinto en la UI).</summary>
+    public bool IsManuallyAdded { get; set; }
 }
 
 public class SiteChildGroupServiceSlotResponse

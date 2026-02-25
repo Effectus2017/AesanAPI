@@ -106,19 +106,19 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     {
                         var d = (DateTime)r.operatingdate;
                         var dayName = esEs.TextInfo.ToTitleCase(esEs.DateTimeFormat.GetDayName(d.DayOfWeek));
-                        var fromTs = r.starttime as TimeSpan?;
-                        var toTs = r.endtime as TimeSpan?;
-                        var isHoliday = r.isholiday as bool? ?? false;
-                        var isWeekend = r.isweekend as bool? ?? false;
+                        var isHoliday = (bool)r.isholiday;
+                        var isWeekend = (bool)r.isweekend;
+                        var isManuallyAdded = (bool)r.ismanuallyadded;
                         return new ServiceSlotOperatingDateDto
                         {
                             DayName = dayName,
                             DayOfMonth = d.Day,
                             Date = d,
-                            From = fromTs.HasValue ? fromTs.Value.ToString(@"hh\:mm\:ss") : null,
-                            To = toTs.HasValue ? toTs.Value.ToString(@"hh\:mm\:ss") : null,
+                            From = ((TimeSpan)r.starttime).ToString(@"hh\:mm\:ss"),
+                            To = ((TimeSpan)r.endtime).ToString(@"hh\:mm\:ss"),
                             IsHoliday = isHoliday,
                             IsWeekend = isWeekend,
+                            IsManuallyAdded = isManuallyAdded,
                         };
                     }).OrderBy(x => x.Date).ToList());
 
@@ -997,9 +997,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             if (result != null)
             {
-                int daysDeleted = (int)(result.DaysDeleted ?? 0);
-                int daysInserted = (int)(result.DaysInserted ?? 0);
-                int servicesInserted = (int)(result.ServicesInserted ?? 0);
+                int daysDeleted = (int)result.DaysDeleted;
+                int daysInserted = (int)result.DaysInserted;
+                int servicesInserted = (int)result.ServicesInserted;
                 
                 _logger.LogInformation(
                     "Sincronización de calendario completada para sitio {SiteId}: {DaysDeleted} días eliminados, {DaysInserted} días insertados, {ServicesInserted} servicios insertados",
