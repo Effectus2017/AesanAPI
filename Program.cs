@@ -145,6 +145,7 @@ builder.Services.AddScoped<IGeoRepository, GeoRepository>();
 builder.Services.AddScoped<IProgramRepository, ProgramRepository>();
 builder.Services.AddScoped<IAgencyRepository, AgencyRepository>();
 builder.Services.AddScoped<IAgencyStatusRepository, AgencyStatusRepository>();
+builder.Services.AddScoped<IAgencyStatusHistoryRepository, AgencyStatusHistoryRepository>();
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<ISchoolSiteRepository, SchoolSiteRepository>();

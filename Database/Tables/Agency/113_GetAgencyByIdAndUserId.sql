@@ -80,12 +80,36 @@ BEGIN
         ai.StateFundsDeniedReason,
         ai.BasicEducationRegistry,
         ai.TaxExemptionStatusId,
+        os_tax_status.Name AS TaxExemptionStatusName,
+        os_tax_status.NameEN AS TaxExemptionStatusNameEN,
+        os_tax_status.OptionKey AS TaxExemptionStatusOptionKey,
         ai.TaxExemptionTypeId,
+        os_tax_type.Name AS TaxExemptionTypeName,
+        os_tax_type.NameEN AS TaxExemptionTypeNameEN,
+        os_tax_type.OptionKey AS TaxExemptionTypeOptionKey,
         ai.TypeOfEntityId,
+        os_entity.Name AS TypeOfEntityName,
+        os_entity.NameEN AS TypeOfEntityNameEN,
+        os_entity.OptionKey AS TypeOfEntityOptionKey,
         ai.TypeOfApplicantId,
+        os_applicant.Name AS TypeOfApplicantName,
+        os_applicant.NameEN AS TypeOfApplicantNameEN,
+        os_applicant.OptionKey AS TypeOfApplicantOptionKey,
         ai.PublicAllianceContractId,
+        os_alliance.Name AS PublicAllianceContractName,
+        os_alliance.NameEN AS PublicAllianceContractNameEN,
+        os_alliance.OptionKey AS PublicAllianceContractOptionKey,
         ai.NationalYouthProgram,
         ai.IsDayCareHomeId,
+        os_daycare.Name AS IsDayCareHomeName,
+        os_daycare.NameEN AS IsDayCareHomeNameEN,
+        os_daycare.OptionKey AS IsDayCareHomeOptionKey,
+        os_daycare.BooleanValue AS IsDayCareHomeBooleanValue,
+        ai.ParticipatesInHeadStartProgramId,
+        os_headstart.Name AS ParticipatesInHeadStartProgramName,
+        os_headstart.NameEN AS ParticipatesInHeadStartProgramNameEN,
+        os_headstart.OptionKey AS ParticipatesInHeadStartProgramOptionKey,
+        ai.ExtendedHours,
         ai.BoardMeetingsPerYear,
         ai.BoardMeetsRegularly,
         ai.ServicesOfferedSince,
@@ -128,9 +152,17 @@ BEGIN
         -- LEFT JOINs con Staff
         LEFT JOIN Staff s_sponsor ON u2.Id = s_sponsor.UserId
         LEFT JOIN Staff s_monitor ON u.Id = s_monitor.UserId
-        -- LEFT JOINs con OptionSelection
+        -- LEFT JOINs con OptionSelection para posiciones
         LEFT JOIN OptionSelection os_position_sponsor ON s_sponsor.PositionId = os_position_sponsor.Id
         LEFT JOIN OptionSelection os_position_monitor ON s_monitor.PositionId = os_position_monitor.Id
+        -- LEFT JOINs con OptionSelection para campos de inscripción
+        LEFT JOIN OptionSelection os_tax_status ON ai.TaxExemptionStatusId = os_tax_status.Id
+        LEFT JOIN OptionSelection os_tax_type ON ai.TaxExemptionTypeId = os_tax_type.Id
+        LEFT JOIN OptionSelection os_entity ON ai.TypeOfEntityId = os_entity.Id
+        LEFT JOIN OptionSelection os_applicant ON ai.TypeOfApplicantId = os_applicant.Id
+        LEFT JOIN OptionSelection os_alliance ON ai.PublicAllianceContractId = os_alliance.Id
+        LEFT JOIN OptionSelection os_daycare ON ai.IsDayCareHomeId = os_daycare.Id
+        LEFT JOIN OptionSelection os_headstart ON ai.ParticipatesInHeadStartProgramId = os_headstart.Id
     WHERE a.Id = @agencyId;
 
     -- Segunda consulta: Obtener los programas asociados a las agencias del usuario

@@ -14,7 +14,7 @@ namespace Api.Repositories;
 /// <summary>
 /// Repositorio de agencias
 /// </summary>
-public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, IAgencyUsersRepository agencyUsersRepository, DapperContext context, ILoggingService loggingService, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAgencyRepository
+public class AgencyRepository(IEmailService emailService, IPasswordService passwordService, IAgencyUsersRepository agencyUsersRepository, DapperContext context, ILoggingService loggingService, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, ICentralLogService centralLogService) : IAgencyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
@@ -23,6 +23,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     private readonly IAgencyUsersRepository _agencyUsersRepository = agencyUsersRepository ?? throw new ArgumentNullException(nameof(agencyUsersRepository));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
+    private readonly ICentralLogService _centralLogService = centralLogService ?? throw new ArgumentNullException(nameof(centralLogService));
 
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -761,16 +762,23 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     ///    - En caso de rechazo, envía la justificación correspondiente
     /// 3. Registra todas las operaciones en el sistema de logging
     /// </remarks>
-    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string? rejectionJustification)
+    public async Task<bool> UpdateAgencyStatus(int agencyId, int statusId, string? rejectionJustification, string userId)
     {
         try
         {
             _logger.LogInformation($"Actualizando estado de la agencia {agencyId} a {statusId}");
 
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning("UpdateAgencyStatus llamado sin userId");
+                return false;
+            }
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@statusId", statusId);
+            parameters.Add("@changedBy", userId);
             parameters.Add("@rejectionJustification", rejectionJustification);
             parameters.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
@@ -829,6 +837,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         }
                     }
                 }
+            }
+
+            if (rowsAffected > 0)
+            {
+                await _centralLogService.LogAuditChangeAsync("Agency", agencyId.ToString(), "UPDATE", userId, null, new { AgencyStatusId = statusId }, null, "AgencyStatusChange");
             }
 
             // Invalidar caché

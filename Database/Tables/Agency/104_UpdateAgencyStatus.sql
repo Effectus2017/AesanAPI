@@ -1,41 +1,55 @@
--- Actualizamos el procedimiento almacenado para actualizar el estado de una agencia
+-- Actualiza el estado de una agencia, registra en AgencyStatusHistory y en AuditTrail.
 CREATE OR ALTER PROCEDURE [dbo].[104_UpdateAgencyStatus]
     @agencyId INT,
     @statusId INT,
+    @changedBy NVARCHAR(450),
     @rejectionJustification NVARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @rowsAffected INT;
     DECLARE @validStatus BIT = 0;
+    DECLARE @auditOpId UNIQUEIDENTIFIER = NULL;
 
-    -- Verificamos que el estado exista
-    IF EXISTS (SELECT 1
-    FROM AgencyStatus
-    WHERE Id = @statusId)
+    IF @changedBy IS NULL OR LTRIM(RTRIM(@changedBy)) = ''
     BEGIN
-        SET @validStatus = 1;
+        RAISERROR('changedBy es requerido', 16, 1);
+        RETURN -1;
     END
 
-    -- Si el estado es válido, actualizamos la agencia
+    IF EXISTS (SELECT 1 FROM AgencyStatus WHERE Id = @statusId)
+        SET @validStatus = 1;
+
     IF @validStatus = 1
     BEGIN
-        -- Actualizamos el estado de la agencia
         UPDATE Agency
-        SET 
-            AgencyStatusId = @statusId,
+        SET AgencyStatusId = @statusId,
             UpdatedAt = GETDATE()
         WHERE Id = @agencyId;
 
-        -- Obtenemos el número de filas afectadas
         SET @rowsAffected = @@ROWCOUNT;
 
-        -- Retornamos el número de filas afectadas
+        IF @rowsAffected > 0
+        BEGIN
+            INSERT INTO AgencyStatusHistory (AgencyId, StatusId, ChangedBy, ChangedAt, Justification)
+            VALUES (@agencyId, @statusId, @changedBy, GETUTCDATE(), @rejectionJustification);
+
+            DECLARE @entityIdStr NVARCHAR(100) = CAST(@agencyId AS NVARCHAR(100));
+            DECLARE @newValuesStr NVARCHAR(20) = CAST(@statusId AS NVARCHAR(20));
+            EXEC [dbo].[100_LogAuditChange]
+                @TableName = 'Agency',
+                @EntityId = @entityIdStr,
+                @Action = 'UPDATE',
+                @ChangedBy = @changedBy,
+                @ChangedFields = 'AgencyStatusId',
+                @NewValues = @newValuesStr,
+                @BusinessContext = 'AgencyStatusChange',
+                @OperationId = @auditOpId OUTPUT;
+        END
+
         RETURN @rowsAffected;
     END
-    ELSE
-    BEGIN
-        -- Si el estado no es válido, retornamos 0
-        RETURN 0;
-    END
-END; 
+
+    RETURN 0;
+END;
+GO 
