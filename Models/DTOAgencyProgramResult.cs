@@ -1,7 +1,7 @@
 namespace Api.Models;
 
 /// <summary>
-/// DTO que representa el resultado de programas con AgencyId del SP 117_GetAgencies
+/// DTO que representa el resultado de programas con AgencyId del SP 119_GetAgencies
 /// Incluye los campos del programa más la relación con la agencia
 /// </summary>
 public class DTOAgencyProgramResult

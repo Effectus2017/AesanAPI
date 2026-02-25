@@ -58,8 +58,9 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     /// </summary>
     /// <param name="queryParameters">Parámetros de consulta que incluyen el ID</param>
     /// <returns>La lista de programas si se encuentran, NotFound si no se encuentran, o Error interno del servidor en caso de error</returns>
+    [AllowAnonymous]
     [HttpGet("get-all-programs-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas. Se pueden filtrar por múltiples nombres separados por coma.")]
+    [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas. Se pueden filtrar por múltiples nombres separados por coma. Accesible sin autenticación para intención de participación.")]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
         try

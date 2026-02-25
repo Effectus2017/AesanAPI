@@ -98,8 +98,9 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     /// </summary>
     /// <param name="optionKey">Clave de opción</param>
     /// <returns>Opción de selección</returns>
+    [AllowAnonymous]
     [HttpGet("get-option-selection-by-option-key")]
-    [SwaggerOperation(Summary = "Obtiene una opción de selección por su clave de opción", Description = "Devuelve una opción de selección basada en la clave de opción proporcionada.")]
+    [SwaggerOperation(Summary = "Obtiene una opción de selección por su clave de opción", Description = "Devuelve una opción de selección basada en la clave de opción proporcionada. Accesible sin autenticación para intención de participación.")]
     public async Task<ActionResult> GetByOptionKey([FromQuery] QueryParameters queryParameters)
     {
         try

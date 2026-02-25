@@ -91,8 +91,9 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
     /// </summary>
     /// <param name="queryParameters">Los parámetros de la consulta</param>
     /// <returns>Las ciudades encontradas</returns>
+    [AllowAnonymous]
     [HttpGet("get-all-cities-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todas las ciudades de la base de datos", Description = "Devuelve una lista de todas las ciudades.")]
+    [SwaggerOperation(Summary = "Obtiene todas las ciudades de la base de datos", Description = "Devuelve una lista de todas las ciudades. Accesible sin autenticación para intención de participación.")]
     public async Task<IActionResult> GetCities([FromQuery] QueryParameters queryParameters)
     {
         try

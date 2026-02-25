@@ -26,8 +26,8 @@ BEGIN
     INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
     WHERE ur.UserId = @userId;
 
-    -- Si es Super-Administrator o Administrator → ver todas las agencias
-    IF @userRoleName IN ('Super-Administrator', 'Administrator', 'Administrador')
+    -- Si es super_administrator o administrator → ver todas las agencias (r.Name en BD)
+    IF @userRoleName IN ('super_administrator', 'administrator')
     BEGIN
         SET @canSeeAllAgencies = 1;
         SET @hasAccess = 1;
@@ -57,20 +57,20 @@ BEGIN
     -- Primera consulta: Obtener los datos de las agencias asignadas al usuario con datos completos de inscripción
     SELECT
         a.*,
-        -- Datos del usuario de la agencia (auspiciador) - desde Staff
+        -- Datos del usuario de la agencia (auspiciador) - desde Staff (persona a cargo = PositionId)
         s_sponsor.Id as UserId,
         s_sponsor.FirstName AS UserFirstName,
         s_sponsor.MiddleName AS UserMiddleName,
         s_sponsor.FatherLastName AS UserFatherLastName,
         s_sponsor.MotherLastName AS UserMotherLastName,
-        os_position_sponsor.Name AS UserAdministrationTitle,
-        -- Datos del usuario monitor (el usuario actual) - desde Staff
-        s_monitor.Id as MonitorId,
-        s_monitor.FirstName AS MonitorFirstName,
-        s_monitor.MiddleName AS MonitorMiddleName,
-        s_monitor.FatherLastName AS MonitorFatherLastName,
-        s_monitor.MotherLastName AS MonitorMotherLastName,
-        os_position_monitor.Name AS MonitorAdministrationTitle,
+        s_sponsor.PositionId AS UserPositionId,
+        os_position_sponsor.Name AS UserPositionName,
+        os_position_sponsor.NameEN AS UserPositionNameEN,
+        os_position_sponsor.OptionKey AS UserPositionOptionKey,
+        u2.Id AS UserGuid,
+        s_sponsor.Email AS UserEmail,
+        s_sponsor.ContractStartDate AS UserContractStartDate,
+        s_sponsor.ContractEndDate AS UserContractEndDate,
         -- Campos de AgencyInscription
         ai.Id AS AgencyInscriptionId,
         ai.NonProfit,
@@ -183,5 +183,34 @@ BEGIN
         AND aibe.IsActive = 1
         AND os.OptionKey = 'boardExecutiveAuthority'
     ORDER BY os.DisplayOrder ASC;
+
+    -- Quinta consulta: Usuarios asignados a la agencia (AgencyUsers + Staff)
+    SELECT
+        agencyid = au.AgencyId,
+        userid = au.UserId,
+        id = s.Id,
+        firstname = s.FirstName,
+        middlename = s.MiddleName,
+        fatherlastname = s.FatherLastName,
+        motherlastname = s.MotherLastName,
+        positionid = s.PositionId,
+        positionname = os.Name,
+        positionnameen = os.NameEN,
+        positionoptionkey = os.OptionKey,
+        contractstartdate = s.ContractStartDate,
+        contractenddate = s.ContractEndDate,
+        email = s.Email,
+        birthdate = s.BirthDate,
+        statusid = s.StatusId,
+        statusname = os_status.Name,
+        statusnameen = os_status.NameEN
+    FROM AgencyUsers au
+        LEFT JOIN AspNetUsers u ON au.UserId = u.Id
+        LEFT JOIN Staff s ON u.Id = s.UserId
+        LEFT JOIN OptionSelection os ON s.PositionId = os.Id
+        LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
+    WHERE au.AgencyId = @agencyId
+        AND au.IsActive = 1
+    ORDER BY au.AgencyId, au.UserId;
 END;
 GO

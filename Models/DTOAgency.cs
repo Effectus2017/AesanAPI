@@ -43,15 +43,16 @@ public class DTOAgency
     public DTORegion? PostalRegion { get; set; } = new DTORegion();
     // Estatus
     public DTOAgencyStatus? Status { get; set; } = new DTOAgencyStatus();
-    // Usuario
+    // Usuario (owner principal)
     public DTOStaff? User { get; set; } = new DTOStaff();
-    // Usuario Monitor
+    // Usuario Monitor (legacy; preferir AssignedUsers)
     public DTOStaff? Monitor { get; set; } = new DTOStaff();
+    // Usuarios asignados a la agencia (AgencyUsers: por etapa/asignación; pueden ser varios)
+    public List<DTOStaff> AssignedUsers { get; set; } = [];
     // Programas
     public List<DTOProgram> Programs { get; set; } = [];
     // Código de la Agencia
     public string AgencyCode { get; set; } = "";
-    public string Code { get; set; } = "";
 
     // Datos de inscripción de la agencia
     public Response.AgencyInscriptionResponse? Inscription { get; set; }

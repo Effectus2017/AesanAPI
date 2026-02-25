@@ -16,6 +16,8 @@ CREATE OR ALTER PROCEDURE [112_InsertAgencyInscription]
     @servicesOfferedSince datetime = NULL,
     @taxExemptionStatusId int,
     @taxExemptionTypeId int,
+    @typeOfEntityId int = NULL,
+    @typeOfApplicantId int = NULL,
     @publicAllianceContractId int = NULL,
     @nationalYouthProgram bit,
     @isDayCareHomeId int = NULL,
@@ -34,7 +36,7 @@ BEGIN
         AgencyId, NonProfit, FederalFundsDenied, FederalFundsDeniedReason, -- Nuevo campo
         StateFundsDenied, StateFundsDeniedReason,
         BasicEducationRegistry, ExtendedHours, ServicesOfferedSince,
-        TaxExemptionStatusId, TaxExemptionTypeId,
+        TaxExemptionStatusId, TaxExemptionTypeId, TypeOfEntityId, TypeOfApplicantId,
         PublicAllianceContractId, NationalYouthProgram, IsDayCareHomeId, ParticipatesInHeadStartProgramId,
         BoardMeetingsPerYear, BoardMeetsRegularly,
         DeadlineToCompleteRegistration
@@ -44,7 +46,7 @@ BEGIN
             @agencyId, @nonProfit, @federalFundsDenied, @federalFundsDeniedReason, -- Nuevo valor
             @stateFundsDenied, @stateFundsDeniedReason,
             @basicEducationRegistry, @extendedHours, @servicesOfferedSince,
-            @taxExemptionStatusId, @taxExemptionTypeId,
+            @taxExemptionStatusId, @taxExemptionTypeId, @typeOfEntityId, @typeOfApplicantId,
             @publicAllianceContractId, @nationalYouthProgram, @isDayCareHomeId, @participatesInHeadStartProgramId,
             @boardMeetingsPerYear, @boardMeetsRegularly,
             @deadlineToCompleteRegistration

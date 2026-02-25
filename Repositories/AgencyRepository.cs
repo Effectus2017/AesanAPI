@@ -165,6 +165,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             // Leer el cuarto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
             var _boardExecutiveAuthority = await result.ReadAsync<dynamic>();
 
+            // Leer el quinto result set: Usuarios asignados a la agencia (AgencyUsers + Staff)
+            var _assignedUsers = await result.ReadAsync<DTOStaff>();
+
             if (_boardExecutiveAuthority.Any() && agency.Inscription != null)
             {
                 var boardAuthorityIds = _boardExecutiveAuthority.Select(x => (int)x.OptionSelectionId).ToList();
@@ -179,6 +182,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Any() ? boardAuthorityOptions : null;
             }
 
+            agency.AssignedUsers = _assignedUsers?.ToList() ?? [];
+            agency.Monitor = null;
+
             _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
             return agency!;
         }
@@ -192,7 +198,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, string? monitorFirstName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
     {
         try
         {
@@ -210,7 +216,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@isPropietary", isPropietary);
             param.Add("@userFirstName", userFirstName);
             param.Add("@statusName", statusName);
-            param.Add("@monitorFirstName", monitorFirstName);
             param.Add("@createdatfrom", createdAtFrom);
             param.Add("@createdatto", createdAtTo);
             param.Add("@uieNumber", uieNumber);
@@ -220,7 +225,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             // Usar nuevo SP con nueva lógica de acceso
             if (isList)
             {
-                using var result = await dbConnection.QueryMultipleAsync("118_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("119_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -236,11 +241,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 // Variables para almacenar los resultados
                 List<dynamic> agencies = [];
                 List<DTOProgram> agenciesPrograms = [];
-                List<DTOStaff> agenciesMonitors = [];
                 List<DTOStaff> agenciesOwners = [];
+                List<DTOStaff> agenciesAssignedUsers = [];
                 int count = 0;
 
-                using var result = await dbConnection.QueryMultipleAsync("118_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("119_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -260,12 +265,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
                 if (!result.IsConsumed)
                 {
-                    agenciesMonitors = result.Read<DTOStaff>().ToList();
+                    agenciesOwners = result.Read<DTOStaff>().ToList();
                 }
 
                 if (!result.IsConsumed)
                 {
-                    agenciesOwners = result.Read<DTOStaff>().ToList();
+                    agenciesAssignedUsers = result.Read<DTOStaff>().ToList();
                 }
 
                 if (!result.IsConsumed)
@@ -281,24 +286,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 {
                     foreach (var agency in data)
                     {
-                        agency.Programs = agenciesPrograms.ToList();
+                        agency.Programs = agenciesPrograms.Where(p => p.AgencyId == agency.Id).ToList();
                     }
                 }
 
-                // Asignar monitors a cada agencia
-                if (agenciesMonitors != null && agenciesMonitors.Count != 0)
-                {
-                    foreach (var agency in data)
-                    {
-                        var monitorData = agenciesMonitors.Where(am => am.AgencyId == agency.Id).FirstOrDefault();
-                        if (monitorData != null)
-                        {
-                            agency.Monitor = monitorData;
-                        }
-                    }
-                }
-
-                // Asignar owners a cada agencia
+                // Asignar owners a cada agencia (User = owner principal)
                 if (agenciesOwners != null && agenciesOwners.Count != 0)
                 {
                     foreach (var agency in data)
@@ -308,6 +300,15 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                         {
                             agency.User = ownerData;
                         }
+                    }
+                }
+
+                // Asignar usuarios asignados a la agencia (AgencyUsers: todos por etapa/asignación)
+                if (agenciesAssignedUsers != null && agenciesAssignedUsers.Count != 0)
+                {
+                    foreach (var agency in data)
+                    {
+                        agency.AssignedUsers = agenciesAssignedUsers.Where(au => au.AgencyId == agency.Id).ToList();
                     }
                 }
 
@@ -403,6 +404,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.ServicesOfferedSince,
                 agencyRequest.TaxExemptionStatusId,
                 agencyRequest.TaxExemptionTypeId,
+                agencyRequest.TypeOfEntityId,
+                agencyRequest.TypeOfApplicantId,
                 agencyRequest.PublicAllianceContractId,
                 agencyRequest.NationalYouthProgram,
                 agencyRequest.IsDayCareHomeId,
@@ -485,7 +488,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? typeOfEntityId, int? typeOfApplicantId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null)
     {
         try
         {
@@ -501,6 +504,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@servicesOfferedSince", servicesOfferedSince);
             parameters.Add("@taxExemptionStatusId", taxExemptionStatusId);
             parameters.Add("@taxExemptionTypeId", taxExemptionTypeId);
+            parameters.Add("@typeOfEntityId", typeOfEntityId);
+            parameters.Add("@typeOfApplicantId", typeOfApplicantId);
             parameters.Add("@publicAllianceContractId", publicAllianceContractId);
             parameters.Add("@nationalYouthProgram", nationalYouthProgram);
             parameters.Add("@isDayCareHomeId", isDayCareHomeId);

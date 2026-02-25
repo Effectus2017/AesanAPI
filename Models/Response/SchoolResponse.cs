@@ -23,5 +23,5 @@ public class SchoolResponse
 
     // Propiedades de conveniencia para operaciones que necesiten IDs
     public string? AgencyName => Agency?.Name;
-    public string? AgencyCode => Agency?.Code;
+    public string? AgencyCode => Agency?.AgencyCode;
 }

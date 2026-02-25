@@ -131,7 +131,6 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     queryParameters.IsPropietary,
                     queryParameters.UserFirstName,
                     queryParameters.StatusName,
-                    queryParameters.MonitorFirstName,
                     queryParameters.CreatedAtFrom,
                     queryParameters.CreatedAtTo,
                     queryParameters.UieNumber,
@@ -387,7 +386,7 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                     {
                         // Preparar variables para los templates
                         var agencyName = agency.Name?.ToString() ?? "";
-                        var agencyCode = agency.AgencyCode?.ToString() ?? agency.Code?.ToString() ?? "";
+                        var agencyCode = agency.AgencyCode?.ToString() ?? "";
                         var completionDate = queryParameters.CompletedRegistrationDate.Value.ToString("dd/MM/yyyy");
 
                         var variables = new Dictionary<string, string>

@@ -6,6 +6,7 @@ namespace Api.Models;
 
 public class DTOProgram
 {
+    public int? AgencyId { get; set; } = null;
     public int Id { get; set; } = 0;
     public string Name { get; set; } = "";
     public string NameEN { get; set; } = "";

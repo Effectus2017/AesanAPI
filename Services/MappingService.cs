@@ -179,7 +179,7 @@ public class MappingService
             {
                 Id = item.AgencyId,
                 Name = item.AgencyName,
-                Code = item.AgencyCode
+                AgencyCode = item.AgencyCode
             }
         };
     }
@@ -244,7 +244,7 @@ public class MappingService
                 Agency = new DTOAgency
                 {
                     Name = item.AgencyName,
-                    Code = item.AgencyCode
+                    AgencyCode = item.AgencyCode
                 }
             }
             // Site queda null porque el SP no devuelve datos del sitio
