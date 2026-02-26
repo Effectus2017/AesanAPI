@@ -23,4 +23,5 @@ public interface IUnitOfWork
     ISiteStaffRepository SiteStaffRepository { get; }
     ISiteCalendarRepository SiteCalendarRepository { get; }
     ISiteExcursionRepository SiteExcursionRepository { get; }
+    IAgencyCalendarRepository AgencyCalendarRepository { get; }
 }

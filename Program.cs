@@ -191,6 +191,7 @@ builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
 builder.Services.AddScoped<ISiteStaffRepository, SiteStaffRepository>();
 builder.Services.AddScoped<ISiteCalendarRepository, SiteCalendarRepository>();
+builder.Services.AddScoped<IAgencyCalendarRepository, AgencyCalendarRepository>();
 builder.Services.AddScoped<ISiteExcursionRepository, SiteExcursionRepository>();
 builder.Services.AddScoped<ISiteOperatingDayServiceRepository, SiteOperatingDayServiceRepository>();
 builder.Services.AddScoped<ISitePersonInChargeRepository, SitePersonInChargeRepository>();
