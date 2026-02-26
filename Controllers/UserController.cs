@@ -233,10 +233,12 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     /// ------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Aplicacion al programa de auspiciadores, creacion de agencia y usuario
+    /// Aplicacion al programa de auspiciadores, creacion de agencia y usuario.
+    /// Endpoint público: no requiere autenticación (el usuario aún no tiene cuenta).
     /// </summary>
     /// <param name="model">El modelo de registro de usuario</param>
     /// <returns>El resultado del registro</returns>
+    [AllowAnonymous]
     [HttpPost("register-user-agency")]
     [SwaggerOperation(Summary = "Aplicación al programa de auspiciadores", Description = "Crea una agencia y un usuario en el sistema.")]
     public async Task<IActionResult> RegisterUserAgency([FromBody] UserAgencyRequest model)
@@ -616,12 +618,14 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     }
 
     /// <summary>
-    /// Actualiza la contraseña temporal de un usuario
+    /// Actualiza la contraseña temporal de un usuario (p. ej. tras primer login).
+    /// Público: el usuario puede no tener token; se valida con email + contraseña temporal + nueva contraseña.
     /// </summary>
-    /// <param name="queryParameters">Parámetros con UserId y NewPassword</param>
+    /// <param name="queryParameters">Parámetros con Email, TemporaryPassword y NewPassword</param>
     /// <returns>Resultado de la operación</returns>
+    [AllowAnonymous]
     [HttpPost("update-temporal-password")]
-    [SwaggerOperation(Summary = "Actualiza la contraseña temporal de un usuario", Description = "Permite a un administrador actualizar la contraseña temporal de un usuario.")]
+    [SwaggerOperation(Summary = "Actualiza la contraseña temporal de un usuario", Description = "Permite cambiar la contraseña temporal (p. ej. tras primer login). No requiere token; se valida con email y contraseña temporal.")]
     public async Task<IActionResult> UpdateTemporalPassword([FromQuery] QueryParameters queryParameters)
     {
         try
