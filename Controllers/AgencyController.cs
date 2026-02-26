@@ -106,6 +106,31 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     }
 
     /// <summary>
+    /// Obtiene la lista de usuarios AESAN asignados a una agencia (excluye agency_administrator).
+    /// </summary>
+    [HttpGet("get-assigned-users")]
+    [SwaggerOperation(Summary = "Obtiene usuarios asignados a una agencia", Description = "Devuelve la lista de usuarios asignados a la agencia, excluyendo agency_administrator.")]
+    public async Task<IActionResult> GetAssignedUsers([FromQuery] int agencyId)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            if (agencyId == 0)
+                return BadRequest("El ID de la agencia es requerido");
+
+            var list = await _unitOfWork.AgencyRepository.GetAgencyAssignedUsers(agencyId, userId);
+            return Ok(list);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener usuarios asignados: {Message}", ex.Message);
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
     /// <param name="queryParameters">Los parámetros de consulta</param>

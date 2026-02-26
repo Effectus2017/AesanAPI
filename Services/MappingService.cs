@@ -657,6 +657,27 @@ public class MappingService
         return items.Select(MapAgencyStatus).ToList();
     }
 
+    /// <summary>
+    /// Mapea un registro de historial de estado de agencia desde un resultado dinámico
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>Objeto dinámico con los campos del historial</returns>
+    public dynamic MapAgencyStatusHistory(dynamic item)
+    {
+        return new
+        {
+            id = (int?)item.id,
+            agencyId = (int?)item.agencyid,
+            agencyName = (string?)item.agencyname,
+            statusId = (int?)item.statusid,
+            statusName = (string?)item.statusname,
+            changedAt = (DateTime?)item.changedat,
+            changedBy = (int?)item.changedby,
+            changedByName = (string?)item.changedbyname,
+            justification = (string?)item.justification
+        };
+    }
+
     #endregion
 
     #region Geo Mappings

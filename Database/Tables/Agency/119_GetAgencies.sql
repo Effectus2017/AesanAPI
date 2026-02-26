@@ -51,8 +51,12 @@ BEGIN
     SELECT DISTINCT
         a.Id,
         a.Name,
-        a.AgencyStatusId as StatusId,
-        ast.Name AS AgencyStatusName,
+        -- AgencyStatus completo
+        StatusId = a.AgencyStatusId,
+        StatusName = ast.Name,
+        StatusNameEN = ast.NameEN,
+        StatusIsActive = ast.IsActive,
+        StatusDisplayOrder = ast.DisplayOrder,
         a.SdrNumber,
         a.UieNumber,
         a.EinNumber,

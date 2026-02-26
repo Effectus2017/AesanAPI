@@ -34,6 +34,8 @@ public class DTOStaff
     public string? Comments { get; set; } = "";
     public string? UserId { get; set; } = null;
     public string? UserName { get; set; } = null; // Nombre del usuario si existe
+    public string? RoleName { get; set; } = null; // Clave del rol (ej. agency_user)
+    public string? RoleDisplayName { get; set; } = null; // Nombre a mostrar del rol
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;

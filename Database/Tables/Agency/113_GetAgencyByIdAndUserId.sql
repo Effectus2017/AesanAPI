@@ -56,7 +56,31 @@ BEGIN
     -- Continuar con la consulta original (similar a 112_GetAgencyByIdAndUserId pero usando AgencyAssignmentType)
     -- Primera consulta: Obtener los datos de las agencias asignadas al usuario con datos completos de inscripción
     SELECT
-        a.*,
+        -- Datos básicos de Agency
+        a.Id,
+        a.Name,
+        a.SdrNumber,
+        a.UieNumber,
+        a.EinNumber,
+        a.Address,
+        a.ZipCode,
+        a.PostalAddress,
+        a.PostalZipCode,
+        a.Phone,
+        a.Latitude,
+        a.Longitude,
+        a.Email,
+        a.CreatedAt,
+        a.UpdatedAt,
+        a.ImageURL,
+        a.AgencyCode,
+        a.IsRecurrent,
+        a.CityId,
+        a.RegionId,
+        a.PostalCityId,
+        a.PostalRegionId,
+        a.AgencyStatusId,
+        a.IsPropietary,
         -- Datos del usuario de la agencia (auspiciador) - desde Staff (persona a cargo = PositionId)
         s_sponsor.Id as UserId,
         s_sponsor.FirstName AS UserFirstName,
@@ -119,17 +143,17 @@ BEGIN
         ai.Comments,
         ai.DeadlineToCompleteRegistration,
         ai.CompletedRegistrationDate,
-        -- Datos adicionales
-        a.IsPropietary,
-        c.Name as CityName,
-        c.Id as CityId,
-        pc.Name as PostalCityName,
-        pc.Id as PostalCityId,
-        r.Name as RegionName,
-        r.Id as RegionId,
-        pr.Name as PostalRegionName,
-        pr.Id as PostalRegionId,
-        ast.Name as StatusName
+        -- Relaciones City/Region
+        CityName = c.Name,
+        PostalCityName = pc.Name,
+        RegionName = r.Name,
+        PostalRegionName = pr.Name,
+        -- AgencyStatus completo
+        StatusId = a.AgencyStatusId,
+        StatusName = ast.Name,
+        StatusNameEN = ast.NameEN,
+        StatusIsActive = ast.IsActive,
+        StatusDisplayOrder = ast.DisplayOrder
     FROM Agency a
         LEFT JOIN AgencyInscription ai ON a.id = ai.AgencyId
         LEFT JOIN City c ON a.CityId = c.Id
@@ -246,3 +270,5 @@ BEGIN
     ORDER BY au.AgencyId, au.UserId;
 END;
 GO
+
+EXEC [113_GetAgencyByIdAndUserId] @agencyId = 8, @userId = '77BC70EE-D0A8-4904-99D6-C92CB3D632DA';

@@ -9,6 +9,10 @@ public interface IAgencyRepository
     /// ------------------------------------------------------------------------------------------------
     Task<dynamic> GetAgencyById(int id);
     Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId);
+    /// <summary>
+    /// Obtiene los usuarios asignados a una agencia (excluye agency_administrator). Solo para listado del modal.
+    /// </summary>
+    Task<dynamic> GetAgencyAssignedUsers(int agencyId, string userId);
     Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber);
     Task<dynamic> GetAgencyProgramsByUserId(string userId);
 

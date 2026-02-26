@@ -2,52 +2,55 @@ using System.Data;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Response;
+using Api.Services;
 using Dapper;
-using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
 
-public class AgencyStatusHistoryRepository(DapperContext context, ILogger<AgencyStatusHistoryRepository> logger) : IAgencyStatusHistoryRepository
+/// <summary>
+/// Repositorio para el historial de estados de agencia.
+/// </summary>
+public class AgencyStatusHistoryRepository(DapperContext context, ILoggingService loggingService) : IAgencyStatusHistoryRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyStatusHistoryRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
 
-    public async Task<(IReadOnlyList<DTOAgencyStatusHistory> Items, int TotalCount)> GetAgencyStatusHistoryPagedAsync(
-        int agencyId,
-        DateTime? from,
-        DateTime? to,
-        int page,
-        int pageSize)
+    /// <summary>
+    /// Obtiene el historial de estados de agencia paginado.
+    /// </summary>
+    /// <param name="take">Número de registros a tomar.</param>
+    /// <param name="skip">Número de registros a saltar.</param>
+    /// <param name="agencyId">ID de la agencia (opcional).</param>
+    /// <param name="from">Fecha desde (opcional).</param>
+    /// <param name="to">Fecha hasta (opcional).</param>
+    /// <returns>Lista de historial y total de registros.</returns>
+    public async Task<dynamic> GetAgencyStatusHistoryPaged(int take, int skip, int? agencyId, DateTime? from, DateTime? to)
     {
         try
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 20;
-
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@agencyId", agencyId, DbType.Int32);
+            parameters.Add("@take", take, DbType.Int32);
+            parameters.Add("@skip", skip, DbType.Int32);
+            parameters.Add("@agencyid", agencyId, DbType.Int32);
             parameters.Add("@from", from, DbType.DateTime2);
             parameters.Add("@to", to, DbType.DateTime2);
-            parameters.Add("@page", page, DbType.Int32);
-            parameters.Add("@pagesize", pageSize, DbType.Int32);
 
-            var rows = (await db.QueryAsync<DTOAgencyStatusHistory>(
-                "100_GetAgencyStatusHistoryPaged",
-                parameters,
-                commandType: CommandType.StoredProcedure)).ToList();
+            var result = await db.QueryMultipleAsync("100_GetAllAgencyStatusHistory", parameters, commandType: CommandType.StoredProcedure);
 
-            int totalCount = rows.Count > 0 && rows[0].TotalCount.HasValue ? rows[0].TotalCount.Value : 0;
-            foreach (var row in rows)
+            if (result == null)
             {
-                row.TotalCount = null;
+                return new { data = new List<AgencyStatusHistoryResponse>(), count = 0 };
             }
 
-            return (rows, totalCount);
+            var data = result.Read<AgencyStatusHistoryResponse>().ToList();
+            var count = result.ReadFirstOrDefault<int>();
+            return new { data, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener historial de estados de agencia {AgencyId}", agencyId);
+            await _logger.LogError(ex, "Error al obtener historial de estados de agencia");
             throw;
         }
     }

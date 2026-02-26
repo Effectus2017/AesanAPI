@@ -180,7 +180,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 )).Where(x => x != null).Cast<DTOOptionSelection>().ToList();
                 
                 agency.Inscription.BoardExecutiveAuthorityIds = boardAuthorityIds;
-                agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Any() ? boardAuthorityOptions : null;
+                agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Count != 0 ? boardAuthorityOptions : null;
             }
 
             agency.AssignedUsers = _assignedUsers?.ToList() ?? [];
@@ -193,6 +193,44 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         {
             await _logger.LogError(ex, $"Error getting agency by id {agencyId} and user id {userId}: {ex.Message}");
             throw new Exception($"Error al obtener la agencia con ID {agencyId} y usuario {userId}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Obtiene los usuarios asignados a una agencia (excluye agency_administrator). Solo para listado del modal.
+    /// </summary>
+    /// <param name="agencyId">El ID de la agencia</param>
+    /// <param name="userId">El ID del usuario</param>
+    /// <returns>Lista de usuarios asignados y total de registros</returns>
+    public async Task<dynamic> GetAgencyAssignedUsers(int agencyId, string userId)
+    {
+        try
+        {
+            _logger.LogInformation($"Obteniendo usuarios asignados a la agencia {agencyId} para usuario {userId}");
+
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@agencyId", agencyId);
+            parameters.Add("@userId", userId);
+
+            var result = await dbConnection.QueryMultipleAsync("100_GetAgencyAssignedUsers", parameters, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return new { data = new List<DTOStaff>(), count = 0 };
+            }
+
+            var data = result.Read<DTOStaff>().ToList();
+            var count = result.ReadFirstOrDefault<int>();
+
+            _logger.LogInformation($"Usuarios asignados obtenidos para agencia {agencyId}: {data.Count} registros");
+
+            return new { data, count };
+        }
+        catch (Exception ex)
+        {
+            await _logger.LogError(ex, $"Error getting agency assigned users for agency {agencyId}: {ex.Message}");
+            throw new Exception($"Error al obtener los usuarios asignados a la agencia {agencyId}: {ex.Message}", ex);
         }
     }
 
@@ -234,8 +272,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 }
 
                 var agencies = result.Read<dynamic>().ToList();
+
                 var data = _mappingService.MapAgencyList(agencies).ToList();
+
                 return data;
+
             }
             else
             {
@@ -297,6 +338,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     foreach (var agency in data)
                     {
                         var ownerData = agenciesOwners.Where(ao => ao.AgencyId == agency.Id).FirstOrDefault();
+
                         if (ownerData != null)
                         {
                             agency.User = ownerData;

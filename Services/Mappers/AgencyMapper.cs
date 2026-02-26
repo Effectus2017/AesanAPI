@@ -52,7 +52,14 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
                 PostalCity = item.PostalCityId != null ? _mappingService.Value.MapCity(new { Id = item.PostalCityId ?? 0, Name = item.PostalCityName ?? string.Empty }) : null,
                 PostalRegion = item.PostalRegionId != null ? _mappingService.Value.MapRegion(new { Id = item.PostalRegionId ?? 0, Name = item.PostalRegionName ?? string.Empty }) : null,
-                Status = _mappingService.Value.MapAgencyStatus(item.StatusId, item.AgencyStatusName),
+                Status = item.StatusId != null ? new DTOAgencyStatus
+                {
+                    Id = item.StatusId ?? 0,
+                    Name = item.StatusName ?? string.Empty,
+                    NameEN = item.StatusNameEN ?? string.Empty,
+                    IsActive = item.StatusIsActive ?? false,
+                    DisplayOrder = item.StatusDisplayOrder ?? 0
+                } : null,
                 User = item.UserId != null ? new DTOStaff
                 {
                     Id = item.UserId ?? 0,
@@ -257,7 +264,10 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 Status = item.StatusId != null ? new
                 {
                     Id = item.StatusId ?? 0,
-                    Name = item.AgencyStatusName ?? string.Empty
+                    Name = item.StatusName ?? string.Empty,
+                    NameEN = item.StatusNameEN ?? string.Empty,
+                    IsActive = item.StatusIsActive ?? false,
+                    DisplayOrder = item.StatusDisplayOrder ?? 0
                 } : null,
 
                 // Usuario creador (owner)

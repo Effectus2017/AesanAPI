@@ -1,13 +1,17 @@
-using Api.Models;
-
 namespace Api.Interfaces;
 
+/// <summary>
+/// Interfaz para el repositorio de historial de estados de agencia.
+/// </summary>
 public interface IAgencyStatusHistoryRepository
 {
-    Task<(IReadOnlyList<DTOAgencyStatusHistory> Items, int TotalCount)> GetAgencyStatusHistoryPagedAsync(
-        int agencyId,
+    /// <summary>
+    /// Obtiene el historial de estados de agencia paginado.
+    /// </summary>
+    Task<dynamic> GetAgencyStatusHistoryPaged(
+        int take,
+        int skip,
+        int? agencyId,
         DateTime? from,
-        DateTime? to,
-        int page,
-        int pageSize);
+        DateTime? to);
 }

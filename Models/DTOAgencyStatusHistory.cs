@@ -1,17 +1,15 @@
 namespace Api.Models;
 
+/// <summary>
+/// DTO que refleja la tabla AgencyStatusHistory (solo columnas de la tabla).
+/// </summary>
 public class DTOAgencyStatusHistory
 {
     public long Id { get; set; }
     public int AgencyId { get; set; }
     public int StatusId { get; set; }
-    public string StatusName { get; set; } = "";
+    /// <summary>UserId (AspNetUsers.Id) de quien realizó el cambio.</summary>
     public string ChangedBy { get; set; } = "";
-    public string ChangedByName { get; set; } = "";
     public DateTime ChangedAt { get; set; }
     public string? Justification { get; set; }
-    public int? PreviousStatusId { get; set; }
-    public string? PreviousStatusName { get; set; }
-    /// <summary>Usado por el SP paginado; no se expone en la API.</summary>
-    public int? TotalCount { get; set; }
 }
