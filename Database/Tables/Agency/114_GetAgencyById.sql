@@ -30,7 +30,7 @@ BEGIN
         WHERE ur.UserId = @userId;
 
         -- Si es Super-Administrator o Administrator → ver todas las agencias
-        IF @userRoleName IN ('Super-Administrator', 'Administrator', 'Administrador')
+        IF @userRoleName IN ('super_administrator', 'administrator')
         BEGIN
             SET @canSeeAllAgencies = 1;
             SET @hasAccess = 1;

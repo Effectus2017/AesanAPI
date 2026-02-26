@@ -92,7 +92,7 @@ BEGIN
                 INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
             WHERE ur.UserId = s.UserId
                 AND ur.IsActive = 1
-                AND r.Name = 'Agency-Administrator') = 'Agency-Administrator' 
+                AND r.Name = 'agency_administrator') = 'agency_administrator' 
                     THEN 1 
                     ELSE 0 
                 END AS BIT
@@ -203,7 +203,7 @@ BEGIN
                 INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
             WHERE ur.UserId = s.UserId
                 AND ur.IsActive = 1
-                AND r.Name = 'Agency-Administrator') = 'Agency-Administrator' 
+                AND r.Name = 'agency_administrator') = 'agency_administrator' 
                     THEN 1 
                     ELSE 0 
                 END AS BIT

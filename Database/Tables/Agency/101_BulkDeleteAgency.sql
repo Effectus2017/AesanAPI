@@ -305,6 +305,18 @@ BEGIN
     END
         
         -- =============================================
+        -- 10b. Eliminar StaffContractByClassification (contratos por clasificación del staff)
+        -- =============================================
+        IF OBJECT_ID('StaffContractByClassification', 'U') IS NOT NULL
+        BEGIN
+        DELETE scc FROM StaffContractByClassification scc
+            INNER JOIN #StaffIdsFromAgency s ON scc.StaffId = s.StaffId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffContractByClassification';
+    END
+        
+        -- =============================================
         -- 11. Eliminar Staff (personal de la agencia)
         -- =============================================
         DELETE FROM Staff WHERE AgencyId = @agencyId;
@@ -342,6 +354,17 @@ BEGIN
         SET @deletedCount = @deletedCount + @currentRows;
         IF @currentRows > 0
             PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyInscription';
+        
+        -- =============================================
+        -- 14b. Eliminar AgencyStatusHistory (historial de cambios de estado de la agencia)
+        -- =============================================
+        IF OBJECT_ID('AgencyStatusHistory', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM AgencyStatusHistory WHERE AgencyId = @agencyId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyStatusHistory';
+    END
         
         -- =============================================
         -- 15. Obtener TODOS los UserIds relacionados con la agencia desde AgencyUsers ANTES de eliminar
@@ -409,6 +432,19 @@ BEGIN
     END
         
         -- =============================================
+        -- 18b. Eliminar StaffContractByClassification de Staff relacionados por UserId (antes de eliminar Staff)
+        -- =============================================
+        IF OBJECT_ID('StaffContractByClassification', 'U') IS NOT NULL
+        BEGIN
+        DELETE scc FROM StaffContractByClassification scc
+            INNER JOIN Staff s ON scc.StaffId = s.Id
+            INNER JOIN #UserIdsFromAgencyUsers u ON s.UserId = u.UserId;
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffContractByClassification (Staff por UserId)';
+    END
+        
+        -- =============================================
         -- 19. Eliminar Staff que tiene UserId relacionado con la agencia (ANTES de eliminar usuarios)
         -- =============================================
         -- Eliminar Staff que tiene UserId de los usuarios relacionados con la agencia
@@ -423,6 +459,16 @@ BEGIN
         -- =============================================
         PRINT '';
         PRINT '--- Eliminando datos relacionados con usuarios ---';
+        
+        -- Eliminar AgencyStatusHistory donde ChangedBy son usuarios a eliminar (FK ChangedBy -> AspNetUsers)
+        IF OBJECT_ID('AgencyStatusHistory', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM AgencyStatusHistory
+            WHERE ChangedBy IN (SELECT UserId FROM #UserIdsFromAgencyUsers);
+        SET @currentRows = @@ROWCOUNT;
+        IF @currentRows > 0
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyStatusHistory (ChangedBy)';
+    END
         
         -- Eliminar UserPermission (permisos de usuarios)
         IF OBJECT_ID('UserPermission', 'U') IS NOT NULL

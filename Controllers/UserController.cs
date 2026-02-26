@@ -405,7 +405,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
             var userName = user != null ? $"{user.FirstName} {user.FatherLastName}".Trim() : "Usuario";
             var userEmail = user?.Email ?? "";
             var roleName = request.RoleName ?? (user?.SecondaryRoles?.FirstOrDefault(r => r.RoleId == roleId)?.RoleName) ?? "Rol temporal";
-            var adminEmails = await _unitOfWork.UserRepository.GetUserEmailsByRoleNameAsync("Administrator");
+            var adminEmails = await _unitOfWork.UserRepository.GetUserEmailsByRoleNameAsync("administrator");
             if (adminEmails != null && adminEmails.Any())
                 await _emailService.SendRoleExtensionRequestToAdmins(adminEmails, userName, userEmail, roleName, request.RequestedValidTo, request.Reason);
 

@@ -281,6 +281,50 @@ BEGIN
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de EmailLog';
         END
 
+        -- Eliminar UserRoleExtensionRequest (solicitudes de extensión de rol)
+        IF OBJECT_ID('UserRoleExtensionRequest', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM UserRoleExtensionRequest
+            WHERE UserId = @userId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserRoleExtensionRequest';
+        END
+
+        -- Eliminar UserSecondaryRoleHistory (historial de roles secundarios)
+        IF OBJECT_ID('UserSecondaryRoleHistory', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM UserSecondaryRoleHistory
+            WHERE UserId = @userId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserSecondaryRoleHistory';
+        END
+
+        -- Eliminar LogApplication (logs de aplicación asociados al usuario)
+        IF OBJECT_ID('LogApplication', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM LogApplication
+            WHERE UserId = @userId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de LogApplication';
+        END
+
+        -- Eliminar AgencyStatusHistory (historial donde ChangedBy = usuario; FK ChangedBy -> AspNetUsers)
+        IF OBJECT_ID('AgencyStatusHistory', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM AgencyStatusHistory
+            WHERE ChangedBy = @userId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyStatusHistory';
+        END
+
         -- =============================================
         -- 4. Eliminar AgencyUsers (donde UserId = @userId)
         -- =============================================

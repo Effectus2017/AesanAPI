@@ -40,11 +40,10 @@ BEGIN
         displaynameen = r.DisplayNameEN
     FROM AspNetRoles r
     WHERE r.Name IN (
-        'Super-Administrator',
-        'Administrator',
-        'Coordinator',
-        'Specialist',
-        'Reviewer'
+        'super_administrator',
+        'administrator',
+        'coordinator',
+        'specialist'
     )
     AND r.Id NOT IN (SELECT RoleId FROM @ExcludeTable)
     ORDER BY r.DisplayName;

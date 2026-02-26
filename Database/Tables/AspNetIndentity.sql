@@ -66,15 +66,15 @@ CREATE TABLE AspNetUserLogins
     FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id)
 );
 
--- Insertar roles
+-- Insertar roles (claves Name/NormalizedName según convención: lowercase, guión bajo)
 INSERT INTO AspNetRoles
     (Id, Name, NormalizedName, ConcurrencyStamp, IsActive, CreatedAt)
 VALUES
-    ('8aeab3f3-540c-4997-8452-b151d5a40391', 'Administrator', 'ADMINISTRATOR', '72401a60-d83b-4687-9827-d4d610d1a3e4', 1, GETDATE()),
-    ('9f86d081-84f7-367d-96e7-48b5e3d8a2f4', 'Monitor', 'MONITOR', 'e2fc714f-5d5b-42a4-93b2-0e9c05e6a6b5', 1, GETDATE()),
-    ('4e3a3f3e-540c-4997-8452-b151d5a40392', 'SuperAdministrator', 'SUPERADMINISTRATOR', 'a2b3c4d5-e6f7-g8h9-i1j2-k3l4m5n6o7p8', 1, GETDATE()),
-    ('d1e2f3g4-5678-1234-5678-1234567890ab', 'Agency-Administrator', 'AGENCY-ADMINISTRATOR', 'abcdef12-3456-7890-abcd-ef1234567890', 1, GETDATE()),
-    ('e2f3g4h5-6789-0123-4567-890123456789', 'Agency-User', 'AGENCY-USER', 'abcdef12-3456-7890-abcd-ef1234567890', 1, GETDATE());
+    ('8aeab3f3-540c-4997-8452-b151d5a40391', 'administrator', 'ADMINISTRATOR', '72401a60-d83b-4687-9827-d4d610d1a3e4', 1, GETDATE()),
+    ('9f86d081-84f7-367d-96e7-48b5e3d8a2f4', 'monitor', 'MONITOR', 'e2fc714f-5d5b-42a4-93b2-0e9c05e6a6b5', 1, GETDATE()),
+    ('4e3a3f3e-540c-4997-8452-b151d5a40392', 'super_administrator', 'SUPER_ADMINISTRATOR', 'a2b3c4d5-e6f7-g8h9-i1j2-k3l4m5n6o7p8', 1, GETDATE()),
+    ('d1e2f3g4-5678-1234-5678-1234567890ab', 'agency_administrator', 'AGENCY_ADMINISTRATOR', 'abcdef12-3456-7890-abcd-ef1234567890', 1, GETDATE()),
+    ('e2f3g4h5-6789-0123-4567-890123456789', 'agency_user', 'AGENCY_USER', 'abcdef12-3456-7890-abcd-ef1234567890', 1, GETDATE());
 
 -- Insertar usuarios
 -- Admin: @dmin5812931!

@@ -85,8 +85,8 @@ public class LogsController(ILogsQueryService logsQueryService, ILogger<LogsCont
             return true;
 
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
-        if (string.Equals(role, "Super-Administrator", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(role, "Administrator", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(role, "super_administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(role, "administrator", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

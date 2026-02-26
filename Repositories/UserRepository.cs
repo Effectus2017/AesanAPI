@@ -993,8 +993,8 @@ public class UserRepository(UserManager<User> userManager,
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
             }
 
-            // 3. Asignar el rol (asumiendo que el rol es "Agency-Administrator")
-            var resultRole = await _userManager.AddToRoleAsync(user, "Agency-Administrator");
+            // 3. Asignar el rol (asumiendo que el rol es "agency_administrator")
+            var resultRole = await _userManager.AddToRoleAsync(user, "agency_administrator");
 
             if (!resultRole.Succeeded)
             {
@@ -1003,8 +1003,8 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Si el rol es "Evaluador", agregar automáticamente a todos los programas activos
-            // (Nota: En este caso el rol es fijo "Agency-Administrator", pero si puede variar, verificar aquí)
-            // Por ahora, este método solo crea usuarios con rol "Agency-Administrator"
+            // (Nota: En este caso el rol es fijo "agency_administrator", pero si puede variar, verificar aquí)
+            // Por ahora, este método solo crea usuarios con rol "agency_administrator"
 
             _loggingService.LogInformation("Insertando la contraseña temporal en la base de datos", new Dictionary<string, string> { { "temporaryPassword", temporaryPassword } });
             await InsertTemporaryPassword(user.Id, temporaryPassword);
@@ -1796,9 +1796,9 @@ public class UserRepository(UserManager<User> userManager,
 
             // Eliminar el usuario de su rol de Administrador (solo si tiene el rol)
             var userRoles = await _userManager.GetRolesAsync(user);
-            if (userRoles.Contains("Agency-Administrator"))
+            if (userRoles.Contains("agency_administrator"))
             {
-                await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
+                await _userManager.RemoveFromRoleAsync(user, "agency_administrator");
             }
 
             // Eliminar la contraseña temporal del usuario
@@ -1854,7 +1854,7 @@ public class UserRepository(UserManager<User> userManager,
             var agency = await _agencyUsersRepository.GetUserAssignedAgency(user.Id);
 
             // Si el usuario tiene roles establecidos o agencias asignadas, puede ser un usuario existente
-            // Solo proceder si parece ser un usuario recién creado (sin agencias y solo con el rol Agency-Administrator)
+            // Solo proceder si parece ser un usuario recién creado (sin agencias y solo con el rol agency_administrator)
             if (userRoles.Count > 1 || (agency != null && agency.Id > 0))
             {
                 _loggingService.LogWarning("Intento de eliminar usuario existente durante rollback", new Dictionary<string, string>
@@ -1868,9 +1868,9 @@ public class UserRepository(UserManager<User> userManager,
             }
 
             // Eliminar el usuario de su rol de Administrador (solo si tiene el rol)
-            if (userRoles.Contains("Agency-Administrator"))
+            if (userRoles.Contains("agency_administrator"))
             {
-                await _userManager.RemoveFromRoleAsync(user, "Agency-Administrator");
+                await _userManager.RemoveFromRoleAsync(user, "agency_administrator");
             }
 
             // Eliminar la contraseña temporal del usuario

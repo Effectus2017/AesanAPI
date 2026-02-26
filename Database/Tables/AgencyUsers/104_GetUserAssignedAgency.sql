@@ -21,7 +21,7 @@ BEGIN
 
     -- Si el usuario es administrador/usuario de agencia o sponsor, obtener la agencia donde es owner.
     -- Incluye claves nuevas (Mig_RoleDisplayNameAndKey) y legacy por compatibilidad.
-    IF @userRoleName IN ('agency_administrator', 'agency_user', 'Agency-Administrator', 'Sponsor-Administrador', 'Sponsor-User', 'Agency-User')
+    IF @userRoleName IN ('agency_administrator', 'agency_user')
     BEGIN
         SELECT TOP 1
             a.Id,

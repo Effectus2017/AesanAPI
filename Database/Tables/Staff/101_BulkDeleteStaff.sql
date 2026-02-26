@@ -5,7 +5,7 @@
 -- Versión: 1.0
 -- =============================================
 -- IMPORTANTE: Este procedimiento elimina permanentemente todos los datos relacionados con el Staff
--- Si el Staff es propietario de una agencia (IsOwner = 1 en AgencyUsers), también elimina la agencia
+-- Si el Staff es propietario de una agencia (AgencyAssignmentType = 'AGENCY_OWNER' en AgencyUsers), también elimina la agencia
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[101_BulkDeleteStaff]
@@ -65,7 +65,7 @@ BEGIN
         FROM AgencyUsers
         WHERE UserId = @staffUserId
             AND AgencyId = @staffAgencyId
-            AND IsOwner = 1
+            AND AgencyAssignmentType = 'AGENCY_OWNER'
             AND IsActive = 1
             )
             BEGIN
@@ -112,6 +112,19 @@ BEGIN
         SET @deletedCount = @deletedCount + @currentRows;
         IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteStaff';
+    END
+
+        -- =============================================
+        -- 3b. Eliminar StaffContractByClassification (contratos por clasificación del staff)
+        -- =============================================
+        IF OBJECT_ID('StaffContractByClassification', 'U') IS NOT NULL
+        BEGIN
+        DELETE FROM StaffContractByClassification
+            WHERE StaffId = @staffId;
+        SET @currentRows = @@ROWCOUNT;
+        SET @deletedCount = @deletedCount + @currentRows;
+        IF @currentRows > 0
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de StaffContractByClassification';
     END
 
         -- =============================================
@@ -171,6 +184,10 @@ BEGIN
             FROM SiteStaff
             WHERE StaffId = @staffId)
                     SET @fkError = @fkError + 'Hay registros en SiteStaff. ';
+            IF EXISTS (SELECT 1
+            FROM StaffContractByClassification
+            WHERE StaffId = @staffId)
+                    SET @fkError = @fkError + 'Hay registros en StaffContractByClassification. ';
 
             SET @fkError = @fkError + 'Total de registros eliminados antes del error: ' + CAST(@deletedCount AS NVARCHAR(10));
 
@@ -301,6 +318,39 @@ BEGIN
                     PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserAgencyAssignment (donde AssignedBy)';
         END
 
+        -- Eliminar UserRoleExtensionRequest (solicitudes de extensión de rol)
+        IF OBJECT_ID('UserRoleExtensionRequest', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM UserRoleExtensionRequest
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserRoleExtensionRequest';
+        END
+
+        -- Eliminar UserSecondaryRoleHistory (historial de roles secundarios)
+        IF OBJECT_ID('UserSecondaryRoleHistory', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM UserSecondaryRoleHistory
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de UserSecondaryRoleHistory';
+        END
+
+        -- Eliminar LogApplication (logs de aplicación asociados al usuario)
+        IF OBJECT_ID('LogApplication', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM LogApplication
+                WHERE UserId = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de LogApplication';
+        END
+
         -- Eliminar otras relaciones de AgencyUsers (si no se eliminó la agencia)
         DELETE FROM AgencyUsers 
             WHERE UserId = @staffUserId;
@@ -316,6 +366,17 @@ BEGIN
         SET @deletedCount = @deletedCount + @currentRows;
         IF @currentRows > 0
                 PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyUsers (donde AssignedBy)';
+
+        -- Eliminar AgencyStatusHistory (historial donde ChangedBy = usuario; FK ChangedBy -> AspNetUsers)
+        IF OBJECT_ID('AgencyStatusHistory', 'U') IS NOT NULL
+            BEGIN
+            DELETE FROM AgencyStatusHistory
+                WHERE ChangedBy = @staffUserId;
+            SET @currentRows = @@ROWCOUNT;
+            SET @deletedCount = @deletedCount + @currentRows;
+            IF @currentRows > 0
+                    PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de AgencyStatusHistory';
+        END
 
         -- Eliminar el usuario de AspNetUsers (ahora es seguro porque todas las relaciones fueron eliminadas)
         IF OBJECT_ID('AspNetUsers', 'U') IS NOT NULL
