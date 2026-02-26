@@ -158,8 +158,9 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
     /// </summary>
     /// <param name="queryParameters">Los parámetros de la consulta</param>
     /// <returns>Las regiones encontradas</returns>
+    [AllowAnonymous]
     [HttpGet("get-regions-by-city-id")]
-    [SwaggerOperation(Summary = "Obtiene todas las regiones por ID de ciudad", Description = "Devuelve una lista de todas las regiones por ID de ciudad.")]
+    [SwaggerOperation(Summary = "Obtiene todas las regiones por ID de ciudad", Description = "Devuelve una lista de todas las regiones por ID de ciudad. Accesible sin autenticación para intención de participación.")]
     public async Task<IActionResult> GetRegionsByCityId([FromQuery] QueryParameters queryParameters)
     {
         try
