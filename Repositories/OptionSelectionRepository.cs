@@ -57,8 +57,10 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// Obtiene selecciones de opción por su clave de opción
     /// </summary>
     /// <param name="optionKey">The option key to filter by/La clave de opción para filtrar</param>
+    /// <param name="names">Los nombres de las opciones a obtener</param>
+    /// <param name="isList">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
     /// <returns>List of option selections matching the key/Lista de selecciones de opción que coinciden con la clave</returns>
-    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names)
+    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false)
     {
         try
         {
@@ -72,10 +74,10 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             if (data == null || !data.Any())
             {
                 _logger.LogInformation("No se encontraron selecciones de opción para la clave: {OptionKey}", optionKey);
-                return new { data = Enumerable.Empty<DTOOptionSelection>(), count = 0 };
+                return isList ? (object)Enumerable.Empty<DTOOptionSelection>() : new { data = Enumerable.Empty<DTOOptionSelection>(), count = 0 };
             }
 
-            return new { data, count = data.Count() };
+            return isList ? data : new { data, count = data.Count() };
         }
         catch (Exception ex)
         {

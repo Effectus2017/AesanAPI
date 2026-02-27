@@ -17,8 +17,9 @@ public interface IOptionSelectionRepository
     /// </summary>
     /// <param name="optionKey">La clave de la selección de opción</param>
     /// <param name="names">Los nombres de las opciones a obtener</param>
+    /// <param name="isList">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
     /// <returns>La selección de opción encontrada o null si no se encuentra</returns>
-    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names);
+    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false);
 
     /// <summary>
     /// Obtiene todas las selecciones de opciones
