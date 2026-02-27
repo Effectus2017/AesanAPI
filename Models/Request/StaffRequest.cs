@@ -1,5 +1,7 @@
 namespace Api.Models.Request;
 
+using Api.Models;
+
 public class StaffRequest
 {
     public int? Id { get; set; }
@@ -39,8 +41,8 @@ public class StaffRequest
     public int? TenureDurationUnitId { get; set; } // Referencia a OptionSelection con optionKey = 'tenureDurationUnit'
     public int? ReceivesProgramSalaryId { get; set; } // Referencia a OptionSelection con optionKey = 'yesNo' (¿Recibe salario del programa?)
 
-    // Origen del Salario (selección múltiple: IDs de OptionSelection con optionKey = 'salaryOrigin')
-    public List<int>? SalaryOriginIds { get; set; }
+    // Origen del Salario (selección múltiple: modelos OptionSelection con optionKey = 'salaryOrigin')
+    public List<DTOOptionSelection>? SalaryOrigins { get; set; }
 
     // Campos de asignación de sitio (Site Assignment)
     public int? SiteId { get; set; } = null;

@@ -80,19 +80,6 @@ BEGIN
         s_sponsor.ContractStartDate AS UserContractStartDate,
         s_sponsor.ContractEndDate AS UserContractEndDate,
         u2.Id AS UserGuid,
-        -- Datos del usuario monitor - desde Staff
-        s_monitor.Id as MonitorId,
-        s_monitor.FirstName AS MonitorFirstName,
-        s_monitor.MiddleName AS MonitorMiddleName,
-        s_monitor.FatherLastName AS MonitorFatherLastName,
-        s_monitor.MotherLastName AS MonitorMotherLastName,
-        s_monitor.Email AS MonitorEmail,
-        s_monitor.PositionId AS MonitorPositionId,
-        os_position_monitor.Name AS MonitorPositionName,
-        os_position_monitor.NameEN AS MonitorPositionNameEN,
-        os_position_monitor.OptionKey AS MonitorPositionOptionKey,
-        s_monitor.ContractStartDate AS MonitorContractStartDate,
-        s_monitor.ContractEndDate AS MonitorContractEndDate,
         -- Campos de AgencyInscription
         ai.Id AS AgencyInscriptionId,
         ai.NonProfit,
@@ -144,20 +131,12 @@ BEGIN
         LEFT JOIN AgencyUsers auaSponsor ON a.Id = auaSponsor.AgencyId 
             AND auaSponsor.IsActive = 1 
             AND auaSponsor.AgencyAssignmentType = 'AGENCY_OWNER'
-        -- Usuario monitor de la agencia - usando AgencyAssignmentType
-        LEFT JOIN AgencyUsers auaMonitor ON a.Id = auaMonitor.AgencyId 
-            AND auaMonitor.IsActive = 1 
-            AND auaMonitor.AgencyAssignmentType LIKE 'NUTRE_%'
         -- Datos del usuario sponsor
         LEFT JOIN AspNetUsers u2 ON auaSponsor.UserId = u2.Id
-        -- Datos del usuario monitor
-        LEFT JOIN AspNetUsers u ON auaMonitor.UserId = u.Id
         -- LEFT JOINs con Staff
         LEFT JOIN Staff s_sponsor ON u2.Id = s_sponsor.UserId
-        LEFT JOIN Staff s_monitor ON u.Id = s_monitor.UserId
         -- LEFT JOINs con OptionSelection
         LEFT JOIN OptionSelection os_position_sponsor ON s_sponsor.PositionId = os_position_sponsor.Id
-        LEFT JOIN OptionSelection os_position_monitor ON s_monitor.PositionId = os_position_monitor.Id
         LEFT JOIN OptionSelection os_idch ON ai.IsDayCareHomeId = os_idch.Id
     WHERE a.Id = @id;
 
@@ -176,29 +155,7 @@ BEGIN
         INNER JOIN AgencyProgram ap ON p.Id = ap.ProgramId AND ap.IsActive = 1
     WHERE ap.AgencyId = @id;
 
-    -- Tercera consulta: Obtener el usuario monitor asociado
-    SELECT DISTINCT
-        s.Id,
-        s.FirstName,
-        s.MiddleName,
-        s.FatherLastName,
-        s.MotherLastName,
-        s.Email,
-        s.PositionId,
-        os_position.Name AS PositionName,
-        os_position.NameEN AS PositionNameEN,
-        os_position.OptionKey AS PositionOptionKey,
-        s.ContractStartDate,
-        s.ContractEndDate,
-        u.Id AS UserGuid
-    FROM Staff s
-        INNER JOIN AgencyUsers aua ON aua.AgencyId = @id 
-            AND aua.IsActive = 1 
-            AND aua.AgencyAssignmentType LIKE 'NUTRE_%'
-        INNER JOIN AspNetUsers u ON aua.UserId = u.Id AND s.UserId = u.Id
-        LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id;
-
-    -- Cuarta consulta: Obtener el usuario owner (que creó la agencia)
+    -- Tercera consulta: Obtener el usuario owner (que creó la agencia)
     SELECT DISTINCT
         s.Id,
         s.FirstName,
@@ -220,7 +177,7 @@ BEGIN
         INNER JOIN AspNetUsers u ON aua.UserId = u.Id AND s.UserId = u.Id
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id;
 
-    -- Quinta consulta: Obtener las funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+    -- Cuarta consulta: Obtener las funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
     SELECT 
         aibe.OptionSelectionId,
         os.Id,

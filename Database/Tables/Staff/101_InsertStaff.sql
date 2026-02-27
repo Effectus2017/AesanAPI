@@ -1,7 +1,7 @@
 -- =============================================
 -- Stored Procedure: 101_InsertStaff
 -- =============================================
--- Versión 101: incluye SalaryOriginIds (Origen del Salario, selección múltiple).
+-- Versión 102: Origen del Salario en tabla StaffSalaryOrigin (SP 100_InsertStaffSalaryOrigin).
 -- Parámetros y alias en lowercase; cuerpo con columnas CapitalCase.
 
 CREATE OR ALTER PROCEDURE [dbo].[101_InsertStaff]
@@ -31,7 +31,6 @@ CREATE OR ALTER PROCEDURE [dbo].[101_InsertStaff]
     @tenureduration INT = NULL,
     @tenuredurationunitid INT = NULL,
     @receivesprogramsalaryid INT = NULL,
-    @salaryoriginids NVARCHAR(50) = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -66,7 +65,6 @@ BEGIN
             TenureDuration,
             TenureDurationUnitId,
             ReceivesProgramSalaryId,
-            SalaryOriginIds,
             CreatedAt,
             IsActive
         )
@@ -98,7 +96,6 @@ BEGIN
             @tenureduration,
             @tenuredurationunitid,
             @receivesprogramsalaryid,
-            @salaryoriginids,
             GETDATE(),
             1
         );

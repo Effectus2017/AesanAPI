@@ -285,21 +285,6 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                     ContractEndDate = item.UserContractEndDate
                 } : null,
 
-                // Usuario monitor
-                Monitor = item.MonitorId != null ? new
-                {
-                    Id = item.MonitorId ?? 0,
-                    FirstName = item.MonitorFirstName ?? string.Empty,
-                    MiddleName = item.MonitorMiddleName ?? string.Empty,
-                    FatherLastName = item.MonitorFatherLastName ?? string.Empty,
-                    MotherLastName = item.MonitorMotherLastName ?? string.Empty,
-                    Email = item.MonitorEmail ?? string.Empty,
-                    PositionId = item.MonitorPositionId ?? 0,
-                    PositionName = item.MonitorPositionName ?? string.Empty,
-                    ContractStartDate = item.MonitorContractStartDate,
-                    ContractEndDate = item.MonitorContractEndDate
-                } : null,
-
                 // Campos de inscripción básicos (los que se muestran en UI)
                 AppointmentCoordinated = item.ProgramAppointmentCoordinated ?? false,
                 AppointmentDate = item.ProgramAppointmentDate,

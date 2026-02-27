@@ -1,10 +1,10 @@
 -- =============================================
--- Stored Procedure: 100_DeleteStaffContractByClassificationByStaffId
+-- Stored Procedure: 100_DeleteStaffContractByClassification
 -- =============================================
 -- Borrado físico de todas las filas de contratos por clasificación de un staff.
--- Se usa antes de reinsertar al guardar (Insert/Update staff).
+-- Parámetros lowercase; cuerpo con columnas CapitalCase.
 
-CREATE OR ALTER PROCEDURE [dbo].[100_DeleteStaffContractByClassificationByStaffId]
+CREATE OR ALTER PROCEDURE [dbo].[100_DeleteStaffContractByClassification]
     @staffid INT
 AS
 BEGIN

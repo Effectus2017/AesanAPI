@@ -985,9 +985,9 @@ public class UserRepository(UserManager<User> userManager,
             };
 
             // Insertar el staff en la base de datos y obtener el ID
-            var (staffInserted, staffId) = await _staffRepository.InsertStaff(staffRequest);
+            var staffId = await _staffRepository.InsertStaff(staffRequest);
 
-            if (!staffInserted || staffId == 0)
+            if (staffId == 0)
             {
                 await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
@@ -1146,9 +1146,9 @@ public class UserRepository(UserManager<User> userManager,
                 IsActive = true
             };
 
-            var (staffInserted, _) = await _staffRepository.InsertStaff(staffRequest);
+            var staffId = await _staffRepository.InsertStaff(staffRequest);
 
-            if (!staffInserted)
+            if (staffId == 0)
             {
                 await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
                 return new BadRequestObjectResult(new { Message = "Error al insertar staff" });

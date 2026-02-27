@@ -1,7 +1,7 @@
 -- =============================================
 -- Stored Procedure: 101_UpdateStaff
 -- =============================================
--- Versión 101: incluye SalaryOriginIds (Origen del Salario, selección múltiple).
+-- Versión 102: Origen del Salario en tabla StaffSalaryOrigin (SP 100_UpdateStaffSalaryOrigin).
 -- Parámetros lowercase; cuerpo con columnas CapitalCase.
 
 CREATE OR ALTER PROCEDURE [dbo].[101_UpdateStaff]
@@ -33,8 +33,7 @@ CREATE OR ALTER PROCEDURE [dbo].[101_UpdateStaff]
     @reviewjustification NVARCHAR(500) = NULL,
     @tenureduration INT = NULL,
     @tenuredurationunitid INT = NULL,
-    @receivesprogramsalaryid INT = NULL,
-    @salaryoriginids NVARCHAR(50) = NULL
+    @receivesprogramsalaryid INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -69,7 +68,6 @@ BEGIN
         TenureDuration = @tenureduration,
         TenureDurationUnitId = @tenuredurationunitid,
         ReceivesProgramSalaryId = @receivesprogramsalaryid,
-        SalaryOriginIds = @salaryoriginids,
         UpdatedAt = GETDATE()
     WHERE Id = @id;
 

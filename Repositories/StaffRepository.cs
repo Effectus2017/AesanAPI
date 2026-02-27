@@ -47,22 +47,27 @@ public class StaffRepository(
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("101_GetStaffById", param, commandType: CommandType.StoredProcedure);
+            using var result = await dbConnection.QueryMultipleAsync("101_GetStaffById", param, commandType: CommandType.StoredProcedure);
 
-            if (result == null)
+            var data = await result.ReadFirstOrDefaultAsync<dynamic>();
+
+            if (data == null)
             {
                 return null;
             }
 
-            var dto = _mappingService.MapStaffDetails(result);
-            var contractParam = new DynamicParameters();
-            contractParam.Add("@staffid", id, DbType.Int32);
-            var contractRows = await dbConnection.QueryAsync<dynamic>("100_GetStaffContractByClassificationByStaffId", contractParam, commandType: CommandType.StoredProcedure);
-            if (dto is DTOStaff dtoStaff)
-            {
-                dtoStaff.ClassificationContracts = StaffMapper.MapContractByClassificationList(contractRows);
-            }
-            return dto;
+            var staff = _mappingService.MapStaffDetails(data);
+
+            // Segundo result set: SalaryOrigins (tabla StaffSalaryOrigin), mismo patrón que boardExecutiveAuthority en 113/114_GetAgencyById
+            var salaryOrigins = await result.ReadAsync<dynamic>();
+
+            staff.SalaryOrigins = _mappingService.MapOptionSelections(salaryOrigins);
+
+            // Tercer result set: Contratos por clasificación (StaffContractByClassification), mismo patrón que segundo result set
+            var contracts = await result.ReadAsync<dynamic>();
+            staff.ClassificationContracts = StaffMapper.MapContractByClassificationList(contracts);
+
+            return staff;
         }
         catch (Exception ex)
         {
@@ -81,6 +86,7 @@ public class StaffRepository(
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
+
             var param = new DynamicParameters();
             param.Add("@userId", userId, DbType.String);
 
@@ -159,23 +165,12 @@ public class StaffRepository(
     /// </summary>
     /// <param name="staffRequest">Datos del miembro del staff a insertar</param>
     /// <param name="staffId">ID del staff creado (solo si la inserción fue exitosa)</param>
-    /// <returns>True si se insertó correctamente</returns>
-    public async Task<(bool success, int staffId)> InsertStaff(StaffRequest staffRequest)
+    /// <returns>ID del staff creado</returns>
+    public async Task<int> InsertStaff(StaffRequest staffRequest)
     {
         try
         {
             _logger.LogInformation("Insertando nuevo miembro del staff - Email: {Email}, PositionId: {PositionId}, StaffTypeId: {StaffTypeId}, StatusId: {StatusId}, UserId: {UserId}", staffRequest.Email, staffRequest.PositionId, staffRequest.StaffTypeId, staffRequest.StatusId, staffRequest.UserId);
-
-            int positionIdForStaff = staffRequest.PositionId;
-            DateTime? contractStartForStaff = staffRequest.ContractStartDate;
-            DateTime? contractEndForStaff = staffRequest.ContractEndDate;
-            if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
-            {
-                var first = staffRequest.ClassificationContracts[0];
-                positionIdForStaff = first.PositionId;
-                contractStartForStaff = first.ContractStartDate;
-                contractEndForStaff = first.ContractEndDate;
-            }
 
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
@@ -184,18 +179,14 @@ public class StaffRepository(
             parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@positionId", positionIdForStaff, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32, ParameterDirection.Input);
             // StaffTypeId: usar 1 por defecto si es 0
             var finalStaffTypeId = staffRequest.StaffTypeId == 0 ? 1 : staffRequest.StaffTypeId;
             parameters.Add("@staffTypeId", finalStaffTypeId, DbType.Int32, ParameterDirection.Input);
-            // StaffClassificationId: usar 1 (Administrativo) por defecto si es null o 0
-            var finalStaffClassificationId = staffRequest.StaffClassificationId ?? 1;
-            if (finalStaffClassificationId == 0)
-                finalStaffClassificationId = 1;
-            parameters.Add("@staffClassificationId", finalStaffClassificationId, DbType.Int32, ParameterDirection.Input);
+            parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32, ParameterDirection.Input);
             // Fechas seguras para SQL Server
-            parameters.Add("@contractStartDate", contractStartForStaff?.Year >= 1753 ? contractStartForStaff : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
-            parameters.Add("@contractEndDate", contractEndForStaff?.Year >= 1753 ? contractEndForStaff : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime, ParameterDirection.Input);
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String, ParameterDirection.Input);
             parameters.Add("@phoneNumber", staffRequest.PhoneNumber ?? "", DbType.String, ParameterDirection.Input);
@@ -214,12 +205,20 @@ public class StaffRepository(
             parameters.Add("@tenureDuration", staffRequest.TenureDuration, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@tenureDurationUnitId", staffRequest.TenureDurationUnitId, DbType.Int32, ParameterDirection.Input);
             parameters.Add("@receivesProgramSalaryId", staffRequest.ReceivesProgramSalaryId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("@salaryoriginids", staffRequest.SalaryOriginIds != null && staffRequest.SalaryOriginIds.Count > 0 ? string.Join(",", staffRequest.SalaryOriginIds) : null, DbType.String, ParameterDirection.Input);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("101_InsertStaff", parameters, commandType: CommandType.StoredProcedure);
 
             int staffId = parameters.Get<int>("@id");
+
+            if (staffRequest.SalaryOrigins != null)
+            {
+                foreach (var item in staffRequest.SalaryOrigins)
+                {
+                    await InsertStaffSalaryOrigin(staffId, item.Id, dbConnection, null);
+                }
+            }
+
             {
                 // Si se proporcionó una sitio, crear la asociación
                 if (staffRequest.SiteId.HasValue && staffRequest.SiteId.Value > 0)
@@ -247,9 +246,13 @@ public class StaffRepository(
                 }
             }
 
-            if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
+            if (staffRequest.ClassificationContracts != null)
             {
-                await SaveClassificationContractsAsync(dbConnection, staffId, staffRequest.ClassificationContracts);
+                await DeleteStaffContractByClassification(staffId, dbConnection, null);
+                foreach (var contract in staffRequest.ClassificationContracts)
+                {
+                    await InsertStaffContractByClassification(staffId, contract, dbConnection, null);
+                }
             }
 
             if (staffId <= 0)
@@ -257,7 +260,7 @@ public class StaffRepository(
                 throw new Exception($"Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
             }
 
-            return (staffId > 0, staffId);
+            return staffId;
         }
         catch (Exception ex)
         {
@@ -276,17 +279,6 @@ public class StaffRepository(
         {
             _logger.LogInformation("Actualizando miembro del staff con ID {StaffId}", staffRequest.Id);
 
-            int positionIdForStaff = staffRequest.PositionId;
-            DateTime? contractStartForStaff = staffRequest.ContractStartDate;
-            DateTime? contractEndForStaff = staffRequest.ContractEndDate;
-            if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
-            {
-                var first = staffRequest.ClassificationContracts[0];
-                positionIdForStaff = first.PositionId;
-                contractStartForStaff = first.ContractStartDate;
-                contractEndForStaff = first.ContractEndDate;
-            }
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
@@ -295,13 +287,13 @@ public class StaffRepository(
             parameters.Add("@fatherLastName", staffRequest.FatherLastName ?? "", DbType.String);
             parameters.Add("@motherLastName", staffRequest.MotherLastName ?? "", DbType.String);
             parameters.Add("@statusId", staffRequest.StatusId, DbType.Int32);
-            parameters.Add("@positionId", positionIdForStaff, DbType.Int32);
+            parameters.Add("@positionId", staffRequest.PositionId, DbType.Int32);
             parameters.Add("@staffTypeId", staffRequest.StaffTypeId, DbType.Int32);
             parameters.Add("@staffClassificationId", staffRequest.StaffClassificationId, DbType.Int32);
 
             // Fechas seguras para SQL Server
-            parameters.Add("@contractStartDate", contractStartForStaff?.Year >= 1753 ? contractStartForStaff : DBNull.Value, DbType.DateTime);
-            parameters.Add("@contractEndDate", contractEndForStaff?.Year >= 1753 ? contractEndForStaff : DBNull.Value, DbType.DateTime);
+            parameters.Add("@contractStartDate", staffRequest.ContractStartDate?.Year >= 1753 ? staffRequest.ContractStartDate : DBNull.Value, DbType.DateTime);
+            parameters.Add("@contractEndDate", staffRequest.ContractEndDate?.Year >= 1753 ? staffRequest.ContractEndDate : DBNull.Value, DbType.DateTime);
             parameters.Add("@birthDate", staffRequest.BirthDate?.Year >= 1753 ? staffRequest.BirthDate : DBNull.Value, DbType.DateTime);
 
             parameters.Add("@email", staffRequest.Email ?? "", DbType.String);
@@ -322,7 +314,6 @@ public class StaffRepository(
             parameters.Add("@tenureDuration", staffRequest.TenureDuration, DbType.Int32);
             parameters.Add("@tenureDurationUnitId", staffRequest.TenureDurationUnitId, DbType.Int32);
             parameters.Add("@receivesProgramSalaryId", staffRequest.ReceivesProgramSalaryId, DbType.Int32);
-            parameters.Add("@salaryoriginids", staffRequest.SalaryOriginIds != null && staffRequest.SalaryOriginIds.Count > 0 ? string.Join(",", staffRequest.SalaryOriginIds) : null, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
             await dbConnection.ExecuteAsync("101_UpdateStaff", parameters, commandType: CommandType.StoredProcedure);
@@ -331,10 +322,26 @@ public class StaffRepository(
 
             if (rowsAffected > 0)
             {
-                if (staffRequest.ClassificationContracts != null && staffRequest.ClassificationContracts.Count > 0)
+                await DeleteStaffSalaryOrigin(staffRequest.Id.Value, dbConnection, null);
+
+                if (staffRequest.SalaryOrigins != null)
                 {
-                    await SaveClassificationContractsAsync(dbConnection, staffRequest.Id.Value, staffRequest.ClassificationContracts);
+                    foreach (var item in staffRequest.SalaryOrigins)
+                    {
+                        await InsertStaffSalaryOrigin(staffRequest.Id.Value, item.Id, dbConnection, null);
+                    }
                 }
+
+                if (staffRequest.ClassificationContracts != null)
+                {
+                    await DeleteStaffContractByClassification(staffRequest.Id.Value, dbConnection, null);
+
+                    foreach (var contract in staffRequest.ClassificationContracts)
+                    {
+                        await InsertStaffContractByClassification(staffRequest.Id.Value, contract, dbConnection, null);
+                    }
+                }
+
                 InvalidateCache(staffRequest.Id.Value);
                 // Manejar la asignación de sitio
                 await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SiteId, staffRequest.IsPrimary);
@@ -351,27 +358,121 @@ public class StaffRepository(
     }
 
     /// <summary>
-    /// Guarda los contratos por clasificación: borra los existentes e inserta los de la lista.
+    /// Elimina todos los contratos por clasificación de un staff (tabla StaffContractByClassification).
     /// </summary>
-    private async Task SaveClassificationContractsAsync(IDbConnection dbConnection, int staffId, List<StaffClassificationContractItemRequest> contracts)
+    private async Task DeleteStaffContractByClassification(int staffId, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
-        var deleteParam = new DynamicParameters();
-        deleteParam.Add("@staffid", staffId, DbType.Int32);
-        await dbConnection.ExecuteAsync("100_DeleteStaffContractByClassificationByStaffId", deleteParam, commandType: CommandType.StoredProcedure);
-        foreach (var c in contracts)
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
         {
-            var p = new DynamicParameters();
-            p.Add("@staffid", staffId, DbType.Int32);
-            p.Add("@staffclassificationid", c.StaffClassificationId, DbType.Int32);
-            p.Add("@positionid", c.PositionId, DbType.Int32);
-            p.Add("@contractstartdate", c.ContractStartDate?.Year >= 1753 ? c.ContractStartDate : null, DbType.DateTime);
-            p.Add("@contractenddate", c.ContractEndDate?.Year >= 1753 ? c.ContractEndDate : null, DbType.DateTime);
-            var scheduleFrom = ParseTimeToTimeSpan(c.ScheduleFrom);
-            var scheduleTo = ParseTimeToTimeSpan(c.ScheduleTo);
-            p.Add("@schedulefrom", (object?)scheduleFrom ?? DBNull.Value, DbType.Time);
-            p.Add("@scheduleto", (object?)scheduleTo ?? DBNull.Value, DbType.Time);
-            p.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-            await dbConnection.ExecuteAsync("100_InsertStaffContractByClassification", p, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffid", staffId, DbType.Int32);
+
+            await dbConnection.ExecuteAsync("100_DeleteStaffContractByClassification", parameters, transaction, commandType: CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar contratos por clasificación para staff {StaffId}", staffId);
+            throw new Exception($"Error al eliminar contratos por clasificación del staff: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+                dbConnection.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Inserta un contrato por clasificación para un staff (tabla StaffContractByClassification).
+    /// </summary>
+    private async Task InsertStaffContractByClassification(int staffId, StaffClassificationContractItemRequest contract, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffid", staffId, DbType.Int32);
+            parameters.Add("@staffclassificationid", contract.StaffClassificationId, DbType.Int32);
+            parameters.Add("@positionid", contract.PositionId, DbType.Int32);
+            parameters.Add("@contractstartdate", contract.ContractStartDate?.Year >= 1753 ? contract.ContractStartDate : null, DbType.DateTime);
+            parameters.Add("@contractenddate", contract.ContractEndDate?.Year >= 1753 ? contract.ContractEndDate : null, DbType.DateTime);
+            var scheduleFrom = ParseTimeToTimeSpan(contract.ScheduleFrom);
+            var scheduleTo = ParseTimeToTimeSpan(contract.ScheduleTo);
+            parameters.Add("@schedulefrom", (object?)scheduleFrom ?? DBNull.Value, DbType.Time);
+            parameters.Add("@scheduleto", (object?)scheduleTo ?? DBNull.Value, DbType.Time);
+            parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await dbConnection.ExecuteAsync("100_InsertStaffContractByClassification", parameters, transaction, commandType: CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar contrato por clasificación para staff {StaffId}", staffId);
+            throw new Exception($"Error al insertar contrato por clasificación del staff: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+                dbConnection.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Inserta un origen de salario para un staff (tabla StaffSalaryOrigin). Usa 100_InsertStaffSalaryOrigin.
+    /// </summary>
+    private async Task InsertStaffSalaryOrigin(int staffId, int optionSelectionId, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffid", staffId, DbType.Int32);
+            parameters.Add("@optionselectionid", optionSelectionId, DbType.Int32);
+
+            await dbConnection.ExecuteAsync("100_InsertStaffSalaryOrigin", parameters, transaction, commandType: CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al insertar origen de salario para staff {StaffId}", staffId);
+            throw new Exception($"Error al insertar origen de salario del staff: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+                dbConnection.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Elimina todos los orígenes de salario de un staff. Usa 100_UpdateStaffSalaryOrigin con lista vacía.
+    /// </summary>
+    private async Task DeleteStaffSalaryOrigin(int staffId, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    {
+        var dbConnection = connection ?? _context.CreateConnection();
+        var shouldDisposeConnection = connection == null;
+
+        try
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@staffid", staffId, DbType.Int32);
+            parameters.Add("@optionselectionids", "", DbType.String);
+
+            await dbConnection.ExecuteAsync("100_UpdateStaffSalaryOrigin", parameters, transaction, commandType: CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar orígenes de salario para staff {StaffId}", staffId);
+            throw new Exception($"Error al eliminar orígenes de salario del staff: {ex.Message}", ex);
+        }
+        finally
+        {
+            if (shouldDisposeConnection)
+                dbConnection.Dispose();
         }
     }
 

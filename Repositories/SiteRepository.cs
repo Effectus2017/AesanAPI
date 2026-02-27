@@ -2340,7 +2340,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             throw new SiteValidationException(
                 "ONE_COMEDOR_PER_SCHOOL",
-                "La escuela solo puede tener un sitio con tipo de grupo Comedor.");
+                "La escuela solo debe tener un Comedor registrado.");
         }
     }
 

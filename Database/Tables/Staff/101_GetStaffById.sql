@@ -1,7 +1,7 @@
 -- =============================================
 -- Stored Procedure: 101_GetStaffById
 -- =============================================
--- Versión 101: incluye salaryoriginids (alias lowercase) para Origen del Salario.
+-- Versión 102: Origen del Salario desde tabla StaffSalaryOrigin (segundo result set, mismo patrón que boardExecutiveAuthority).
 
 CREATE OR ALTER PROCEDURE [dbo].[101_GetStaffById]
     @id INT
@@ -55,7 +55,6 @@ BEGIN
         s.ReceivesProgramSalaryId,
         os_salary.Name AS ReceivesProgramSalaryName,
         os_salary.NameEN AS ReceivesProgramSalaryNameEN,
-        salaryoriginids = s.SalaryOriginIds,
         CAST(
             CASE
                 WHEN (SELECT TOP 1 r.Name
@@ -94,4 +93,46 @@ BEGIN
         LEFT JOIN OptionSelection os_tenure_unit ON s.TenureDurationUnitId = os_tenure_unit.Id
         LEFT JOIN OptionSelection os_salary ON s.ReceivesProgramSalaryId = os_salary.Id
     WHERE s.Id = @id;
+
+    -- Segundo result set: Origen del Salario (tabla StaffSalaryOrigin), mismo patrón que boardExecutiveAuthority en 113/114_GetAgencyById
+    SELECT
+        ss.OptionSelectionId,
+        os.Id,
+        os.Name,
+        os.NameEN,
+        os.OptionKey,
+        os.BooleanValue,
+        os.IsActive,
+        os.DisplayOrder,
+        os.IsDefaultValue
+    FROM StaffSalaryOrigin ss
+        INNER JOIN OptionSelection os ON ss.OptionSelectionId = os.Id
+    WHERE ss.StaffId = @id
+        AND ss.IsActive = 1
+        AND os.OptionKey = 'salaryOrigin'
+    ORDER BY os.DisplayOrder ASC;
+
+    -- Tercer result set: Contratos por clasificación (StaffContractByClassification), mismo patrón que segundo result set
+    SELECT
+        id = c.Id,
+        staffid = c.StaffId,
+        staffclassificationid = c.StaffClassificationId,
+        sc.Name AS staffclassificationname,
+        sc.NameEn AS staffclassificationnameen,
+        positionid = c.PositionId,
+        os_pos.Name AS positionname,
+        os_pos.NameEN AS positionnameen,
+        contractstartdate = c.ContractStartDate,
+        contractenddate = c.ContractEndDate,
+        schedulefrom = c.ScheduleFrom,
+        scheduleto = c.ScheduleTo,
+        createdat = c.CreatedAt,
+        updatedat = c.UpdatedAt,
+        isactive = c.IsActive
+    FROM StaffContractByClassification c
+        INNER JOIN StaffClassification sc ON c.StaffClassificationId = sc.Id
+        INNER JOIN OptionSelection os_pos ON c.PositionId = os_pos.Id
+    WHERE c.StaffId = @id
+        AND c.IsActive = 1
+    ORDER BY c.StaffClassificationId;
 END

@@ -184,14 +184,6 @@ public class AgencyInscriptionResponse
     public bool? BoardMeetsRegularly { get; set; }
 
     /// <summary>
-    /// ¿La Junta de Directores tiene la autoridad para realizar alguna de las siguientes funciones hacia el Director Ejecutivo? (Solo para PACNA)
-    /// Does the Board of Directors have the authority to perform any of the following functions towards the Executive Director? (Only for PACNA)
-    /// Contratar, Despedir, N/A
-    /// Lista de IDs de OptionSelection (OptionKey = 'boardExecutiveAuthority')
-    /// </summary>
-    public List<int>? BoardExecutiveAuthorityIds { get; set; }
-
-    /// <summary>
     /// Funciones de autoridad de la Junta de Directores (relación completa)
     /// </summary>
     public List<DTOOptionSelection>? BoardExecutiveAuthority { get; set; }

@@ -45,8 +45,6 @@ public class DTOAgency
     public DTOAgencyStatus? Status { get; set; } = new DTOAgencyStatus();
     // Usuario (owner principal)
     public DTOStaff? User { get; set; } = new DTOStaff();
-    // Usuario Monitor (legacy; preferir AssignedUsers)
-    public DTOStaff? Monitor { get; set; } = new DTOStaff();
     // Usuarios asignados a la agencia (AgencyUsers: por etapa/asignación; pueden ser varios)
     public List<DTOStaff> AssignedUsers { get; set; } = [];
     // Programas

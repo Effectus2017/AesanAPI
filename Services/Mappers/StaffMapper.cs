@@ -9,35 +9,6 @@ namespace Api.Services.Mappers;
 public static class StaffMapper
 {
     /// <summary>
-    /// Parsea el string de IDs separados por coma (salida del SP en columna salaryoriginids) a lista de enteros.
-    /// </summary>
-    private static List<int>? ParseSalaryOriginIds(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        var list = new List<int>();
-        foreach (var part in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            if (int.TryParse(part.Trim(), out var id))
-                list.Add(id);
-        return list.Count > 0 ? list : null;
-    }
-
-    /// <summary>
-    /// Obtiene SalaryOriginIds desde un resultado dinámico (columna salaryoriginids en lowercase). Devuelve null si no existe.
-    /// </summary>
-    private static List<int>? TryGetSalaryOriginIdsFromResult(dynamic? result)
-    {
-        if (result == null) return null;
-        try
-        {
-            return ParseSalaryOriginIds((string?)result.salaryoriginids);
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
     /// Mapea un resultado dinámico a un objeto con campos necesarios para listas de staff
     /// </summary>
     /// <param name="result">Resultado dinámico</param>
@@ -155,7 +126,6 @@ public static class StaffMapper
                 result.ReceivesProgramSalaryId,
                 result.ReceivesProgramSalaryName,
                 result.ReceivesProgramSalaryNameEN,
-                SalaryOriginIds = TryGetSalaryOriginIdsFromResult(result),
 
                 // Datos de la relación SchoolStaff
                 SchoolId = result.SchoolId,
@@ -230,7 +200,7 @@ public static class StaffMapper
                 ReceivesProgramSalaryId = item.ReceivesProgramSalaryId,
                 ReceivesProgramSalaryName = item.ReceivesProgramSalaryName,
                 ReceivesProgramSalaryNameEN = item.ReceivesProgramSalaryNameEN,
-                SalaryOriginIds = TryGetSalaryOriginIdsFromResult(item),
+                // SalaryOriginIds y SalaryOrigins se rellenan en el repositorio desde el segundo result set (StaffSalaryOrigin)
 
                 // Datos de la relación SiteStaff
                 SiteId = item.SiteId,

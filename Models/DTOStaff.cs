@@ -55,8 +55,8 @@ public class DTOStaff
     public string? ReceivesProgramSalaryName { get; set; } = "";
     public string? ReceivesProgramSalaryNameEN { get; set; } = "";
 
-    // Origen del Salario (selección múltiple)
-    public List<int>? SalaryOriginIds { get; set; }
+    /// <summary>Origen del Salario como objetos completos (segundo result set del SP, tabla StaffSalaryOrigin). No devolver IDs por separado.</summary>
+    public List<DTOOptionSelection>? SalaryOrigins { get; set; }
 
     // Datos de la relación SiteStaff
     public int? SiteId { get; set; }

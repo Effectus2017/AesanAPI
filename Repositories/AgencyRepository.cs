@@ -24,7 +24,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly ICentralLogService _centralLogService = centralLogService ?? throw new ArgumentNullException(nameof(centralLogService));
-
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
     /// <summary>
@@ -69,19 +68,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
             }
 
-            // Leer el tercer result set: Usuario monitor asociado
-            var _agenciesMonitors = await result.ReadAsync<dynamic>();
-
-            if (_agenciesMonitors.Any())
-            {
-                var monitorData = _agenciesMonitors.FirstOrDefault();
-                if (monitorData != null)
-                {
-                    agency.Monitor = _mappingService.MapStaffDetails(monitorData);
-                }
-            }
-
-            // Leer el cuarto result set: Usuario owner (que creó la agencia)
+            // Leer el tercer result set: Usuario owner (que creó la agencia)
             var _agenciesUser = await result.ReadAsync<dynamic>();
 
             if (_agenciesUser.Any())
@@ -95,21 +82,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 }
             }
 
-            // Leer el quinto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
-            var _boardExecutiveAuthority = await result.ReadAsync<dynamic>();
+            // Leer el cuarto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+            var boardExecutiveAuthority = await result.ReadAsync<dynamic>();
 
-            if (_boardExecutiveAuthority.Any() && agency.Inscription != null)
+            if (boardExecutiveAuthority.Any() && agency.Inscription != null)
             {
-                var boardAuthorityIds = _boardExecutiveAuthority.Select(x => (int)x.OptionSelectionId).ToList();
-                var boardAuthorityOptions = _boardExecutiveAuthority.Select(x => _mappingService.MapOptionSelection(
-                    (int?)x.Id,
-                    x.Name?.ToString(),
-                    x.NameEN?.ToString(),
-                    x.OptionKey?.ToString()
-                )).Where(x => x != null).Cast<DTOOptionSelection>().ToList();
-                
-                agency.Inscription.BoardExecutiveAuthorityIds = boardAuthorityIds;
-                agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Any() ? boardAuthorityOptions : null;
+                agency.Inscription.BoardExecutiveAuthority = _mappingService.MapOptionSelections(boardExecutiveAuthority);
             }
 
             return agency;
@@ -131,6 +109,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         try
         {
             _logger.LogInformation($"Obteniendo datos de la base de datos para agencia {agencyId} y usuario {userId}");
+
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
@@ -153,38 +132,27 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             var agency = _mappingService.MapAgency(_agencyDynamic);
 
-            var _agenciesPrograms = await result.ReadAsync<dynamic>();
+            var programs = await result.ReadAsync<dynamic>();
 
-            if (_agenciesPrograms != null && _agenciesPrograms.Any())
+            if (programs != null && programs.Any())
             {
-                agency.Programs = _mappingService.MapPrograms(_agenciesPrograms);
+                agency.Programs = _mappingService.MapPrograms(programs);
             }
 
             // Leer el tercer result set: Usuarios que hicieron appointments (puede estar vacío)
-            var _appointmentUsers = await result.ReadAsync<dynamic>();
-
-            // Leer el cuarto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
-            var _boardExecutiveAuthority = await result.ReadAsync<dynamic>();
+            var appointmentUsers = await result.ReadAsync<dynamic>();
 
             // Leer el quinto result set: Usuarios asignados a la agencia (AgencyUsers + Staff)
-            var _assignedUsers = await result.ReadAsync<DTOStaff>();
+            var assignedUsers = await result.ReadAsync<DTOStaff>();
+            agency.AssignedUsers = assignedUsers?.ToList() ?? [];
 
-            if (_boardExecutiveAuthority.Any() && agency.Inscription != null)
+            // Leer el cuarto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
+            var boardExecutiveAuthority = await result.ReadAsync<dynamic>();
+
+            if (boardExecutiveAuthority.Any() && agency.Inscription != null)
             {
-                var boardAuthorityIds = _boardExecutiveAuthority.Select(x => (int)x.OptionSelectionId).ToList();
-                var boardAuthorityOptions = _boardExecutiveAuthority.Select(x => _mappingService.MapOptionSelection(
-                    (int?)x.Id,
-                    x.Name?.ToString(),
-                    x.NameEN?.ToString(),
-                    x.OptionKey?.ToString()
-                )).Where(x => x != null).Cast<DTOOptionSelection>().ToList();
-                
-                agency.Inscription.BoardExecutiveAuthorityIds = boardAuthorityIds;
-                agency.Inscription.BoardExecutiveAuthority = boardAuthorityOptions.Count != 0 ? boardAuthorityOptions : null;
+                agency.Inscription.BoardExecutiveAuthority = _mappingService.MapOptionSelections(boardExecutiveAuthority);
             }
-
-            agency.AssignedUsers = _assignedUsers?.ToList() ?? [];
-            agency.Monitor = null;
 
             _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
             return agency!;
@@ -209,6 +177,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             _logger.LogInformation($"Obteniendo usuarios asignados a la agencia {agencyId} para usuario {userId}");
 
             using IDbConnection dbConnection = _context.CreateConnection();
+
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@userId", userId);
@@ -242,6 +211,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
+
             var param = new DynamicParameters();
             param.Add("@take", take);
             param.Add("@skip", skip);
@@ -377,9 +347,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         try
         {
             using IDbConnection dbConnection = _context.CreateConnection();
+
             var parameters = new DynamicParameters();
             parameters.Add("@userId", userId);
+
             var result = await dbConnection.QueryAsync<DTOProgram>("100_GetAgencyProgramsByUserId", parameters, commandType: CommandType.StoredProcedure);
+
             return result.ToList();
         }
         catch (Exception ex)
@@ -648,7 +621,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         {
             using IDbConnection connection = _context.CreateConnection();
 
-            // Obtener la agencia actual para comparar el monitor
+            // Obtener la agencia actual para comparar el evaluador asignado
             var currentAgency = await GetAgencyById(agencyId);
 
             if (currentAgency == null)
@@ -656,7 +629,17 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 throw new ArgumentNullException(nameof(currentAgency), "La agencia actual no puede ser nula");
             }
 
-            int? currentMonitorId = currentAgency.Monitor?.Id;
+            var currentEvaluatorUserId = await GetEvaluatorUserIdByAgencyId(agencyId);
+            Staff? currentEvaluatorStaff = null;
+            if (currentEvaluatorUserId != null)
+            {
+                using IDbConnection conn = _context.CreateConnection();
+                currentEvaluatorStaff = await conn.QueryFirstOrDefaultAsync<Staff>(
+                    "SELECT Id, FirstName, FatherLastName, Email, UserId FROM Staff WHERE UserId = @userId",
+                    new { userId = currentEvaluatorUserId }
+                );
+            }
+            int? currentEvaluatorStaffId = currentEvaluatorStaff?.Id;
 
             var parameters = new DynamicParameters();
             parameters.Add("@id", agencyId);
@@ -682,28 +665,31 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             var rowsAffected = await connection.ExecuteAsync("111_UpdateAgency", parameters, commandType: CommandType.StoredProcedure);
 
-            // Verificar si hay un nuevo monitor asignado y es diferente al actual
-            if (agencyRequest.MonitorId.HasValue && currentMonitorId != agencyRequest.MonitorId)
+            // Verificar si hay un nuevo evaluador asignado y es diferente al actual
+            if (agencyRequest.MonitorId.HasValue && currentEvaluatorStaffId != agencyRequest.MonitorId)
             {
-                // Si había un monitor previo, des asignar el monitor primero
-                if (currentMonitorId.HasValue)
+                // Si había un evaluador previo, des asignar primero
+                if (currentEvaluatorUserId != null)
                 {
-                    _logger.LogInformation($"Des asignando monitor anterior {currentMonitorId} de la agencia {agencyId}");
-                    await _agencyUsersRepository.UnassignAgencyFromUser(currentMonitorId.ToString(), agencyId);
+                    _logger.LogInformation($"Des asignando evaluador anterior de la agencia {agencyId}");
+                    await _agencyUsersRepository.UnassignAgencyFromUser(currentEvaluatorUserId, agencyId);
 
-                    // Enviar correo de des asignación al monitor anterior
-                    var previousMonitor = new DTOUser
+                    // Enviar correo de des asignación al evaluador anterior
+                    if (currentEvaluatorStaff != null)
                     {
-                        Id = currentMonitorId.ToString(),
-                        FirstName = currentAgency.Monitor.FirstName,
-                        FatherLastName = currentAgency.Monitor.FatherLastName,
-                        Email = currentAgency.Monitor.Email
-                    };
-                    await _emailService.SendAgencyUnassignmentEmail(previousMonitor, currentAgency);
+                        var previousEvaluator = new DTOUser
+                        {
+                            Id = currentEvaluatorStaff.UserId ?? "",
+                            FirstName = currentEvaluatorStaff.FirstName ?? "",
+                            FatherLastName = currentEvaluatorStaff.FatherLastName ?? "",
+                            Email = currentEvaluatorStaff.Email ?? ""
+                        };
+                        await _emailService.SendAgencyUnassignmentEmail(previousEvaluator, currentAgency);
+                    }
                 }
 
-                // Asignar el nuevo monitor
-                _logger.LogInformation($"Asignando nuevo monitor {agencyRequest.MonitorId} a la agencia {agencyId}");
+                // Asignar el nuevo evaluador
+                _logger.LogInformation($"Asignando nuevo evaluador {agencyRequest.MonitorId} a la agencia {agencyId}");
                 // Calcular AgencyAssignmentType según el rol del monitor/coordinador
                 string agencyAssignmentType = await _agencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(agencyRequest.MonitorId.ToString());
                 await _agencyUsersRepository.AssignAgencyToUser(agencyRequest.MonitorId.ToString(), agencyId, agencyRequest.AssignedBy, agencyAssignmentType);
@@ -1163,23 +1149,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     {
         try
         {
-            // Intentar obtener desde el objeto Monitor primero
-            var agency = await GetAgencyById(agencyId);
-            if (agency != null)
-            {
-                var monitor = agency.Monitor;
-                if (monitor != null)
-                {
-                    var userId = monitor.UserId?.ToString();
-                    if (!string.IsNullOrEmpty(userId))
-                    {
-                        _logger.LogInformation($"EvaluatorUserId obtenido desde Monitor para agencia {agencyId}: {userId}");
-                        return userId;
-                    }
-                }
-            }
-
-            // Si no se encontró, consultar directamente AgencyUsers
+            // Consultar directamente AgencyUsers
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId, DbType.Int32);
