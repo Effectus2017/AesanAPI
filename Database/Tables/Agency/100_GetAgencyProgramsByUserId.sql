@@ -1,28 +1,32 @@
+-- =============================================
+-- Stored Procedure: 100_GetAgencyProgramsByUserId
+-- Descripción: Obtiene los programas de la agencia asignada al usuario (AgencyUsers).
+--              Usado para claims JWT (programs / programIds) cuando el usuario
+--              no tiene programas en UserProgram (ej. agency_administrator).
+-- =============================================
+
 CREATE OR ALTER PROCEDURE [dbo].[100_GetAgencyProgramsByUserId]
     @userId NVARCHAR(450)
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Programas de la(s) agencia(s) a la(s) que el usuario está asignado (AgencyUsers)
     SELECT DISTINCT
-        p.*
-    FROM AspNetUsers u
-        JOIN AspNetUserRoles ur ON u.Id = ur.UserId
-        JOIN AspNetRoles r ON ur.RoleId = r.Id
-        JOIN UserProgram up ON u.Id = up.UserId
-        JOIN Program p ON up.ProgramId = p.Id
-        JOIN AgencyProgram ap ON p.Id = ap.ProgramId
-        JOIN Agency a ON ap.AgencyId = a.Id
-        JOIN AgencyStatus ast ON a.AgencyStatusId = ast.Id
-    WHERE 
-	    r.Name = 'Monitor'
-        AND u.Id = @userId -- Parámetro para el ID del usuario monitor
-        AND a.IsActive = 1;
-
+        p.Id,
+        p.Name,
+        p.NameEN,
+        p.Description,
+        p.DescriptionEN,
+        p.IsActive,
+        p.CreatedAt,
+        p.UpdatedAt
+    FROM AgencyUsers au
+        INNER JOIN AgencyProgram ap ON au.AgencyId = ap.AgencyId AND ap.IsActive = 1
+        INNER JOIN Program p ON ap.ProgramId = p.Id AND p.IsActive = 1
+    WHERE au.UserId = @userId
+        AND au.IsActive = 1;
 END
 GO
 
-EXEC [100_GetAgencyProgramsByUserId] @userId = '1db1104b-6c97-4f64-93e1-929296dea7bf';
-
-
---Insert into AspNetUserRoles (UserId, RoleId, IsActive, CreatedAt) values ('1db1104b-6c97-4f64-93e1-929296dea7bf', 'e2f3g4h5-6789-0123-4567-890123456789', 1, GETDATE());
+--EXEC [100_GetAgencyProgramsByUserId] @userId = '1db1104b-6c97-4f64-93e1-929296dea7bf';

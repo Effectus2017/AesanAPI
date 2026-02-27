@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Interfaces;
 
@@ -10,8 +11,8 @@ public interface IEmailService
     Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword, string? userId = null);
     Task SendApprovalSponsorEmail(User userRequest, string temporaryPassword, string? fullName = null);
     Task SendDenialSponsorEmail(string email, string fullName, string rejectionReason);
-    Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency);
-    Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency);
+    Task SendAgencyAssignmentEmail(DTOUser user, AgencyResponse agency);
+    Task SendAgencyUnassignmentEmail(DTOUser user, AgencyResponse agency);
     Task SendPasswordChangedEmail(DTOUser user, string newPassword);
     Task SendPasswordResetEmail(string email, string resetLink);
     Task<bool> ResendEmail(int emailLogId, bool forceResend = false);

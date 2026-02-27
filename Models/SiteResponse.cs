@@ -85,7 +85,7 @@ public class SiteResponse
     public DTOCenterType? CenterType { get; set; }
     public DTOAreaType? AreaType { get; set; }
     public DTOAreaType? LocationType { get; set; }
-    public DTOAgency? Agency { get; set; }
+    public AgencyResponse? Agency { get; set; }
     
     // Site Location
     public DTOOptionSelection? SiteLocation { get; set; }

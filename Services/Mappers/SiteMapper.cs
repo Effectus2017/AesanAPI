@@ -115,7 +115,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                     NameEN = item.SiteLocationNameEN ?? string.Empty,
                     OptionKey = item.SiteLocationOptionKey ?? string.Empty
                 } : null,
-                Agency = item.AgencyId != null ? new DTOAgency
+                Agency = item.AgencyId != null ? new AgencyResponse
                 {
                     Id = item.AgencyId,
                     Name = item.AgencyName ?? string.Empty

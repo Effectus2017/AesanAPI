@@ -20,7 +20,7 @@ public class DTOUser
     /// <summary>Roles secundarios con vigencia. Para create/update y respuesta.</summary>
     public List<DTOUserSecondaryRole>? SecondaryRoles { get; set; }
     public string RolesDisplay { get; set; } = "";
-    public DTOAgency? Agency { get; set; } = null;
+    public Api.Models.Response.AgencyResponse? Agency { get; set; } = null;
     public string PhoneNumber { get; set; } = "";
     public string Password { get; set; } = "";
     public string? ImageURL { get; set; }

@@ -6,18 +6,18 @@ namespace Api.Services.Mappers;
 
 /// <summary>
 /// Mapper para entidades relacionadas con Agency
-/// Contiene todos los métodos de mapeo para DTOAgency y AgencyInscriptionResponse
+/// Contiene todos los métodos de mapeo para AgencyResponse y AgencyInscriptionResponse
 /// </summary>
 public class AgencyMapper(Lazy<MappingService> mappingService)
 {
     private readonly Lazy<MappingService> _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
 
     /// <summary>
-    /// Mapea una agencia desde un resultado dinámico a un DTOAgency
+    /// Mapea una agencia desde un resultado dinámico a un AgencyResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOAgency</returns>
-    public DTOAgency MapFromResult(dynamic item)
+    /// <returns>AgencyResponse</returns>
+    public AgencyResponse MapFromResult(dynamic item)
     {
         try
         {
@@ -26,7 +26,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
             }
 
-            return new DTOAgency
+            return new AgencyResponse
             {
                 Id = item.Id ?? 0,
                 Name = item.Name ?? string.Empty,
@@ -52,7 +52,7 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
                 Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
                 PostalCity = item.PostalCityId != null ? _mappingService.Value.MapCity(new { Id = item.PostalCityId ?? 0, Name = item.PostalCityName ?? string.Empty }) : null,
                 PostalRegion = item.PostalRegionId != null ? _mappingService.Value.MapRegion(new { Id = item.PostalRegionId ?? 0, Name = item.PostalRegionName ?? string.Empty }) : null,
-                Status = item.StatusId != null ? new DTOAgencyStatus
+                Status = item.StatusId != null ? new AgencyStatusResponse
                 {
                     Id = item.StatusId ?? 0,
                     Name = item.StatusName ?? string.Empty,

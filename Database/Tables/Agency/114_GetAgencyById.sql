@@ -119,7 +119,11 @@ BEGIN
         r.Id as RegionId,
         pr.Name as PostalRegionName,
         pr.Id as PostalRegionId,
-        ast.Name as AgencyStatusName
+        StatusId = a.AgencyStatusId,
+        StatusName = ast.Name,
+        StatusNameEN = ast.NameEN,
+        StatusIsActive = ast.IsActive,
+        StatusDisplayOrder = ast.DisplayOrder
     FROM Agency a
         LEFT JOIN AgencyInscription ai ON a.id = ai.AgencyId
         LEFT JOIN City c ON a.CityId = c.Id

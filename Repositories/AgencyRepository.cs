@@ -4,6 +4,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Response;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -31,7 +32,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// </summary>
     /// <param name="id">El ID de la agencia</param>
     /// <returns>La agencia</returns>
-    public async Task<dynamic> GetAgencyById(int id)
+    public async Task<AgencyResponse?> GetAgencyById(int id)
     {
         try
         {
@@ -104,7 +105,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// </summary>
     /// <param name="id">El ID de la agencia</param>
     /// <returns>La agencia</returns>
-    public async Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId)
+    public async Task<AgencyResponse?> GetAgencyByIdAndUserId(int agencyId, string userId)
     {
         try
         {
@@ -815,7 +816,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             if (rowsAffected > 0)
             {
-                DTOAgency agency = await GetAgencyById(agencyId);
+                AgencyResponse? agency = await GetAgencyById(agencyId);
 
                 if (agency != null)
                 {

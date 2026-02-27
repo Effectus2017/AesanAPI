@@ -19,7 +19,7 @@ public class SchoolResponse
     public int SitesCount { get; set; }
 
     // Objetos relacionados
-    public DTOAgency? Agency { get; set; }
+    public AgencyResponse? Agency { get; set; }
 
     // Propiedades de conveniencia para operaciones que necesiten IDs
     public string? AgencyName => Agency?.Name;

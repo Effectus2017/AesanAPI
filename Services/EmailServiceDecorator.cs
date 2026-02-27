@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using Microsoft.Extensions.Logging;
 
 namespace Api.Services;
@@ -108,7 +109,7 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
-    public async Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency)
+    public async Task SendAgencyAssignmentEmail(DTOUser user, AgencyResponse agency)
     {
         await LogAndSendEmail(
             email: user.Email ?? "",
@@ -122,7 +123,7 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
-    public async Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency)
+    public async Task SendAgencyUnassignmentEmail(DTOUser user, AgencyResponse agency)
     {
         await LogAndSendEmail(
             email: user.Email ?? "",

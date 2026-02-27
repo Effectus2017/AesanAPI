@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,20 +48,19 @@ public class NotificationsController(
             return NotFound(new { message = $"Agencia con ID {request.AgencyId} no encontrada." });
         }
 
-        var dtoAgency = (DTOAgency)agency;
-        if (dtoAgency.User == null || string.IsNullOrWhiteSpace(dtoAgency.User.UserId))
+        if (agency.User == null || string.IsNullOrWhiteSpace(agency.User.UserId))
         {
             return BadRequest(new { message = "La agencia no tiene un usuario/staff asociado para enviar el correo de bienvenida." });
         }
 
-        var temporaryPassword = await _passwordService.GetTemporaryPassword(dtoAgency.User.UserId);
+        var temporaryPassword = await _passwordService.GetTemporaryPassword(agency.User.UserId);
         if (string.IsNullOrWhiteSpace(temporaryPassword))
         {
             return BadRequest(new { message = "No hay contraseña temporal registrada para el usuario de la agencia. El correo de bienvenida se envía tras el registro." });
         }
 
-        var userRequest = MapToUserAgencyRequest(dtoAgency);
-        await _emailService.SendWelcomeAgencyEmail(userRequest, temporaryPassword, dtoAgency.User.UserId);
+        var userRequest = MapToUserAgencyRequest(agency);
+        await _emailService.SendWelcomeAgencyEmail(userRequest, temporaryPassword, agency.User.UserId);
 
         _logger.LogInformation("SendWelcomeAgency ejecutado para AgencyId {AgencyId}", request.AgencyId);
         return Ok(new { message = "Correo de bienvenida enviado." });
@@ -86,7 +86,7 @@ public class NotificationsController(
         return Ok(new { id });
     }
 
-    private static UserAgencyRequest MapToUserAgencyRequest(DTOAgency agency)
+    private static UserAgencyRequest MapToUserAgencyRequest(AgencyResponse agency)
     {
         var agencyRequest = new AgencyRequest
         {

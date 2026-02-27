@@ -1,6 +1,7 @@
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -356,7 +357,7 @@ public class EmailService(
     /// </summary>
     /// <param name="user">Usuario al que se le asignó la agencia</param>
     /// <param name="agency">Agencia asignada</param>
-    public async Task SendAgencyAssignmentEmail(DTOUser user, DTOAgency agency)
+    public async Task SendAgencyAssignmentEmail(DTOUser user, AgencyResponse agency)
     {
         try
         {
@@ -423,7 +424,7 @@ public class EmailService(
     /// </summary>
     /// <param name="user">Usuario al que se le desasignó la agencia</param>
     /// <param name="agency">Agencia desasignada</param>
-    public async Task SendAgencyUnassignmentEmail(DTOUser user, DTOAgency agency)
+    public async Task SendAgencyUnassignmentEmail(DTOUser user, AgencyResponse agency)
     {
         var fullName = $"{user.FirstName} {user.FatherLastName}";
         var variables = new Dictionary<string, string>

@@ -1,10 +1,11 @@
+using Api.Models.Response;
 
 namespace Api.Models;
 
 public class DTOProgramInscription
 {
     public int Id { get; set; }
-    public DTOAgency? Agency { get; set; }
+    public AgencyResponse? Agency { get; set; }
     public DTOProgram? Program { get; set; }
     public string ApplicationNumber { get; set; }
     public bool IsPublic { get; set; }

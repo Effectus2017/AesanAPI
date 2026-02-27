@@ -21,11 +21,11 @@ public class MappingService
     #region Agency Mappings
 
     /// <summary>
-    /// Mapea una agencia desde un resultado dinámico a un DTOAgency
+    /// Mapea una agencia desde un resultado dinámico a un AgencyResponse
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>DTOAgency</returns>
-    public DTOAgency MapAgency(dynamic item)
+    /// <returns>AgencyResponse</returns>
+    public AgencyResponse MapAgency(dynamic item)
     {
         return _agencyMapper.MapFromResult(item);
     }
@@ -175,7 +175,7 @@ public class MappingService
             CreatedAt = item.CreatedAt,
             UpdatedAt = item.UpdatedAt,
             SitesCount = (int?)item.SitesCount ?? 0,
-            Agency = new DTOAgency
+            Agency = new AgencyResponse
             {
                 Id = item.AgencyId,
                 Name = item.AgencyName,
@@ -241,7 +241,7 @@ public class MappingService
                 SchoolCode = item.SchoolCode,
                 SchoolNumber = item.SchoolNumber,
                 IsActive = item.SchoolIsActive,
-                Agency = new DTOAgency
+                Agency = new AgencyResponse
                 {
                     Name = item.AgencyName,
                     AgencyCode = item.AgencyCode

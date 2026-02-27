@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Services.Mappers;
 
@@ -142,7 +143,7 @@ public static class ProgramMapper
             return new DTOProgramInscription
             {
                 Id = result.Id,
-                Agency = new DTOAgency
+                Agency = new AgencyResponse
                 {
                     Id = result.AgencyId,
                     Name = result.AgencyName,

@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Interfaces;
 
@@ -7,8 +8,8 @@ public interface IAgencyRepository
     /// ------------------------------------------------------------------------------------------------
     /// Obtener
     /// ------------------------------------------------------------------------------------------------
-    Task<dynamic> GetAgencyById(int id);
-    Task<dynamic> GetAgencyByIdAndUserId(int agencyId, string userId);
+    Task<AgencyResponse?> GetAgencyById(int id);
+    Task<AgencyResponse?> GetAgencyByIdAndUserId(int agencyId, string userId);
     /// <summary>
     /// Obtiene los usuarios asignados a una agencia (excluye agency_administrator). Solo para listado del modal.
     /// </summary>

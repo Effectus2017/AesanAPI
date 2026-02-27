@@ -6,6 +6,7 @@ using System.Text;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -193,7 +194,7 @@ public class UserRepository(UserManager<User> userManager,
                 Role = primaryRole ?? userRoles.FirstOrDefault(),
                 PrimaryRoleName = primaryRole?.Name,
                 SecondaryRoles = secondaryRolesList,
-                Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new DTOAgency { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
+                Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new AgencyResponse { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
             };
 
             _loggingService.LogInformation("Usuario obtenido exitosamente con SP", new Dictionary<string, string>
