@@ -6,6 +6,7 @@ using Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Api.Data;
+using Api.Filters;
 using Dapper;
 using System.Data;
 // using ElmahCore;
@@ -20,6 +21,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("agency")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService, DapperContext dapperContext) : Controller
 {
     private readonly ILogger<AgencyController> _logger = logger;
@@ -38,26 +40,21 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo agencia por ID: {Id}", queryParameters.AgencyId);
+
+            if (queryParameters.AgencyId == 0)
             {
-                _logger.LogInformation("Obteniendo agencia por ID: {Id}", queryParameters.AgencyId);
-
-                if (queryParameters.AgencyId == 0)
-                {
-                    return BadRequest("El ID de la agencia es requerido");
-                }
-
-                var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
-
-                if (agency == null)
-                {
-                    return NotFound($"Agencia con ID {queryParameters.AgencyId} no encontrada");
-                }
-
-                return Ok(agency);
+                return BadRequest("El ID de la agencia es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
+
+            if (agency == null)
+            {
+                return NotFound($"Agencia con ID {queryParameters.AgencyId} no encontrada");
+            }
+
+            return Ok(agency);
         }
         catch (Exception ex)
         {
@@ -77,26 +74,21 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo agencia por ID y usuario: {AgencyId}, {UserId}", queryParameters.AgencyId, queryParameters.UserId);
+
+            if (queryParameters.AgencyId == 0 || string.IsNullOrEmpty(queryParameters.UserId))
             {
-                _logger.LogInformation("Obteniendo agencia por ID y usuario: {AgencyId}, {UserId}", queryParameters.AgencyId, queryParameters.UserId);
-
-                if (queryParameters.AgencyId == 0 || string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return BadRequest("El ID de la agencia y el ID del usuario son requeridos");
-                }
-
-                var agency = await _unitOfWork.AgencyRepository.GetAgencyByIdAndUserId(queryParameters.AgencyId, queryParameters.UserId);
-
-                if (agency == null)
-                {
-                    return NotFound($"Agencia con ID {queryParameters.AgencyId} no encontrada para visita preoperacional");
-                }
-
-                return Ok(agency);
+                return BadRequest("El ID de la agencia y el ID del usuario son requeridos");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var agency = await _unitOfWork.AgencyRepository.GetAgencyByIdAndUserId(queryParameters.AgencyId, queryParameters.UserId);
+
+            if (agency == null)
+            {
+                return NotFound($"Agencia con ID {queryParameters.AgencyId} no encontrada para visita preoperacional");
+            }
+
+            return Ok(agency);
         }
         catch (Exception ex)
         {
@@ -141,33 +133,28 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesFromDb(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Name,
-                    queryParameters.RegionId,
-                    queryParameters.CityId,
-                    queryParameters.ProgramId,
-                    queryParameters.StatusId,
-                    queryParameters.UserId,
-                    queryParameters.Alls,
-                    queryParameters.IsList,
-                    queryParameters.IsPropietary,
-                    queryParameters.UserFirstName,
-                    queryParameters.StatusName,
-                    queryParameters.CreatedAtFrom,
-                    queryParameters.CreatedAtTo,
-                    queryParameters.UieNumber,
-                    queryParameters.EinNumber,
-                    queryParameters.SdrNumber
-                );
+            var agencies = await _unitOfWork.AgencyRepository.GetAllAgenciesFromDb(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Name,
+                queryParameters.RegionId,
+                queryParameters.CityId,
+                queryParameters.ProgramId,
+                queryParameters.StatusId,
+                queryParameters.UserId,
+                queryParameters.Alls,
+                queryParameters.IsList,
+                queryParameters.IsPropietary,
+                queryParameters.UserFirstName,
+                queryParameters.StatusName,
+                queryParameters.CreatedAtFrom,
+                queryParameters.CreatedAtTo,
+                queryParameters.UieNumber,
+                queryParameters.EinNumber,
+                queryParameters.SdrNumber
+            );
 
-                return Ok(agencies);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(agencies);
         }
         catch (Exception ex)
         {
@@ -220,23 +207,18 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId, agencyRequest.Agency);
+
+            if (result)
             {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgency(queryParameters.AgencyId, agencyRequest.Agency);
-
-                if (result)
-                {
-                    // Nota: Los datos personales ahora se manejan a través de Staff, no de User
-                    // Solo se actualiza la agencia, no el usuario
-                    return Ok(result);
-                }
-
-                // var error = new Exception($"Error al actualizar la agencia {queryParameters.AgencyId}");
-                // await HttpContext.RaiseError(error);
-                return BadRequest("Error al actualizar la agencia");
+                // Nota: Los datos personales ahora se manejan a través de Staff, no de User
+                // Solo se actualiza la agencia, no el usuario
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            // var error = new Exception($"Error al actualizar la agencia {queryParameters.AgencyId}");
+            // await HttpContext.RaiseError(error);
+            return BadRequest("Error al actualizar la agencia");
         }
         catch (Exception ex)
         {
@@ -256,13 +238,8 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgencyLogo(queryParameters.AgencyId, queryParameters.ImageUrl ?? "");
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _unitOfWork.AgencyRepository.UpdateAgencyLogo(queryParameters.AgencyId, queryParameters.ImageUrl ?? "");
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -287,19 +264,14 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
                 return Unauthorized("Usuario no identificado.");
             }
 
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? "", userId);
+
+            if (result)
             {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgencyStatus(queryParameters.AgencyId, queryParameters.StatusId ?? 0, queryParameters.RejectionJustification ?? "", userId);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al actualizar el estado de la agencia");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("Error al actualizar el estado de la agencia");
         }
         catch (Exception ex)
         {
@@ -320,18 +292,13 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgencyProgram(
-                    updateAgencyProgramRequest.AgencyId,
-                    updateAgencyProgramRequest.ProgramId,
-                    updateAgencyProgramRequest.UserId
-                );
+            var result = await _unitOfWork.AgencyRepository.UpdateAgencyProgram(
+                updateAgencyProgramRequest.AgencyId,
+                updateAgencyProgramRequest.ProgramId,
+                updateAgencyProgramRequest.UserId
+            );
 
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -352,21 +319,16 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _unitOfWork.AgencyRepository.UpdateAgencyInscription(
-                    updateAgencyInscriptionRequest.AgencyId,
-                    updateAgencyInscriptionRequest.StatusId,
-                    updateAgencyInscriptionRequest.Comments,
-                    updateAgencyInscriptionRequest.AppointmentCoordinated,
-                    updateAgencyInscriptionRequest.AppointmentDate,
-                    updateAgencyInscriptionRequest.RejectionJustification
-                );
+            var result = await _unitOfWork.AgencyRepository.UpdateAgencyInscription(
+                updateAgencyInscriptionRequest.AgencyId,
+                updateAgencyInscriptionRequest.StatusId,
+                updateAgencyInscriptionRequest.Comments,
+                updateAgencyInscriptionRequest.AppointmentCoordinated,
+                updateAgencyInscriptionRequest.AppointmentDate,
+                updateAgencyInscriptionRequest.RejectionJustification
+            );
 
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -386,89 +348,84 @@ public class AgencyController(ILogger<AgencyController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            if (queryParameters.AgencyId == 0)
             {
-                if (queryParameters.AgencyId == 0)
-                {
-                    return BadRequest("El ID de la agencia es requerido");
-                }
-
-                if (queryParameters.CompletedRegistrationDate == null)
-                {
-                    return BadRequest("La fecha de registro completado es requerida");
-                }
-
-                var result = await _unitOfWork.AgencyRepository.UpdateCompletedRegistrationDate(queryParameters.AgencyId, queryParameters.CompletedRegistrationDate.Value);
-
-                var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
-
-                if (agency != null)
-                {
-                    List<string> evaluatorUserIds = new List<string>();
-                    try
-                    {
-                        evaluatorUserIds = await _unitOfWork.AgencyRepository.GetAllEvaluatorUserIdsByAgencyId(queryParameters.AgencyId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error obteniendo todos los evaluadores para agencia {AgencyId}", queryParameters.AgencyId);
-                    }
-
-                    if (evaluatorUserIds != null && evaluatorUserIds.Count != 0)
-                    {
-                        // Preparar variables para los templates
-                        var agencyName = agency.Name?.ToString() ?? "";
-                        var agencyCode = agency.AgencyCode?.ToString() ?? "";
-                        var completionDate = queryParameters.CompletedRegistrationDate.Value.ToString("dd/MM/yyyy");
-
-                        var variables = new Dictionary<string, string>
-                        {
-                            { "SponsorName", agencyName },
-                            { "SponsorCode", agencyCode },
-                            { "CompletionDate", completionDate }
-                        };
-
-                        // Enviar mensaje y email a cada evaluador
-                        int successCount = 0;
-                        int errorCount = 0;
-
-                        foreach (var evaluatorUserId in evaluatorUserIds)
-                        {
-                            if (string.IsNullOrEmpty(evaluatorUserId))
-                            {
-                                continue;
-                            }
-
-                            try
-                            {
-                                await _messageTemplateService.SendMessageAndEmailFromTemplate(
-                                    messageTemplateKey: "SponsorRegistrationCompleted",
-                                    emailTemplateKey: "SponsorRegistrationCompleted",
-                                    recipientUserId: evaluatorUserId,
-                                    variables: variables,
-                                    language: "es"
-                                );
-                                successCount++;
-                            }
-                            catch (Exception ex)
-                            {
-                                errorCount++;
-                                _logger.LogError(ex, "Error al enviar mensaje y email al evaluador {EvaluatorUserId}: {Message}", evaluatorUserId, ex.Message);
-                            }
-                        }
-
-                        _logger.LogInformation("Notificaciones enviadas a {SuccessCount} de {TotalCount} evaluadores para agencia {AgencyId}", successCount, evaluatorUserIds.Count, queryParameters.AgencyId);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("No se encontraron evaluadores asignados para la agencia {AgencyId}", queryParameters.AgencyId);
-                    }
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la agencia es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            if (queryParameters.CompletedRegistrationDate == null)
+            {
+                return BadRequest("La fecha de registro completado es requerida");
+            }
+
+            var result = await _unitOfWork.AgencyRepository.UpdateCompletedRegistrationDate(queryParameters.AgencyId, queryParameters.CompletedRegistrationDate.Value);
+
+            var agency = await _unitOfWork.AgencyRepository.GetAgencyById(queryParameters.AgencyId);
+
+            if (agency != null)
+            {
+                List<string> evaluatorUserIds = new List<string>();
+                try
+                {
+                    evaluatorUserIds = await _unitOfWork.AgencyRepository.GetAllEvaluatorUserIdsByAgencyId(queryParameters.AgencyId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error obteniendo todos los evaluadores para agencia {AgencyId}", queryParameters.AgencyId);
+                }
+
+                if (evaluatorUserIds != null && evaluatorUserIds.Count != 0)
+                {
+                    // Preparar variables para los templates
+                    var agencyName = agency.Name?.ToString() ?? "";
+                    var agencyCode = agency.AgencyCode?.ToString() ?? "";
+                    var completionDate = queryParameters.CompletedRegistrationDate.Value.ToString("dd/MM/yyyy");
+
+                    var variables = new Dictionary<string, string>
+                    {
+                        { "SponsorName", agencyName },
+                        { "SponsorCode", agencyCode },
+                        { "CompletionDate", completionDate }
+                    };
+
+                    // Enviar mensaje y email a cada evaluador
+                    int successCount = 0;
+                    int errorCount = 0;
+
+                    foreach (var evaluatorUserId in evaluatorUserIds)
+                    {
+                        if (string.IsNullOrEmpty(evaluatorUserId))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            await _messageTemplateService.SendMessageAndEmailFromTemplate(
+                                messageTemplateKey: "SponsorRegistrationCompleted",
+                                emailTemplateKey: "SponsorRegistrationCompleted",
+                                recipientUserId: evaluatorUserId,
+                                variables: variables,
+                                language: "es"
+                            );
+                            successCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            errorCount++;
+                            _logger.LogError(ex, "Error al enviar mensaje y email al evaluador {EvaluatorUserId}: {Message}", evaluatorUserId, ex.Message);
+                        }
+                    }
+
+                    _logger.LogInformation("Notificaciones enviadas a {SuccessCount} de {TotalCount} evaluadores para agencia {AgencyId}", successCount, evaluatorUserIds.Count, queryParameters.AgencyId);
+                }
+                else
+                {
+                    _logger.LogWarning("No se encontraron evaluadores asignados para la agencia {AgencyId}", queryParameters.AgencyId);
+                }
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
