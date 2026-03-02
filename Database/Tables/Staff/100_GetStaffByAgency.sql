@@ -37,7 +37,13 @@ BEGIN
         os_status.Name AS StatusName,
         os_status.NameEN AS StatusNameEN,
         s.PositionId,
-        os_position.Name AS PositionName,
+        ISNULL(
+            (SELECT STRING_AGG(os_pos.Name, ', ') WITHIN GROUP (ORDER BY c.StaffClassificationId)
+             FROM StaffContractByClassification c
+             INNER JOIN OptionSelection os_pos ON c.PositionId = os_pos.Id
+             WHERE c.StaffId = s.Id AND c.IsActive = 1),
+            os_position.Name
+        ) AS PositionName,
         os_position.NameEN AS PositionNameEN,
         s.StaffTypeId,
         st.Name AS StaffTypeName,
