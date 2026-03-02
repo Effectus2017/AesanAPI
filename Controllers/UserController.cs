@@ -123,27 +123,22 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     }
 
     /// <summary>
-    /// Obtiene todos los roles de la base de datos. Siempre devuelve formato unificado { data, count }.
+    /// Obtiene todos los roles de la base de datos.
     /// </summary>
-    /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN); si false, devuelve todos los roles. En ambos casos la respuesta es { data, count }.</param>
-    /// <returns>Objeto con data (lista de roles) y count (total).</returns>
+    /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN); si false, devuelve todos los roles.</param>
+    /// <param name="isList">Si true, devuelve solo la lista (array); si false, devuelve { data, count }.</param>
+    /// <returns>Lista de roles o objeto con data y count según isList.</returns>
     [HttpGet("get-all-roles-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Devuelve una lista de todos los roles en formato { data, count }. Con aesanOnly=true solo roles AESAN.")]
-    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false)
+    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Con isList=true devuelve solo el array de roles. Con isList=false devuelve { data, count }. Con aesanOnly=true solo roles AESAN.")]
+    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false, [FromQuery] bool isList = false)
     {
         try
         {
             if (!ModelState.IsValid)
                 return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
 
-            if (aesanOnly)
-            {
-                var roles = await _unitOfWork.UserRepository.GetAesanRoles();
-                return Ok(new { data = roles, count = roles.Count });
-            }
-
-            dynamic _result = _unitOfWork.UserRepository.GetAllRolesFromDb();
-            return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            var result = await _unitOfWork.UserRepository.GetAllRolesFromDb(aesanOnly, isList);
+            return result != null ? Ok(result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -216,7 +211,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         {
             if (ModelState.IsValid)
             {
-                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators);
+                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
                 return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
             }
 

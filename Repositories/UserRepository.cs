@@ -285,8 +285,9 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="roles">Lista de roles para filtrar</param>
     /// <param name="alls">Si es true, retorna todos los usuarios sin filtros ni paginación</param>
     /// <param name="excludeAdministrators">Si es true, excluye usuarios con rol Administrator o Super-Administrator</param>
+    /// <param name="isPropietary">Si true, solo usuarios de agencia NUTRE (IsPropietary=1). Si false, solo auspiciadores. Null = sin filtro.</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false)
+    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false, bool? isPropietary = null)
     {
         try
         {
@@ -301,9 +302,9 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             parameters.Add("@roles", rolesForSp == null ? null : string.Join(",", rolesForSp), DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            parameters.Add("@excludeAdministrators", excludeAdministrators, DbType.Boolean);
+            parameters.Add("@isPropietary", isPropietary, DbType.Boolean);
 
-            var result = await db.QueryMultipleAsync("109_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryMultipleAsync("110_GetAllUsersFromDb", parameters, commandType: CommandType.StoredProcedure);
             var rows = result.Read<DTOUserListItem>().ToList();
             var count = result.ReadFirstOrDefault<int>();
 
@@ -350,27 +351,23 @@ public class UserRepository(UserManager<User> userManager,
 
 
     /// <summary>
-    /// Obtiene todos los roles de la base de datos
+    /// Obtiene todos los roles de la base de datos, opcionalmente solo AESAN, en formato lista o { data, count }.
     /// </summary>
-    /// <param name="take">El número de roles a obtener</param>
-    /// <param name="skip">El número de roles a saltar</param>
-    /// <param name="name">El nombre del rol</param>
-    /// <returns>Una lista de roles</returns>
-    public dynamic GetAllRolesFromDb()
+    /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN).</param>
+    /// <param name="isList">Si true, retorna solo la lista; si false, retorna { data, count }.</param>
+    public async Task<dynamic> GetAllRolesFromDb(bool aesanOnly = false, bool isList = false)
     {
-        try
+        if (aesanOnly)
         {
-            var _result = _roleManager.Roles.OrderBy(r => r.Name).ToList();
-            var _count = _result.Count;
-            var _currentRoles = _mapper.Map<List<Role>, List<DTORole>>(_result);
-            var _complete = new { data = _currentRoles, count = _count };
+            var roles = await GetAesanRoles();
+            return isList ? (dynamic)roles : new { data = roles, count = roles.Count };
+        }
 
-            return _complete;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
+        var _result = _roleManager.Roles.OrderBy(r => r.Name).ToList();
+        var _currentRoles = _mapper.Map<List<Role>, List<DTORole>>(_result);
+        if (isList)
+            return _currentRoles;
+        return new { data = _currentRoles, count = _result.Count };
     }
 
     /// <summary>
@@ -1103,7 +1100,37 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            // 1. Crear usuario en Identity (solo datos de login)
+            // 1. Crear registro en Staff primero (UserId = null). Si falla, no queda usuario huérfano.
+            var staffRequest = new StaffRequest
+            {
+                FirstName = model.FirstName,
+                MiddleName = model.MiddleName,
+                FatherLastName = model.FatherLastName,
+                MotherLastName = model.MotherLastName,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                ImageURL = model.ImageURL,
+                BirthDate = DateTime.Now,
+                PostalAddress = "Dirección por definir",
+                CityId = model.CityId ?? 0,
+                RegionId = model.RegionId ?? 0,
+                ZipCode = "00901",
+                StaffTypeId = 1,
+                StatusId = 1,
+                PositionId = 0,
+                UserId = null,
+                AgencyId = agencyId,
+                IsActive = true
+            };
+
+            var staffId = await _staffRepository.InsertStaff(staffRequest);
+
+            if (staffId == 0)
+            {
+                return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
+            }
+
+            // 2. Crear usuario en Identity (solo datos de login). Si falla, hacemos rollback del Staff.
             User? user = new()
             {
                 UserName = !string.IsNullOrWhiteSpace(model.UserName) ? model.UserName : model.Email,
@@ -1120,42 +1147,20 @@ public class UserRepository(UserManager<User> userManager,
 
             if (!result.Succeeded)
             {
+                await _staffRepository.DeleteStaff(staffId);
                 return new BadRequestObjectResult(result.Errors);
             }
 
-            // 2. Crear registro en Staff (datos personales)
-            var staffRequest = new StaffRequest
+            // 3. Vincular Staff al usuario recién creado
+            using (var db = _context.CreateConnection())
             {
-                FirstName = model.FirstName,
-                MiddleName = model.MiddleName,
-                FatherLastName = model.FatherLastName,
-                MotherLastName = model.MotherLastName,
-                Email = model.Email,
-                PhoneNumber = model.PhoneNumber,
-                ImageURL = model.ImageURL, // URL de la imagen/avatar
-                // AdministrationTitle removido - ahora se maneja a través de PositionId
-                BirthDate = DateTime.Now, // Campo requerido, usar fecha por defecto
-                PostalAddress = "Dirección por definir",
-                CityId = 0, // Por defecto
-                RegionId = 0, // Por defecto
-                ZipCode = "00901", // Código postal por defecto para PR
-                StaffTypeId = 1, // Empleado por defecto
-                StatusId = 1, // Activo por defecto
-                PositionId = 0, // Sin posición específica por defecto - se puede actualizar después
-                UserId = user.Id, // Relación con el usuario creado
-                AgencyId = agencyId, // Asignar agencia directamente
-                IsActive = true
-            };
-
-            var staffId = await _staffRepository.InsertStaff(staffRequest);
-
-            if (staffId == 0)
-            {
-                await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
-                return new BadRequestObjectResult(new { Message = "Error al insertar staff" });
+                var updateParams = new DynamicParameters();
+                updateParams.Add("@staffId", staffId, DbType.Int32);
+                updateParams.Add("@userId", user.Id, DbType.String);
+                await db.ExecuteAsync("UPDATE Staff SET UserId = @userId WHERE Id = @staffId", updateParams);
             }
 
-            // 3. Asignar roles: flujo principal+secundarios (114) o legacy (113)
+            // 4. Asignar roles: flujo principal+secundarios (114) o legacy (113)
             using (var db = _context.CreateConnection())
             {
                 if (!string.IsNullOrWhiteSpace(model.PrimaryRoleName))

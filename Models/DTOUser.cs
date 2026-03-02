@@ -36,4 +36,10 @@ public class DTOUser
     public List<DTOProgram>? Programs { get; set; }
     /// <summary>IDs de programas para create/update (envío desde Web/API).</summary>
     public List<int>? ProgramIds { get; set; }
+
+    /// <summary>ID de ciudad para el registro Staff al crear usuario.</summary>
+    public int? CityId { get; set; }
+
+    /// <summary>ID de región para el registro Staff al crear usuario.</summary>
+    public int? RegionId { get; set; }
 }

@@ -28,7 +28,25 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     /// <returns>La agencia asignada al usuario</returns>
     public async Task<dynamic> GetUserAssignedAgency(string userId)
     {
-        return await GetUserAssignedAgencyV2(userId);
+        try
+        {
+            using IDbConnection db = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@userId", userId, DbType.String);
+            var result = await db.QueryFirstOrDefaultAsync<DTOAgencyUser>("104_GetUserAssignedAgency", parameters, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
+            {
+                return null!;
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la agencia asignada al usuario {UserId}", userId);
+            throw;
+        }
     }
 
     /// <summary>
@@ -104,124 +122,26 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     // =============================================
 
     /// <summary>
-    /// Obtiene el rol del usuario desde AspNetUserRoles
-    /// </summary>
-    private async Task<string?> GetUserRole(string userId)
-    {
-        try
-        {
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@userid", userId, DbType.String);
-
-            var roleName = await db.QueryFirstOrDefaultAsync<string>(
-                "100_GetUserRole",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-
-            return roleName;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el rol del usuario {UserId}", userId);
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Obtiene el AssignmentCategory del rol desde RoleAssignmentCategory
-    /// </summary>
-    private async Task<string?> GetAssignmentCategoryFromRole(string roleName)
-    {
-        try
-        {
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@rolename", roleName, DbType.String);
-
-            var assignmentCategory = await db.QueryFirstOrDefaultAsync<string>(
-                "100_GetAssignmentCategoryByRoleName",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-
-            return assignmentCategory;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener AssignmentCategory para el rol {RoleName}", roleName);
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Verifica si el rol del usuario puede ser owner
-    /// </summary>
-    private async Task<bool> CanUserBeOwner(string userId)
-    {
-        try
-        {
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@userid", userId, DbType.String);
-
-            var canBeOwner = await db.QueryFirstOrDefaultAsync<bool?>(
-                "100_GetCanBeOwnerByUserId",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-
-            return canBeOwner ?? false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al verificar si el usuario {UserId} puede ser owner", userId);
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Calcula el AgencyAssignmentType apropiado basado en el rol del usuario
+    /// Obtiene el AgencyAssignmentType del usuario según su rol (resuelto en DB por 100_GetAgencyAssignmentTypeByUserId).
     /// </summary>
     public async Task<string> CalculateAgencyAssignmentTypeFromRole(string userId)
     {
-        // Obtener el rol del usuario desde AspNetUserRoles
-        var userRole = await GetUserRole(userId);
-        
-        if (string.IsNullOrEmpty(userRole))
-        {
-            throw new Exception($"El usuario {userId} no tiene un rol asignado");
-        }
-        
-        // Obtener AssignmentCategory del rol desde RoleAssignmentCategory
-        var assignmentCategory = await GetAssignmentCategoryFromRole(userRole);
-        
-        // Calcular AgencyAssignmentType según AssignmentCategory
-        if (assignmentCategory == "AGENCY")
-        {
-            // Para roles de agencia, verificar si puede ser owner
-            var canBeOwner = await CanUserBeOwner(userId);
-            return canBeOwner ? "AGENCY_OWNER" : "AGENCY_STAFF";
-        }
-        else if (assignmentCategory == "NUTRE")
-        {
-            // Determinar tipo específico según la clave del rol (Name en AspNetRoles tras Mig_RoleDisplayNameAndKey)
-            var roleKey = userRole.Trim().ToLowerInvariant();
+        using IDbConnection db = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@userid", userId, DbType.String);
 
-            if (roleKey is "coordinator" or "monitoring_coordinator" or "program_coordinator")
-                return "NUTRE_COORDINATOR";
-            if (roleKey == "evaluator")
-                return "NUTRE_EVALUATOR";
-            if (roleKey == "administrator")
-                return "NUTRE_ADMIN";
-            if (roleKey is "accountant" or "accounting")
-                return "NUTRE_ACCOUNTING";
+        var agencyAssignmentType = await db.QueryFirstOrDefaultAsync<string>(
+            "100_GetAgencyAssignmentTypeByUserId",
+            parameters,
+            commandType: CommandType.StoredProcedure
+        );
 
-            return "NUTRE_EVALUATOR"; // Default para roles NUTRE
+        if (string.IsNullOrEmpty(agencyAssignmentType))
+        {
+            throw new Exception($"No se puede determinar AgencyAssignmentType para el usuario {userId} (sin rol o rol no configurado en RoleAssignmentCategory).");
         }
-        
-        throw new Exception($"No se puede determinar AgencyAssignmentType para el rol: {userRole}");
+
+        return agencyAssignmentType;
     }
 
     /// <summary>
@@ -271,32 +191,6 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al asignar la agencia al usuario");
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Obtiene la agencia asignada a un usuario (V2)
-    /// </summary>
-    public async Task<dynamic> GetUserAssignedAgencyV2(string userId)
-    {
-        try
-        {
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@userId", userId, DbType.String);
-            var result = await db.QueryFirstOrDefaultAsync<DTOAgencyUser>("104_GetUserAssignedAgency", parameters, commandType: CommandType.StoredProcedure);
-
-            if (result == null)
-            {
-                return null!;
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la agencia asignada al usuario {UserId} con V2", userId);
             throw;
         }
     }

@@ -10,6 +10,7 @@
 --   @roles: Roles para filtrar (separados por coma)
 --   @alls: Si es true, retorna todos los usuarios sin filtros ni paginación
 --   @excludeAdministrators: Si es 1, excluye usuarios con rol Administrator o Super-Administrator
+--   @isPropietary: Si 1, solo usuarios con al menos un rol en RoleAssignmentCategory.AssignmentCategory='NUTRE'. Si 0, solo usuarios con al menos un rol AssignmentCategory='AGENCY' (auspiciadores). NULL = sin filtro.
 
 CREATE OR ALTER PROCEDURE [109_GetAllUsersFromDb]
     @take INT = 15,
@@ -18,7 +19,8 @@ CREATE OR ALTER PROCEDURE [109_GetAllUsersFromDb]
     @agencyId INT = NULL,
     @roles NVARCHAR(MAX) = NULL,
     @alls BIT = 0,
-    @excludeAdministrators BIT = 0
+    @excludeAdministrators BIT = 0,
+    @isPropietary BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -59,12 +61,16 @@ BEGIN
         -- JOIN con roles para obtener información completa del rol
         LEFT JOIN AspNetUserRoles ur ON u.Id = ur.UserId
         LEFT JOIN AspNetRoles r ON ur.RoleId = r.Id
+        LEFT JOIN Agency a ON s.AgencyId = a.Id
     WHERE (@alls = 1)
         OR ((@agencyId IS NULL OR s.AgencyId = @agencyId)
         AND (@name IS NULL OR s.FirstName LIKE '%' + @name + '%' OR s.FatherLastName LIKE '%' + @name + '%')
         AND (@roles IS NULL OR r.Name IN (SELECT value
         FROM STRING_SPLIT(@roles, ',')))
-        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'administrator', N'super_administrator'))))
+        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'administrator', N'super_administrator')))
+        AND (@isPropietary IS NULL
+             OR (@isPropietary = 1 AND EXISTS (SELECT 1 FROM AspNetUserRoles ur_n INNER JOIN RoleAssignmentCategory rac ON ur_n.RoleId = rac.RoleId WHERE ur_n.UserId = u.Id AND rac.AssignmentCategory = N'NUTRE'))
+             OR (@isPropietary = 0 AND EXISTS (SELECT 1 FROM AspNetUserRoles ur_a INNER JOIN RoleAssignmentCategory rac ON ur_a.RoleId = rac.RoleId WHERE ur_a.UserId = u.Id AND rac.AssignmentCategory = N'AGENCY'))))
     ORDER BY s.FirstName, s.FatherLastName
     OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
@@ -74,15 +80,18 @@ BEGIN
         LEFT JOIN Staff s ON u.Id = s.UserId
         LEFT JOIN AspNetUserRoles ur ON u.Id = ur.UserId
         LEFT JOIN AspNetRoles r ON ur.RoleId = r.Id
+        LEFT JOIN Agency a ON s.AgencyId = a.Id
     WHERE (@alls = 1)
         OR ((@agencyId IS NULL OR s.AgencyId = @agencyId)
         AND (@name IS NULL OR s.FirstName LIKE '%' + @name + '%' OR s.FatherLastName LIKE '%' + @name + '%')
         AND (@roles IS NULL OR r.Name IN (SELECT value
         FROM STRING_SPLIT(@roles, ',')))
-        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'administrator', N'super_administrator'))));
+        AND (@excludeAdministrators = 0 OR u.Id NOT IN (SELECT ur2.UserId FROM AspNetUserRoles ur2 INNER JOIN AspNetRoles r2 ON ur2.RoleId = r2.Id WHERE r2.Name IN (N'administrator', N'super_administrator')))
+        AND (@isPropietary IS NULL
+             OR (@isPropietary = 1 AND EXISTS (SELECT 1 FROM AspNetUserRoles ur_n INNER JOIN RoleAssignmentCategory rac ON ur_n.RoleId = rac.RoleId WHERE ur_n.UserId = u.Id AND rac.AssignmentCategory = N'NUTRE'))
+             OR (@isPropietary = 0 AND EXISTS (SELECT 1 FROM AspNetUserRoles ur_a INNER JOIN RoleAssignmentCategory rac ON ur_a.RoleId = rac.RoleId WHERE ur_a.UserId = u.Id AND rac.AssignmentCategory = N'AGENCY'))));
 END;
 GO
-
 -- Ejemplos de uso:
 -- Obtener usuarios paginados
 -- EXEC [109_GetAllUsersFromDb] 10, 0, NULL, NULL, NULL, 0, 0;
@@ -95,3 +104,4 @@ GO
 
 -- Filtrar por roles (sin Monitor; excluir administradores)
 -- EXEC [109_GetAllUsersFromDb] 10, 0, NULL, NULL, 'Admin', 0, 1;
+

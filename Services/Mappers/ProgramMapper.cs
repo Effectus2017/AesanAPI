@@ -83,6 +83,7 @@ public static class ProgramMapper
             {
                 Id = result.Id,
                 Name = result.Name,
+                NameEN = result.NameEN,
                 Description = result.Description
             };
         }
