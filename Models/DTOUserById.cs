@@ -22,6 +22,8 @@ public class DTOUserById
     public string PostalAddress { get; set; } = "";
     public int CityId { get; set; }
     public int RegionId { get; set; }
+    public string CityName { get; set; } = "";
+    public string RegionName { get; set; } = "";
     public string ZipCode { get; set; } = "";
     public int StaffTypeId { get; set; }
     public int StatusId { get; set; }

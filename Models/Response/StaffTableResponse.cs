@@ -12,7 +12,7 @@ public class StaffTableResponse
     public string FatherLastName { get; set; } = string.Empty;
     public string? MotherLastName { get; set; }
     public string? StaffClassificationName { get; set; }
-    public string? DisplayPosition { get; set; }
+    public string? PositionName { get; set; }
     public bool IsActive { get; set; }
     public string? Comments { get; set; }
 }

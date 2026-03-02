@@ -45,6 +45,9 @@ BEGIN
         os_stafftype.Name AS StaffTypeName,
         -- Nombre del status
         os_status.Name AS StatusName,
+        -- Datos de ciudad y región
+        c.Name AS CityName,
+        r.Name AS RegionName,
         -- Datos de la agencia desde AgencyUsers (relación correcta usuario-agencia)
         a.Id AS AgencyId,
         a.Name AS AgencyName,
@@ -57,6 +60,8 @@ BEGIN
         LEFT JOIN OptionSelection os_position ON s.PositionId = os_position.Id
         LEFT JOIN OptionSelection os_stafftype ON s.StaffTypeId = os_stafftype.Id
         LEFT JOIN OptionSelection os_status ON s.StatusId = os_status.Id
+        LEFT JOIN City c ON s.CityId = c.Id
+        LEFT JOIN Region r ON s.RegionId = r.Id
         -- Obtener la agencia desde AgencyUsers usando la nueva lógica con AgencyAssignmentType
         LEFT JOIN (
             SELECT TOP 1

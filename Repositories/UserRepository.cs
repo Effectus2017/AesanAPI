@@ -194,7 +194,11 @@ public class UserRepository(UserManager<User> userManager,
                 Role = primaryRole ?? userRoles.FirstOrDefault(),
                 PrimaryRoleName = primaryRole?.Name,
                 SecondaryRoles = secondaryRolesList,
-                Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new AgencyResponse { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null
+                Agency = userFromDb.AgencyId.HasValue && userFromDb.AgencyId.Value != 0 ? new AgencyResponse { Id = userFromDb.AgencyId.Value, Name = userFromDb.AgencyName } : null,
+                CityId = userFromDb.CityId,
+                RegionId = userFromDb.RegionId,
+                City = userFromDb.CityId > 0 ? new DTOCity { Id = userFromDb.CityId, Name = userFromDb.CityName } : null,
+                Region = userFromDb.RegionId > 0 ? new DTORegion { Id = userFromDb.RegionId, Name = userFromDb.RegionName } : null
             };
 
             _loggingService.LogInformation("Usuario obtenido exitosamente con SP", new Dictionary<string, string>
@@ -1261,6 +1265,8 @@ public class UserRepository(UserManager<User> userManager,
             parameters.Add("@motherLastName", entity.MotherLastName, DbType.String);
             parameters.Add("@phoneNumber", entity.PhoneNumber, DbType.String);
             parameters.Add("@agencyId", entity.AgencyId, DbType.Int32);
+            parameters.Add("@cityId", entity.CityId, DbType.Int32);
+            parameters.Add("@regionId", entity.RegionId, DbType.Int32);
 
             string? rolesForLog = null;
             // Roles: flujo principal+secundarios o legacy (roleNames)

@@ -27,7 +27,7 @@ public static class StaffMapper
                 FatherLastName = result.FatherLastName ?? string.Empty,
                 MotherLastName = result.MotherLastName,
                 StaffClassificationName = result.StaffClassificationName,
-                DisplayPosition = result.DisplayPosition,
+                PositionName = result.PositionName,
                 IsActive = result.IsActive ?? false,
                 Comments = result.Comments
             };

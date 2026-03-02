@@ -2,12 +2,11 @@
 -- Stored Procedure: 100_ReCalculateSiteOperatingDays
 -- Descripción: Recalcula los días totales de funcionamiento de un sitio como el
 --             conteo real de filas en SiteOperatingDays en el rango del sitio.
---             Fuente de verdad: COUNT de días en el calendario (incluye manuales).
---             No depende de columnas IsWeekend/IsManuallyAdded/IsHoliday para evitar
---             fallos por columnas inexistentes o nombres distintos.
+--             Excluye días marcados como feriados (IsHoliday = 1) del total.
 -- Fecha: 2025-01-XX
--- Versión: 3.0
+-- Versión: 3.1
 -- Cambios v3.0: Cálculo robusto por COUNT de SiteOperatingDays en el rango
+-- Cambios v3.1: Excluir días feriados del conteo (IsHoliday = 0 OR IsHoliday IS NULL)
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[100_ReCalculateSiteOperatingDays]
@@ -46,13 +45,14 @@ BEGIN
         END
 
         -- Fuente de verdad: conteo real de días en el calendario (SiteOperatingDays)
-        -- Solo columnas base: SiteId, OperatingDate, IsActive (evita fallos por columnas faltantes)
+        -- Excluir días feriados: no cuentan para el total de días de funcionamiento
         SELECT @totalDays = COUNT(*)
         FROM SiteOperatingDays
         WHERE SiteId = @siteId
           AND OperatingDate >= @operatingFromDate
           AND OperatingDate <= @operatingToDate
-          AND IsActive = 1;
+          AND IsActive = 1
+          AND (IsHoliday = 0 OR IsHoliday IS NULL);
 
         -- Asegurar que el total no sea negativo
         IF @totalDays < 0

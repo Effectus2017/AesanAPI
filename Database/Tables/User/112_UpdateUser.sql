@@ -20,6 +20,8 @@ CREATE OR ALTER PROCEDURE [112_UpdateUser]
     @motherLastName NVARCHAR(100),
     @phoneNumber NVARCHAR(50),
     @agencyId INT,
+    @cityId INT = NULL,
+    @regionId INT = NULL,
     -- Roles: modo legacy (lista separada por comas) o nuevo (principal + secundarios)
     @roleNames NVARCHAR(MAX) = NULL,
     -- Rol principal (un solo nombre). Si se indica, se usa flujo primary/secondary con @secondaryRolesJson.
@@ -66,6 +68,8 @@ BEGIN
                 MotherLastName = @motherLastName,
                 PhoneNumber = @phoneNumber,
                 AgencyId = @agencyId,
+                CityId = COALESCE(@cityId, CityId),
+                RegionId = COALESCE(@regionId, RegionId),
                 UpdatedAt = GETDATE()
             WHERE UserId = @userId;
         END
@@ -78,7 +82,7 @@ BEGIN
                  AgencyId, UserId, CreatedAt, IsActive)
             VALUES
                 (@firstName, @middleName, @fatherLastName, @motherLastName, 1, 37, 1,
-                 1, '2000-01-01', @email, @phoneNumber, 'Dirección por definir', 1, 1, '00901',
+                 1, '2000-01-01', @email, @phoneNumber, 'Dirección por definir', COALESCE(@cityId, 1), COALESCE(@regionId, 1), '00901',
                  @agencyId, @userId, GETDATE(), 1);
         END;
 

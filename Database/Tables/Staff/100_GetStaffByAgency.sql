@@ -59,7 +59,7 @@ BEGIN
         a.Name AS AgencyName,
         s.Comments,
         s.UserId,
-        u.FirstName + ' ' + u.FatherLastName AS UserName,
+        u.UserName,
         s.CreatedAt,
         s.UpdatedAt,
         s.IsActive

@@ -42,4 +42,10 @@ public class DTOUser
 
     /// <summary>ID de región para el registro Staff al crear usuario.</summary>
     public int? RegionId { get; set; }
+
+    /// <summary>Ciudad del usuario (objeto completo con id y name).</summary>
+    public DTOCity? City { get; set; }
+
+    /// <summary>Región del usuario (objeto completo con id y name).</summary>
+    public DTORegion? Region { get; set; }
 }
