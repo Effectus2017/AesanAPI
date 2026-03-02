@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Services.Mappers;
 
@@ -9,56 +10,57 @@ namespace Api.Services.Mappers;
 public static class StaffMapper
 {
     /// <summary>
-    /// Mapea un resultado dinámico a un objeto con campos necesarios para listas de staff
+    /// Mapea un resultado dinámico a StaffTableResponse (solo columnas visibles en la tabla).
     /// </summary>
-    /// <param name="result">Resultado dinámico</param>
-    /// <returns>Objeto con campos necesarios para listas</returns>
-    public static dynamic MapListFromResult(dynamic result)
+    public static StaffTableResponse? MapListFromResult(dynamic result)
     {
         try
         {
             if (result == null)
-            {
                 return null;
-            }
 
-            return new
+            return new StaffTableResponse
             {
-                result.Id,
-                result.FirstName,
-                result.MiddleName,
-                result.FatherLastName,
-                result.MotherLastName,
-                result.StatusName,
-                result.StatusNameEN,
-                result.PositionName,
-                result.PositionNameEN,
-                result.StaffTypeId,
-                result.StaffTypeName,
-                result.StaffTypeNameEn,
-                result.StaffClassificationId,
-                result.StaffClassificationName,
-                result.StaffClassificationNameEn,
-                result.ContractStartDate,
-                result.ContractEndDate,
-                result.Email,
-                result.CityName,
-                result.RegionName,
-                result.AgencyId,
-                result.AgencyName,
-                result.UserName,
-                result.IsActive,
-                result.HasRelationships,
-                result.IsSiteAdmin,
-                result.AdministrativePositionName,
-                result.AdministrativePositionNameEN,
-                result.OperationalPositionName,
-                result.OperationalPositionNameEN
+                Id = result.Id,
+                FirstName = result.FirstName ?? string.Empty,
+                MiddleName = result.MiddleName,
+                FatherLastName = result.FatherLastName ?? string.Empty,
+                MotherLastName = result.MotherLastName,
+                StaffClassificationName = result.StaffClassificationName,
+                DisplayPosition = result.DisplayPosition,
+                IsActive = result.IsActive ?? false,
+                Comments = result.Comments
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Log the error but return null to avoid breaking the application
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico a StaffDropdownItemResponse (Id, Name, IsActive) para dropdowns.
+    /// </summary>
+    public static StaffDropdownItemResponse? MapDropdownItemFromResult(dynamic result)
+    {
+        try
+        {
+            if (result == null)
+                return null;
+
+            var firstName = result.FirstName?.ToString() ?? string.Empty;
+            var fatherLastName = result.FatherLastName?.ToString() ?? string.Empty;
+            var name = string.IsNullOrWhiteSpace(fatherLastName) ? firstName : $"{firstName} {fatherLastName}".Trim();
+
+            return new StaffDropdownItemResponse
+            {
+                Id = result.Id,
+                Name = name,
+                IsActive = result.IsActive ?? true
+            };
+        }
+        catch (Exception)
+        {
             return null;
         }
     }

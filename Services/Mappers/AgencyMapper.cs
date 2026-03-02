@@ -225,92 +225,96 @@ public class AgencyMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
-    /// Mapea una agencia desde un resultado dinámico a un objeto con campos necesarios para listas y tablas de UI
-    /// Incluye datos básicos de agencia, usuario, monitor, estado y campos de inscripción
+    /// Mapea un AgencyResponse a AgencyTableResponse (misma estructura; para ir reduciendo de a poco).
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto con campos necesarios para la UI</returns>
-    public dynamic MapListFromResult(dynamic item)
+    public static AgencyTableResponse MapFromAgencyResponse(AgencyResponse a)
+    {
+        if (a == null)
+            throw new ArgumentNullException(nameof(a));
+
+        return new AgencyTableResponse
+        {
+            Id = a.Id,
+            StatusId = a.StatusId,
+            Name = a.Name,
+            SdrNumber = a.SdrNumber,
+            UieNumber = a.UieNumber,
+            EinNumber = a.EinNumber,
+            Address = a.Address,
+            ZipCode = a.ZipCode,
+            PostalAddress = a.PostalAddress,
+            PostalZipCode = a.PostalZipCode,
+            Phone = a.Phone,
+            Latitude = a.Latitude,
+            Longitude = a.Longitude,
+            Email = a.Email,
+            CreatedAt = a.CreatedAt,
+            UpdatedAt = a.UpdatedAt,
+            ImageURL = a.ImageURL,
+            AgencyCode = a.AgencyCode,
+            IsRecurrent = a.IsRecurrent,
+            City = a.City,
+            Region = a.Region,
+            PostalCity = a.PostalCity,
+            PostalRegion = a.PostalRegion,
+            Status = a.Status,
+            User = a.User,
+            AssignedUsers = a.AssignedUsers ?? [],
+            Programs = a.Programs ?? [],
+            Inscription = a.Inscription
+        };
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico a AgencyTableResponse (solo columnas visibles en la tabla).
+    /// El primer result set de 119_GetAgencies no incluye UserFirstName/Monitor*; se dejan en null.
+    /// </summary>
+    public AgencyTableResponse? MapTableFromResult(dynamic item)
     {
         try
         {
             if (item == null)
-            {
                 return null;
-            }
 
-            return new
-            {
-                // Campos básicos de la agencia
-                Id = item.Id ?? 0,
-                Name = item.Name ?? string.Empty,
-                SdrNumber = item.SdrNumber ?? 0,
-                UieNumber = item.UieNumber ?? 0,
-                EinNumber = item.EinNumber ?? 0,
-                Address = item.Address ?? string.Empty,
-                Phone = item.Phone ?? string.Empty,
-                Email = item.Email ?? string.Empty,
-                IsActive = item.IsActive ?? false,
-                IsListable = item.IsListable ?? false,
-                item.CreatedAt,
-                item.UpdatedAt,
-                AgencyCode = item.AgencyCode ?? string.Empty,
-
-                // Datos de ubicación
-                City = item.CityId != null ? _mappingService.Value.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }) : null,
-                Region = item.RegionId != null ? _mappingService.Value.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }) : null,
-
-                // Estado de la agencia
-                Status = item.StatusId != null ? new
-                {
-                    Id = item.StatusId ?? 0,
-                    Name = item.StatusName ?? string.Empty,
-                    NameEN = item.StatusNameEN ?? string.Empty,
-                    IsActive = item.StatusIsActive ?? false,
-                    DisplayOrder = item.StatusDisplayOrder ?? 0
-                } : null,
-
-                // Usuario creador (owner)
-                User = item.UserId != null ? new
-                {
-                    Id = item.UserId ?? 0,
-                    FirstName = item.UserFirstName ?? string.Empty,
-                    MiddleName = item.UserMiddleName ?? string.Empty,
-                    FatherLastName = item.UserFatherLastName ?? string.Empty,
-                    MotherLastName = item.UserMotherLastName ?? string.Empty,
-                    Email = item.UserEmail ?? string.Empty,
-                    PositionId = item.UserPositionId ?? 0,
-                    PositionName = item.UserPositionName ?? string.Empty,
-                    ContractStartDate = item.UserContractStartDate,
-                    ContractEndDate = item.UserContractEndDate
-                } : null,
-
-                // Campos de inscripción básicos (los que se muestran en UI)
-                AppointmentCoordinated = item.ProgramAppointmentCoordinated ?? false,
-                AppointmentDate = item.ProgramAppointmentDate,
-                RejectionJustification = item.ProgramRejectionJustification ?? string.Empty,
-                item.DeadlineToCompleteRegistration,
-                item.ServicesOfferedSince,
-
-                // Campos de inscripción adicionales (para compatibilidad)
-                item.NonProfit,
-                item.FederalFundsDenied,
-                item.StateFundsDenied,
-                item.NationalYouthProgram,
-                item.IsDayCareHomeId,
-                item.BasicEducationRegistry,
-                item.ExtendedHours,
-                item.TaxExemptionStatusId,
-                item.TaxExemptionTypeId,
-                item.TypeOfEntityId,
-                item.TypeOfApplicantId,
-                item.PublicAllianceContractId
-            };
+            var agency = MapFromResult(item);
+            return MapFromAgencyResponse(agency);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Log the error but return null to avoid breaking the application
             return null;
         }
+    }
+
+    /// <summary>
+    /// Mapea un resultado dinámico a AgencyDropdownItemResponse (Id, Name, IsActive) para dropdowns.
+    /// </summary>
+    public AgencyDropdownItemResponse? MapDropdownItemFromResult(dynamic item)
+    {
+        try
+        {
+            if (item == null)
+                return null;
+
+            return new AgencyDropdownItemResponse
+            {
+                Id = item.Id ?? 0,
+                Name = item.Name?.ToString() ?? string.Empty,
+                IsActive = item.IsActive ?? true
+            };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Mapea una agencia desde un resultado dinámico a AgencyTableResponse (alias para flujo de lista tabla).
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>AgencyTableResponse o null</returns>
+    public AgencyTableResponse? MapListFromResult(dynamic item)
+    {
+        return MapTableFromResult(item);
     }
 }

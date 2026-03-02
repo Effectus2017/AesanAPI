@@ -205,6 +205,19 @@ public class SiteMapper(Lazy<MappingService> mappingService)
     }
 
     /// <summary>
+    /// Mapea un resultado dinámico a SiteDropdownItemResponse (convención DropdownItemResponse para dropdowns).
+    /// </summary>
+    public static SiteDropdownItemResponse MapDropdownItemFromResult(dynamic item)
+    {
+        if (item == null) throw new ArgumentNullException(nameof(item));
+        return new SiteDropdownItemResponse
+        {
+            Id = item.Id ?? 0,
+            Name = item.Name ?? string.Empty
+        };
+    }
+
+    /// <summary>
     /// Mapea un resultado dinámico a un SiteTableResponse optimizado para tablas
     /// </summary>
     /// <param name="item">Resultado dinámico</param>

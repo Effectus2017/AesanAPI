@@ -41,28 +41,73 @@ public class MappingService
     }
 
     /// <summary>
-    /// Mapea una agencia desde un resultado dinámico a un objeto con campos necesarios para listas y tablas de UI
+    /// Mapea un AgencyResponse a AgencyTableResponse (misma estructura; para ir reduciendo de a poco).
+    /// </summary>
+    public AgencyTableResponse MapFromAgencyResponse(AgencyResponse a)
+    {
+        return AgencyMapper.MapFromAgencyResponse(a);
+    }
+
+    /// <summary>
+    /// Mapea una agencia desde un resultado dinámico a AgencyTableResponse (filas de tabla).
     /// </summary>
     /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto con campos necesarios para la UI</returns>
-    public dynamic MapAgencyList(dynamic item)
+    /// <returns>AgencyTableResponse o null</returns>
+    public AgencyTableResponse? MapAgencyTable(dynamic item)
+    {
+        return _agencyMapper.MapTableFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea una lista de resultados dinámicos a IEnumerable de AgencyTableResponse (filas de tabla).
+    /// </summary>
+    public IEnumerable<AgencyTableResponse> MapAgencyTable(IEnumerable<dynamic> items)
+    {
+        if (items == null)
+            return [];
+        return items.Select(MapAgencyTable).Where(x => x != null).Cast<AgencyTableResponse>();
+    }
+
+    /// <summary>
+    /// Mapea una agencia desde un resultado dinámico a AgencyDropdownItemResponse (opciones de dropdown).
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>AgencyDropdownItemResponse o null</returns>
+    public AgencyDropdownItemResponse? MapAgencyDropdownItem(dynamic item)
+    {
+        return _agencyMapper.MapDropdownItemFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea una lista de resultados dinámicos a IEnumerable de AgencyDropdownItemResponse (opciones de dropdown).
+    /// </summary>
+    public IEnumerable<AgencyDropdownItemResponse> MapAgencyDropdownItem(IEnumerable<dynamic> items)
+    {
+        if (items == null)
+            return [];
+        return items.Select(MapAgencyDropdownItem).Where(x => x != null).Cast<AgencyDropdownItemResponse>();
+    }
+
+    /// <summary>
+    /// Mapea una agencia desde un resultado dinámico a AgencyTableResponse (alias para flujo de lista tabla).
+    /// </summary>
+    /// <param name="item">Resultado dinámico</param>
+    /// <returns>AgencyTableResponse o null</returns>
+    public AgencyTableResponse? MapAgencyList(dynamic item)
     {
         return _agencyMapper.MapListFromResult(item);
     }
 
     /// <summary>
-    /// Mapea una lista de agencias desde resultados dinámicos a objetos para listas y tablas de UI
+    /// Mapea una lista de agencias desde resultados dinámicos a AgencyTableResponse (filas de tabla).
     /// </summary>
     /// <param name="items">Resultados dinámicos</param>
-    /// <returns>Lista de objetos con campos necesarios para la UI</returns>
-    public IEnumerable<dynamic> MapAgencyList(IEnumerable<dynamic> items)
+    /// <returns>Lista de AgencyTableResponse</returns>
+    public IEnumerable<AgencyTableResponse> MapAgencyList(IEnumerable<dynamic> items)
     {
         if (items == null)
-        {
-            return new List<dynamic>();
-        }
-
-        return items.Select(MapAgencyList).Where(item => item != null);
+            return [];
+        return items.Select(MapAgencyList).Where(x => x != null).Cast<AgencyTableResponse>();
     }
 
     #endregion
@@ -124,13 +169,19 @@ public class MappingService
     #region Staff Mappings
 
     /// <summary>
-    /// Mapea una lista de staff desde un resultado dinámico
+    /// Mapea una fila de staff desde un resultado dinámico a StaffTableResponse (tabla).
     /// </summary>
-    /// <param name="result">Resultado dinámico</param>
-    /// <returns>Objeto mapeado para listas</returns>
-    public dynamic MapStaffList(dynamic result)
+    public StaffTableResponse? MapStaffList(dynamic result)
     {
         return StaffMapper.MapListFromResult(result);
+    }
+
+    /// <summary>
+    /// Mapea una fila de staff desde un resultado dinámico a StaffDropdownItemResponse (dropdown).
+    /// </summary>
+    public StaffDropdownItemResponse? MapStaffDropdownItem(dynamic result)
+    {
+        return StaffMapper.MapDropdownItemFromResult(result);
     }
 
     /// <summary>
@@ -331,6 +382,14 @@ public class MappingService
     public SiteListItemResponse MapSiteListItem(dynamic item)
     {
         return SiteMapper.MapListItemFromResult(item);
+    }
+
+    /// <summary>
+    /// Mapea un sitio desde un resultado dinámico a SiteDropdownItemResponse (convención para dropdowns).
+    /// </summary>
+    public SiteDropdownItemResponse MapSiteDropdownItem(dynamic item)
+    {
+        return SiteMapper.MapDropdownItemFromResult(item);
     }
 
     /// <summary>
@@ -604,33 +663,27 @@ public class MappingService
     #region Staff Type Mappings
 
     /// <summary>
-    /// Mapea un tipo de personal desde un resultado dinámico a un objeto StaffType (versión simplificada para listas)
+    /// Mapea un tipo de personal desde un resultado dinámico a StaffTypeDropdownItemResponse (dropdowns/listas).
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto StaffType mapeado</returns>
-    public dynamic MapStaffTypeList(dynamic item)
+    public StaffTypeDropdownItemResponse? MapStaffTypeList(dynamic item)
     {
         return StaffTypeMapper.MapListFromResult(item);
     }
 
     /// <summary>
-    /// Mapea un tipo de personal desde un resultado dinámico a un objeto StaffType completo
+    /// Mapea un tipo de personal desde un resultado dinámico a StaffTypeDropdownItemResponse.
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto StaffType mapeado</returns>
-    public dynamic MapStaffType(dynamic item)
+    public StaffTypeDropdownItemResponse? MapStaffTypeDropdownItem(dynamic item)
     {
         return StaffTypeMapper.MapFromResult(item);
     }
 
     /// <summary>
-    /// Mapea una lista de tipos de personal desde resultados dinámicos
+    /// Mapea una lista de tipos de personal desde resultados dinámicos a StaffTypeDropdownItemResponse.
     /// </summary>
-    /// <param name="items">Resultados dinámicos</param>
-    /// <returns>Lista de objetos StaffType mapeados</returns>
-    public List<dynamic> MapStaffTypes(IEnumerable<dynamic> items)
+    public List<StaffTypeDropdownItemResponse> MapStaffTypes(IEnumerable<dynamic> items)
     {
-        return items.Select(MapStaffType).ToList();
+        return items.Select(MapStaffTypeList).OfType<StaffTypeDropdownItemResponse>().ToList();
     }
 
     #endregion
@@ -747,43 +800,35 @@ public class MappingService
     #region StaffClassification Mappings
 
     /// <summary>
-    /// Mapea una clasificación de staff desde un resultado dinámico para listas
+    /// Mapea una clasificación de staff desde un resultado dinámico a StaffClassificationDropdownItemResponse (dropdowns/listas).
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto mapeado para listas</returns>
-    public dynamic MapStaffClassificationList(dynamic item)
+    public StaffClassificationDropdownItemResponse MapStaffClassificationList(dynamic item)
     {
         return StaffClassificationMapper.MapListFromResult(item);
     }
 
     /// <summary>
-    /// Mapea una clasificación de staff desde un resultado dinámico para listas paginadas
+    /// Mapea una clasificación de staff desde un resultado dinámico a StaffClassificationDropdownItemResponse.
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto mapeado para listas paginadas</returns>
-    public dynamic MapStaffClassification(dynamic item)
+    public StaffClassificationDropdownItemResponse MapStaffClassificationDropdownItem(dynamic item)
     {
         return StaffClassificationMapper.MapFromResult(item);
     }
 
     /// <summary>
-    /// Mapea una lista de clasificaciones de staff desde resultados dinámicos para listas
+    /// Mapea una lista de clasificaciones de staff desde resultados dinámicos a StaffClassificationDropdownItemResponse.
     /// </summary>
-    /// <param name="items">Resultados dinámicos</param>
-    /// <returns>Lista de objetos mapeados para listas</returns>
-    public List<dynamic> MapStaffClassificationLists(IEnumerable<dynamic> items)
+    public List<StaffClassificationDropdownItemResponse> MapStaffClassificationLists(IEnumerable<dynamic> items)
     {
         return items.Select(MapStaffClassificationList).ToList();
     }
 
     /// <summary>
-    /// Mapea una lista de clasificaciones de staff desde resultados dinámicos para listas paginadas
+    /// Mapea una lista de clasificaciones de staff desde resultados dinámicos a StaffClassificationDropdownItemResponse.
     /// </summary>
-    /// <param name="items">Resultados dinámicos</param>
-    /// <returns>Lista de objetos mapeados para listas paginadas</returns>
-    public List<dynamic> MapStaffClassifications(IEnumerable<dynamic> items)
+    public List<StaffClassificationDropdownItemResponse> MapStaffClassifications(IEnumerable<dynamic> items)
     {
-        return items.Select(MapStaffClassification).ToList();
+        return items.Select(MapStaffClassificationList).ToList();
     }
 
     #endregion

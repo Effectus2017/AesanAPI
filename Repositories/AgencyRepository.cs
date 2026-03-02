@@ -232,26 +232,22 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@einNumber", einNumber);
             param.Add("@sdrNumber", sdrNumber);
 
-            // Usar nuevo SP con nueva lógica de acceso
+            // Usar nuevo SP con nueva lógica de acceso (misma convención que Staff: TableResponse/DropdownItemResponse + PagedResult)
             if (isList)
             {
                 using var result = await dbConnection.QueryMultipleAsync("119_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
-                    return new List<dynamic>();
+                    return new List<AgencyDropdownItemResponse>();
                 }
 
                 var agencies = result.Read<dynamic>().ToList();
-
-                var data = _mappingService.MapAgencyList(agencies).ToList();
-
+                var data = _mappingService.MapAgencyDropdownItem(agencies).ToList();
                 return data;
-
             }
             else
             {
-                // Variables para almacenar los resultados
                 List<dynamic> agencies = [];
                 List<DTOProgram> agenciesPrograms = [];
                 List<DTOStaff> agenciesOwners = [];
@@ -262,39 +258,32 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
                 if (result == null)
                 {
-                    return new { data = Array.Empty<dynamic>(), count = 0 };
+                    return new PagedResult<AgencyTableResponse> { Data = [], Count = 0 };
                 }
 
-                // Leer todos los conjuntos de resultados de manera segura
                 if (!result.IsConsumed)
                 {
                     agencies = result.Read<dynamic>().ToList();
                 }
-
                 if (!result.IsConsumed)
                 {
                     agenciesPrograms = result.Read<DTOProgram>().ToList();
                 }
-
                 if (!result.IsConsumed)
                 {
                     agenciesOwners = result.Read<DTOStaff>().ToList();
                 }
-
                 if (!result.IsConsumed)
                 {
                     agenciesAssignedUsers = result.Read<DTOStaff>().ToList();
                 }
-
                 if (!result.IsConsumed)
                 {
                     count = result.ReadFirstOrDefault<int>();
                 }
 
-                // Procesar los datos después de que el GridReader se haya cerrado
                 var data = agencies.Select(_mappingService.MapAgency).ToList();
 
-                // Asignar programas a cada agencia
                 if (agenciesPrograms != null && agenciesPrograms.Count != 0)
                 {
                     foreach (var agency in data)
@@ -303,13 +292,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     }
                 }
 
-                // Asignar owners a cada agencia (User = owner principal)
                 if (agenciesOwners != null && agenciesOwners.Count != 0)
                 {
                     foreach (var agency in data)
                     {
                         var ownerData = agenciesOwners.Where(ao => ao.AgencyId == agency.Id).FirstOrDefault();
-
                         if (ownerData != null)
                         {
                             agency.User = ownerData;
@@ -317,7 +304,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     }
                 }
 
-                // Asignar usuarios asignados a la agencia (AgencyUsers: todos por etapa/asignación)
                 if (agenciesAssignedUsers != null && agenciesAssignedUsers.Count != 0)
                 {
                     foreach (var agency in data)
@@ -326,7 +312,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     }
                 }
 
-                return new { data, count };
+                var tableData = data.Select(_mappingService.MapFromAgencyResponse).ToList();
+                return new PagedResult<AgencyTableResponse> { Data = tableData, Count = count };
             }
 
 

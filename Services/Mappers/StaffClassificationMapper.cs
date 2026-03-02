@@ -1,80 +1,37 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Services.Mappers;
 
 /// <summary>
 /// Mapper para entidades relacionadas con StaffClassification
-/// Contiene todos los métodos de mapeo para objetos de StaffClassification
+/// Contiene todos los m?todos de mapeo para objetos de StaffClassification
 /// </summary>
 public class StaffClassificationMapper
 {
     /// <summary>
-    /// Mapea una clasificación de staff desde un resultado dinámico para listas
+    /// Mapea una clasificaci?n de staff desde un resultado din?mico a StaffClassificationDropdownItemResponse (dropdowns/listas).
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto mapeado para listas</returns>
-    public static dynamic MapListFromResult(dynamic item)
+    public static StaffClassificationDropdownItemResponse MapListFromResult(dynamic item)
     {
-        try
-        {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
-            }
+        if (item == null)
+            throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
 
-            return new
-            {
-                item.Id,
-                item.Name,
-                item.NameEn,
-                item.SortOrder,
-                item.IsActive,
-                item.CreatedAt,
-                item.UpdatedAt
-            };
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+        return new StaffClassificationDropdownItemResponse
         {
-            throw new InvalidOperationException($"Error al mapear la clasificación de staff para lista: Propiedad no encontrada o inválida. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error inesperado al mapear la clasificación de staff para lista: {ex.Message}", ex);
-        }
+            Id = item.Id,
+            Name = item.Name ?? string.Empty,
+            NameEn = item.NameEn,
+            SortOrder = item.SortOrder ?? 0,
+            IsActive = item.IsActive ?? true
+        };
     }
 
     /// <summary>
-    /// Mapea una clasificación de staff desde un resultado dinámico para listas paginadas
+    /// Mapea una clasificaci?n de staff desde un resultado din?mico a StaffClassificationDropdownItemResponse.
     /// </summary>
-    /// <param name="item">Resultado dinámico</param>
-    /// <returns>Objeto mapeado para listas paginadas</returns>
-    public static dynamic MapFromResult(dynamic item)
+    public static StaffClassificationDropdownItemResponse MapFromResult(dynamic item)
     {
-        try
-        {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item), "El objeto item no puede ser nulo");
-            }
-
-            return new
-            {
-                item.Id,
-                item.Name,
-                item.NameEn,
-                item.SortOrder,
-                item.IsActive,
-                item.CreatedAt,
-                item.UpdatedAt
-            };
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-        {
-            throw new InvalidOperationException($"Error al mapear la clasificación de staff: Propiedad no encontrada o inválida. {ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error inesperado al mapear la clasificación de staff: {ex.Message}", ex);
-        }
+        return MapListFromResult(item);
     }
 }

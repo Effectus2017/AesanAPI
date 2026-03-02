@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -89,7 +90,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassification).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassificationList).ToList();
                 var count = result.Read<int>().FirstOrDefault();
 
                 return new { data, count };

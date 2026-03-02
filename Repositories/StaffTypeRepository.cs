@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -83,7 +84,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
                             return [];
                         }
 
-                        var data = result.Read<dynamic>().Select(_mappingService.MapStaffTypeList).ToList();
+                        var data = result.Read<dynamic>().Select(_mappingService.MapStaffTypeList).OfType<StaffTypeDropdownItemResponse>().ToList();
                         return data;
                     },
                     _logger,
@@ -100,7 +101,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
                     return null;
                 }
 
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffType).ToList();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffTypeList).OfType<StaffTypeDropdownItemResponse>().ToList();
                 var count = result.Read<int>().FirstOrDefault();
 
                 return new { data, count };

@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Response;
 using Api.Services;
 using Api.Services.Mappers;
 using Dapper;
@@ -131,11 +132,12 @@ public class StaffRepository(
                 var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
-                {
                     return null;
-                }
 
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffList).ToList();
+                var data = result.Read<dynamic>()
+                    .Select(_mappingService.MapStaffDropdownItem)
+                    .OfType<StaffDropdownItemResponse>()
+                    .ToList();
                 return data;
             }
             else
@@ -143,14 +145,15 @@ public class StaffRepository(
                 var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
-                {
                     return null;
-                }
 
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaff).ToList();
+                var data = result.Read<dynamic>()
+                    .Select(_mappingService.MapStaffList)
+                    .OfType<StaffTableResponse>()
+                    .ToList();
                 var count = result.Read<int>().FirstOrDefault();
 
-                return new { data, count };
+                return new PagedResult<StaffTableResponse> { Data = data, Count = count };
             }
         }
         catch (Exception ex)
@@ -924,10 +927,13 @@ public class StaffRepository(
                 return null;
             }
 
-            var data = result.Read<dynamic>().Select(_mappingService.MapStaff).ToList();
+            var data = result.Read<dynamic>()
+                .Select(_mappingService.MapStaffList)
+                .OfType<StaffTableResponse>()
+                .ToList();
             var count = result.Read<int>().FirstOrDefault();
 
-            return new { data, count };
+            return new PagedResult<StaffTableResponse> { Data = data, Count = count };
         }
         catch (Exception ex)
         {

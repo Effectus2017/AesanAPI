@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Services.Mappers;
 
@@ -9,66 +10,35 @@ namespace Api.Services.Mappers;
 public static class StaffTypeMapper
 {
     /// <summary>
-    /// Mapea el resultado de la consulta a un objeto StaffType (versión simplificada para listas)
+    /// Mapea el resultado de la consulta a StaffTypeDropdownItemResponse (dropdowns/listas).
     /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto StaffType mapeado</returns>
-    public static dynamic MapListFromResult(dynamic result)
+    public static StaffTypeDropdownItemResponse? MapListFromResult(dynamic result)
     {
         try
         {
             if (result == null)
-            {
-                return new { };
-            }
+                return null;
 
-            return new
+            return new StaffTypeDropdownItemResponse
             {
-                result.Id,
-                result.Name,
-                result.NameEn,
-                result.DisplayOrder,
-                result.IsActive,
-                result.CreatedAt,
-                result.UpdatedAt
+                Id = result.Id,
+                Name = result.Name ?? string.Empty,
+                NameEn = result.NameEn,
+                DisplayOrder = result.DisplayOrder ?? 0,
+                IsActive = result.IsActive ?? true
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Log the error but return empty object to avoid breaking the application
-            return new { };
+            return null;
         }
     }
 
     /// <summary>
-    /// Mapea el resultado de la consulta a un objeto StaffType completo
+    /// Mapea el resultado de la consulta a StaffTypeDropdownItemResponse.
     /// </summary>
-    /// <param name="result">Resultado de la consulta</param>
-    /// <returns>Objeto StaffType mapeado</returns>
-    public static dynamic MapFromResult(dynamic result)
+    public static StaffTypeDropdownItemResponse? MapFromResult(dynamic result)
     {
-        try
-        {
-            if (result == null)
-            {
-                return new { };
-            }
-
-            return new
-            {
-                result.Id,
-                result.Name,
-                result.NameEn,
-                result.DisplayOrder,
-                result.IsActive,
-                result.CreatedAt,
-                result.UpdatedAt
-            };
-        }
-        catch (Exception ex)
-        {
-            // Log the error but return empty object to avoid breaking the application
-            return new { };
-        }
+        return MapListFromResult(result);
     }
 }
