@@ -28,6 +28,9 @@ public static class StaffMapper
                 MotherLastName = result.MotherLastName,
                 StaffClassificationName = result.StaffClassificationName,
                 PositionName = result.PositionName,
+                BirthDate = result.BirthDate,
+                Email = result.Email?.ToString(),
+                HasRelationships = result.HasRelationships ?? false,
                 IsActive = result.IsActive ?? false,
                 Comments = result.Comments
             };

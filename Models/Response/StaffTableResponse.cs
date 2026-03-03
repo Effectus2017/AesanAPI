@@ -13,6 +13,9 @@ public class StaffTableResponse
     public string? MotherLastName { get; set; }
     public string? StaffClassificationName { get; set; }
     public string? PositionName { get; set; }
+    public DateTime? BirthDate { get; set; }
+    public string? Email { get; set; }
+    public bool HasRelationships { get; set; }
     public bool IsActive { get; set; }
     public string? Comments { get; set; }
 }
