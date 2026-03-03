@@ -28,6 +28,8 @@ public static class StaffMapper
                 MotherLastName = result.MotherLastName,
                 StaffClassificationName = result.StaffClassificationName,
                 PositionName = result.PositionName,
+                StaffTypeName = result.StaffTypeName?.ToString(),
+                StaffTypeNameEn = result.StaffTypeNameEn?.ToString(),
                 BirthDate = result.BirthDate,
                 Email = result.Email?.ToString(),
                 HasRelationships = result.HasRelationships ?? false,

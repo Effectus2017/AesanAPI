@@ -13,8 +13,13 @@ public class StaffTableResponse
     public string? MotherLastName { get; set; }
     public string? StaffClassificationName { get; set; }
     public string? PositionName { get; set; }
+    // Se muetra en el modal de agregar relación
+    public string? StaffTypeName { get; set; }
+    // Se muetra en el modal de agregar relación
+    public string? StaffTypeNameEn { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? Email { get; set; }
+    // Se muestra en la tabla de miembros de la junta
     public bool HasRelationships { get; set; }
     public bool IsActive { get; set; }
     public string? Comments { get; set; }
