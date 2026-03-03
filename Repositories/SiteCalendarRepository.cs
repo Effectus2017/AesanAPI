@@ -148,7 +148,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@comment", request.Comment, DbType.String);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await dbConnection.ExecuteAsync("100_InsertSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("101_InsertSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
 
             var newId = parameters.Get<int?>("@id");
 
@@ -202,7 +202,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@comment", request.Comment, DbType.String);
             parameters.Add("@rowsAffected", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-            await dbConnection.ExecuteAsync("100_UpdateSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
+            await dbConnection.ExecuteAsync("101_UpdateSiteOperatingDay", parameters, commandType: CommandType.StoredProcedure);
 
             var rowsAffected = parameters.Get<int>("@rowsAffected");
             var success = rowsAffected > 0;
@@ -249,6 +249,13 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
 
             _logger.LogInformation("Actualización de día de funcionamiento {Id}: {Success}",
                 id, success ? "Exitosa" : "Fallida");
+
+            // Recalcular días de funcionamiento desde la API para asegurar que OperatingDaysCalculated
+            // refleje el cambio (p. ej. al marcar/desmarcar feriado) con datos ya persistidos
+            if (success && request.SiteId > 0)
+            {
+                await ReCalculateOperatingDays(request.SiteId);
+            }
 
             return success;
         }
@@ -321,7 +328,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@id", id, DbType.Int32);
 
             var result = await dbConnection.QuerySingleAsync<dynamic>(
-                "100_DeleteSiteOperatingDay",
+                "101_DeleteSiteOperatingDay",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -354,7 +361,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             parameters.Add("@siteId", siteId, DbType.Int32);
 
             await dbConnection.ExecuteAsync(
-                "100_ReCalculateSiteOperatingDays",
+                "101_RecalcOperatingDaysFromCalendar",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );

@@ -128,27 +128,12 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     slot.OperatingDates = bySlot.TryGetValue(key, out var dates) ? dates : new List<ServiceSlotOperatingDateDto>();
                 }
 
-                // Conteo real de días de funcionamiento en el calendario (SiteOperatingDays) en el rango del sitio
-                var countParams = new DynamicParameters();
-                countParams.Add("@siteid", id, DbType.Int32);
-                countParams.Add("@fromdate", operatingFrom.Value.Date, DbType.Date);
-                countParams.Add("@todate", operatingTo.Value.Date, DbType.Date);
-                var operatingDaysCount = await dbConnection.QuerySingleAsync<int>(
-                    "103_GetSiteOperatingDaysCountBySiteAndDateRange",
-                    countParams,
-                    commandType: CommandType.StoredProcedure);
-                data.OperatingDaysCalculated = operatingDaysCount;
+                // OperatingDaysCalculated NO se sobrescribe: viene de la tabla Site (105_GetSiteById)
+                // y es actualizado por 101_RecalcOperatingDaysFromCalendar (excluye feriados).
             }
             else
             {
-                // Sitio sin fechas de operación: conteo total de días activos (alineado con el calendario)
-                var countParams = new DynamicParameters();
-                countParams.Add("@siteid", id, DbType.Int32);
-                var operatingDaysCount = await dbConnection.QuerySingleAsync<int>(
-                    "107_GetSiteOperatingDaysCountBySite",
-                    countParams,
-                    commandType: CommandType.StoredProcedure);
-                data.OperatingDaysCalculated = operatingDaysCount;
+                // OperatingDaysCalculated NO se sobrescribe: viene de la tabla Site (105_GetSiteById).
             }
 
             // Agrupar slots por ChildGroupId y asignarlos a cada grupo
@@ -989,7 +974,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@siteId", siteId, DbType.Int32);
 
             var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>(
-                "100_SyncSiteOperatingDaysWithWeekPattern", 
+                "101_SyncSiteOperatingDaysWithWeekPattern", 
                 parameters, 
                 transaction, 
                 commandType: CommandType.StoredProcedure
