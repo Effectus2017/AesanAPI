@@ -353,6 +353,55 @@ public class EmailService(
     }
 
     /// <summary>
+    /// Envía un correo electrónico notificando un fallo al registrar la agencia
+    /// </summary>
+    /// <param name="email">Email del usuario</param>
+    /// <param name="fullName">Nombre completo del usuario</param>
+    /// <param name="agencyName">Nombre de la agencia intentada</param>
+    /// <param name="errorMessage">Mensaje de error que ocurrió en base de datos</param>
+    public async Task SendRegistrationFailureEmail(string email, string fullName, string agencyName, string errorMessage)
+    {
+        _logger.LogInformation("Enviando correo de fallo de registro de agencia a {Email}", email);
+
+        var variables = new Dictionary<string, string>
+        {
+            { "FullName", fullName },
+            { "Email", email },
+            { "AgencyName", agencyName },
+            { "ErrorMessage", errorMessage }
+        };
+
+        var template = await GetTemplateAndReplaceVariables("RegistrationFailure", variables);
+        if (template.HasValue)
+        {
+            await SendEmailWithGmail(email, template.Value.subject, template.Value.body, "RegistrationFailure", null, null, "RegistrationFailure");
+        }
+        else
+        {
+            var subject = "Aviso: Problema procesando su registro en AESAN";
+            var htmlBody = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <p>Estimado/a {fullName},</p>
+                    
+                    <p>Le notificamos que ha ocurrido un inconveniente al procesar su solicitud de registro para la agencia <strong>{agencyName}</strong>.</p>
+                    <p><strong>Detalles del error:</strong> {errorMessage}</p>
+                    
+                    <p>Para proteger la integridad de sus datos, todo el proceso de registro ha sido revertido de forma segura. Le pedimos que intente realizar la solicitud nuevamente en unos minutos. Si el problema persiste, por favor contáctenos compartiendo los detalles de este mensaje.</p>
+                    
+                    <p>Agradecemos sinceramente su interés en AESAN y le pedimos disculpas por los inconvenientes.</p>
+                    
+                    <p>Atentamente,<br>
+                    <strong>Equipo de Soporte de AESAN</strong><br>
+                    (787) 759-2000 / Exts. 4625751, 4625753
+                    </p>
+                </div>";
+
+            await SendEmailWithGmail(email, subject, htmlBody, "RegistrationFailure");
+        }
+        
+    }
+
+    /// <summary>
     /// Envía un correo electrónico notificando la asignación de una agencia a un usuario
     /// </summary>
     /// <param name="user">Usuario al que se le asignó la agencia</param>

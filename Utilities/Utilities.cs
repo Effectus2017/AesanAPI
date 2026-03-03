@@ -339,4 +339,30 @@ public static class Utilities
         // Incrementar el número de secuencia y formatear con ceros a la izquierda (2 dígitos)
         return (agencySiteCodes + 1).ToString("D2");
     }
+
+    /// <summary>
+    /// Calcula el número de días operativos en un rango de fechas que coinciden con los días de la semana seleccionados.
+    /// Sistema: 1=Lunes, 2=Martes, ..., 7=Domingo.
+    /// </summary>
+    public static int CalculateOperatingDaysCount(DateTime fromDate, DateTime toDate, List<int> selectedDayIds)
+    {
+        if (selectedDayIds == null || selectedDayIds.Count == 0)
+            return 0;
+
+        var start = fromDate.Date;
+        var end = toDate.Date;
+        if (start > end)
+            (start, end) = (end, start);
+
+        int count = 0;
+        for (var d = start; d <= end; d = d.AddDays(1))
+        {
+            // .NET DayOfWeek: Sunday=0, Monday=1, ..., Saturday=6 → Sistema: 1=Mon, ..., 7=Sun
+            int systemDay = d.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)d.DayOfWeek;
+            if (selectedDayIds.Contains(systemDay))
+                count++;
+        }
+
+        return count;
+    }
 }

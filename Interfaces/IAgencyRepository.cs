@@ -24,7 +24,7 @@ public interface IAgencyRepository
     /// Insertar
     /// ------------------------------------------------------------------------------------------------
     Task<int> InsertAgency(AgencyRequest agencyRequest);
-    Task<bool> InsertAgencyProgram(int agencyId, int programId);
+    Task<bool> InsertAgencyProgram(int agencyId, int programId, System.Data.IDbConnection? connection = null, System.Data.IDbTransaction? transaction = null);
 
     /// ------------------------------------------------------------------------------------------------
     /// Actualizar 

@@ -109,6 +109,20 @@ public class EmailServiceDecorator : IEmailService
         );
     }
 
+    public async Task SendRegistrationFailureEmail(string email, string fullName, string agencyName, string errorMessage)
+    {
+        await LogAndSendEmail(
+            email: email,
+            subject: "Fallo durante el registro de agencia",
+            message: $"Inconveniente registrando la agencia {agencyName}: {errorMessage}",
+            emailType: "RegistrationFailure",
+            userId: null,
+            agencyId: null,
+            emailTemplateKey: "RegistrationFailure",
+            sendAction: () => _emailService.SendRegistrationFailureEmail(email, fullName, agencyName, errorMessage)
+        );
+    }
+
     public async Task SendAgencyAssignmentEmail(DTOUser user, AgencyResponse agency)
     {
         await LogAndSendEmail(

@@ -1034,6 +1034,11 @@ public class UserRepository(UserManager<User> userManager,
             {
                 // Si falla la inserción, eliminar el usuario creado en Identity
                 await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
+                
+                // Notificar al usuario sobre el fallo
+                string errorMessage = "No fue posible crear el registro de la agencia en el sistema.";
+                await _emailService.SendRegistrationFailureEmail(model.Staff.Email, $"{model.Staff.FirstName} {model.Staff.FatherLastName}", model.Agency.Name, errorMessage);
+
                 return new BadRequestObjectResult(new { Message = "Error al insertar el usuario en la tabla Agency" });
             }
 
@@ -1089,6 +1094,15 @@ public class UserRepository(UserManager<User> userManager,
             {
                 await RemoveUserAndAgencyRelatedDataByUserId(user.Id);
             }
+
+            // Enviar correo de notificación de fallo
+            string errorMessage = "Error interno durante la creación de la agencia. Por favor, intente nuevamente o contacte a soporte si el problema persiste.";
+            if (ex.Message.Contains("FK__AgencyIns__TaxEx__2B947552") || ex.Message.Contains("El tipo de exención contributiva es incorrecto"))
+            {
+                errorMessage = "Hubo un problema con la selección de la exención contributiva. Por favor revise el formulario y vuelva a intentarlo.";
+            }
+            
+            await _emailService.SendRegistrationFailureEmail(model.Staff.Email, $"{model.Staff.FirstName} {model.Staff.FatherLastName}", model.Agency.Name, errorMessage);
 
             return new BadRequestObjectResult(new { Message = "Error al registrar usuario", Error = ex.Message });
         }
@@ -1823,6 +1837,13 @@ public class UserRepository(UserManager<User> userManager,
             if (agency != null)
             {
                 await _agencyRepository.DeleteAgency(agency.Id);
+            }
+
+            // Obtener y eliminar al miembro de Staff asociado
+            var staff = await _staffRepository.GetStaffByUserId(user.Id);
+            if (staff != null)
+            {
+                await _staffRepository.DeleteStaff(staff.Id);
             }
 
             // Finalmente, eliminar el usuario

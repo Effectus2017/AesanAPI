@@ -92,20 +92,20 @@ public class AgencyRequest
     public string? FederalFundsDeniedReason { get; set; }
     // ¿En qué estatus se encuentra su Exención Contributiva?
     // In what status is your Tax Exemption?
-    // En Proceso (3), Otorgado (4), Denegado (5)
-    public int TaxExemptionStatusId { get; set; } = 0;
+    // En Proceso (3), Otorgado (4), Denegado (5). Null cuando no aplica (ej. PACNA sin fines de lucro = No).
+    public int? TaxExemptionStatusId { get; set; }
     // ¿Qué tipo de Exención Contributiva tiene?
     // What type of Tax Exemption does it have?
     // Estatal (11), Federal (12)
-    public int TaxExemptionTypeId { get; set; } = 0;
+    public int? TaxExemptionTypeId { get; set; }
     // Tipo de Entidad
     // Type of Entity
     // Gobierno (13), Privado (14)
-    public int TypeOfEntityId { get; set; } = 0;
+    public int? TypeOfEntityId { get; set; }
     // Tipo de Solicitante
     // Type of Applicant
     // Laico (15), Base de fe (16)
-    public int TypeOfApplicantId { get; set; } = 0;
+    public int? TypeOfApplicantId { get; set; }
     // De poseer un contrato Público Alianza, especifique su modalidad
     // If you have a Public Alliance contract, please specify the type of contract
     // Socio-Económico (17), Híbrido (18)

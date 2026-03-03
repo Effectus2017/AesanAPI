@@ -386,7 +386,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("111_InsertAgency", parameters, commandType: CommandType.StoredProcedure);
+            
+            if (connection.State != ConnectionState.Open)
+            {
+                connection.Open();
+            }
+
+            using var transaction = connection.BeginTransaction();
+            await connection.ExecuteAsync("111_InsertAgency", parameters, transaction, commandType: CommandType.StoredProcedure);
 
             var agencyId = parameters.Get<int>("@id");
 
@@ -415,13 +422,15 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 agencyRequest.IsDayCareHomeId,
                 agencyRequest.ParticipatesInHeadStartProgramId,
                 agencyRequest.BoardMeetingsPerYear,
-                agencyRequest.BoardMeetsRegularly
+                agencyRequest.BoardMeetsRegularly,
+                connection,
+                transaction
             );
 
             // Insertar funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
             if (agencyRequest.BoardExecutiveAuthority != null && agencyRequest.BoardExecutiveAuthority.Count > 0)
             {
-                await InsertAgencyInscriptionBoardExecutiveAuthority(agencyInscriptionId, agencyRequest.BoardExecutiveAuthority);
+                await InsertAgencyInscriptionBoardExecutiveAuthority(agencyInscriptionId, agencyRequest.BoardExecutiveAuthority, connection, transaction);
             }
 
             // Asignar programas a la agencia
@@ -429,52 +438,20 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             {
                 foreach (var programId in agencyRequest.Programs)
                 {
-                    await InsertAgencyProgram(agencyId, programId);
+                    await InsertAgencyProgram(agencyId, programId, connection, transaction);
                 }
             }
 
+            // Confirmar la transacción
+            transaction.Commit();
+
             // Invalidar caché
-            await InvalidateCache(agencyId);
+            //await InvalidateCache(agencyId);
 
             return agencyId;
         }
         catch (Exception ex)
         {
-            // Verificar si es un error de duplicado desde el stored procedure
-            // Los stored procedures lanzan errores con códigos 50001 (IUE), 50002 (EIN), 50003 (SDR)
-            if (ex.Message.Contains("IUE") || ex.Message.Contains("EIN") || ex.Message.Contains("SDR") || 
-                ex.Message.Contains("ya está registrado"))
-            {
-                await _logger.LogError(ex, $"Intento de insertar agencia con identificador duplicado: {ex.Message}");
-                // Re-lanzar el mensaje original del stored procedure que ya es descriptivo
-                throw new Exception(ex.Message, ex);
-            }
-            
-            // Verificar si es una violación de constraint UNIQUE de la base de datos
-            // (por si alguien inserta directamente sin pasar por el stored procedure)
-            if (ex.Message.Contains("UNIQUE") || ex.Message.Contains("duplicate key") || 
-                ex.Message.Contains("UK_Agency_UieNumber") || ex.Message.Contains("UK_Agency_EinNumber") || 
-                ex.Message.Contains("UK_Agency_SdrNumber"))
-            {
-                string errorMessage = "El identificador proporcionado ya está registrado en el sistema.";
-                
-                if (ex.Message.Contains("UieNumber") || ex.Message.Contains("IUE"))
-                {
-                    errorMessage = $"El Identificador Único de Entidad (IUE) ya está registrado en el sistema.";
-                }
-                else if (ex.Message.Contains("EinNumber") || ex.Message.Contains("EIN"))
-                {
-                    errorMessage = $"El Número de Seguro Social Patronal (EIN) ya está registrado en el sistema.";
-                }
-                else if (ex.Message.Contains("SdrNumber") || ex.Message.Contains("SDR"))
-                {
-                    errorMessage = $"El Número de Registro del Departamento de Estado (SDR) ya está registrado en el sistema.";
-                }
-                
-                await _logger.LogError(ex, $"Intento de insertar agencia con identificador duplicado (constraint): {errorMessage}");
-                throw new Exception(errorMessage, ex);
-            }
-            
             await _logger.LogError(ex, $"Error inserting agency: {ex.Message}");
             throw new Exception($"Error al insertar la agencia: {ex.Message}", ex);
         }
@@ -492,7 +469,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="taxExemptionStatus">Estado de exención de impuestos</param>
     /// <param name="taxExemptionType">Tipo de exención de impuestos</param>
     /// <returns>El Id de la inscripción insertada</returns>
-    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int taxExemptionStatusId, int taxExemptionTypeId, int? typeOfEntityId, int? typeOfApplicantId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null)
+    public async Task<int> InsertAgencyInscription(int agencyId, bool nonProfit, bool federalFundsDenied, string? federalFundsDeniedReason, bool stateFundsDenied, string? stateFundsDeniedReason, bool basicEducationRegistry, bool extendedHours, DateTime? servicesOfferedSince, int? taxExemptionStatusId, int? taxExemptionTypeId, int? typeOfEntityId, int? typeOfApplicantId, int? publicAllianceContractId, bool nationalYouthProgram, int? isDayCareHomeId, int? participatesInHeadStartProgramId = null, int? boardMeetingsPerYear = null, bool? boardMeetsRegularly = null, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
         try
         {
@@ -523,8 +500,15 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@deadlineToCompleteRegistration", deadlineToCompleteRegistration);
             parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("112_InsertAgencyInscription", parameters, commandType: CommandType.StoredProcedure);
+            if (connection != null)
+            {
+                await connection.ExecuteAsync("113_InsertAgencyInscription", parameters, transaction, commandType: CommandType.StoredProcedure);
+            }
+            else
+            {
+                using var dbConnection = _context.CreateConnection();
+                await dbConnection.ExecuteAsync("113_InsertAgencyInscription", parameters, commandType: CommandType.StoredProcedure);
+            }
 
             return parameters.Get<int>("@id");
         }
@@ -545,29 +529,28 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <returns>True si se insertaron correctamente</returns>
     private async Task<bool> InsertAgencyInscriptionBoardExecutiveAuthority(int agencyInscriptionId, List<int> optionSelectionIds, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
-        var dbConnection = connection ?? _context.CreateConnection();
-        var shouldDisposeConnection = connection == null;
-
         try
         {
             var parameters = new DynamicParameters();
             parameters.Add("@agencyInscriptionId", agencyInscriptionId, DbType.Int32);
             parameters.Add("@optionSelectionIds", string.Join(",", optionSelectionIds), DbType.String);
 
-            await dbConnection.ExecuteAsync("100_InsertAgencyInscriptionBoardExecutiveAuthority", parameters, transaction, commandType: CommandType.StoredProcedure);
+            if (connection != null)
+            {
+                await connection.ExecuteAsync("100_InsertAgencyInscriptionBoardExecutiveAuthority", parameters, transaction, commandType: CommandType.StoredProcedure);
+            }
+            else
+            {
+                using var dbConnection = _context.CreateConnection();
+                await dbConnection.ExecuteAsync("100_InsertAgencyInscriptionBoardExecutiveAuthority", parameters, commandType: CommandType.StoredProcedure);
+            }
+
             return true;
         }
         catch (Exception ex)
         {
             await _logger.LogError(ex, $"Error al insertar funciones de autoridad de la Junta de Directores para la inscripción {agencyInscriptionId}: {ex.Message}");
             throw new Exception($"Error al insertar funciones de autoridad de la Junta de Directores: {ex.Message}", ex);
-        }
-        finally
-        {
-            if (shouldDisposeConnection)
-            {
-                dbConnection.Dispose();
-            }
         }
     }
 
@@ -577,17 +560,26 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <param name="agencyId">Id de la agencia</param>
     /// <param name="programId">Id del programa</param>
     /// <returns>True si se asignó correctamente</returns>
-    public async Task<bool> InsertAgencyProgram(int agencyId, int programId)
+    public async Task<bool> InsertAgencyProgram(int agencyId, int programId, IDbConnection? connection = null, IDbTransaction? transaction = null)
     {
         try
         {
-            using IDbConnection dbConnection = _context.CreateConnection();
 
             var parameters = new DynamicParameters();
             parameters.Add("@agencyId", agencyId);
             parameters.Add("@programId", programId);
 
-            var rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_InsertAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            int rowsAffected;
+            if (connection != null)
+            {
+                rowsAffected = await connection.QueryFirstOrDefaultAsync<int>("100_InsertAgencyProgram", parameters, transaction, commandType: CommandType.StoredProcedure);
+            }
+            else
+            {
+                using var dbConnection = _context.CreateConnection();
+                rowsAffected = await dbConnection.QueryFirstOrDefaultAsync<int>("100_InsertAgencyProgram", parameters, commandType: CommandType.StoredProcedure);
+            }
+
             return rowsAffected > 0;
         }
         catch (Exception ex)
@@ -618,15 +610,19 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             }
 
             var currentEvaluatorUserId = await GetEvaluatorUserIdByAgencyId(agencyId);
+            
             Staff? currentEvaluatorStaff = null;
+            
             if (currentEvaluatorUserId != null)
             {
                 using IDbConnection conn = _context.CreateConnection();
                 currentEvaluatorStaff = await conn.QueryFirstOrDefaultAsync<Staff>(
-                    "SELECT Id, FirstName, FatherLastName, Email, UserId FROM Staff WHERE UserId = @userId",
-                    new { userId = currentEvaluatorUserId }
+                    "100_GetStaffByUserId",
+                    new { userId = currentEvaluatorUserId },
+                    commandType: CommandType.StoredProcedure
                 );
             }
+
             int? currentEvaluatorStaffId = currentEvaluatorStaff?.Id;
 
             var parameters = new DynamicParameters();
@@ -836,6 +832,11 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                                 fullName = "Usuario";
                             }
 
+                            var userIds = await dbConnection.QueryAsync<string>(
+                                "100_GetAgencyActiveProgramsUserIds",
+                                new { agencyId },
+                                commandType: CommandType.StoredProcedure
+                            );
                             // Crear un User temporal para SendApprovalSponsorEmail
                             var User = new User
                             {
@@ -1143,8 +1144,9 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@agencyId", agencyId, DbType.Int32);
 
             var evaluatorUserId = await dbConnection.QueryFirstOrDefaultAsync<string>(
-                "SELECT TOP 1 UserId FROM AgencyUsers WHERE AgencyId = @agencyId AND AgencyAssignmentType LIKE 'NUTRE_%' AND IsActive = 1",
-                parameters
+                "100_GetEvaluatorUserIdByAgencyId",
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
 
             if (!string.IsNullOrEmpty(evaluatorUserId))
@@ -1180,23 +1182,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             using IDbConnection dbConnection = _context.CreateConnection();
 
             // 1. Obtener evaluadores asignados directamente a la agencia
-            // Desde AgencyUsers con AgencyAssignmentType LIKE 'NUTRE_%' y rol "Evaluador"
-            var agencyEvaluatorsQuery = @"
-                SELECT DISTINCT au.UserId
-                FROM AgencyUsers au
-                    INNER JOIN AspNetUserRoles ur ON au.UserId = ur.UserId
-                    INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-                WHERE au.AgencyId = @agencyId
-                    AND au.AgencyAssignmentType LIKE 'NUTRE_%'
-                    AND au.IsActive = 1
-                    AND r.Name = 'Evaluador'";
-
-            var agencyEvaluators = await dbConnection.QueryAsync<string>(
-                agencyEvaluatorsQuery,
-                new { agencyId }
+            var administrators = await dbConnection.QueryAsync<string>(
+                "100_GetAgencyAdministratorUserIds",
+                new { agencyId },
+                commandType: CommandType.StoredProcedure
             );
-
-            foreach (var userId in agencyEvaluators)
+            foreach (var userId in administrators)
             {
                 if (!string.IsNullOrEmpty(userId))
                 {
@@ -1207,14 +1198,12 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             _logger.LogInformation($"Se encontraron {evaluatorUserIds.Count} evaluadores asignados directamente a la agencia {agencyId}");
 
             // 2. Obtener todos los programas de la agencia
-            var programsQuery = @"
-                SELECT DISTINCT ProgramId
-                FROM AgencyProgram
-                WHERE AgencyId = @agencyId
-                    AND IsActive = 1";
-
-            var programIds = await dbConnection.QueryAsync<int>(programsQuery, new { agencyId });
-            var programIdList = programIds.ToList();
+            var programs = await dbConnection.QueryAsync<int>(
+                "100_GetAgencyProgramsByAgencyId",
+                new { agencyId },
+                commandType: CommandType.StoredProcedure
+            );
+            var programIdList = programs.ToList();
 
             _logger.LogInformation($"La agencia {agencyId} tiene {programIdList.Count} programas activos");
 
@@ -1222,19 +1211,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             // Desde UserProgram con IsActive = 1 y rol "Evaluador"
             if (programIdList.Any())
             {
-                var programEvaluatorsQuery = @"
-                    SELECT DISTINCT up.UserId
-                    FROM UserProgram up
-                        INNER JOIN AspNetUsers u ON up.UserId = u.Id
-                        INNER JOIN AspNetUserRoles ur ON u.Id = ur.UserId
-                        INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
-                    WHERE up.ProgramId IN @programIds
-                        AND up.IsActive = 1
-                        AND r.Name = 'Evaluador'";
-
                 var programEvaluators = await dbConnection.QueryAsync<string>(
-                    programEvaluatorsQuery,
-                    new { programIds = programIdList }
+                    "100_GetProgramEvaluators",
+                    new { programIds = string.Join(",", programIdList) },
+                    commandType: CommandType.StoredProcedure
                 );
 
                 foreach (var userId in programEvaluators)

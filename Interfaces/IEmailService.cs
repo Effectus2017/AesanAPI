@@ -11,6 +11,7 @@ public interface IEmailService
     Task SendWelcomeAgencyEmail(UserAgencyRequest userRequest, string temporaryPassword, string? userId = null);
     Task SendApprovalSponsorEmail(User userRequest, string temporaryPassword, string? fullName = null);
     Task SendDenialSponsorEmail(string email, string fullName, string rejectionReason);
+    Task SendRegistrationFailureEmail(string email, string fullName, string agencyName, string errorMessage);
     Task SendAgencyAssignmentEmail(DTOUser user, AgencyResponse agency);
     Task SendAgencyUnassignmentEmail(DTOUser user, AgencyResponse agency);
     Task SendPasswordChangedEmail(DTOUser user, string newPassword);
