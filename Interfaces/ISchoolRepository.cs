@@ -37,5 +37,5 @@ public interface ISchoolRepository
     /// <summary>
     /// Obtiene todas las escuelas de una agencia específica con paginación y filtros
     /// </summary>
-    Task<dynamic> GetSchoolsByAgencyId(int agencyId, int take, int skip, string? name);
+    Task<dynamic> GetSchoolsByAgencyId(int agencyId, int take, int skip, string? name, bool? isActive, string? schoolCode);
 }

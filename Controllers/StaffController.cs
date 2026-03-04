@@ -309,7 +309,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
 
             var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(
                 queryParameters.StaffId,
-                queryParameters.IsActive);
+                queryParameters.IsActive ?? true);
 
             if (result)
             {

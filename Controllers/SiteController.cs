@@ -260,7 +260,7 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
 
             var result = await _unitOfWork.SiteRepository.UpdateSiteActiveStatus(
                 queryParameters.SiteId.Value,
-                queryParameters.IsActive,
+                queryParameters.IsActive ?? true,
                 queryParameters.InactiveJustification,
                 queryParameters.InactiveDate,
                 queryParameters.ProvidedRationsService);

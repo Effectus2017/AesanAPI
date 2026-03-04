@@ -37,7 +37,7 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
 
                 _logger.LogInformation("Obteniendo relaciones del empleado con ID: {Id}", queryParameters.Id);
 
-                var relationships = await _staffRelationshipRepository.GetRelationshipsByStaffId(queryParameters.Id, queryParameters.IsActive);
+                var relationships = await _staffRelationshipRepository.GetRelationshipsByStaffId(queryParameters.Id, queryParameters.IsActive ?? true);
                 return Ok(relationships);
             }
 

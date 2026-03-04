@@ -215,7 +215,9 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
                 queryParameters.AgencyId,
                 queryParameters.Take,
                 queryParameters.Skip,
-                queryParameters.Name);
+                queryParameters.Name,
+                queryParameters.IsActive,
+                queryParameters.SchoolCode);
 
             if (result == null)
             {

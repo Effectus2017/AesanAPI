@@ -235,7 +235,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             // Usar nuevo SP con nueva lógica de acceso (misma convención que Staff: TableResponse/DropdownItemResponse + PagedResult)
             if (isList)
             {
-                using var result = await dbConnection.QueryMultipleAsync("119_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("120_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -254,7 +254,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                 List<DTOStaff> agenciesAssignedUsers = [];
                 int count = 0;
 
-                using var result = await dbConnection.QueryMultipleAsync("119_GetAgencies", param, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("120_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
