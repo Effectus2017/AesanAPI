@@ -5,9 +5,9 @@
 -- MinimumMinutesToNextService: 10 min por regulación (configurable por programa/servicio)
 -- =============================================
 
--- PDAM (ProgramId=1): Desayuno(1), Almuerzo(2) fuerte, Merienda Matutina(3), Merienda Vespertina(5)
+-- PDAM (ProgramId=1): Desayuno(1), Almuerzo(2) fuerte, Merienda Vespertina(5)
 INSERT INTO [dbo].[ServiceTypeProgram] (ServiceTypeId, ProgramId, IsStrongService, MinimumMinutesToNextService, DisplayOrder, IsActive)
-VALUES (1, 1, 0, 10, 1, 1), (2, 1, 1, 10, 2, 1), (3, 1, 0, 10, 3, 1), (5, 1, 0, 10, 4, 1);
+VALUES (1, 1, 0, 10, 1, 1), (2, 1, 1, 10, 2, 1), (5, 1, 0, 10, 3, 1);
 
 -- PSAV (ProgramId=2): Desayuno(1), Almuerzo(2) fuerte, SnackAM(3), Cena(4) fuerte, SnackPM(5)
 INSERT INTO [dbo].[ServiceTypeProgram] (ServiceTypeId, ProgramId, IsStrongService, MinimumMinutesToNextService, DisplayOrder, IsActive)
