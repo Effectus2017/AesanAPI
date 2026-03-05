@@ -44,7 +44,7 @@ public static class StaffMapper
     }
 
     /// <summary>
-    /// Mapea un resultado dinámico a StaffDropdownItemResponse (Id, Name, IsActive) para dropdowns.
+    /// Mapea un resultado dinámico a StaffDropdownItemResponse (Id, Name, StaffType, IsActive) para dropdowns.
     /// </summary>
     public static StaffDropdownItemResponse? MapDropdownItemFromResult(dynamic result)
     {
@@ -53,14 +53,15 @@ public static class StaffMapper
             if (result == null)
                 return null;
 
-            var firstName = result.FirstName?.ToString() ?? string.Empty;
-            var fatherLastName = result.FatherLastName?.ToString() ?? string.Empty;
-            var name = string.IsNullOrWhiteSpace(fatherLastName) ? firstName : $"{firstName} {fatherLastName}".Trim();
-
             return new StaffDropdownItemResponse
             {
                 Id = result.Id,
-                Name = name,
+                FirstName = result.FirstName?.ToString() ?? string.Empty,
+                MiddleName = result.MiddleName?.ToString(),
+                FatherLastName = result.FatherLastName?.ToString() ?? string.Empty,
+                MotherLastName = result.MotherLastName?.ToString(),
+                StaffTypeName = result.StaffTypeName?.ToString(),
+                StaffTypeNameEn = result.StaffTypeNameEn?.ToString(),
                 IsActive = result.IsActive ?? true
             };
         }

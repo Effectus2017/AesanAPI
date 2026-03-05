@@ -182,6 +182,11 @@ VALUES
     ('Niños caminantes', 'Homeless Children', 'walkers', 0, 1, 580),
     ('Sin hogar', 'Homeless', 'walkers', 0, 1, 590);
 
+INSERT INTO OptionSelection
+    (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)
+VALUES
+    ('N/A', 'N/A', 'walkers', 0, 1, 591);
+
 -- Servicios que operara y horario
 INSERT INTO OptionSelection
     (Name, NameEN, OptionKey, BooleanValue, IsActive, DisplayOrder)

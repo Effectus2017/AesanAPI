@@ -20,7 +20,7 @@ BEGIN
     DECLARE @GroupTypeConsumeInterno INT = (SELECT Id FROM GroupType WHERE Name = N'Consume en Comedor-Grupo Interno');
     DECLARE @GroupTypeDomicilio INT = (SELECT Id FROM GroupType WHERE Name = N'Domicilio');
     DECLARE @GroupTypeNonCongregate INT = (SELECT Id FROM GroupType WHERE Name = N'Non-Congregate');
-    DECLARE @GroupTypeServiExpreso INT = (SELECT Id FROM GroupType WHERE Name = N'Servi-Expreso/Carro');
+    DECLARE @GroupTypeServiExpreso INT = (SELECT Id FROM GroupType WHERE Name = N'Servi-Expreso');
     DECLARE @GroupTypeServicioCamiones INT = (SELECT Id FROM GroupType WHERE Name = N'Servicio en Camiones');
 
     IF @GroupTypeNA IS NOT NULL AND NOT EXISTS (SELECT 1 FROM KitchenTypeGroupType WHERE KitchenTypeId = @KitchenTypeCGA AND GroupTypeId = @GroupTypeNA)

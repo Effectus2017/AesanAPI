@@ -47,7 +47,7 @@ FROM GroupType
 WHERE Name = 'Servi-Carro');
 DECLARE @GroupTypeServiExpresoCarro INT = (SELECT Id
 FROM GroupType
-WHERE Name = 'Servi-Expreso/Carro');
+WHERE Name = 'Servi-Expreso');
 
 -- Obtener IDs de GroupType para PACNA
 DECLARE @GroupTypeSalones INT = (SELECT Id
