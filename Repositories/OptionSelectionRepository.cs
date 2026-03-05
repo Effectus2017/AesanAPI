@@ -59,8 +59,11 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// <param name="optionKey">The option key to filter by/La clave de opción para filtrar</param>
     /// <param name="names">Los nombres de las opciones a obtener</param>
     /// <param name="isList">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
+    /// <param name="sortByNameKeys">Option keys a ordenar por nombre (según language). Comma-separated.</param>
+    /// <param name="sortByNameENKeys">Option keys a ordenar por NameEN. Comma-separated.</param>
+    /// <param name="language">Idioma para sortByNameKeys: "en" usa NameEN, sino Name.</param>
     /// <returns>List of option selections matching the key/Lista de selecciones de opción que coinciden con la clave</returns>
-    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false)
+    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false, string? sortByNameKeys = null, string? sortByNameENKeys = null, string? language = null)
     {
         try
         {
@@ -68,7 +71,10 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             var parameters = new DynamicParameters();
             parameters.Add("@optionKey", optionKey, DbType.String);
             parameters.Add("@names", names, DbType.String);
-            var result = await db.QueryMultipleAsync("100_GetOptionSelectionByOptionKey", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("@sortByNameKeys", sortByNameKeys, DbType.String);
+            parameters.Add("@sortByNameENKeys", sortByNameENKeys, DbType.String);
+            parameters.Add("@language", language, DbType.String);
+            var result = await db.QueryMultipleAsync("101_GetOptionSelectionByOptionKey", parameters, commandType: CommandType.StoredProcedure);
             var data = await result.ReadAsync<DTOOptionSelection>();
 
             if (data == null || !data.Any())

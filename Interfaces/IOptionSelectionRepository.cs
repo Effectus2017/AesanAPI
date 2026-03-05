@@ -13,13 +13,16 @@ public interface IOptionSelectionRepository
     Task<dynamic> GetOptionSelectionById(int id);
 
     /// <summary>
-    /// Obtiene una selección de opción por su clave
+    /// Obtiene una selección de opción por su clave (usa SP 101_ con orden configurable).
     /// </summary>
     /// <param name="optionKey">La clave de la selección de opción</param>
     /// <param name="names">Los nombres de las opciones a obtener</param>
     /// <param name="isList">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
+    /// <param name="sortByNameKeys">Option keys a ordenar por nombre (según language). Comma-separated.</param>
+    /// <param name="sortByNameENKeys">Option keys a ordenar por NameEN. Comma-separated.</param>
+    /// <param name="language">Idioma para sortByNameKeys: "en" usa NameEN, sino Name.</param>
     /// <returns>La selección de opción encontrada o null si no se encuentra</returns>
-    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false);
+    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false, string? sortByNameKeys = null, string? sortByNameENKeys = null, string? language = null);
 
     /// <summary>
     /// Obtiene todas las selecciones de opciones

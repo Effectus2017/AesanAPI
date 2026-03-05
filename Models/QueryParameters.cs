@@ -47,6 +47,12 @@ public class QueryParameters
     public string? Description { get; set; } // Descripción del archivo
     public string? OptionType { get; set; } // Tipo de opción
     public string? OptionKey { get; set; } // Clave de la opción
+    /// <summary>Option keys to sort by name (current language). Comma-separated (e.g. "community,experience").</summary>
+    public string? SortByNameKeys { get; set; }
+    /// <summary>Option keys to sort by NameEN. Comma-separated.</summary>
+    public string? SortByNameENKeys { get; set; }
+    /// <summary>Language for SortByNameKeys: "en" uses NameEN, otherwise Name.</summary>
+    public string? Language { get; set; }
     public string? TemplateKey { get; set; } // Clave del template de email
     public string? CurrentUserId { get; set; } // ID del usuario actual logueado
     public bool? IsPropietary { get; set; } // Si es agencia propietaria (NUTRE)

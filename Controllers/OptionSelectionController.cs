@@ -107,7 +107,13 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
         {
             if (ModelState.IsValid)
             {
-                var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(queryParameters.OptionKey, queryParameters.Names, queryParameters.IsList);
+                var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(
+                    queryParameters.OptionKey,
+                    queryParameters.Names,
+                    queryParameters.IsList,
+                    queryParameters.SortByNameKeys,
+                    queryParameters.SortByNameENKeys,
+                    queryParameters.Language);
 
                 if (result == null)
                 {
