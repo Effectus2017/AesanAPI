@@ -129,10 +129,9 @@ public class StaffRepository(
 
             if (isList)
             {
-                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
+                var result = await dbConnection.QueryMultipleAsync("101_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
-                if (result == null)
-                    return null;
+                if (result == null) { return new List<StaffDropdownItemResponse>(); }
 
                 var data = result.Read<dynamic>()
                     .Select(_mappingService.MapStaffDropdownItem)
@@ -142,10 +141,9 @@ public class StaffRepository(
             }
             else
             {
-                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaff", param, commandType: CommandType.StoredProcedure);
+                var result = await dbConnection.QueryMultipleAsync("101_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
-                if (result == null)
-                    return null;
+                if (result == null) { return new PagedResult<StaffTableResponse> { Data = [], Count = 0 }; }
 
                 var data = result.Read<dynamic>()
                     .Select(_mappingService.MapStaffList)
