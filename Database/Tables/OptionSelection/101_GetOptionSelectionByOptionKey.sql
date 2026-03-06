@@ -87,6 +87,14 @@ BEGIN
     ORDER BY
         OptionKey,
         CASE
+            WHEN OptionKey IN (SELECT OptionKey FROM #SortByNameKeys) OR OptionKey IN (SELECT OptionKey FROM #SortByNameENKeys) THEN
+                CASE 
+                    WHEN Name = 'N/A' OR NameEN = 'N/A' THEN 0
+                    ELSE 1
+                END
+            ELSE 0
+        END,
+        CASE
             WHEN OptionKey IN (SELECT OptionKey FROM #SortByNameKeys) AND @language = 'en' THEN NameEN
             WHEN OptionKey IN (SELECT OptionKey FROM #SortByNameKeys) THEN Name
             WHEN OptionKey IN (SELECT OptionKey FROM #SortByNameENKeys) THEN NameEN

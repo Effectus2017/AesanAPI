@@ -21,7 +21,7 @@ VALUES
 INSERT INTO "GroupType"
     ("name", "nameEN", "isActive", "displayOrder")
 VALUES
-    ('Non-Congregate', 'Non-Congregate', 1, 6);
+    ('No Congregado', 'Non-Congregate', 1, 6);
 INSERT INTO "GroupType"
     ("name", "nameEN", "isActive", "displayOrder")
 VALUES

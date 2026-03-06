@@ -65,13 +65,11 @@ public class SiteRequest
     /// <summary>
     /// Inicio de la primera clase académica (Horario Académico PDAM)
     /// </summary>
-    [Required(ErrorMessage = "El inicio de la primera clase académica es requerido")]
     public TimeSpan? FirstAcademicClassStartTime { get; set; }
 
     /// <summary>
     /// Finalización de la última clase académica (Horario Académico PDAM)
     /// </summary>
-    [Required(ErrorMessage = "La finalización de la última clase académica es requerida")]
     public TimeSpan? LastAcademicClassEndTime { get; set; }
 
     /// <summary>
