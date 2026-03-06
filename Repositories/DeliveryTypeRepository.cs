@@ -207,19 +207,21 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     }
 
     /// <summary>
-    /// Obtiene los tipos de entrega válidos para un tipo de grupo específico.
+    /// Obtiene los tipos de entrega válidos para un tipo de grupo específico, opcionalmente filtrados por programa.
     /// </summary>
     /// <param name="groupTypeId">El ID del tipo de grupo.</param>
+    /// <param name="programId">El ID del programa (opcional). Si se especifica, solo devuelve tipos de entrega válidos para ese programa.</param>
     /// <returns>Los tipos de entrega válidos para el tipo de grupo con información de RequiresPermission.</returns>
-    public async Task<dynamic> GetDeliveryTypesByGroupType(int groupTypeId)
+    public async Task<dynamic> GetDeliveryTypesByGroupType(int groupTypeId, int? programId = null)
     {
         try
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@groupTypeId", groupTypeId, DbType.Int32);
+            parameters.Add("@grouptypeid", groupTypeId, DbType.Int32);
+            parameters.Add("@programid", programId, DbType.Int32);
 
-            var result = await db.QueryAsync<DeliveryTypeResponse>("100_GetDeliveryTypesByGroupType", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryAsync<DeliveryTypeResponse>("101_GetDeliveryTypesByGroupType", parameters, commandType: CommandType.StoredProcedure);
             return result.ToList();
         }
         catch (Exception ex)

@@ -234,7 +234,7 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
                     return BadRequest("El ID del tipo de grupo es requerido");
                 }
 
-                var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId);
+                var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId);
 
                 return Ok(result);
             }

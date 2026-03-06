@@ -96,12 +96,6 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
         {
             if (ModelState.IsValid)
             {
-                var academicRangeError = ValidateAcademicTimesWithinOperatingHours(request);
-                if (academicRangeError != null)
-                {
-                    return BadRequest(academicRangeError);
-                }
-
                 var result = await _unitOfWork.SiteRepository.InsertSite(request);
 
                 if (result)
@@ -144,12 +138,6 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
 
             if (ModelState.IsValid)
             {
-                var academicRangeError = ValidateAcademicTimesWithinOperatingHours(request);
-                if (academicRangeError != null)
-                {
-                    return BadRequest(academicRangeError);
-                }
-
                 var result = await _unitOfWork.SiteRepository.UpdateSite(request);
 
                 if (result)
@@ -359,47 +347,5 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
             _logger.LogError(ex, "Error al actualizar el estado activo del sitio {SiteId}: {Message}", queryParameters.SiteId, ex.Message);
             return StatusCode(500, ex.Message);
         }
-    }
-
-    /// <summary>
-    /// Valida que las horas académicas (FirstAcademicClassStartTime, LastAcademicClassEndTime) estén dentro del rango de funcionamiento (OperatingStartTime, OperatingEndTime).
-    /// </summary>
-    /// <returns>Objeto con mensaje de error para BadRequest, o null si la validación es correcta.</returns>
-    private static object? ValidateAcademicTimesWithinOperatingHours(SiteRequest request)
-    {
-        var hasAcademicStart = request.FirstAcademicClassStartTime.HasValue;
-        var hasAcademicEnd = request.LastAcademicClassEndTime.HasValue;
-        if (!hasAcademicStart && !hasAcademicEnd)
-        {
-            return null;
-        }
-
-        if (!request.OperatingStartTime.HasValue || !request.OperatingEndTime.HasValue)
-        {
-            return new { message = "Las horas de clase académica deben estar dentro del horario de funcionamiento del sitio." };
-        }
-
-        var operatingStart = request.OperatingStartTime.Value;
-        var operatingEnd = request.OperatingEndTime.Value;
-
-        if (hasAcademicStart)
-        {
-            var start = request.FirstAcademicClassStartTime!.Value;
-            if (start < operatingStart || start > operatingEnd)
-            {
-                return new { message = "Las horas de clase académica deben estar dentro del horario de funcionamiento del sitio." };
-            }
-        }
-
-        if (hasAcademicEnd)
-        {
-            var end = request.LastAcademicClassEndTime!.Value;
-            if (end < operatingStart || end > operatingEnd)
-            {
-                return new { message = "Las horas de clase académica deben estar dentro del horario de funcionamiento del sitio." };
-            }
-        }
-
-        return null;
     }
 }
