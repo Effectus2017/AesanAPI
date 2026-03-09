@@ -2326,7 +2326,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         if (!comedorId.HasValue || request.GroupTypeId != comedorId.Value)
         {
             throw new SiteValidationException(
-                "FirstSiteMustBeComedor",
+                "FIRST_SITE_MUST_BE_COMEDOR",
                 "El primer sitio de la escuela debe ser de tipo Comedor.");
         }
     }
@@ -2367,7 +2367,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         if (!comedorRange.HasValue)
         {
             throw new SiteValidationException(
-                "SchoolMustHaveComedorFirst",
+                "SCHOOL_MUST_HAVE_COMEDOR_FIRST",
                 "La escuela debe tener un sitio Comedor antes de agregar otros sitios. El primer sitio de la escuela debe ser de tipo Comedor.");
         }
 
@@ -2390,7 +2390,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         if (fromDate < fromLimit || toDate > toLimit)
         {
             var message = $"Las fechas de funcionamiento del sitio deben estar dentro del periodo del Comedor de la escuela ({fromLimit:yyyy-MM-dd} a {toLimit:yyyy-MM-dd}).";
-            throw new SiteValidationException("SiteDatesOutsideComedorRange", message);
+            throw new SiteValidationException("SITE_DATES_OUTSIDE_COMEDOR_RANGE", message);
         }
     }
 
@@ -2414,7 +2414,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             var programNames = string.Join(", ", programIdsToCheck.Select(p => p == 1 ? "PDAM" : p == 2 ? "PSAV" : "PACNA"));
             throw new SiteValidationException(
-                "MissingStrongService",
+                "MISSING_STRONG_SERVICE",
                 $"Para {programNames} debe incluir al menos uno de los siguientes servicios: Almuerzo o Cena (según programa). Incluya al menos uno en su selección.");
         }
 
@@ -2434,7 +2434,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 var names = string.Join(", ", typesByProgram.Where(t => t.IsStrongService).Select(t => t.Name));
                 var programName = programId == 1 ? "PDAM" : programId == 2 ? "PSAV" : "PACNA";
                 throw new SiteValidationException(
-                    "MissingStrongService",
+                    "MISSING_STRONG_SERVICE",
                     $"Para el programa {programName} debe incluir al menos uno de los siguientes servicios: {names}. Incluya al menos uno en su selección.");
             }
         }
@@ -2491,7 +2491,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                         var nameA = nameByType.TryGetValue(typeA, out var nA) ? nA : $"Servicio {typeA}";
                         var nameB = nameByType.TryGetValue(typeB, out var nB) ? nB : $"Servicio {typeB}";
                         throw new SiteValidationException(
-                            "InsufficientTimeBetweenServices",
+                            "INSUFFICIENT_TIME_BETWEEN_SERVICES",
                             $"Entre {nameA} y {nameB} debe haber al menos {minMinutes} minutos. Ajuste los horarios.");
                     }
                 }

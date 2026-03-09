@@ -67,7 +67,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
             var staff = await _unitOfWork.StaffRepository.GetAllStaffFromDb(
                 queryParameters.Take,
                 queryParameters.Skip,
-                queryParameters.Names,
+                queryParameters.Name,
                 queryParameters.Alls,
                 queryParameters.ExcludeRelated,
                 queryParameters.IsList,
@@ -342,7 +342,7 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
                 queryParameters.AgencyId,
                 queryParameters.Take,
                 queryParameters.Skip,
-                queryParameters.Names,
+                queryParameters.Name,
                 queryParameters.StaffTypeId
             );
 
