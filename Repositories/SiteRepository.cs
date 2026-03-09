@@ -344,18 +344,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await InsertSiteEducationLevels(siteId, educationLevelIds, dbConnection, transaction);
             }
 
-            // Insertar información de Day Care Home solo si el sitio es un Hogar (IsDayCareHomeId = "Sí")
-            // Determinar si es un hogar basándose en IsDayCareHomeId
-            bool isDayCareHome = false;
-            if (request.IsDayCareHomeId.HasValue)
-            {
-                // Necesitamos verificar si el IsDayCareHomeId corresponde a "Sí"
-                // Esto se puede hacer consultando OptionSelection o pasando un flag desde el frontend
-                // Por ahora, asumimos que si IsDayCareHomeId tiene valor y DayCareHome no es null, es un hogar
-                isDayCareHome = request.DayCareHome != null;
-            }
-
-            if (isDayCareHome)
+            // Insertar información de Day Care Home
+            if (request.DayCareHome != null)
             {
                 await InsertSiteDayCareHome(siteId, request, dbConnection, transaction);
             }
