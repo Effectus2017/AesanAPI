@@ -1,19 +1,5 @@
 -- =============================================
--- Stored Procedure: 100_DeleteSiteChildGroupsBySiteId
--- Descripción: Elimina todos los grupos de niños de un sitio
--- Reemplaza: 100_DeleteSchoolChildGroupsBySchoolId
--- Fecha: 2025-01-15
--- Versión: 1.0
+-- DEPRECATED: El procedimiento se elimina con 105_DropDeleteSiteChildGroupsBySiteId.
+-- El flujo de update usa merge (100_UpdateSiteChildGroup, 100_DeleteSiteChildGroupById).
+-- Este archivo se mantiene por orden de migración; no crea el SP.
 -- =============================================
-
-CREATE OR ALTER PROCEDURE [dbo].[100_DeleteSiteChildGroupsBySiteId]
-    @siteId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM SiteChildGroup WHERE SiteId = @siteId;
-
-    -- Retornar el número de filas afectadas
-    RETURN @@ROWCOUNT;
-END;

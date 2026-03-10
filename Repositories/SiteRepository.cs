@@ -710,16 +710,17 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         using var dbConnection = _context.CreateConnection();
         try
         {
-            var childGroupIds = await UpdateSiteChildGroups(siteId, childGroups, dbConnection);
+            var (newGroupIds, newChildGroups) = await UpdateSiteChildGroupsMerge(siteId, childGroups, dbConnection);
 
             // No ejecutar SyncSiteOperatingDaysWithWeekPattern aquí: al guardar solo grupos/servicios
             // desde el modal no se debe tocar el calendario, para no eliminar días extra agregados
             // manualmente desde el calendario (IsManuallyAdded=1). El Sync solo se ejecuta en UpdateSite
             // cuando cambia el patrón de días de la semana.
 
-            if (operatingFrom.HasValue && operatingTo.HasValue && childGroups.Count > 0 && childGroupIds != null && childGroupIds.Count == childGroups.Count)
+            // Solo crear SiteOperatingDayService para grupos nuevos (merge preserva los existentes)
+            if (operatingFrom.HasValue && operatingTo.HasValue && newGroupIds != null && newGroupIds.Count > 0 && newChildGroups != null && newChildGroups.Count == newGroupIds.Count)
             {
-                await ReplaceServicesForOperatingDaysBySlot(siteId, operatingFrom.Value, operatingTo.Value, childGroupIds, childGroups, dbConnection);
+                await ReplaceServicesForOperatingDaysBySlot(siteId, operatingFrom.Value, operatingTo.Value, newGroupIds, newChildGroups, dbConnection);
             }
 
             _logger.LogInformation("Grupos de niños actualizados para el sitio {SiteId}", siteId);
@@ -1260,75 +1261,91 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     }
 
     /// <summary>
-    /// Actualiza los grupos de niños específicos para un sitio y sus servicios asociados
+    /// Actualiza los grupos de niños con estrategia merge: actualiza existentes (por Id), inserta nuevos, elimina los quitados del request.
+    /// No borra masivamente; preserva SiteOperatingDayService de grupos existentes y solo actualiza sus horarios.
     /// </summary>
-    /// <param name="siteId">ID del sitio</param>
-    /// <param name="childGroups">Lista de grupos de niños con sus servicios</param>
-    /// <param name="connection">Conexión a la base de datos</param>
-    /// <param name="transaction">Transacción</param>
-    /// <returns>Lista de IDs de los grupos insertados</returns>
-    private async Task<List<int>> UpdateSiteChildGroups(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection? connection = null, IDbTransaction? transaction = null)
+    /// <returns>Ids de los grupos nuevos (para crear SiteOperatingDayService solo para ellos) y la lista de request de esos grupos.</returns>
+    private async Task<(List<int> newGroupIds, List<SiteChildGroupRequest> newChildGroups)> UpdateSiteChildGroupsMerge(int siteId, List<SiteChildGroupRequest> childGroups, IDbConnection dbConnection)
     {
-        var dbConnection = connection ?? _context.CreateConnection();
-        var shouldDisposeConnection = connection == null;
-        var childGroupIds = new List<int>();
+        var newGroupIds = new List<int>();
+        var newChildGroups = new List<SiteChildGroupRequest>();
 
-        try
+        var getIdsParams = new DynamicParameters();
+        getIdsParams.Add("@siteId", siteId, DbType.Int32);
+        var currentIds = (await dbConnection.QueryAsync<int>("100_GetSiteChildGroupIdsBySiteId", getIdsParams, commandType: CommandType.StoredProcedure)).ToList();
+        var existingIdsSet = currentIds.ToHashSet();
+        var requestIdsSet = childGroups.Where(g => g.Id.HasValue && g.Id.Value > 0).Select(g => g.Id!.Value).ToHashSet();
+
+        foreach (var childGroup in childGroups)
         {
-            // Primero eliminar todos los grupos existentes para este sitio (esto también eliminará sus servicios por CASCADE)
-            var deleteParameters = new DynamicParameters();
-            deleteParameters.Add("@siteId", siteId, DbType.Int32);
-            await dbConnection.ExecuteAsync("100_DeleteSiteChildGroupsBySiteId", deleteParameters, transaction, commandType: CommandType.StoredProcedure);
+            var isExisting = childGroup.Id.HasValue && childGroup.Id.Value > 0 && existingIdsSet.Contains(childGroup.Id.Value);
+            int groupId;
 
-            // Luego insertar los nuevos grupos con sus servicios
-            foreach (var childGroup in childGroups)
+            if (isExisting)
             {
-                // Insertar el grupo
-                var parameters = new DynamicParameters();
-                parameters.Add("@siteId", siteId, DbType.Int32);
-                parameters.Add("@groupName", childGroup.GroupName, DbType.String);
-                parameters.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
-                parameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                groupId = childGroup.Id!.Value;
+                var updateParams = new DynamicParameters();
+                updateParams.Add("@id", groupId, DbType.Int32);
+                updateParams.Add("@siteId", siteId, DbType.Int32);
+                updateParams.Add("@groupName", childGroup.GroupName ?? string.Empty, DbType.String);
+                updateParams.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
+                await dbConnection.ExecuteAsync("100_UpdateSiteChildGroup", updateParams, commandType: CommandType.StoredProcedure);
 
-                await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", parameters, transaction, commandType: CommandType.StoredProcedure);
-                
-                int groupId = parameters.Get<int>("@id");
-                childGroupIds.Add(groupId);
+                var deleteSlotsParams = new DynamicParameters();
+                deleteSlotsParams.Add("@childgroupid", groupId, DbType.Int32);
+                await dbConnection.ExecuteAsync("100_DeleteSiteChildGroupServicesByChildGroupId", deleteSlotsParams, commandType: CommandType.StoredProcedure);
+            }
+            else
+            {
+                var insertParams = new DynamicParameters();
+                insertParams.Add("@siteId", siteId, DbType.Int32);
+                insertParams.Add("@groupName", childGroup.GroupName ?? string.Empty, DbType.String);
+                insertParams.Add("@numberOfChildren", childGroup.NumberOfChildren, DbType.Int32);
+                insertParams.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                await dbConnection.ExecuteAsync("100_InsertSiteChildGroup", insertParams, commandType: CommandType.StoredProcedure);
+                groupId = insertParams.Get<int>("@id");
+                newGroupIds.Add(groupId);
+                newChildGroups.Add(childGroup);
+            }
 
-                // Insertar slots de servicios del grupo (SiteChildGroupService)
-                if (childGroup.ServiceSlots != null && childGroup.ServiceSlots.Count > 0)
+            if (childGroup.ServiceSlots != null && childGroup.ServiceSlots.Count > 0)
+            {
+                foreach (var slot in childGroup.ServiceSlots)
                 {
-                    foreach (var slot in childGroup.ServiceSlots)
+                    ValidateServiceSlotTimes(slot);
+                    var slotParameters = new DynamicParameters();
+                    slotParameters.Add("@childgroupid", groupId, DbType.Int32);
+                    slotParameters.Add("@servicetypeid", slot.ServiceTypeId, DbType.Int32);
+                    slotParameters.Add("@isoffered", slot.IsOffered, DbType.Boolean);
+                    slotParameters.Add("@fromtime", slot.FromTime, DbType.Time);
+                    slotParameters.Add("@totime", slot.ToTime, DbType.Time);
+                    slotParameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                    await dbConnection.ExecuteAsync("100_InsertSiteChildGroupService", slotParameters, commandType: CommandType.StoredProcedure);
+                }
+
+                if (isExisting)
+                {
+                    foreach (var slot in childGroup.ServiceSlots.Where(s => s.IsOffered && s.FromTime.HasValue && s.ToTime.HasValue))
                     {
-                        ValidateServiceSlotTimes(slot);
-
-                        var slotParameters = new DynamicParameters();
-                        slotParameters.Add("@childgroupid", groupId, DbType.Int32);
-                        slotParameters.Add("@servicetypeid", slot.ServiceTypeId, DbType.Int32);
-                        slotParameters.Add("@isoffered", slot.IsOffered, DbType.Boolean);
-                        slotParameters.Add("@fromtime", slot.FromTime, DbType.Time);
-                        slotParameters.Add("@totime", slot.ToTime, DbType.Time);
-                        slotParameters.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-                        await dbConnection.ExecuteAsync("100_InsertSiteChildGroupService", slotParameters, transaction, commandType: CommandType.StoredProcedure);
+                        var updateTimesParams = new DynamicParameters();
+                        updateTimesParams.Add("@childgroupid", groupId, DbType.Int32);
+                        updateTimesParams.Add("@servicetypeid", slot.ServiceTypeId, DbType.Int32);
+                        updateTimesParams.Add("@starttime", slot.FromTime!.Value, DbType.Time);
+                        updateTimesParams.Add("@endtime", slot.ToTime!.Value, DbType.Time);
+                        await dbConnection.ExecuteAsync("100_UpdateSiteOperatingDayServiceTimesByGroupAndServiceType", updateTimesParams, commandType: CommandType.StoredProcedure);
                     }
                 }
             }
+        }
 
-            return childGroupIds;
-        }
-        catch (Exception ex)
+        foreach (var id in existingIdsSet.Where(id => !requestIdsSet.Contains(id)))
         {
-            _logger.LogError(ex, "Error al actualizar grupos de niños para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            var deleteParams = new DynamicParameters();
+            deleteParams.Add("@id", id, DbType.Int32);
+            await dbConnection.ExecuteAsync("100_DeleteSiteChildGroupById", deleteParams, commandType: CommandType.StoredProcedure);
         }
-        finally
-        {
-            if (shouldDisposeConnection)
-            {
-                dbConnection.Dispose();
-            }
-        }
+
+        return (newGroupIds, newChildGroups);
     }
 
     /// <summary>
