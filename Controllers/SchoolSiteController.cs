@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("school-site")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SchoolSiteController(ILogger<SchoolSiteController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolSiteController> _logger = logger;
@@ -93,19 +95,14 @@ public class SchoolSiteController(ILogger<SchoolSiteController> logger, IUnitOfW
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SchoolSiteRepository.InsertSchoolSite(request);
+
+            if (result)
             {
-                var result = await _unitOfWork.SchoolSiteRepository.InsertSchoolSite(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al asignar el sitio a la escuela");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("Error al asignar el sitio a la escuela");
         }
         catch (Exception ex)
         {
@@ -125,19 +122,14 @@ public class SchoolSiteController(ILogger<SchoolSiteController> logger, IUnitOfW
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SchoolSiteRepository.UpdateSchoolSite(request);
+
+            if (result)
             {
-                var result = await _unitOfWork.SchoolSiteRepository.UpdateSchoolSite(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al actualizar la asignación School-Site");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("Error al actualizar la asignación School-Site");
         }
         catch (Exception ex)
         {

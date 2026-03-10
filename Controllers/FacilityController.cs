@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("facility")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class FacilityController(IFacilityRepository facilityRepository, ILogger<FacilityController> logger) : ControllerBase
 {
     private readonly IFacilityRepository _facilityRepository = facilityRepository;
@@ -31,27 +33,22 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo instalación por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo instalación por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID de la instalación es requerido");
-                }
-
-                var result = await _facilityRepository.GetFacilityById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    _logger.LogWarning("Instalación con ID {Id} no encontrada", queryParameters.Id);
-                    return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la instalación es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _facilityRepository.GetFacilityById(queryParameters.Id);
+
+            if (result == null)
+            {
+                _logger.LogWarning("Instalación con ID {Id} no encontrada", queryParameters.Id);
+                return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -71,19 +68,14 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _facilityRepository.GetAllFacilities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+
+            if (result == null)
             {
-                var result = await _facilityRepository.GetAllFacilities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron instalaciones");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron instalaciones");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -103,19 +95,14 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _facilityRepository.InsertFacility(request);
+
+            if (result)
             {
-                var result = await _facilityRepository.InsertFacility(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("No se pudo crear la instalación");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo crear la instalación");
         }
         catch (Exception ex)
         {
@@ -135,20 +122,15 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _facilityRepository.UpdateFacility(request);
+
+            if (!result)
             {
-                var result = await _facilityRepository.UpdateFacility(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Instalación con ID {Id} no encontrada", request.Id);
-                    return NotFound($"Instalación con ID {request.Id} no encontrada");
-                }
-
-                return Ok(result);
+                _logger.LogWarning("Instalación con ID {Id} no encontrada", request.Id);
+                return NotFound($"Instalación con ID {request.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -168,20 +150,15 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _facilityRepository.DeleteFacility(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _facilityRepository.DeleteFacility(queryParameters.Id);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Instalación con ID {Id} no encontrada", queryParameters.Id);
-                    return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Instalación con ID {Id} no encontrada", queryParameters.Id);
+                return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

@@ -5,6 +5,7 @@ using Api.Interfaces;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("dashboard")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class DashboardController(ILogger<DashboardController> logger, IAesanDashboardRepository aesanDashboardRepository, IAgencyDashboardRepository agencyDashboardRepository) : Controller
 {
     private readonly ILogger<DashboardController> _logger = logger;
@@ -32,16 +34,11 @@ public class DashboardController(ILogger<DashboardController> logger, IAesanDash
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo métricas del dashboard AESAN para usuario: {UserId}", queryParameters.UserId);
+            _logger.LogInformation("Obteniendo métricas del dashboard AESAN para usuario: {UserId}", queryParameters.UserId);
 
-                var metrics = await _aesanDashboardRepository.GetDashboardMetrics(queryParameters.UserId);
+            var metrics = await _aesanDashboardRepository.GetDashboardMetrics(queryParameters.UserId);
 
-                return Ok(metrics);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(metrics);
         }
         catch (Exception ex)
         {

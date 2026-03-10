@@ -1,5 +1,0 @@
--- =============================================
--- DEPRECATED: El procedimiento se elimina con 105_DropDeleteSiteChildGroupsBySiteId.
--- El flujo de update usa merge (100_UpdateSiteChildGroup, 100_DeleteSiteChildGroupById).
--- Este archivo se mantiene por orden de migración; no crea el SP.
--- =============================================

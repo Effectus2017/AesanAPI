@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Exceptions;
 using Api.Models;
 using Api.Models.Request;
@@ -18,6 +19,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("site")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWork, MessageTemplateService messageTemplateService) : Controller
 {
     private readonly ILogger<SiteController> _logger = logger;
@@ -62,19 +64,14 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SiteRepository.GetAllSitesFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList, queryParameters.IsDayCareHomeId);
+
+            if (result == null)
             {
-                var result = await _unitOfWork.SiteRepository.GetAllSitesFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList, queryParameters.IsDayCareHomeId);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron sitios");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron sitios");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -94,19 +91,14 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SiteRepository.InsertSite(request);
+
+            if (result)
             {
-                var result = await _unitOfWork.SiteRepository.InsertSite(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al insertar el sitio");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("Error al insertar el sitio");
         }
         catch (SiteValidationException ex)
         {
@@ -136,19 +128,14 @@ public class SiteController(ILogger<SiteController> logger, IUnitOfWork unitOfWo
                 ModelState.AddModelError("InactiveJustification", "Se requiere justificación para inactiva el sitio");
             }
 
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SiteRepository.UpdateSite(request);
+
+            if (result)
             {
-                var result = await _unitOfWork.SiteRepository.UpdateSite(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return NotFound($"Sitio con ID {request.Id} no encontrado");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Sitio con ID {request.Id} no encontrado");
         }
         catch (SiteValidationException ex)
         {

@@ -6,6 +6,7 @@ using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Api.Filters;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json;
 
@@ -19,6 +20,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("user")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingService, IUserRoleExtensionRequestRepository extensionRequestRepository, IEmailService emailService) : Controller
 {
     private readonly ILoggingService _loggingService = loggingService;
@@ -42,14 +44,9 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo usuario con ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-                DTOUser _result = await _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            _loggingService.LogInformation("Obteniendo usuario con ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+            DTOUser _result = await _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
+            return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -70,14 +67,9 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo usuario con SP, ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-                DTOUser _result = await _unitOfWork.UserRepository.GetUserByIdWithSP(queryParameters.UserId);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            _loggingService.LogInformation("Obteniendo usuario con SP, ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+            DTOUser _result = await _unitOfWork.UserRepository.GetUserByIdWithSP(queryParameters.UserId);
+            return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -97,19 +89,14 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo lista de usuarios", new Dictionary<string, string> {
-                    { "Take", queryParameters.Take.ToString() },
-                    { "Skip", queryParameters.Skip.ToString() },
-                    { "Name", queryParameters.Name ?? "null" }
-                });
-                dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId, queryParameters.IsList);
+            _loggingService.LogInformation("Obteniendo lista de usuarios", new Dictionary<string, string> {
+                { "Take", queryParameters.Take.ToString() },
+                { "Skip", queryParameters.Skip.ToString() },
+                { "Name", queryParameters.Name ?? "null" }
+            });
+            dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId, queryParameters.IsList);
 
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -134,9 +121,6 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (!ModelState.IsValid)
-                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-
             var result = await _unitOfWork.UserRepository.GetAllRolesFromDb(aesanOnly, isList);
             return result != null ? Ok(result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
@@ -161,9 +145,6 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (!ModelState.IsValid)
-                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-
             var roles = await _unitOfWork.UserRepository.GetAvailableSecondaryRoles(primaryRoleId, excludeRoleIds);
             return Ok(new { data = roles, count = roles.Count });
         }
@@ -184,9 +165,6 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (!ModelState.IsValid)
-                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-
             if (string.IsNullOrWhiteSpace(userId))
                 return StatusCode(StatusCodes.Status400BadRequest, new { message = "UserId es requerido" });
 
@@ -209,13 +187,8 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
+            return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -240,23 +213,18 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
+            _loggingService.LogInformation("Registrando usuario en la agencia", new Dictionary<string, string> {
+                { "Email", model.Staff?.Email ?? "null" },
+                { "AgencyName", model.Agency?.Name ?? "null" }
+            });
+
+            if (model.Agency == null || model.Staff == null)
             {
-                _loggingService.LogInformation("Registrando usuario en la agencia", new Dictionary<string, string> {
-                    { "Email", model.Staff?.Email ?? "null" },
-                    { "AgencyName", model.Agency?.Name ?? "null" }
-                });
-
-                if (model.Agency == null || model.Staff == null)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Los campos 'Agency' y 'Staff' son requeridos." });
-                }
-
-                var result = await _unitOfWork.UserRepository.RegisterUserAgency(model);
-                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Los campos 'Agency' y 'Staff' son requeridos." });
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _unitOfWork.UserRepository.RegisterUserAgency(model);
+            return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -279,27 +247,21 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
+            _loggingService.LogInformation("Agregando usuario a la base de datos", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
+
+            if (entity == null)
             {
-                _loggingService.LogInformation("Agregando usuario a la base de datos", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
-
-                if (entity == null)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
-                }
-
-                var usePrimarySecondary = !string.IsNullOrWhiteSpace(entity.PrimaryRoleName);
-                if (!usePrimarySecondary && (entity.Roles == null || !entity.Roles.Any()))
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe asignar al menos un rol: use 'Roles' (lista) o 'PrimaryRoleName' (y opcionalmente 'SecondaryRoles')." });
-                }
-
-                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles ?? new List<string>(), queryParameters.AgencyId);
-                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            var usePrimarySecondary = !string.IsNullOrWhiteSpace(entity.PrimaryRoleName);
+            if (!usePrimarySecondary && (entity.Roles == null || !entity.Roles.Any()))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe asignar al menos un rol: use 'Roles' (lista) o 'PrimaryRoleName' (y opcionalmente 'SecondaryRoles')." });
+            }
+
+            var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles ?? new List<string>(), queryParameters.AgencyId);
+            return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -320,11 +282,6 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-            }
-
             if (entity == null)
             {
                 return BadRequest(new { Message = "La entidad no puede ser nula" });
@@ -500,12 +457,6 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-            }
-
             if (entity == null)
             {
                 return BadRequest(new { Message = "La entidad no puede ser nula" });
@@ -567,16 +518,11 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.ChangePassword(queryParameters.UserId, queryParameters.Password, queryParameters.NewPassword);
+            bool _result = await _unitOfWork.UserRepository.ChangePassword(queryParameters.UserId, queryParameters.Password, queryParameters.NewPassword);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return _result
+                ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+                : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
         }
         catch (Exception ex)
         {
@@ -595,16 +541,11 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.ResetPassword(queryParameters.UserId);
+            bool _result = await _unitOfWork.UserRepository.ResetPassword(queryParameters.UserId);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return _result
+                ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+                : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
         }
         catch (Exception ex)
         {
@@ -625,16 +566,11 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.UpdateTemporalPassword(queryParameters.Email, queryParameters.NewPassword, queryParameters.TemporaryPassword);
+            bool _result = await _unitOfWork.UserRepository.UpdateTemporalPassword(queryParameters.Email, queryParameters.NewPassword, queryParameters.TemporaryPassword);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return _result
+                ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+                : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
         }
         catch (Exception ex)
         {
@@ -653,26 +589,21 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrEmpty(queryParameters.UserId))
             {
-                if (string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "UserId y NewPassword son requeridos." });
-                }
-
-                bool result = await _unitOfWork.UserRepository.ForcePassword(queryParameters.UserId);
-
-                if (result)
-                {
-                    return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Contraseña actualizada exitosamente" });
-                }
-                else
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar la contraseña" });
-                }
+                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "UserId y NewPassword son requeridos." });
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            bool result = await _unitOfWork.UserRepository.ForcePassword(queryParameters.UserId);
+
+            if (result)
+            {
+                return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Contraseña actualizada exitosamente" });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar la contraseña" });
+            }
         }
         catch (Exception ex)
         {

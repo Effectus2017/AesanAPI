@@ -1,4 +1,5 @@
 using Api.Interfaces;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("option-selection")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class OptionSelectionController(IOptionSelectionRepository optionSelectionRepository, ILogger<OptionSelectionController> logger) : ControllerBase
 {
     private readonly IOptionSelectionRepository _optionSelectionRepository = optionSelectionRepository;
@@ -31,30 +33,24 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo opción de selección por ID: {Id}", queryParameters.OptionSelectionId);
+
+            if (queryParameters.OptionSelectionId == 0)
             {
-                _logger.LogInformation("Obteniendo opción de selección por ID: {Id}", queryParameters.OptionSelectionId);
-
-                if (queryParameters.OptionSelectionId == 0)
-                {
-                    return BadRequest("El ID de la opción de selección es requerido");
-                }
-
-                var result = await _optionSelectionRepository.GetOptionSelectionById(queryParameters.OptionSelectionId);
-
-                if (result == null)
-                {
-                    return NotFound($"Opción de selección con ID {queryParameters.OptionSelectionId} no encontrada");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la opción de selección es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _optionSelectionRepository.GetOptionSelectionById(queryParameters.OptionSelectionId);
+
+            if (result == null)
+            {
+                return NotFound($"Opción de selección con ID {queryParameters.OptionSelectionId} no encontrada");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la opción de selección con ID {Id}", queryParameters.OptionSelectionId);
             return StatusCode(500, "Error interno del servidor al obtener la opción de selección");
         }
     }
@@ -70,25 +66,19 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo todas las opciones de selección");
+
+            var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.IsList);
+
+            if (result == null)
             {
-                _logger.LogInformation("Obteniendo todas las opciones de selección");
-
-                var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron opciones de selección");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron opciones de selección");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todas las opciones de selección");
             return StatusCode(500, "Error interno del servidor al obtener las opciones de selección");
         }
     }
@@ -105,29 +95,23 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(
+                queryParameters.OptionKey,
+                queryParameters.Names,
+                queryParameters.IsList,
+                queryParameters.SortByNameKeys,
+                queryParameters.SortByNameENKeys,
+                queryParameters.Language);
+
+            if (result == null)
             {
-                var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(
-                    queryParameters.OptionKey,
-                    queryParameters.Names,
-                    queryParameters.IsList,
-                    queryParameters.SortByNameKeys,
-                    queryParameters.SortByNameENKeys,
-                    queryParameters.Language);
-
-                if (result == null)
-                {
-                    return NotFound($"Opción de selección con clave {queryParameters.OptionKey} no encontrada");
-                }
-
-                return Ok(result);
+                return NotFound($"Opción de selección con clave {queryParameters.OptionKey} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la opción de selección con clave {OptionKey}", queryParameters.OptionKey);
             return StatusCode(500, "Error interno del servidor al obtener la opción de selección");
         }
     }
@@ -143,30 +127,24 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("La opción de selección es requerida");
-                }
-
-                var result = await _optionSelectionRepository.InsertOptionSelection(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Opción de selección creada con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear la opción de selección");
-                return BadRequest("No se pudo crear la opción de selección");
+                return BadRequest("La opción de selección es requerida");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _optionSelectionRepository.InsertOptionSelection(request);
+
+            if (result)
+            {
+                _logger.LogInformation("Opción de selección creada con ID: {Id}", request.Id);
+                return Ok(result);
+            }
+
+            _logger.LogWarning("No se pudo crear la opción de selección");
+            return BadRequest("No se pudo crear la opción de selección");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear la opción de selección");
             return StatusCode(500, "Error interno del servidor al crear la opción de selección");
         }
     }
@@ -182,24 +160,18 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _optionSelectionRepository.UpdateOptionSelection(request);
+
+            if (!result)
             {
-                var result = await _optionSelectionRepository.UpdateOptionSelection(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Opción de selección con ID {Id} no encontrada", request.Id);
-                    return NotFound($"Opción de selección con ID {request.Id} no encontrada");
-                }
-
-                return Ok(result);
+                _logger.LogWarning("Opción de selección con ID {Id} no encontrada", request.Id);
+                return NotFound($"Opción de selección con ID {request.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la opción de selección con ID {Id}", request.Id);
             return StatusCode(500, "Error interno del servidor al actualizar la opción de selección");
         }
     }
@@ -216,23 +188,17 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _optionSelectionRepository.UpdateOptionSelectionDisplayOrder(optionSelectionId, displayOrder);
+
+            if (!result)
             {
-                var result = await _optionSelectionRepository.UpdateOptionSelectionDisplayOrder(optionSelectionId, displayOrder);
-
-                if (!result)
-                {
-                    return NotFound($"Opción de selección con ID {optionSelectionId} no encontrada");
-                }
-
-                return NoContent();
+                return NotFound($"Opción de selección con ID {optionSelectionId} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización de la opción de selección con ID {Id}", optionSelectionId);
             return StatusCode(500, "Error interno del servidor al actualizar el orden de visualización de la opción de selección");
         }
     }
@@ -248,24 +214,18 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _optionSelectionRepository.DeleteOptionSelection(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _optionSelectionRepository.DeleteOptionSelection(queryParameters.Id);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Opción de selección con ID {Id} no encontrada", queryParameters.Id);
-                    return NotFound($"Opción de selección con ID {queryParameters.Id} no encontrada");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Opción de selección con ID {Id} no encontrada", queryParameters.Id);
+                return NotFound($"Opción de selección con ID {queryParameters.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la opción de selección con ID {Id}", queryParameters.Id);
             return StatusCode(500, "Error interno del servidor al eliminar la opción de selección");
         }
     }

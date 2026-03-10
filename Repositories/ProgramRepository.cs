@@ -5,6 +5,7 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Services;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
@@ -45,7 +46,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el programa con ID {ProgramId}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el programa", ex);
         }
     }
 
@@ -108,7 +109,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los programas");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los programas", ex);
         }
     }
 
@@ -175,7 +176,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el programa");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el programa", ex);
         }
     }
 
@@ -305,7 +306,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar la inscripción del programa");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la inscripción del programa", ex);
         }
     }
 
@@ -386,7 +387,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar sitio directamente: {Message}", ex.Message);
-            throw new Exception($"Error al insertar sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar sitio", ex);
         }
     }
 
@@ -409,7 +410,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el siguiente número de sitio", ex);
         }
     }
 

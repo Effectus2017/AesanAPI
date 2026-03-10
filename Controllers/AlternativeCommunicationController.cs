@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
+using Api.Filters;
+
 namespace Api.Controllers;
 
 /// <summary>
@@ -14,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("alternative-communication")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AlternativeCommunicationController(IAlternativeCommunicationRepository alternativeCommunicationRepository, ILogger<AlternativeCommunicationController> logger) : ControllerBase
 {
     private readonly IAlternativeCommunicationRepository _alternativeCommunicationRepository = alternativeCommunicationRepository;
@@ -30,26 +33,21 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Getting alternative communication by ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Getting alternative communication by ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("The alternative communication ID is required");
-                }
-
-                var result = await _alternativeCommunicationRepository.GetAlternativeCommunicationById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
-                }
-
-                return Ok(result);
+                return BadRequest("The alternative communication ID is required");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _alternativeCommunicationRepository.GetAlternativeCommunicationById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -69,19 +67,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _alternativeCommunicationRepository.GetAllAlternativeCommunications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+
+            if (result == null)
             {
-                var result = await _alternativeCommunicationRepository.GetAllAlternativeCommunications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No alternative communications found");
-                }
-
-                return Ok(result);
+                return NotFound("No alternative communications found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -101,19 +94,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _alternativeCommunicationRepository.InsertAlternativeCommunication(request);
+
+            if (result)
             {
-                var result = await _alternativeCommunicationRepository.InsertAlternativeCommunication(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Could not create the alternative communication");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("Could not create the alternative communication");
         }
         catch (Exception ex)
         {
@@ -133,19 +121,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _alternativeCommunicationRepository.UpdateAlternativeCommunication(request);
+
+            if (!result)
             {
-                var result = await _alternativeCommunicationRepository.UpdateAlternativeCommunication(request);
-
-                if (!result)
-                {
-                    return NotFound($"Alternative communication with ID {request.Id} not found");
-                }
-
-                return NoContent();
+                return NotFound($"Alternative communication with ID {request.Id} not found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -165,19 +148,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _alternativeCommunicationRepository.DeleteAlternativeCommunication(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _alternativeCommunicationRepository.DeleteAlternativeCommunication(queryParameters.Id);
-
-                if (!result)
-                {
-                    return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
-                }
-
-                return NoContent();
+                return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

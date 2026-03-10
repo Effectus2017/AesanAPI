@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
+using Api.Models.Errors;
 
 namespace Api.Controllers;
 
@@ -15,6 +17,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("sponsor-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository, ILogger<SponsorTypeController> logger) : ControllerBase
 {
     private readonly ISponsorTypeRepository _sponsorTypeRepository = sponsorTypeRepository;
@@ -42,7 +45,6 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de auspiciador con ID {Id}", id);
             return StatusCode(500, "Error interno del servidor al obtener el tipo de auspiciador");
         }
     }
@@ -58,21 +60,15 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var types = await _sponsorTypeRepository.GetAllSponsorTypes(queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Name,
-                    queryParameters.Alls,
-                    queryParameters.IsList);
-                return Ok(types);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var types = await _sponsorTypeRepository.GetAllSponsorTypes(queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Name,
+                queryParameters.Alls,
+                queryParameters.IsList);
+            return Ok(types);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todos los tipos de auspiciador");
             return StatusCode(500, "Error interno del servidor al obtener los tipos de auspiciador");
         }
     }
@@ -88,22 +84,16 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _sponsorTypeRepository.InsertSponsorType(type);
+            if (result)
             {
-                var result = await _sponsorTypeRepository.InsertSponsorType(type);
-                if (result)
-                {
-                    return Ok(type);
-                }
-
-                return BadRequest("No se pudo crear el tipo de auspiciador");
+                return Ok(type);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo crear el tipo de auspiciador");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear el tipo de auspiciador");
             return StatusCode(500, "Error interno del servidor al crear el tipo de auspiciador");
         }
     }
@@ -119,23 +109,17 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _sponsorTypeRepository.UpdateSponsorType(type);
+
+            if (!result)
             {
-                var result = await _sponsorTypeRepository.UpdateSponsorType(type);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de auspiciador con ID {type.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return NotFound($"Tipo de auspiciador con ID {type.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de auspiciador con ID {Id}", type.Id);
             return StatusCode(500, "Error interno del servidor al actualizar el tipo de auspiciador");
         }
     }
@@ -151,20 +135,14 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _sponsorTypeRepository.DeleteSponsorType(id);
-                if (!result)
-                    return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
+            var result = await _sponsorTypeRepository.DeleteSponsorType(id);
+            if (!result)
+                return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
 
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de auspiciador con ID {Id}", id);
             return StatusCode(500, "Error interno del servidor al eliminar el tipo de auspiciador");
         }
     }
@@ -180,26 +158,20 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipos de auspiciador para el programa: {ProgramId}", queryParameters.ProgramId);
+
+            if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
             {
-                _logger.LogInformation("Obteniendo tipos de auspiciador para el programa: {ProgramId}", queryParameters.ProgramId);
-
-                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
-                {
-                    return BadRequest("El ID del programa es requerido");
-                }
-
-                var result = await _sponsorTypeRepository.GetSponsorTypesByProgram(queryParameters.ProgramId.Value);
-
-                return Ok(result);
+                return BadRequest("El ID del programa es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _sponsorTypeRepository.GetSponsorTypesByProgram(queryParameters.ProgramId.Value);
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de auspiciador para el programa {ProgramId}", queryParameters.ProgramId);
-            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de auspiciador", ex.Message));
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error interno del servidor al obtener los tipos de auspiciador", 500));
         }
     }
 }

@@ -8,19 +8,17 @@ using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Response;
 using Dapper;
-using Microsoft.Extensions.Logging;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
 public class SiteExcursionRepository : ISiteExcursionRepository
 {
     private readonly DapperContext _context;
-    private readonly ILogger<SiteExcursionRepository> _logger;
 
-    public SiteExcursionRepository(DapperContext context, ILogger<SiteExcursionRepository> logger)
+    public SiteExcursionRepository(DapperContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<SiteExcursionResponse?> GetSiteExcursionById(int id)
@@ -45,8 +43,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site excursion by id {Id}: {Message}", id, ex.Message);
-            throw new Exception($"Error al obtener la excursión con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la excursión con ID {id}", ex);
         }
     }
 
@@ -68,8 +65,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site excursions by site id {SiteId}: {Message}", siteId, ex.Message);
-            throw new Exception($"Error al obtener las excursiones del sitio {siteId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las excursiones del sitio {siteId}", ex);
         }
     }
 
@@ -93,8 +89,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site excursions by date range for site {SiteId}: {Message}", siteId, ex.Message);
-            throw new Exception($"Error al obtener las excursiones del sitio {siteId} en el rango de fechas: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las excursiones del sitio {siteId} en el rango de fechas", ex);
         }
     }
 
@@ -117,8 +112,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site excursions by child group id {ChildGroupId} for site {SiteId}: {Message}", childGroupId, siteId, ex.Message);
-            throw new Exception($"Error al obtener las excursiones del grupo {childGroupId} del sitio {siteId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las excursiones del grupo {childGroupId} del sitio {siteId}", ex);
         }
     }
 
@@ -151,8 +145,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error inserting site excursion: {Message}", ex.Message);
-            throw new Exception($"Error al insertar la excursión: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la excursión", ex);
         }
     }
 
@@ -190,8 +183,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating site excursion {Id}: {Message}", request.Id, ex.Message);
-            throw new Exception($"Error al actualizar la excursión: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la excursión", ex);
         }
     }
 
@@ -209,8 +201,7 @@ public class SiteExcursionRepository : ISiteExcursionRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting site excursion {Id}: {Message}", id, ex.Message);
-            throw new Exception($"Error al eliminar la excursión: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar la excursión", ex);
         }
     }
 

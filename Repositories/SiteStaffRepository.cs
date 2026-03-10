@@ -6,6 +6,7 @@ using Api.Services;
 using Dapper;
 using System.Collections.Generic;
 using System.Data;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -43,7 +44,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al obtener empleados por sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener empleados por sitio", ex);
         }
     }
 
@@ -74,7 +75,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al obtener sitios por empleado: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener sitios por empleado", ex);
         }
     }
 
@@ -110,7 +111,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al asignar empleado {request?.StaffId} al sitio {request?.SiteId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al asignar empleado {request?.StaffId} al sitio {request?.SiteId}", ex);
         }
     }
 
@@ -142,7 +143,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             else
             {
                 _logger.LogWarning($"No se pudo desasignar el empleado {staffId} del sitio {siteId}");
-                throw new Exception($"No se pudo desasignar el empleado {staffId} del sitio {siteId}");
+                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, $"No se pudo desasignar el empleado {staffId} del sitio {siteId}");
             }
 
             return success;
@@ -156,7 +157,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al desasignar empleado {staffId} del sitio {siteId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al desasignar empleado {staffId} del sitio {siteId}", ex);
         }
     }
 
@@ -191,7 +192,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             else
             {
                 _logger.LogWarning($"No se pudo actualizar la asignación {id}");
-                throw new Exception($"No se pudo actualizar la asignación {id}");
+                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, $"No se pudo actualizar la asignación {id}");
             }
 
             return success;
@@ -204,7 +205,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al actualizar la asignación {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la asignación {id}", ex);
         }
     }
 
@@ -246,7 +247,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al obtener la asignación {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la asignación {id}", ex);
         }
     }
 }

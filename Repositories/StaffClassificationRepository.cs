@@ -6,6 +6,7 @@ using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
 using Api.Services;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -45,7 +46,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener la clasificación de staff con ID {StaffClassificationId}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener la clasificación de staff", ex);
         }
     }
 
@@ -127,7 +128,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar la clasificación de staff");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la clasificación de staff", ex);
         }
     }
 
@@ -155,7 +156,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la clasificación de staff con ID {StaffClassificationId}", staffClassificationRequest.Id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la clasificación de staff", ex);
         }
     }
 
@@ -179,7 +180,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar la clasificación de staff con ID {StaffClassificationId}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar la clasificación de staff", ex);
         }
     }
 

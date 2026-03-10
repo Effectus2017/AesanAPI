@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Api.Models;
 using Api.Models.Request;
+using Api.Filters;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("auth")]
+[ValidateModelState]
 /// <summary>
 /// Controlador que maneja la autenticación y gestión de contraseñas de usuarios.
 /// Proporciona endpoints para inicio de sesión y restablecimiento de contraseñas.
@@ -30,12 +32,7 @@ public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logg
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                return await _unitOfWork.UserRepository.Login(model);
-            }
-
-            return BadRequest();
+            return await _unitOfWork.UserRepository.Login(model);
         }
         catch (Exception ex)
         {

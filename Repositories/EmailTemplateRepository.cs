@@ -8,6 +8,7 @@ using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -48,7 +49,7 @@ public class EmailTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el template de email por ID/Error getting email template by ID");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
         finally
         {
@@ -78,7 +79,7 @@ public class EmailTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener template de email por clave: {TemplateKey}", templateKey);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -118,7 +119,7 @@ public class EmailTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los templates de email/Error getting email templates");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -159,7 +160,7 @@ public class EmailTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el template de email/Error inserting email template");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -203,7 +204,7 @@ public class EmailTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el template de email/Error updating email template");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 

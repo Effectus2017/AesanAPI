@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -16,6 +17,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("email-template")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepository, ILogger<EmailTemplateController> logger) : ControllerBase
 {
     private readonly IEmailTemplateRepository _emailTemplateRepository = emailTemplateRepository;
@@ -32,26 +34,21 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo template de email por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo template de email por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del template de email es requerido");
-                }
-
-                var result = await _emailTemplateRepository.GetEmailTemplateById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Template de email con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID del template de email es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _emailTemplateRepository.GetEmailTemplateById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Template de email con ID {queryParameters.Id} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -71,26 +68,21 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo todos los templates de email");
+
+            var result = await _emailTemplateRepository.GetAllEmailTemplates(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.TemplateKey,
+                queryParameters.Description,
+                queryParameters.Alls);
+
+            if (result == null)
             {
-                _logger.LogInformation("Obteniendo todos los templates de email");
-
-                var result = await _emailTemplateRepository.GetAllEmailTemplates(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.TemplateKey,
-                    queryParameters.Description,
-                    queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron templates de email");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron templates de email");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -110,24 +102,19 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrEmpty(queryParameters.TemplateKey))
             {
-                if (string.IsNullOrEmpty(queryParameters.TemplateKey))
-                {
-                    return BadRequest("La clave del template es requerida");
-                }
-
-                var result = await _emailTemplateRepository.GetEmailTemplateByKey(queryParameters.TemplateKey);
-
-                if (result == null)
-                {
-                    return NotFound($"Template de email con clave {queryParameters.TemplateKey} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("La clave del template es requerida");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _emailTemplateRepository.GetEmailTemplateByKey(queryParameters.TemplateKey);
+
+            if (result == null)
+            {
+                return NotFound($"Template de email con clave {queryParameters.TemplateKey} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -147,26 +134,21 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("El template de email es requerido");
-                }
-
-                var result = await _emailTemplateRepository.InsertEmailTemplate(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Template de email creado con clave: {TemplateKey}", request.TemplateKey);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear el template de email");
-                return BadRequest("No se pudo crear el template de email");
+                return BadRequest("El template de email es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _emailTemplateRepository.InsertEmailTemplate(request);
+
+            if (result)
+            {
+                _logger.LogInformation("Template de email creado con clave: {TemplateKey}", request.TemplateKey);
+                return Ok(result);
+            }
+
+            _logger.LogWarning("No se pudo crear el template de email");
+            return BadRequest("No se pudo crear el template de email");
         }
         catch (Exception ex)
         {
@@ -186,25 +168,20 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null || request.Id == null || request.Id == 0)
             {
-                if (request == null || request.Id == null || request.Id == 0)
-                {
-                    return BadRequest("El ID del template de email es requerido");
-                }
-
-                var result = await _emailTemplateRepository.UpdateEmailTemplate(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Template de email con ID {Id} no encontrado", request.Id);
-                    return NotFound($"Template de email con ID {request.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID del template de email es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _emailTemplateRepository.UpdateEmailTemplate(request);
+
+            if (!result)
+            {
+                _logger.LogWarning("Template de email con ID {Id} no encontrado", request.Id);
+                return NotFound($"Template de email con ID {request.Id} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {

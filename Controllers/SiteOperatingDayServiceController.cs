@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
@@ -17,6 +18,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("site-operating-day-service")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SiteOperatingDayServiceController(
     ILogger<SiteOperatingDayServiceController> logger,
     ISiteOperatingDayServiceRepository repository) : Controller
@@ -96,11 +98,6 @@ public class SiteOperatingDayServiceController(
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (request.OperatingDayId == null || request.OperatingDayId <= 0)
             {
                 return BadRequest("El ID del día de funcionamiento es requerido");
@@ -147,11 +144,6 @@ public class SiteOperatingDayServiceController(
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (queryParameters.Id <= 0)
             {
                 return BadRequest("El ID del servicio debe ser mayor a 0");

@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
 using System.Security.Claims;
+using Api.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -240,7 +241,14 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 // Agregar controladores a la inyección de dependencias
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ApiExceptionFilter>();
+    options.Filters.Add<ValidateModelStateAttribute>();
+}).ConfigureApiBehaviorOptions(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 
 // Configuración de Swagger
 builder.Services.AddEndpointsApiExplorer();

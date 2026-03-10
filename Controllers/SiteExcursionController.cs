@@ -4,6 +4,7 @@ using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Api.Interfaces;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,14 +16,13 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/site-excursion")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SiteExcursionController : Controller
 {
-    private readonly ILogger<SiteExcursionController> _logger;
     private readonly ISiteExcursionRepository _siteExcursionRepository;
 
-    public SiteExcursionController(ILogger<SiteExcursionController> logger, ISiteExcursionRepository siteExcursionRepository)
+    public SiteExcursionController(ISiteExcursionRepository siteExcursionRepository)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _siteExcursionRepository = siteExcursionRepository ?? throw new ArgumentNullException(nameof(siteExcursionRepository));
     }
 
@@ -48,7 +48,6 @@ public class SiteExcursionController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la excursión: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -70,7 +69,6 @@ public class SiteExcursionController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las excursiones del sitio {SiteId}: {Message}", siteId, ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -98,7 +96,6 @@ public class SiteExcursionController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las excursiones del sitio {SiteId} por rango de fechas: {Message}", siteId, ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -124,7 +121,6 @@ public class SiteExcursionController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las excursiones del grupo {ChildGroupId} del sitio {SiteId}: {Message}", childGroupId, siteId, ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -140,17 +136,11 @@ public class SiteExcursionController : Controller
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var id = await _siteExcursionRepository.InsertSiteExcursion(request);
             return Ok(new { id, message = "Excursión creada exitosamente" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear la excursión: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -167,11 +157,6 @@ public class SiteExcursionController : Controller
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (request.Id != id)
             {
                 return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la solicitud");
@@ -187,7 +172,6 @@ public class SiteExcursionController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la excursión: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -213,7 +197,6 @@ public class SiteExcursionController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la excursión: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }

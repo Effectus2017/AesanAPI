@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("food-authority")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepository, ILogger<FoodAuthorityController> logger) : ControllerBase
 {
     private readonly IFoodAuthorityRepository _foodAuthorityRepository = foodAuthorityRepository;
@@ -31,26 +33,21 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo autoridad alimentaria por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo autoridad alimentaria por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID de la autoridad alimentaria es requerido");
-                }
-
-                var result = await _foodAuthorityRepository.GetFoodAuthorityById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la autoridad alimentaria es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _foodAuthorityRepository.GetFoodAuthorityById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -71,13 +68,8 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _foodAuthorityRepository.GetAllFoodAuthorities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _foodAuthorityRepository.GetAllFoodAuthorities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -98,26 +90,21 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("La autoridad alimentaria es requerida");
-                }
-
-                var result = await _foodAuthorityRepository.InsertFoodAuthority(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Autoridad alimentaria creada");
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear la autoridad alimentaria");
-                return BadRequest("No se pudo crear la autoridad alimentaria");
+                return BadRequest("La autoridad alimentaria es requerida");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _foodAuthorityRepository.InsertFoodAuthority(request);
+
+            if (result)
+            {
+                _logger.LogInformation("Autoridad alimentaria creada");
+                return Ok(result);
+            }
+
+            _logger.LogWarning("No se pudo crear la autoridad alimentaria");
+            return BadRequest("No se pudo crear la autoridad alimentaria");
         }
         catch (Exception ex)
         {
@@ -137,21 +124,16 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("La autoridad alimentaria es requerida");
-                }
-
-                var result = await _foodAuthorityRepository.UpdateFoodAuthority(request);
-                if (!result)
-                    return NotFound($"Autoridad alimentaria con ID {request.Id} no encontrada");
-
-                return NoContent();
+                return BadRequest("La autoridad alimentaria es requerida");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _foodAuthorityRepository.UpdateFoodAuthority(request);
+            if (!result)
+                return NotFound($"Autoridad alimentaria con ID {request.Id} no encontrada");
+
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -171,19 +153,14 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _foodAuthorityRepository.DeleteFoodAuthority(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _foodAuthorityRepository.DeleteFoodAuthority(queryParameters.Id);
-
-                if (!result)
-                {
-                    return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
-                }
-
-                return NoContent();
+                return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

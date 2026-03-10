@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Interfaces;
 using Api.Models.Response;
 using Api.Services;
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("reports")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class ReportsController(ILogger<ReportsController> logger, IReportsRepository reportsRepository) : Controller
 {
     private readonly ILogger<ReportsController> _logger = logger;

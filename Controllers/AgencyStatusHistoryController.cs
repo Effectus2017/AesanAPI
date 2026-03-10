@@ -1,4 +1,5 @@
 using Api.Interfaces;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("agency-status-history")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AgencyStatusHistoryController(IAgencyStatusHistoryRepository agencyStatusHistoryRepository, ILogger<AgencyStatusHistoryController> logger) : ControllerBase
 {
     private readonly IAgencyStatusHistoryRepository _agencyStatusHistoryRepository = agencyStatusHistoryRepository;
@@ -30,30 +32,24 @@ public class AgencyStatusHistoryController(IAgencyStatusHistoryRepository agency
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Getting agency status history");
+
+            var result = await _agencyStatusHistoryRepository.GetAgencyStatusHistoryPaged(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.AgencyId > 0 ? queryParameters.AgencyId : null,
+                queryParameters.CreatedAtFrom,
+                queryParameters.CreatedAtTo);
+
+            if (result == null)
             {
-                _logger.LogInformation("Getting agency status history");
-
-                var result = await _agencyStatusHistoryRepository.GetAgencyStatusHistoryPaged(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.AgencyId > 0 ? queryParameters.AgencyId : null,
-                    queryParameters.CreatedAtFrom,
-                    queryParameters.CreatedAtTo);
-
-                if (result == null)
-                {
-                    return NotFound("No agency status history found");
-                }
-
-                return Ok(result);
+                return NotFound("No agency status history found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting agency status history");
             return StatusCode(500, "Internal server error while getting agency status history");
         }
     }

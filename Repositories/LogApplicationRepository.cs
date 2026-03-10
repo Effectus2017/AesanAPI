@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models.Request;
 using Dapper;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -41,7 +42,7 @@ public class LogApplicationRepository(DapperContext context, ILogger<LogApplicat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar LogApplication");
-            throw new Exception($"Error al insertar LogApplication: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar LogApplication", ex);
         }
     }
 }

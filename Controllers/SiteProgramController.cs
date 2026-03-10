@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -14,12 +15,10 @@ namespace Api.Controllers;
 [ApiController]
 [Route("site-program")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class SiteProgramController(
-    ISiteProgramService service,
-    ILogger<SiteProgramController> logger) : Controller
+[ValidateModelState]
+public class SiteProgramController(ISiteProgramService service) : Controller
 {
     private readonly ISiteProgramService _service = service ?? throw new ArgumentNullException(nameof(service));
-    private readonly ILogger<SiteProgramController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Obtiene todos los programas de un sitio
@@ -40,7 +39,6 @@ public class SiteProgramController(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener programas del sitio {SiteId}", siteId);
             return StatusCode(500, "Error interno del servidor al obtener los programas del sitio");
         }
     }
@@ -54,17 +52,11 @@ public class SiteProgramController(
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var result = await _service.InsertSiteProgram(request);
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar relación sitio-programa");
             return StatusCode(500, "Error interno del servidor al insertar la relación sitio-programa");
         }
     }
@@ -78,11 +70,6 @@ public class SiteProgramController(
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (!request.Id.HasValue)
             {
                 return BadRequest("El ID de la relación es requerido para actualizar");
@@ -99,7 +86,6 @@ public class SiteProgramController(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar relación sitio-programa {Id}", request.Id);
             return StatusCode(500, "Error interno del servidor al actualizar la relación sitio-programa");
         }
     }

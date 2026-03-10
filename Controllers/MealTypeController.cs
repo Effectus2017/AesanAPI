@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("meal-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<MealTypeController> logger) : ControllerBase
 {
     private readonly IMealTypeRepository _mealTypeRepository = mealTypeRepository;
@@ -32,26 +34,21 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipo de comida por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo tipo de comida por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del tipo de comida es requerido");
-                }
-
-                var result = await _mealTypeRepository.GetMealTypeById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID del tipo de comida es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _mealTypeRepository.GetMealTypeById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -72,19 +69,14 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _mealTypeRepository.GetAllMealTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+
+            if (result == null)
             {
-                var result = await _mealTypeRepository.GetAllMealTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron tipos de comida");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron tipos de comida");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -104,21 +96,16 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _mealTypeRepository.InsertMealType(request);
+
+            if (result)
             {
-                var result = await _mealTypeRepository.InsertMealType(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Tipo de comida creado con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear el tipo de comida");
-                return BadRequest("No se pudo crear el tipo de comida");
+                _logger.LogInformation("Tipo de comida creado con ID: {Id}", request.Id);
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogWarning("No se pudo crear el tipo de comida");
+            return BadRequest("No se pudo crear el tipo de comida");
         }
         catch (Exception ex)
         {
@@ -139,20 +126,15 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _mealTypeRepository.UpdateMealType(request);
+
+            if (!result)
             {
-                var result = await _mealTypeRepository.UpdateMealType(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Tipo de comida con ID {Id} no encontrado", request.Id);
-                    return NotFound($"Tipo de comida con ID {request.Id} no encontrado");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Tipo de comida con ID {Id} no encontrado", request.Id);
+                return NotFound($"Tipo de comida con ID {request.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -172,20 +154,15 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _mealTypeRepository.DeleteMealType(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _mealTypeRepository.DeleteMealType(queryParameters.Id);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Tipo de comida con ID {Id} no encontrado", queryParameters.Id);
-                    return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Tipo de comida con ID {Id} no encontrado", queryParameters.Id);
+                return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

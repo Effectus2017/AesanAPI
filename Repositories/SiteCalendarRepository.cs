@@ -5,6 +5,7 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
+using Api.Models.Errors;
 using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
@@ -397,8 +398,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting allowed days for program {ProgramId}: {Message}", programId, ex.Message);
-            throw new Exception($"Error al obtener los días permitidos para el programa {programId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los días permitidos para el programa {programId}", ex);
         }
     }
 

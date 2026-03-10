@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,6 +14,7 @@ namespace Api.Controllers
     [ApiController]
     [Route("household-member-income")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ValidateModelState]
     public class HouseholdMemberIncomeController(IHouseholdMemberIncomeRepository repository, ILogger<HouseholdMemberIncomeController> logger) : ControllerBase
     {
         private readonly IHouseholdMemberIncomeRepository _repository = repository;
@@ -27,12 +29,8 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
-                {
-                    var result = await _repository.GetAllAsync(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                    return Ok(result);
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                var result = await _repository.GetAllAsync(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+                return Ok(result);
             }
             catch (System.Exception ex)
             {
@@ -70,12 +68,8 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
-                {
-                    var id = await _repository.InsertAsync(entity);
-                    return CreatedAtAction(nameof(GetById), new { id }, entity);
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                var id = await _repository.InsertAsync(entity);
+                return CreatedAtAction(nameof(GetById), new { id }, entity);
             }
             catch (System.Exception ex)
             {
@@ -93,13 +87,9 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
-                {
-                    var updated = await _repository.UpdateAsync(entity);
-                    if (!updated) return NotFound($"Ingreso con ID {entity.Id} no encontrado");
-                    return NoContent();
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                var updated = await _repository.UpdateAsync(entity);
+                if (!updated) return NotFound($"Ingreso con ID {entity.Id} no encontrado");
+                return NoContent();
             }
             catch (System.Exception ex)
             {

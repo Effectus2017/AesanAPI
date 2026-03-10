@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models.Response;
 using Api.Services;
+using Api.Models.Errors;
 using Dapper;
 
 namespace Api.Repositories;
@@ -152,13 +153,7 @@ public class ReportsRepository(DapperContext context, ILoggingService loggingSer
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener la estructura jerárquica",
-                new Dictionary<string, string>
-                {
-                    { "Year", year.ToString() },
-                    { "SponsorId", sponsorId?.ToString() ?? "null" }
-                });
-            throw new Exception($"Error al obtener la estructura jerárquica: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener la estructura jerárquica", ex);
         }
     }
 }

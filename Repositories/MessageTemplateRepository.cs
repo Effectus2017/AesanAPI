@@ -8,6 +8,7 @@ using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -46,7 +47,7 @@ public class MessageTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el template de mensaje por ID");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -80,7 +81,7 @@ public class MessageTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener template de mensaje por clave: {TemplateKey}", templateKey);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -114,7 +115,7 @@ public class MessageTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los templates de mensaje");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -156,7 +157,7 @@ public class MessageTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el template de mensaje");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -201,7 +202,7 @@ public class MessageTemplateRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el template de mensaje");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 

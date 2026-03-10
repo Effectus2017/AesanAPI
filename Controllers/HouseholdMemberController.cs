@@ -4,6 +4,7 @@ using Api.Interfaces;
 using Api.Models.Request;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,7 @@ namespace Api.Controllers
     [ApiController]
     [Route("household-member")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ValidateModelState]
     public class HouseholdMemberController(ILogger<HouseholdMemberController> logger, IUnitOfWork unitOfWork) : ControllerBase
     {
 
@@ -41,7 +43,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener el miembro con ID {Id}", id);
                 return StatusCode(500, "Error interno del servidor al obtener el miembro");
             }
         }
@@ -62,7 +63,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener los miembros del hogar con HouseholdId {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al obtener los miembros");
             }
         }
@@ -78,22 +78,17 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
+                var result = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
+
+                if (result)
                 {
-                    var result = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
-
-                    if (result)
-                    {
-                        return Ok(result);
-                    }
-
-                    return BadRequest("Error al crear el miembro del hogar");
+                    return Ok(result);
                 }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+
+                return BadRequest("Error al crear el miembro del hogar");
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al crear el miembro del hogar");
                 return StatusCode(500, "Error interno del servidor al crear el miembro");
             }
         }
@@ -109,22 +104,17 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
+                var result = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
+
+                if (result)
                 {
-                    var result = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
-
-                    if (result)
-                    {
-                        return Ok(result);
-                    }
-
-                    return BadRequest("Error al actualizar el miembro del hogar");
+                    return Ok(result);
                 }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+
+                return BadRequest("Error al actualizar el miembro del hogar");
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al actualizar el miembro con ID {Id}", request.Id);
                 return StatusCode(500, "Error interno del servidor al actualizar el miembro");
             }
         }
@@ -151,7 +141,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el miembro con ID {Id}", id);
                 return StatusCode(500, "Error interno del servidor al eliminar el miembro");
             }
         }

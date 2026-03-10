@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using Api.Interfaces;
-using Api.Models.Request;
-using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.Annotations;
-using Api.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
+using Api.Interfaces;
+using Api.Models;
+using Api.Models.Request;
 
 namespace Api.Controllers
 {
@@ -18,10 +17,9 @@ namespace Api.Controllers
     [ApiController]
     [Route("household")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class HouseholdController(ILogger<HouseholdController> logger, IUnitOfWork unitOfWork) : ControllerBase
+    [ValidateModelState]
+    public class HouseholdController(IUnitOfWork unitOfWork) : ControllerBase
     {
-
-        private readonly ILogger<HouseholdController> _logger = logger;
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
         /// <summary>
@@ -46,7 +44,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener el hogar con ID {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al obtener el hogar");
             }
         }
@@ -62,16 +59,11 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
-                {
-                    var result = await _unitOfWork.HouseholdRepository.GetAllHouseholds(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
-                    return Ok(result);
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                var result = await _unitOfWork.HouseholdRepository.GetAllHouseholds(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
+                return Ok(result);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener todos los hogares");
                 return StatusCode(500, "Error interno del servidor al obtener los hogares");
             }
         }
@@ -87,22 +79,17 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
+                var result = await _unitOfWork.HouseholdRepository.InsertHousehold(request);
+
+                if (result)
                 {
-                    var result = await _unitOfWork.HouseholdRepository.InsertHousehold(request);
-
-                    if (result)
-                    {
-                        return Ok(result);
-                    }
-
-                    return BadRequest("Error al crear el hogar");
+                    return Ok(result);
                 }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+
+                return BadRequest("Error al crear el hogar");
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al crear el hogar");
                 return StatusCode(500, "Error interno del servidor al crear el hogar");
             }
         }
@@ -118,22 +105,17 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
+                var result = await _unitOfWork.HouseholdRepository.UpdateHousehold(request);
+
+                if (result)
                 {
-                    var result = await _unitOfWork.HouseholdRepository.UpdateHousehold(request);
-
-                    if (result)
-                    {
-                        return Ok(result);
-                    }
-
-                    return BadRequest("Error al actualizar el hogar");
+                    return Ok(result);
                 }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+
+                return BadRequest("Error al actualizar el hogar");
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al actualizar el hogar con ID {Id}", request.Id);
                 return StatusCode(500, "Error interno del servidor al actualizar el hogar");
             }
         }
@@ -160,7 +142,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el hogar con ID {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al eliminar el hogar");
             }
         }
@@ -181,7 +162,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener el miembro con ID {Id}", id);
                 return StatusCode(500, "Error interno del servidor al obtener el miembro");
             }
         }
@@ -200,7 +180,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener los miembros del hogar con HouseholdId {Id}", queryParameters.Id);
                 return StatusCode(500, "Error interno del servidor al obtener los miembros");
             }
         }
@@ -214,16 +193,11 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
-                {
-                    var id = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
-                    return CreatedAtAction(nameof(GetHouseholdMemberById), new { id }, request);
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                var id = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
+                return CreatedAtAction(nameof(GetHouseholdMemberById), new { id }, request);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al crear el miembro del hogar");
                 return StatusCode(500, "Error interno del servidor al crear el miembro");
             }
         }
@@ -237,17 +211,12 @@ namespace Api.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
-                {
-                    var ok = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
-                    if (!ok) return NotFound($"Miembro con ID {request.Id} no encontrado");
-                    return NoContent();
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                var ok = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
+                if (!ok) return NotFound($"Miembro con ID {request.Id} no encontrado");
+                return NoContent();
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al actualizar el miembro con ID {Id}", request.Id);
                 return StatusCode(500, "Error interno del servidor al actualizar el miembro");
             }
         }
@@ -267,7 +236,6 @@ namespace Api.Controllers
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el miembro con ID {Id}", id);
                 return StatusCode(500, "Error interno del servidor al eliminar el miembro");
             }
         }

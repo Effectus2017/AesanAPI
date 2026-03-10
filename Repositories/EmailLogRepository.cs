@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Logging;
 
@@ -52,7 +53,7 @@ public class EmailLogRepository(DapperContext context, ILogger<EmailLogRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar log de correo electrónico");
-            throw new Exception($"Error al insertar log de correo electrónico: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar log de correo electrónico", ex);
         }
     }
 
@@ -78,7 +79,7 @@ public class EmailLogRepository(DapperContext context, ILogger<EmailLogRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al obtener logs de correo por usuario {userId}");
-            throw new Exception($"Error al obtener logs de correo por usuario: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener logs de correo por usuario", ex);
         }
     }
 
@@ -104,7 +105,7 @@ public class EmailLogRepository(DapperContext context, ILogger<EmailLogRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al obtener logs de correo por email {email}");
-            throw new Exception($"Error al obtener logs de correo por email: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener logs de correo por email", ex);
         }
     }
 
@@ -130,7 +131,7 @@ public class EmailLogRepository(DapperContext context, ILogger<EmailLogRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al obtener log de correo por ID {id}");
-            throw new Exception($"Error al obtener log de correo por ID: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener log de correo por ID", ex);
         }
     }
 
@@ -164,7 +165,7 @@ public class EmailLogRepository(DapperContext context, ILogger<EmailLogRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al actualizar estado del log de correo {id}");
-            throw new Exception($"Error al actualizar estado del log de correo: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar estado del log de correo", ex);
         }
     }
 
@@ -190,7 +191,7 @@ public class EmailLogRepository(DapperContext context, ILogger<EmailLogRepositor
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al obtener logs de correos fallidos");
-            throw new Exception($"Error al obtener logs de correos fallidos: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener logs de correos fallidos", ex);
         }
     }
 }

@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -32,7 +33,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener el mensaje con ID {MessageId}", id);
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el mensaje", ex);
             }
         }
 
@@ -51,7 +52,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener todos los mensajes");
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener todos los mensajes", ex);
             }
         }
 
@@ -126,7 +127,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar el mensaje con ID {MessageId}", messageRequest.Id);
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el mensaje", ex);
             }
         }
 
@@ -149,7 +150,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al eliminar el mensaje con ID {MessageId}", id);
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el mensaje", ex);
             }
         }
 
@@ -172,7 +173,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al marcar todos los mensajes como leídos para usuario {UserId}", userId);
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al marcar todos los mensajes como leídos", ex);
             }
         }
 
@@ -195,7 +196,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al marcar mensaje como leído con ID {MessageId}", id);
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al marcar mensaje como leído", ex);
             }
         }
 
@@ -214,7 +215,7 @@ namespace Api.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener el conteo de mensajes no leídos para usuario {UserId}", userId);
-                throw new Exception(ex.Message);
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el conteo de mensajes no leídos", ex);
             }
         }
     }

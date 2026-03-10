@@ -8,6 +8,7 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -56,7 +57,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener las relaciones del empleado con ID {StaffId}", staffId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -128,7 +129,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener todas las relaciones activas");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -157,7 +158,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener la relación con ID {Id}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -194,7 +195,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al crear la relación entre empleados {StaffId} y {RelatedStaffId}", request.StaffId, request.RelatedStaffId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -238,7 +239,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la relación con ID {Id}", request.Id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -279,7 +280,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al desactivar la relación con ID {Id}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -309,7 +310,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al verificar si existe relación entre empleados {StaffId} y {RelatedStaffId}", staffId, relatedStaffId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -342,7 +343,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener las relaciones por tipo {RelationshipTypeId}", relationshipTypeId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -374,7 +375,7 @@ public class StaffRelationshipRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al verificar si el empleado {StaffId} puede tener el tipo de relación {RelationshipTypeId}", staffId, relationshipTypeId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 

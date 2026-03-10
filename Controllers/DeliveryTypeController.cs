@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Models.Errors;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -17,6 +19,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("delivery-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeRepository, ILogger<DeliveryTypeController> logger) : ControllerBase
 {
     private readonly IDeliveryTypeRepository _deliveryTypeRepository = deliveryTypeRepository;
@@ -33,18 +36,13 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _deliveryTypeRepository.GetDeliveryTypeById(queryParameters.Id);
+            if (result == null)
             {
-                var result = await _deliveryTypeRepository.GetDeliveryTypeById(queryParameters.Id);
-                if (result == null)
-                {
-                    return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -64,19 +62,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+
+            if (result == null)
             {
-                var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron tipos de entrega");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron tipos de entrega");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -96,19 +89,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _deliveryTypeRepository.InsertDeliveryType(request);
+
+            if (result)
             {
-                var result = await _deliveryTypeRepository.InsertDeliveryType(request);
-
-                if (result)
-                {
-                    return Ok(request);
-                }
-
-                return BadRequest("No se pudo crear el tipo de entrega");
+                return Ok(request);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo crear el tipo de entrega");
         }
         catch (Exception ex)
         {
@@ -128,19 +116,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _deliveryTypeRepository.UpdateDeliveryType(request);
+
+            if (!result)
             {
-                var result = await _deliveryTypeRepository.UpdateDeliveryType(request);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de entrega con ID {request.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return NotFound($"Tipo de entrega con ID {request.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -160,18 +143,13 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _deliveryTypeRepository.DeleteDeliveryType(queryParameters.Id);
+            if (!result)
             {
-                var result = await _deliveryTypeRepository.DeleteDeliveryType(queryParameters.Id);
-                if (!result)
-                {
-                    return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
-                }
-
-                return NoContent();
+                return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -191,26 +169,21 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipos de entrega para el programa: {ProgramId}", queryParameters.ProgramId);
+
+            if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
             {
-                _logger.LogInformation("Obteniendo tipos de entrega para el programa: {ProgramId}", queryParameters.ProgramId);
-
-                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
-                {
-                    return BadRequest("El ID del programa es requerido");
-                }
-
-                var result = await _deliveryTypeRepository.GetDeliveryTypesByProgram(queryParameters.ProgramId.Value);
-
-                return Ok(result);
+                return BadRequest("El ID del programa es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _deliveryTypeRepository.GetDeliveryTypesByProgram(queryParameters.ProgramId.Value);
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de entrega para el programa {ProgramId}", queryParameters.ProgramId);
-            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de entrega", ex.Message));
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, 500));
         }
     }
 
@@ -225,26 +198,21 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipos de entrega para el tipo de grupo: {GroupTypeId}", queryParameters.GroupTypeId);
+
+            if (queryParameters.GroupTypeId == 0)
             {
-                _logger.LogInformation("Obteniendo tipos de entrega para el tipo de grupo: {GroupTypeId}", queryParameters.GroupTypeId);
-
-                if (queryParameters.GroupTypeId == 0)
-                {
-                    return BadRequest("El ID del tipo de grupo es requerido");
-                }
-
-                var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId);
-
-                return Ok(result);
+                return BadRequest("El ID del tipo de grupo es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId);
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de entrega para el tipo de grupo {GroupTypeId}", queryParameters.GroupTypeId);
-            return StatusCode(500, new ErrorResponse("Error interno del servidor al obtener los tipos de entrega", ex.Message));
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error interno del servidor al obtener los tipos de entrega", 500));
         }
     }
 }

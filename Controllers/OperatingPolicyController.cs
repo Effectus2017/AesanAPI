@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("operating-policy")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class OperatingPolicyController(IOperatingPolicyRepository operatingPolicyRepository, ILogger<OperatingPolicyController> logger) : ControllerBase
 {
     private readonly IOperatingPolicyRepository _operatingPolicyRepository = operatingPolicyRepository;
@@ -31,26 +33,21 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo política operativa por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo política operativa por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID de la política operativa es requerido");
-                }
-
-                var result = await _operatingPolicyRepository.GetOperatingPolicyById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la política operativa es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _operatingPolicyRepository.GetOperatingPolicyById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -70,24 +67,19 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _operatingPolicyRepository.GetAllOperatingPolicies(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Name,
+                queryParameters.Alls,
+                queryParameters.IsList);
+
+            if (result == null)
             {
-                var result = await _operatingPolicyRepository.GetAllOperatingPolicies(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Name,
-                    queryParameters.Alls,
-                    queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron políticas operativas");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron políticas operativas");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -107,21 +99,16 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _operatingPolicyRepository.InsertOperatingPolicy(request);
+
+            if (result)
             {
-                var result = await _operatingPolicyRepository.InsertOperatingPolicy(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Política operativa creada con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear la política operativa");
-                return BadRequest("No se pudo crear la política operativa");
+                _logger.LogInformation("Política operativa creada con ID: {Id}", request.Id);
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogWarning("No se pudo crear la política operativa");
+            return BadRequest("No se pudo crear la política operativa");
         }
         catch (Exception ex)
         {
@@ -141,20 +128,15 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _operatingPolicyRepository.UpdateOperatingPolicy(request);
+
+            if (!result)
             {
-                var result = await _operatingPolicyRepository.UpdateOperatingPolicy(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Política operativa con ID {Id} no encontrada", request.Id);
-                    return NotFound($"Política operativa con ID {request.Id} no encontrada");
-                }
-
-                return Ok(result);
+                _logger.LogWarning("Política operativa con ID {Id} no encontrada", request.Id);
+                return NotFound($"Política operativa con ID {request.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -174,20 +156,15 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _operatingPolicyRepository.DeleteOperatingPolicy(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _operatingPolicyRepository.DeleteOperatingPolicy(queryParameters.Id);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Política operativa con ID {Id} no encontrada", queryParameters.Id);
-                    return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Política operativa con ID {Id} no encontrada", queryParameters.Id);
+                return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

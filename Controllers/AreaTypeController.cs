@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("area-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<AreaTypeController> logger) : ControllerBase
 {
     private readonly IAreaTypeRepository _areaTypeRepository = areaTypeRepository;
@@ -25,24 +27,20 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipo de área por ID: {Id}", queryParameters.Id);
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo tipo de área por ID: {Id}", queryParameters.Id);
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del tipo de área es requerido");
-                }
-                var result = await _areaTypeRepository.GetAreaTypeById(queryParameters.Id);
-                if (result == null)
-                {
-                    return NotFound($"Tipo de área con ID {queryParameters.Id} no encontrado");
-                }
-                else
-                {
-                    return Ok(result);
-                }
+                return BadRequest("El ID del tipo de área es requerido");
             }
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _areaTypeRepository.GetAreaTypeById(queryParameters.Id);
+            if (result == null)
+            {
+                return NotFound($"Tipo de área con ID {queryParameters.Id} no encontrado");
+            }
+            else
+            {
+                return Ok(result);
+            }
         }
         catch (Exception ex)
         {
@@ -57,16 +55,12 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _areaTypeRepository.GetAllAreaTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+            if (result == null)
             {
-                var result = await _areaTypeRepository.GetAllAreaTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-                if (result == null)
-                {
-                    return NotFound("No se encontraron tipos de área");
-                }
-                return Ok(result);
+                return NotFound("No se encontraron tipos de área");
             }
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -81,16 +75,12 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _areaTypeRepository.InsertAreaType(request);
+            if (result)
             {
-                var result = await _areaTypeRepository.InsertAreaType(request);
-                if (result)
-                {
-                    return Ok(result);
-                }
-                return BadRequest("No se pudo crear el tipo de área");
+                return Ok(result);
             }
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo crear el tipo de área");
         }
         catch (Exception ex)
         {
@@ -105,16 +95,12 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _areaTypeRepository.UpdateAreaType(request);
+            if (result)
             {
-                var result = await _areaTypeRepository.UpdateAreaType(request);
-                if (result)
-                {
-                    return Ok(result);
-                }
-                return BadRequest("No se pudo actualizar el tipo de área");
+                return Ok(result);
             }
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo actualizar el tipo de área");
         }
         catch (Exception ex)
         {
@@ -129,16 +115,12 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _areaTypeRepository.DeleteAreaType(queryParameters.Id);
+            if (!result)
             {
-                var result = await _areaTypeRepository.DeleteAreaType(queryParameters.Id);
-                if (!result)
-                {
-                    return NotFound($"Tipo de área con ID {queryParameters.Id} no encontrado");
-                }
-                return NoContent();
+                return NotFound($"Tipo de área con ID {queryParameters.Id} no encontrado");
             }
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -158,21 +140,16 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository, ILogger<
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipo de área para la ciudad: {CityId}", queryParameters.CityId);
+
+            if (queryParameters.CityId == 0)
             {
-                _logger.LogInformation("Obteniendo tipo de área para la ciudad: {CityId}", queryParameters.CityId);
-
-                if (queryParameters.CityId == 0)
-                {
-                    return BadRequest("El ID de la ciudad es requerido");
-                }
-
-                var result = await _areaTypeRepository.GetAreaTypeByCity(queryParameters.CityId);
-
-                return Ok(result);
+                return BadRequest("El ID de la ciudad es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _areaTypeRepository.GetAreaTypeByCity(queryParameters.CityId);
+
+            return Ok(result);
         }
         catch (Exception ex)
         {

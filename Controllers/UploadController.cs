@@ -4,6 +4,7 @@ using Api.Models.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -13,6 +14,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("upload")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileStorageService, ILogger<UploadController> logger) : Controller
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));

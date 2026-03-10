@@ -8,6 +8,7 @@ using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -38,7 +39,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el tipo de grupo con ID {GroupTypeId}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -102,7 +103,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de grupo");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -136,7 +137,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de grupo", ex);
         }
     }
 
@@ -168,7 +169,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el tipo de grupo", ex);
         }
     }
 
@@ -201,7 +202,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el orden de visualización del tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el orden de visualización del tipo de grupo", ex);
         }
     }
 
@@ -232,7 +233,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el tipo de grupo", ex);
         }
     }
 
@@ -255,7 +256,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener la ubicación del sitio para el tipo de grupo con ID {GroupTypeId}", groupTypeId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -273,7 +274,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el ID del tipo de grupo Comedor");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -296,7 +297,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de grupo para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de grupo para el programa", ex);
         }
     }
 

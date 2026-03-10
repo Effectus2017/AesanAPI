@@ -5,6 +5,7 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Services;
 using Dapper;
+using Api.Models.Errors;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
@@ -138,7 +139,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
 
         if (string.IsNullOrEmpty(agencyAssignmentType))
         {
-            throw new Exception($"No se puede determinar AgencyAssignmentType para el usuario {userId} (sin rol o rol no configurado en RoleAssignmentCategory).");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"No se puede determinar AgencyAssignmentType para el usuario {userId} (sin rol o rol no configurado en RoleAssignmentCategory).");
         }
 
         return agencyAssignmentType;

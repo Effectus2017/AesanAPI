@@ -6,6 +6,7 @@ using Api.Services;
 using Dapper;
 using System.Collections.Generic;
 using System.Data;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -56,7 +57,7 @@ public class SitePersonInChargeRepository(DapperContext context, ILoggingService
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al insertar información de Persona a Cargo: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar información de Persona a Cargo", ex);
         }
         finally
         {
@@ -103,7 +104,7 @@ public class SitePersonInChargeRepository(DapperContext context, ILoggingService
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al actualizar información de Persona a Cargo: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar información de Persona a Cargo", ex);
         }
     }
 
@@ -144,7 +145,7 @@ public class SitePersonInChargeRepository(DapperContext context, ILoggingService
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al obtener información de Persona a Cargo: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener información de Persona a Cargo", ex);
         }
     }
 }

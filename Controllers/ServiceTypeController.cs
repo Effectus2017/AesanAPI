@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("service-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class ServiceTypeController(IServiceTypeRepository serviceTypeRepository, ILogger<ServiceTypeController> logger)
     : ControllerBase
 {

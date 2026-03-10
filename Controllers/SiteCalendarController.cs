@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
@@ -17,6 +18,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("site-calendar")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISiteCalendarRepository siteCalendarRepository) : Controller
 {
     private readonly ILogger<SiteCalendarController> _logger = logger;
@@ -63,7 +65,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener días de funcionamiento para el sitio {SiteId}", queryParameters.SiteId);
             return StatusCode(500, ex.Message);
         }
     }
@@ -79,11 +80,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             _logger.LogInformation("Creando día de funcionamiento para sitio {SiteId} en fecha {Date}",
                 request.SiteId, request.OperatingDate.Date);
 
@@ -104,8 +100,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear día de funcionamiento para sitio {SiteId} en fecha {Date}",
-                request.SiteId, request.OperatingDate.Date);
             return StatusCode(500, ex.Message);
         }
     }
@@ -121,11 +115,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (!request.Id.HasValue || request.Id.Value <= 0)
             {
                 return BadRequest("El ID del día de funcionamiento es requerido para actualizar");
@@ -151,8 +140,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
-                request.Id ?? 0, request.SiteId, request.OperatingDate.Date);
             return StatusCode(500, ex.Message);
         }
     }
@@ -177,11 +164,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
             if (requests == null || !requests.Any())
             {
                 return BadRequest("La lista de días de funcionamiento no puede estar vacía");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
             }
 
             _logger.LogInformation("Actualizando {Count} días de funcionamiento para sitio {SiteId}",
@@ -209,7 +191,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error en actualización en lote para sitio {SiteId}", siteId);
             return StatusCode(500, ex.Message);
         }
     }
@@ -247,7 +228,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar día de funcionamiento {Id}", id);
             return StatusCode(500, ex.Message);
         }
     }
@@ -285,7 +265,6 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener días permitidos para el programa {ProgramId}: {Message}", queryParameters.ProgramId, ex.Message);
             return StatusCode(500, ex.Message);
         }
     }

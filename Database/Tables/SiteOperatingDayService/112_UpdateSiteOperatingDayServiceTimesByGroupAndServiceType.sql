@@ -1,5 +1,0 @@
--- =============================================
--- El procedimiento 100_UpdateSiteOperatingDayServiceTimesByGroupAndServiceType
--- está definido en 101_UpdateSiteOperatingDayServiceTimesByGroupAndServiceType.sql.
--- Este archivo se mantiene por orden de migración; no crea el SP.
--- =============================================

@@ -4,6 +4,8 @@ using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 
+using Api.Filters;
+
 namespace Api.Controllers;
 
 /// <summary>
@@ -14,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("geo")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<GeoController> _logger = logger;
@@ -98,20 +101,15 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo ciudades de la base de datos");
+            var result = await _unitOfWork.GeoRepository.GetAllCitiesFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+
+            if (result == null)
             {
-                _logger.LogInformation("Obteniendo ciudades de la base de datos");
-                var result = await _unitOfWork.GeoRepository.GetAllCitiesFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(result);
+                return NotFound();
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -131,20 +129,15 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo regiones de la base de datos");
+            var result = await _unitOfWork.GeoRepository.GetAllRegionsFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+
+            if (result == null)
             {
-                _logger.LogInformation("Obteniendo regiones de la base de datos");
-                var result = await _unitOfWork.GeoRepository.GetAllRegionsFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(result);
+                return NotFound();
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -165,26 +158,21 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo regiones por ID de ciudad: {Id}", queryParameters.CityId);
+
+            if (queryParameters.CityId == 0)
             {
-                _logger.LogInformation("Obteniendo regiones por ID de ciudad: {Id}", queryParameters.CityId);
-
-                if (queryParameters.CityId == 0)
-                {
-                    return BadRequest("El ID de la ciudad es requerido");
-                }
-
-                var result = await _unitOfWork.GeoRepository.GetRegionsByCityId(queryParameters.CityId, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la ciudad es requerido");
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _unitOfWork.GeoRepository.GetRegionsByCityId(queryParameters.CityId, queryParameters.IsList);
+
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -204,26 +192,21 @@ public class GeoController(ILogger<GeoController> logger, IUnitOfWork unitOfWork
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo ciudades por ID de región: {Id}", queryParameters.RegionId);
+
+            if (queryParameters.RegionId == 0)
             {
-                _logger.LogInformation("Obteniendo ciudades por ID de región: {Id}", queryParameters.RegionId);
-
-                if (queryParameters.RegionId == 0)
-                {
-                    return BadRequest("El ID de la región es requerido");
-                }
-
-                var result = await _unitOfWork.GeoRepository.GetCitiesByRegionId(queryParameters.RegionId, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la región es requerido");
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _unitOfWork.GeoRepository.GetCitiesByRegionId(queryParameters.RegionId, queryParameters.IsList);
+
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {

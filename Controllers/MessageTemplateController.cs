@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -16,6 +17,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("message-template")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class MessageTemplateController(IMessageTemplateRepository messageTemplateRepository, ILogger<MessageTemplateController> logger) : ControllerBase
 {
     private readonly IMessageTemplateRepository _messageTemplateRepository = messageTemplateRepository;
@@ -32,26 +34,21 @@ public class MessageTemplateController(IMessageTemplateRepository messageTemplat
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo template de mensaje por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo template de mensaje por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del template de mensaje es requerido");
-                }
-
-                var result = await _messageTemplateRepository.GetMessageTemplateById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Template de mensaje con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID del template de mensaje es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _messageTemplateRepository.GetMessageTemplateById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Template de mensaje con ID {queryParameters.Id} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -71,26 +68,21 @@ public class MessageTemplateController(IMessageTemplateRepository messageTemplat
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo todos los templates de mensaje");
+
+            var result = await _messageTemplateRepository.GetAllMessageTemplates(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.TemplateKey,
+                queryParameters.Description, // Este parámetro ahora se mapea a Purpose en el stored procedure
+                queryParameters.Alls);
+
+            if (result == null)
             {
-                _logger.LogInformation("Obteniendo todos los templates de mensaje");
-
-                var result = await _messageTemplateRepository.GetAllMessageTemplates(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.TemplateKey,
-                    queryParameters.Description, // Este parámetro ahora se mapea a Purpose en el stored procedure
-                    queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron templates de mensaje");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron templates de mensaje");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -110,24 +102,19 @@ public class MessageTemplateController(IMessageTemplateRepository messageTemplat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrEmpty(queryParameters.TemplateKey))
             {
-                if (string.IsNullOrEmpty(queryParameters.TemplateKey))
-                {
-                    return BadRequest("La clave del template es requerida");
-                }
-
-                var result = await _messageTemplateRepository.GetMessageTemplateByKey(queryParameters.TemplateKey);
-
-                if (result == null)
-                {
-                    return NotFound($"Template de mensaje con clave {queryParameters.TemplateKey} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("La clave del template es requerida");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _messageTemplateRepository.GetMessageTemplateByKey(queryParameters.TemplateKey);
+
+            if (result == null)
+            {
+                return NotFound($"Template de mensaje con clave {queryParameters.TemplateKey} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -147,26 +134,21 @@ public class MessageTemplateController(IMessageTemplateRepository messageTemplat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("El template de mensaje es requerido");
-                }
-
-                var result = await _messageTemplateRepository.InsertMessageTemplate(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Template de mensaje creado con clave: {TemplateKey}", request.TemplateKey);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear el template de mensaje");
-                return BadRequest("No se pudo crear el template de mensaje");
+                return BadRequest("El template de mensaje es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _messageTemplateRepository.InsertMessageTemplate(request);
+
+            if (result)
+            {
+                _logger.LogInformation("Template de mensaje creado con clave: {TemplateKey}", request.TemplateKey);
+                return Ok(result);
+            }
+
+            _logger.LogWarning("No se pudo crear el template de mensaje");
+            return BadRequest("No se pudo crear el template de mensaje");
         }
         catch (Exception ex)
         {
@@ -186,25 +168,20 @@ public class MessageTemplateController(IMessageTemplateRepository messageTemplat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null || request.Id == null || request.Id == 0)
             {
-                if (request == null || request.Id == null || request.Id == 0)
-                {
-                    return BadRequest("El ID del template de mensaje es requerido");
-                }
-
-                var result = await _messageTemplateRepository.UpdateMessageTemplate(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Template de mensaje con ID {Id} no encontrado", request.Id);
-                    return NotFound($"Template de mensaje con ID {request.Id} no encontrado");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID del template de mensaje es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _messageTemplateRepository.UpdateMessageTemplate(request);
+
+            if (!result)
+            {
+                _logger.LogWarning("Template de mensaje con ID {Id} no encontrado", request.Id);
+                return NotFound($"Template de mensaje con ID {request.Id} no encontrado");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {

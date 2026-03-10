@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Api.Interfaces;
 using Api.Models.Request;
+using Api.Models.Errors;
 
 namespace Api.Controllers;
 
@@ -16,6 +18,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("staff-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<StaffTypeController> _logger = logger;
@@ -32,35 +35,22 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo tipo de staff por ID: {Id}", queryParameters.Id);
+
+            var staffType = await _unitOfWork.StaffTypeRepository.GetStaffTypeById(queryParameters.Id);
+
+            if (staffType == null)
             {
-                _logger.LogInformation("Obteniendo tipo de staff por ID: {Id}", queryParameters.Id);
-
-                var staffType = await _unitOfWork.StaffTypeRepository.GetStaffTypeById(queryParameters.Id);
-
-                if (staffType == null)
-                {
-                    return NotFound($"Tipo de staff con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(staffType);
+                return NotFound($"Tipo de staff con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(staffType);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el tipo de staff con ID {Id}. Detalles: {Message}", queryParameters.Id, ex.Message);
 
-            // Devolver información más detallada del error
-            var errorResponse = new ErrorResponse(
-                "Error al obtener el tipo de staff",
-                ex.Message,
-                ex.StackTrace,
-                ex.InnerException?.Message
-            );
-
-            return StatusCode(500, errorResponse);
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el tipo de staff", 500));
         }
     }
 
@@ -75,36 +65,24 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo todos los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
-                    queryParameters.Take, queryParameters.Skip, queryParameters.Names, queryParameters.Alls, queryParameters.IsList);
+            _logger.LogInformation("Obteniendo todos los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
+                queryParameters.Take, queryParameters.Skip, queryParameters.Names, queryParameters.Alls, queryParameters.IsList);
 
-                var staffTypes = await _unitOfWork.StaffTypeRepository.GetAllStaffTypesFromDb(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Names,
-                    queryParameters.Alls,
-                    queryParameters.IsList
-                );
-                return Ok(staffTypes);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var staffTypes = await _unitOfWork.StaffTypeRepository.GetAllStaffTypesFromDb(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Names,
+                queryParameters.Alls,
+                queryParameters.IsList
+            );
+            return Ok(staffTypes);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}. Detalles: {Message}",
                 queryParameters.Take, queryParameters.Skip, queryParameters.Names, queryParameters.Alls, queryParameters.IsList, ex.Message);
 
-            var errorResponse = new ErrorResponse(
-                "Error al obtener los tipos de staff",
-                ex.Message,
-                ex.StackTrace,
-                ex.InnerException?.Message
-            );
-
-            return StatusCode(500, errorResponse);
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de staff", 500));
         }
     }
 
@@ -119,40 +97,28 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("El tipo de staff es requerido");
-                }
-
-                _logger.LogInformation("Insertando nuevo tipo de staff: {Name}", request.Name);
-
-                var result = await _unitOfWork.StaffTypeRepository.InsertStaffType(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Tipo de staff insertado exitosamente");
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo insertar el tipo de staff");
-                return BadRequest("No se pudo insertar el tipo de staff");
+                return BadRequest("El tipo de staff es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Insertando nuevo tipo de staff: {Name}", request.Name);
+
+            var result = await _unitOfWork.StaffTypeRepository.InsertStaffType(request);
+
+            if (result)
+            {
+                _logger.LogInformation("Tipo de staff insertado exitosamente");
+                return Ok(result);
+            }
+
+            _logger.LogWarning("No se pudo insertar el tipo de staff");
+            return BadRequest("No se pudo insertar el tipo de staff");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar el tipo de staff. Detalles: {Message}", ex.Message);
-            var errorResponse = new ErrorResponse(
-                "Error al insertar el tipo de staff",
-                ex.Message,
-                ex.StackTrace,
-                ex.InnerException?.Message
-            );
-
-            return StatusCode(500, errorResponse);
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de staff", 500));
         }
     }
 
@@ -167,37 +133,31 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("El tipo de staff es requerido");
-                }
-
-                if (request.Id == null || request.Id <= 0)
-                {
-                    return BadRequest("El ID del tipo de staff es requerido y debe ser mayor que cero");
-                }
-
-                var result = await _unitOfWork.StaffTypeRepository.UpdateStaffType(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Tipo de staff actualizado exitosamente con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo actualizar el tipo de staff con ID: {Id}", request.Id);
-                return BadRequest("No se pudo actualizar el tipo de staff");
+                return BadRequest("El tipo de staff es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            if (request.Id == null || request.Id <= 0)
+            {
+                return BadRequest("El ID del tipo de staff es requerido y debe ser mayor que cero");
+            }
+
+            var result = await _unitOfWork.StaffTypeRepository.UpdateStaffType(request);
+
+            if (result)
+            {
+                _logger.LogInformation("Tipo de staff actualizado exitosamente con ID: {Id}", request.Id);
+                return Ok(result);
+            }
+
+            _logger.LogWarning("No se pudo actualizar el tipo de staff con ID: {Id}", request.Id);
+            return BadRequest("No se pudo actualizar el tipo de staff");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el tipo de staff con ID {Id}. Detalles: {Message}", request.Id, ex.Message);
-            var errorResponse = new ErrorResponse("Error al actualizar el tipo de staff", ex.Message, ex.StackTrace, ex.InnerException?.Message);
-            return StatusCode(500, errorResponse);
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el tipo de staff", 500));
         }
     }
 
@@ -212,36 +172,24 @@ public class StaffTypeController(ILogger<StaffTypeController> logger, IUnitOfWor
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Eliminando tipo de staff con ID: {Id}", queryParameters.Id);
+
+            var result = await _unitOfWork.StaffTypeRepository.DeleteStaffType(queryParameters.Id);
+
+            if (result)
             {
-                _logger.LogInformation("Eliminando tipo de staff con ID: {Id}", queryParameters.Id);
-
-                var result = await _unitOfWork.StaffTypeRepository.DeleteStaffType(queryParameters.Id);
-
-                if (result)
-                {
-                    _logger.LogInformation("Tipo de staff eliminado exitosamente con ID: {Id}", queryParameters.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo eliminar el tipo de staff con ID: {Id}", queryParameters.Id);
-                return BadRequest("No se pudo eliminar el tipo de staff");
+                _logger.LogInformation("Tipo de staff eliminado exitosamente con ID: {Id}", queryParameters.Id);
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogWarning("No se pudo eliminar el tipo de staff con ID: {Id}", queryParameters.Id);
+            return BadRequest("No se pudo eliminar el tipo de staff");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar el tipo de staff con ID {Id}. Detalles: {Message}", queryParameters.Id, ex.Message);
 
-            var errorResponse = new ErrorResponse(
-                "Error al eliminar el tipo de staff",
-                ex.Message,
-                ex.StackTrace,
-                ex.InnerException?.Message
-            );
-
-            return StatusCode(500, errorResponse);
+            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el tipo de staff", 500));
         }
     }
 }

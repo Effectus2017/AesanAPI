@@ -6,6 +6,7 @@ using Api.Models.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Api.Interfaces;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("agency-calendar")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AgencyCalendarController(ILogger<AgencyCalendarController> logger, IAgencyCalendarRepository agencyCalendarRepository) : Controller
 {
     private readonly ILogger<AgencyCalendarController> _logger = logger;
@@ -51,9 +53,6 @@ public class AgencyCalendarController(ILogger<AgencyCalendarController> logger, 
     {
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
 
             var newId = await _agencyCalendarRepository.CreateAppointment(request, userId);
@@ -76,9 +75,6 @@ public class AgencyCalendarController(ILogger<AgencyCalendarController> logger, 
     {
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             if (!request.Id.HasValue || request.Id.Value <= 0)
                 return BadRequest("El ID de la cita es requerido para actualizar");
 

@@ -1,4 +1,5 @@
 using Api.Interfaces;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("agency-files")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyFilesController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -36,15 +38,10 @@ public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitO
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo archivo con ID {FileId}", queryParameters.Id);
-                var result = await _unitOfWork.AgencyFilesRepository.GetAgencyFileById(queryParameters.Id);
+            _logger.LogInformation("Obteniendo archivo con ID {FileId}", queryParameters.Id);
+            var result = await _unitOfWork.AgencyFilesRepository.GetAgencyFileById(queryParameters.Id);
 
-                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -67,14 +64,9 @@ public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitO
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo archivos para la agencia {AgencyId}", queryParameters.AgencyId);
-                var result = await _unitOfWork.AgencyFilesRepository.GetAgencyFiles(queryParameters.AgencyId, queryParameters.Take, queryParameters.Skip, queryParameters.Alls, queryParameters.Name, queryParameters.DocumentType);
-                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Obteniendo archivos para la agencia {AgencyId}", queryParameters.AgencyId);
+            var result = await _unitOfWork.AgencyFilesRepository.GetAgencyFiles(queryParameters.AgencyId, queryParameters.Take, queryParameters.Skip, queryParameters.Alls, queryParameters.Name, queryParameters.DocumentType);
+            return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -95,14 +87,9 @@ public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitO
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Eliminando archivo con ID {FileId}", queryParameters.Id);
-                var result = await _unitOfWork.AgencyFilesRepository.DeleteAgencyFile(queryParameters.Id);
-                return result ? StatusCode(StatusCodes.Status200OK, new { message = "Archivo eliminado correctamente" }) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Eliminando archivo con ID {FileId}", queryParameters.Id);
+            var result = await _unitOfWork.AgencyFilesRepository.DeleteAgencyFile(queryParameters.Id);
+            return result ? StatusCode(StatusCodes.Status200OK, new { message = "Archivo eliminado correctamente" }) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {
@@ -122,14 +109,9 @@ public class AgencyFilesController(ILogger<AgencyFilesController> logger, IUnitO
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Verificando archivo con ID {FileId}", queryParameters.Id);
-                var result = await _unitOfWork.AgencyFilesRepository.VerifyAgencyFile(queryParameters.Id);
-                return result ? StatusCode(StatusCodes.Status200OK, new { message = "Archivo verificado correctamente" }) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Verificando archivo con ID {FileId}", queryParameters.Id);
+            var result = await _unitOfWork.AgencyFilesRepository.VerifyAgencyFile(queryParameters.Id);
+            return result ? StatusCode(StatusCodes.Status200OK, new { message = "Archivo verificado correctamente" }) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
         }
         catch (Exception ex)
         {

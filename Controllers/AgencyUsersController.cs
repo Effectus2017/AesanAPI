@@ -3,6 +3,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -12,6 +13,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("agency-user-assignment")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<AgencyUserAssignmentController> _logger = logger;
@@ -28,25 +30,20 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrEmpty(queryParameters.UserId))
             {
-                if (string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return BadRequest("El ID del usuario es requerido");
-                }
-
-                var agencies = await _unitOfWork.AgencyUsersRepository.GetUserAssignedAgencies(
-                    queryParameters.UserId,
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Alls,
-                    queryParameters.IsList
-                );
-
-                return Ok(agencies);
+                return BadRequest("El ID del usuario es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var agencies = await _unitOfWork.AgencyUsersRepository.GetUserAssignedAgencies(
+                queryParameters.UserId,
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Alls,
+                queryParameters.IsList
+            );
+
+            return Ok(agencies);
         }
         catch (Exception ex)
         {
@@ -66,32 +63,27 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrEmpty(queryParameters.UserId))
             {
-                if (string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return BadRequest("El ID del usuario es requerido");
-                }
-
-                if (queryParameters.AgencyId == null || queryParameters.AgencyId == 0)
-                {
-                    return BadRequest("El ID de la agencia es requerido");
-                }
-
-                // Calcular AgencyAssignmentType según el rol del usuario
-                string agencyAssignmentType = await _unitOfWork.AgencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(queryParameters.UserId);
-
-                var result = await _unitOfWork.AgencyUsersRepository.AssignAgencyToUser(
-                    queryParameters.UserId,
-                    queryParameters.AgencyId,
-                    queryParameters.AssignedBy ?? queryParameters.UserId, // Si no se proporciona, usar el mismo usuario
-                    agencyAssignmentType
-                );
-
-                return Ok(result);
+                return BadRequest("El ID del usuario es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            if (queryParameters.AgencyId == null || queryParameters.AgencyId == 0)
+            {
+                return BadRequest("El ID de la agencia es requerido");
+            }
+
+            // Calcular AgencyAssignmentType según el rol del usuario
+            string agencyAssignmentType = await _unitOfWork.AgencyUsersRepository.CalculateAgencyAssignmentTypeFromRole(queryParameters.UserId);
+
+            var result = await _unitOfWork.AgencyUsersRepository.AssignAgencyToUser(
+                queryParameters.UserId,
+                queryParameters.AgencyId,
+                queryParameters.AssignedBy ?? queryParameters.UserId, // Si no se proporciona, usar el mismo usuario
+                agencyAssignmentType
+            );
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -111,27 +103,22 @@ public class AgencyUserAssignmentController(ILogger<AgencyUserAssignmentControll
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrEmpty(queryParameters.UserId))
             {
-                if (string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return BadRequest("El ID del usuario es requerido");
-                }
-
-                if (queryParameters.AgencyId == 0)
-                {
-                    return BadRequest("El ID de la agencia es requerido");
-                }
-
-                var result = await _unitOfWork.AgencyUsersRepository.UnassignAgencyFromUser(
-                    queryParameters.UserId,
-                    queryParameters.AgencyId
-                );
-
-                return Ok(result);
+                return BadRequest("El ID del usuario es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            if (queryParameters.AgencyId == 0)
+            {
+                return BadRequest("El ID de la agencia es requerido");
+            }
+
+            var result = await _unitOfWork.AgencyUsersRepository.UnassignAgencyFromUser(
+                queryParameters.UserId,
+                queryParameters.AgencyId
+            );
+
+            return Ok(result);
         }
         catch (Exception ex)
         {

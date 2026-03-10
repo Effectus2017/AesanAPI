@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("federal-funding-certification")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class FederalFundingCertificationController(IFederalFundingCertificationRepository federalFundingCertificationRepository, ILogger<FederalFundingCertificationController> logger) : ControllerBase
 {
     private readonly IFederalFundingCertificationRepository _federalFundingCertificationRepository = federalFundingCertificationRepository;
@@ -31,27 +33,22 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo certificación de fondos federales por ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Obteniendo certificación de fondos federales por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID de la certificación de fondos federales es requerido");
-                }
-
-                var result = await _federalFundingCertificationRepository.GetFederalFundingCertificationById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", queryParameters.Id);
-                    return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
-                }
-
-                return Ok(result);
+                return BadRequest("El ID de la certificación de fondos federales es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _federalFundingCertificationRepository.GetFederalFundingCertificationById(queryParameters.Id);
+
+            if (result == null)
+            {
+                _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", queryParameters.Id);
+                return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -72,19 +69,14 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _federalFundingCertificationRepository.GetAllFederalFundingCertifications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+
+            if (result == null)
             {
-                var result = await _federalFundingCertificationRepository.GetAllFederalFundingCertifications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron certificaciones de fondos federales");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron certificaciones de fondos federales");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -105,21 +97,16 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _federalFundingCertificationRepository.InsertFederalFundingCertification(request);
+
+            if (result)
             {
-                var result = await _federalFundingCertificationRepository.InsertFederalFundingCertification(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Certificación de fondos federales creada con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear la certificación de fondos federales");
-                return BadRequest("No se pudo crear la certificación de fondos federales");
+                _logger.LogInformation("Certificación de fondos federales creada con ID: {Id}", request.Id);
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogWarning("No se pudo crear la certificación de fondos federales");
+            return BadRequest("No se pudo crear la certificación de fondos federales");
         }
         catch (Exception ex)
         {
@@ -139,19 +126,14 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _federalFundingCertificationRepository.UpdateFederalFundingCertification(request);
+            if (!result)
             {
-                var result = await _federalFundingCertificationRepository.UpdateFederalFundingCertification(request);
-                if (!result)
-                {
-                    _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", request.Id);
-                    return NotFound($"Certificación de fondos federales con ID {request.Id} no encontrada");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", request.Id);
+                return NotFound($"Certificación de fondos federales con ID {request.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -171,19 +153,14 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _federalFundingCertificationRepository.DeleteFederalFundingCertification(queryParameters.Id);
+            if (!result)
             {
-                var result = await _federalFundingCertificationRepository.DeleteFederalFundingCertification(queryParameters.Id);
-                if (!result)
-                {
-                    _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", queryParameters.Id);
-                    return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", queryParameters.Id);
+                return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

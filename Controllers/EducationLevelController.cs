@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("education-level")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class EducationLevelController(IEducationLevelRepository educationLevelRepository, ILogger<EducationLevelController> logger) : ControllerBase
 {
     private readonly IEducationLevelRepository _educationLevelRepository = educationLevelRepository;
@@ -31,23 +33,17 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _educationLevelRepository.GetEducationLevelById(queryParameters.Id);
+            if (result == null)
             {
-                var result = await _educationLevelRepository.GetEducationLevelById(queryParameters.Id);
-                if (result == null)
-                {
-                    _logger.LogWarning("Nivel educativo con ID {Id} no encontrado", queryParameters.Id);
-                    return NotFound($"Nivel educativo con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
+                _logger.LogWarning("Nivel educativo con ID {Id} no encontrado", queryParameters.Id);
+                return NotFound($"Nivel educativo con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el nivel educativo con ID {Id}", queryParameters.Id);
             return StatusCode(500, "Error interno del servidor al obtener el nivel educativo");
         }
     }
@@ -63,23 +59,17 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _educationLevelRepository.GetAllEducationLevels(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+
+            if (result == null)
             {
-                var result = await _educationLevelRepository.GetAllEducationLevels(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron niveles educativos");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron niveles educativos");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todos los niveles educativos");
             return StatusCode(500, "Error interno del servidor al obtener los niveles educativos");
         }
     }
@@ -95,24 +85,18 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _educationLevelRepository.InsertEducationLevel(request);
+
+            if (result)
             {
-                var result = await _educationLevelRepository.InsertEducationLevel(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear el nivel educativo");
-                return BadRequest("No se pudo crear el nivel educativo");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogWarning("No se pudo crear el nivel educativo");
+            return BadRequest("No se pudo crear el nivel educativo");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear el nivel educativo");
             return StatusCode(500, "Error interno del servidor al crear el nivel educativo");
         }
     }
@@ -128,24 +112,18 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _educationLevelRepository.UpdateEducationLevel(request);
+
+            if (!result)
             {
-                var result = await _educationLevelRepository.UpdateEducationLevel(request);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Nivel educativo con ID {Id} no encontrado", request.Id);
-                    return NotFound($"Nivel educativo con ID {request.Id} no encontrado");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Nivel educativo con ID {Id} no encontrado", request.Id);
+                return NotFound($"Nivel educativo con ID {request.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el nivel educativo con ID {Id}", request.Id);
             return StatusCode(500, "Error interno del servidor al actualizar el nivel educativo");
         }
     }
@@ -161,23 +139,17 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _educationLevelRepository.DeleteEducationLevel(queryParameters.Id);
+            if (!result)
             {
-                var result = await _educationLevelRepository.DeleteEducationLevel(queryParameters.Id);
-                if (!result)
-                {
-                    _logger.LogWarning("Nivel educativo con ID {Id} no encontrado", queryParameters.Id);
-                    return NotFound($"Nivel educativo con ID {queryParameters.Id} no encontrado");
-                }
-
-                return NoContent();
+                _logger.LogWarning("Nivel educativo con ID {Id} no encontrado", queryParameters.Id);
+                return NotFound($"Nivel educativo con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el nivel educativo con ID {Id}", queryParameters.Id);
             return StatusCode(500, "Error interno del servidor al eliminar el nivel educativo");
         }
     }

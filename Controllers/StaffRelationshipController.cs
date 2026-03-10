@@ -1,5 +1,6 @@
 using Api.Interfaces;
 using Api.Models;
+using Api.Filters;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("staff-relationship")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class StaffRelationshipController(IStaffRelationshipRepository staffRelationshipRepository, ILogger<StaffRelationshipController> logger) : ControllerBase
 {
     private readonly IStaffRelationshipRepository _staffRelationshipRepository = staffRelationshipRepository;
@@ -28,20 +30,15 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (queryParameters.Id == 0)
             {
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del empleado es requerido");
-                }
-
-                _logger.LogInformation("Obteniendo relaciones del empleado con ID: {Id}", queryParameters.Id);
-
-                var relationships = await _staffRelationshipRepository.GetRelationshipsByStaffId(queryParameters.Id, queryParameters.IsActive ?? true);
-                return Ok(relationships);
+                return BadRequest("El ID del empleado es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Obteniendo relaciones del empleado con ID: {Id}", queryParameters.Id);
+
+            var relationships = await _staffRelationshipRepository.GetRelationshipsByStaffId(queryParameters.Id, queryParameters.IsActive ?? true);
+            return Ok(relationships);
         }
         catch (Exception ex)
         {
@@ -60,25 +57,20 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (queryParameters.Id == 0)
             {
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID de la relación es requerido");
-                }
-
-                _logger.LogInformation("Obteniendo relación con ID: {Id}", queryParameters.Id);
-
-                var relationship = await _staffRelationshipRepository.GetRelationshipById(queryParameters.Id);
-                if (relationship == null)
-                {
-                    return NotFound($"No se encontró la relación con ID {queryParameters.Id}");
-                }
-
-                return Ok(relationship);
+                return BadRequest("El ID de la relación es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Obteniendo relación con ID: {Id}", queryParameters.Id);
+
+            var relationship = await _staffRelationshipRepository.GetRelationshipById(queryParameters.Id);
+            if (relationship == null)
+            {
+                return NotFound($"No se encontró la relación con ID {queryParameters.Id}");
+            }
+
+            return Ok(relationship);
         }
         catch (Exception ex)
         {
@@ -97,20 +89,15 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo todas las relaciones activas");
+            _logger.LogInformation("Obteniendo todas las relaciones activas");
 
-                var relationships = await _staffRelationshipRepository.GetAllActiveRelationshipsFromDb(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Alls,
-                    queryParameters.IsList
-                );
-                return Ok(relationships);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var relationships = await _staffRelationshipRepository.GetAllActiveRelationshipsFromDb(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Alls,
+                queryParameters.IsList
+            );
+            return Ok(relationships);
         }
         catch (Exception ex)
         {
@@ -129,20 +116,15 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (queryParameters.OptionSelectionId == 0)
             {
-                if (queryParameters.OptionSelectionId == 0)
-                {
-                    return BadRequest("El ID del tipo de parentesco es requerido");
-                }
-
-                _logger.LogInformation("Obteniendo relaciones por tipo: {RelationshipTypeId}", queryParameters.OptionSelectionId);
-
-                var relationships = await _staffRelationshipRepository.GetRelationshipsByType(queryParameters.OptionSelectionId);
-                return Ok(relationships);
+                return BadRequest("El ID del tipo de parentesco es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Obteniendo relaciones por tipo: {RelationshipTypeId}", queryParameters.OptionSelectionId);
+
+            var relationships = await _staffRelationshipRepository.GetRelationshipsByType(queryParameters.OptionSelectionId);
+            return Ok(relationships);
         }
         catch (Exception ex)
         {
@@ -161,46 +143,41 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("Los datos de la relación son requeridos");
-                }
-
-                // Validar que no sea la misma persona
-                if (request.StaffId == request.RelatedStaffId)
-                {
-                    return BadRequest("Un empleado no puede tener parentesco consigo mismo");
-                }
-
-                _logger.LogInformation("Creando relación entre empleados {StaffId} y {RelatedStaffId}",
-                    request.StaffId, request.RelatedStaffId);
-
-                // Verificar si ya existe una relación entre estos empleados
-                var relationshipExists = await _staffRelationshipRepository.RelationshipExists(request.StaffId, request.RelatedStaffId);
-
-                if (relationshipExists)
-                {
-                    return BadRequest("Ya existe una relación activa entre estos empleados");
-                }
-
-                // Verificar si el empleado puede tener este tipo de relación
-                var canHaveRelationship = await _staffRelationshipRepository.CanHaveRelationshipType(request.StaffId, request.RelationshipTypeId);
-
-                if (!canHaveRelationship)
-                {
-                    return BadRequest("El empleado no puede tener este tipo de relación");
-                }
-
-                var relationshipId = await _staffRelationshipRepository.CreateRelationship(request);
-
-                _logger.LogInformation("Relación creada exitosamente con ID {RelationshipId}", relationshipId);
-
-                return CreatedAtAction(nameof(GetRelationshipById), new { id = relationshipId }, new { id = relationshipId });
+                return BadRequest("Los datos de la relación son requeridos");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            // Validar que no sea la misma persona
+            if (request.StaffId == request.RelatedStaffId)
+            {
+                return BadRequest("Un empleado no puede tener parentesco consigo mismo");
+            }
+
+            _logger.LogInformation("Creando relación entre empleados {StaffId} y {RelatedStaffId}",
+                request.StaffId, request.RelatedStaffId);
+
+            // Verificar si ya existe una relación entre estos empleados
+            var relationshipExists = await _staffRelationshipRepository.RelationshipExists(request.StaffId, request.RelatedStaffId);
+
+            if (relationshipExists)
+            {
+                return BadRequest("Ya existe una relación activa entre estos empleados");
+            }
+
+            // Verificar si el empleado puede tener este tipo de relación
+            var canHaveRelationship = await _staffRelationshipRepository.CanHaveRelationshipType(request.StaffId, request.RelationshipTypeId);
+
+            if (!canHaveRelationship)
+            {
+                return BadRequest("El empleado no puede tener este tipo de relación");
+            }
+
+            var relationshipId = await _staffRelationshipRepository.CreateRelationship(request);
+
+            _logger.LogInformation("Relación creada exitosamente con ID {RelationshipId}", relationshipId);
+
+            return CreatedAtAction(nameof(GetRelationshipById), new { id = relationshipId }, new { id = relationshipId });
         }
         catch (Exception ex)
         {
@@ -220,42 +197,37 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("Los datos de la relación son requeridos");
-                }
-
-                _logger.LogInformation("Actualizando relación con ID: {Id}", request.Id);
-
-                // Verificar si la relación existe
-                var existingRelationship = await _staffRelationshipRepository.GetRelationshipById(request.Id);
-                if (existingRelationship == null)
-                {
-                    return NotFound($"No se encontró la relación con ID {request.Id}");
-                }
-
-                // Verificar si el empleado puede tener este tipo de relación
-                // Excluimos la relación actual para permitir ediciones
-                var canHaveRelationship = await _staffRelationshipRepository.CanHaveRelationshipType(existingRelationship.Staff!.Id, request.RelationshipTypeId, request.Id);
-                if (!canHaveRelationship)
-                {
-                    return BadRequest("El empleado no puede tener este tipo de relación");
-                }
-
-                var success = await _staffRelationshipRepository.UpdateRelationship(request);
-                if (!success)
-                {
-                    return BadRequest("No se pudo actualizar la relación");
-                }
-
-                _logger.LogInformation("Relación {RelationshipId} actualizada exitosamente", request.Id);
-
-                return Ok(new { message = "Relación actualizada exitosamente" });
+                return BadRequest("Los datos de la relación son requeridos");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Actualizando relación con ID: {Id}", request.Id);
+
+            // Verificar si la relación existe
+            var existingRelationship = await _staffRelationshipRepository.GetRelationshipById(request.Id);
+            if (existingRelationship == null)
+            {
+                return NotFound($"No se encontró la relación con ID {request.Id}");
+            }
+
+            // Verificar si el empleado puede tener este tipo de relación
+            // Excluimos la relación actual para permitir ediciones
+            var canHaveRelationship = await _staffRelationshipRepository.CanHaveRelationshipType(existingRelationship.Staff!.Id, request.RelationshipTypeId, request.Id);
+            if (!canHaveRelationship)
+            {
+                return BadRequest("El empleado no puede tener este tipo de relación");
+            }
+
+            var success = await _staffRelationshipRepository.UpdateRelationship(request);
+            if (!success)
+            {
+                return BadRequest("No se pudo actualizar la relación");
+            }
+
+            _logger.LogInformation("Relación {RelationshipId} actualizada exitosamente", request.Id);
+
+            return Ok(new { message = "Relación actualizada exitosamente" });
         }
         catch (Exception ex)
         {
@@ -274,34 +246,29 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (queryParameters.Id == 0)
             {
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID de la relación es requerido");
-                }
-
-                _logger.LogInformation("Desactivando relación con ID: {Id}", queryParameters.Id);
-
-                // Verificar si la relación existe
-                var existingRelationship = await _staffRelationshipRepository.GetRelationshipById(queryParameters.Id);
-                if (existingRelationship == null)
-                {
-                    return NotFound($"No se encontró la relación con ID {queryParameters.Id}");
-                }
-
-                var success = await _staffRelationshipRepository.DeleteRelationship(queryParameters.Id);
-                if (!success)
-                {
-                    return BadRequest("No se pudo desactivar la relación");
-                }
-
-                _logger.LogInformation("Relación {RelationshipId} desactivada exitosamente", queryParameters.Id);
-
-                return Ok(new { message = "Relación desactivada exitosamente" });
+                return BadRequest("El ID de la relación es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Desactivando relación con ID: {Id}", queryParameters.Id);
+
+            // Verificar si la relación existe
+            var existingRelationship = await _staffRelationshipRepository.GetRelationshipById(queryParameters.Id);
+            if (existingRelationship == null)
+            {
+                return NotFound($"No se encontró la relación con ID {queryParameters.Id}");
+            }
+
+            var success = await _staffRelationshipRepository.DeleteRelationship(queryParameters.Id);
+            if (!success)
+            {
+                return BadRequest("No se pudo desactivar la relación");
+            }
+
+            _logger.LogInformation("Relación {RelationshipId} desactivada exitosamente", queryParameters.Id);
+
+            return Ok(new { message = "Relación desactivada exitosamente" });
         }
         catch (Exception ex)
         {
@@ -321,21 +288,16 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
     {
         try
         {
-            if (ModelState.IsValid)
+            if (queryParameters.StaffId == 0 || queryParameters.Id == 0)
             {
-                if (queryParameters.StaffId == 0 || queryParameters.Id == 0)
-                {
-                    return BadRequest("Los IDs de empleados son requeridos");
-                }
-
-                _logger.LogInformation("Verificando si existe relación entre empleados {StaffId} y {RelatedStaffId}",
-                    queryParameters.StaffId, queryParameters.Id);
-
-                var exists = await _staffRelationshipRepository.RelationshipExists(queryParameters.StaffId, queryParameters.Id);
-                return Ok(new { exists });
+                return BadRequest("Los IDs de empleados son requeridos");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Verificando si existe relación entre empleados {StaffId} y {RelatedStaffId}",
+                queryParameters.StaffId, queryParameters.Id);
+
+            var exists = await _staffRelationshipRepository.RelationshipExists(queryParameters.StaffId, queryParameters.Id);
+            return Ok(new { exists });
         }
         catch (Exception ex)
         {

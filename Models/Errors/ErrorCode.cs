@@ -1,0 +1,41 @@
+namespace Api.Models.Errors;
+
+/// <summary>
+/// Códigos de error estandarizados para la API
+/// </summary>
+public enum ErrorCode
+{
+    // Generales
+    UNEXPECTED_ERROR,
+    VALIDATION_ERROR,
+    UNAUTHORIZED,
+    FORBIDDEN,
+
+    // Datos / CRUD
+    ENTITY_NOT_FOUND,
+    ENTITY_ALREADY_EXISTS,
+    CONFLICT,
+    RELATED_DATA_PROTECTED,
+    FIELD_TOO_LONG,
+
+    // Agencia
+    AGENCY_NOT_FOUND,
+    AGENCY_ACCESS_DENIED,
+
+    // Sitio
+    SITE_NOT_FOUND,
+    SITE_ACCESS_DENIED,
+    SITE_ALREADY_EXISTS,
+    FIRST_SITE_MUST_BE_COMEDOR,
+    SCHOOL_MUST_HAVE_COMEDOR_FIRST,
+    SITE_DATES_OUTSIDE_COMEDOR_RANGE,
+    ONE_COMEDOR_PER_SCHOOL,
+    MISSING_STRONG_SERVICE,
+    INSUFFICIENT_TIME_BETWEEN_SERVICES,
+
+    // Escuela
+    SCHOOL_NOT_FOUND,
+
+    // Staff
+    STAFF_NOT_FOUND
+}

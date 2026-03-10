@@ -10,6 +10,7 @@ using Api.Services.Mappers;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -72,8 +73,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el miembro del staff con ID {StaffId}", id);
-            throw new Exception($"Error al obtener el miembro del staff con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el miembro del staff con ID {id}", ex);
         }
     }
 
@@ -97,8 +97,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el miembro del staff con UserId {UserId}", userId);
-            throw new Exception($"Error al obtener el miembro del staff con UserId {userId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el miembro del staff con UserId {userId}", ex);
         }
     }
 
@@ -156,8 +155,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los miembros del staff");
-            throw new Exception($"Error al obtener los miembros del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los miembros del staff", ex);
         }
     }
 
@@ -258,14 +256,14 @@ public class StaffRepository(
 
             if (staffId <= 0)
             {
-                throw new Exception($"Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
+                throw new ApiException(ErrorCode.VALIDATION_ERROR, "Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
             }
 
             return staffId;
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error al insertar el miembro del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el miembro del staff", ex);
         }
     }
 
@@ -353,8 +351,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el miembro del staff con ID {StaffId}", staffRequest.Id);
-            throw new Exception($"Error al actualizar el miembro del staff con ID {staffRequest.Id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el miembro del staff con ID {staffRequest.Id}", ex);
         }
     }
 
@@ -375,8 +372,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar contratos por clasificación para staff {StaffId}", staffId);
-            throw new Exception($"Error al eliminar contratos por clasificación del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar contratos por clasificación del staff", ex);
         }
         finally
         {
@@ -411,8 +407,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar contrato por clasificación para staff {StaffId}", staffId);
-            throw new Exception($"Error al insertar contrato por clasificación del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar contrato por clasificación del staff", ex);
         }
         finally
         {
@@ -439,8 +434,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar origen de salario para staff {StaffId}", staffId);
-            throw new Exception($"Error al insertar origen de salario del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar origen de salario del staff", ex);
         }
         finally
         {
@@ -467,8 +461,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar orígenes de salario para staff {StaffId}", staffId);
-            throw new Exception($"Error al eliminar orígenes de salario del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar orígenes de salario del staff", ex);
         }
         finally
         {
@@ -532,8 +525,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el miembro del staff con ID {StaffId}", id);
-            throw new Exception($"Error al eliminar el miembro del staff con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el miembro del staff con ID {id}", ex);
         }
     }
 
@@ -569,8 +561,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar completamente el miembro del staff con ID {StaffId}: {Message}", id, ex.Message);
-            throw new Exception($"Error al eliminar completamente el miembro del staff con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar completamente el miembro del staff con ID {id}", ex);
         }
     }
 
@@ -610,8 +601,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", staffId);
-            throw new Exception($"Error al actualizar la imagen del staff con ID {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la imagen del staff con ID {staffId}", ex);
         }
     }
 
@@ -644,8 +634,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al convertir miembro del staff con ID {StaffId} a usuario", staffId);
-            throw new Exception($"Error al convertir miembro del staff con ID {staffId} a usuario: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al convertir miembro del staff con ID {staffId} a usuario", ex);
         }
     }
 
@@ -685,8 +674,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar estado activo del miembro del staff con ID {StaffId}", staffId);
-            throw new Exception($"Error al actualizar estado activo del miembro del staff con ID {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar estado activo del miembro del staff con ID {staffId}", ex);
         }
     }
 
@@ -892,8 +880,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el AgencyId del staff con ID {StaffId}", staffId);
-            throw new Exception($"Error al actualizar el AgencyId del staff con ID {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el AgencyId del staff con ID {staffId}", ex);
         }
     }
 
@@ -936,7 +923,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", agencyId);
-            throw new Exception($"Error al obtener los miembros del staff de la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los miembros del staff de la agencia {agencyId}", ex);
         }
     }
 
@@ -961,7 +948,7 @@ public class StaffRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", staffId);
-            throw new Exception($"Error al obtener historial de auditoría para staff {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener historial de auditoría para staff {staffId}", ex);
         }
     }
 

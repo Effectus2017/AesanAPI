@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
@@ -17,6 +18,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("site-facility")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISiteFacilityRepository siteFacilityRepository) : Controller
 {
     private readonly ILogger<SiteFacilityController> _logger = logger;

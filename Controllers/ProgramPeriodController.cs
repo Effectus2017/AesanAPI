@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("program-period")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class ProgramPeriodController(
     IProgramPeriodService service,
     ILogger<ProgramPeriodController> logger) : Controller
@@ -89,11 +91,6 @@ public class ProgramPeriodController(
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var result = await _service.InsertProgramPeriod(request);
             return Ok(result);
         }
@@ -113,10 +110,6 @@ public class ProgramPeriodController(
     {
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
 
             if (!request.Id.HasValue)
             {

@@ -13,6 +13,7 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 namespace Api.Repositories;
 
 public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository, IGroupTypeRepository groupTypeRepository) : ISiteRepository
@@ -150,8 +151,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site by id {Id}: {Message}", id, ex.Message);
-            throw new Exception($"Error al obtener el sitio con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el sitio con ID {id}", ex);
         }
     }
 
@@ -214,9 +214,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting sites with parameters: take={Take}, skip={Skip}, name={Name}, cityId={CityId}, regionId={RegionId}, agencyId={AgencyId}, alls={Alls}, isDayCareHomeId={IsDayCareHomeId}: {Message}",
-                take, skip, name, cityId, regionId, agencyId, alls, isDayCareHomeId, ex.Message);
-            throw new Exception($"Error al obtener los sitios: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los sitios", ex);
         }
     }
 
@@ -472,8 +470,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             transaction?.Rollback();
-            _logger.LogError(ex, "Error al insertar el sitio: {Message}", ex.Message);
-            throw new Exception($"Error al insertar el sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el sitio", ex);
         }
         finally
         {
@@ -682,8 +679,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el sitio: {Message}", ex.Message);
-            throw new Exception($"Error al actualizar el sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el sitio", ex);
         }
     }
 
@@ -728,8 +724,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar grupos de niños del sitio {SiteId}", siteId);
-            throw new Exception($"Error al actualizar grupos del sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar grupos del sitio", ex);
         }
     }
 
@@ -758,8 +753,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el sitio: {Message}", ex.Message);
-            throw new Exception($"Error al eliminar el sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el sitio", ex);
         }
     }
 
@@ -801,8 +795,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar niveles educativos para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar niveles educativos para el sitio {siteId}", ex);
         }
         finally
         {
@@ -837,8 +830,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar días de la semana para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar días de la semana para el sitio {siteId}", ex);
         }
         finally
         {
@@ -871,8 +863,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar niveles educativos para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar niveles educativos para el sitio {siteId}", ex);
         }
         finally
         {
@@ -907,8 +898,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar días de la semana para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar días de la semana para el sitio {siteId}", ex);
         }
         finally
         {
@@ -1005,8 +995,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado activo del sitio {SiteId}: {Message}", siteId, ex.Message);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el estado activo del sitio {siteId}", ex);
         }
     }
 
@@ -1101,8 +1090,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar información de Day Care Home para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar información de Day Care Home para el sitio {siteId}", ex);
         }
         finally
         {
@@ -1148,8 +1136,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar información vacía de Day Care Home para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar información vacía de Day Care Home para el sitio {siteId}", ex);
         }
         finally
         {
@@ -1182,8 +1169,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar tipos de participantes para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar tipos de participantes para el sitio {siteId}", ex);
         }
         finally
         {
@@ -1249,7 +1235,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar grupos de niños para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar grupos de niños para el sitio {siteId}", ex);
         }
         finally
         {
@@ -1451,7 +1437,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al insertar días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar días de funcionamiento para el sitio {siteId}", ex);
         }
         finally
         {
@@ -1832,7 +1818,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar servicios para los días de funcionamiento", ex);
         }
         finally
         {
@@ -2135,7 +2121,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             _logger.LogError(ex, "Error al fusionar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
                 siteId, operatingFromDate.Date, operatingToDate.Date);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al fusionar servicios para los días de funcionamiento", ex);
         }
         finally
         {
@@ -2227,7 +2213,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el siguiente número de sitio para la agencia {agencyId}", ex);
         }
     }
 
@@ -2659,7 +2645,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar información de Day Care Home para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar información de Day Care Home para el sitio {siteId}", ex);
         }
         finally
         {
@@ -2694,7 +2680,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar tipos de participantes para el sitio {SiteId}", siteId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar tipos de participantes para el sitio {siteId}", ex);
         }
         finally
         {

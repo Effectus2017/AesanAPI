@@ -1,4 +1,5 @@
 using Api.Interfaces;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("agency-status")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class AgencyStatusController(IAgencyStatusRepository agencyStatusRepository, ILogger<AgencyStatusController> logger) : ControllerBase
 {
     private readonly IAgencyStatusRepository _agencyStatusRepository = agencyStatusRepository;
@@ -30,26 +32,21 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Getting agency status by ID: {Id}", queryParameters.Id);
+
+            if (queryParameters.Id == 0)
             {
-                _logger.LogInformation("Getting agency status by ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("The agency status ID is required");
-                }
-
-                var result = await _agencyStatusRepository.GetAgencyStatusById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Agency status with ID {queryParameters.Id} not found");
-                }
-
-                return Ok(result);
+                return BadRequest("The agency status ID is required");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var result = await _agencyStatusRepository.GetAgencyStatusById(queryParameters.Id);
+
+            if (result == null)
+            {
+                return NotFound($"Agency status with ID {queryParameters.Id} not found");
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -69,19 +66,14 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+
+            if (result == null)
             {
-                var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No agency statuses found");
-                }
-
-                return Ok(result);
+                return NotFound("No agency statuses found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -101,19 +93,14 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _agencyStatusRepository.InsertAgencyStatus(request);
+
+            if (result)
             {
-                var result = await _agencyStatusRepository.InsertAgencyStatus(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Could not create the agency status");
+                return Ok(result);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("Could not create the agency status");
         }
         catch (Exception ex)
         {
@@ -133,19 +120,14 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _agencyStatusRepository.UpdateAgencyStatus(request);
+
+            if (!result)
             {
-                var result = await _agencyStatusRepository.UpdateAgencyStatus(request);
-
-                if (!result)
-                {
-                    return NotFound($"Agency status with ID {request.Id} not found");
-                }
-
-                return NoContent();
+                return NotFound($"Agency status with ID {request.Id} not found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -166,19 +148,14 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _agencyStatusRepository.UpdateAgencyStatusDisplayOrder(statusId, displayOrder);
+
+            if (!result)
             {
-                var result = await _agencyStatusRepository.UpdateAgencyStatusDisplayOrder(statusId, displayOrder);
-
-                if (!result)
-                {
-                    return NotFound($"Agency status with ID {statusId} not found");
-                }
-
-                return NoContent();
+                return NotFound($"Agency status with ID {statusId} not found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -198,19 +175,14 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _agencyStatusRepository.DeleteAgencyStatus(queryParameters.Id);
+
+            if (!result)
             {
-                var result = await _agencyStatusRepository.DeleteAgencyStatus(queryParameters.Id);
-
-                if (!result)
-                {
-                    return NotFound($"Agency status with ID {queryParameters.Id} not found");
-                }
-
-                return NoContent();
+                return NotFound($"Agency status with ID {queryParameters.Id} not found");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NoContent();
         }
         catch (Exception ex)
         {

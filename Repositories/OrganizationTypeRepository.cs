@@ -7,8 +7,10 @@ using Api.Models.DTO;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using Api.Models.Errors;
+using Microsoft.Data.SqlClient;
 
 namespace Api.Repositories;
 
@@ -27,25 +29,12 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
     /// <returns>El tipo de organización encontrado.</returns>
     public async Task<dynamic> GetOrganizationTypeById(int id)
     {
-        try
-        {
-            using IDbConnection db = _context.CreateConnection();
-            var parameters = new DynamicParameters();
-            parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryFirstOrDefaultAsync<OrganizationTypeResponse>("100_GetOrganizationTypeById", parameters, commandType: CommandType.StoredProcedure);
+        using IDbConnection db = _context.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@id", id, DbType.Int32);
+        var result = await db.QueryFirstOrDefaultAsync<OrganizationTypeResponse>("100_GetOrganizationTypeById", parameters, commandType: CommandType.StoredProcedure);
 
-            if (result == null)
-            {
-                return null;
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting organization type by id: {Id}", id);
-            throw new Exception(ex.Message);
-        }
+        return result;
     }
 
     /// <summary>
@@ -108,7 +97,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         {
             _logger.LogError(ex, "Error getting organization types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
                 take, skip, name, alls, isList);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -133,10 +122,9 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             var id = parameters.Get<int>("@id");
             return id > 0;
         }
-        catch (Exception ex)
+        catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
         {
-            _logger.LogError(ex, "Error inserting organization type: {OrganizationType}", organizationType);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.ENTITY_ALREADY_EXISTS, "Ya existe un tipo de organización con este nombre", 409);
         }
     }
 
@@ -160,10 +148,9 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             var affected = await db.ExecuteAsync("100_UpdateOrganizationType", parameters, commandType: CommandType.StoredProcedure);
             return affected > 0;
         }
-        catch (Exception ex)
+        catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
         {
-            _logger.LogError(ex, "Error updating organization type: {OrganizationType}", organizationType);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.ENTITY_ALREADY_EXISTS, "Ya existe otro tipo de organización con este nombre", 409);
         }
     }
 
@@ -182,10 +169,9 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             var affected = await db.ExecuteAsync("100_DeleteOrganizationType", parameters, commandType: CommandType.StoredProcedure);
             return affected > 0;
         }
-        catch (Exception ex)
+        catch (SqlException ex) when (ex.Number == 547)
         {
-            _logger.LogError(ex, "Error deleting organization type with id {Id}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.RELATED_DATA_PROTECTED, "No se puede eliminar el tipo de organización porque tiene registros asociados", 400);
         }
     }
 
@@ -208,7 +194,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener los tipos de organización para el programa {ProgramId}", programId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 

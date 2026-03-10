@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("school")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
 {
     private readonly ILogger<SchoolController> _logger = logger;
@@ -47,7 +49,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la escuela: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -63,28 +64,22 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SchoolRepository.GetAllSchools(
+                queryParameters.Take,
+                queryParameters.Skip,
+                queryParameters.Name,
+                queryParameters.AgencyId,
+                queryParameters.Alls);
+
+            if (result == null)
             {
-                var result = await _unitOfWork.SchoolRepository.GetAllSchools(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Name,
-                    queryParameters.AgencyId,
-                    queryParameters.Alls);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron escuelas");
-                }
-
-                return Ok(result);
+                return NotFound("No se encontraron escuelas");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las escuelas: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -100,19 +95,14 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SchoolRepository.InsertSchool(request);
+
+            if (result)
             {
-                var result = await _unitOfWork.SchoolRepository.InsertSchool(request);
-
-                if (result)
-                {
-                    return Ok(new { success = true, message = "Escuela creada exitosamente" });
-                }
-
-                return BadRequest("No se pudo crear la escuela");
+                return Ok(new { success = true, message = "Escuela creada exitosamente" });
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo crear la escuela");
         }
         catch (ArgumentException ex)
         {
@@ -121,7 +111,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la escuela: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -137,19 +126,14 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     {
         try
         {
-            if (ModelState.IsValid)
+            var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
+
+            if (result)
             {
-                var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
-
-                if (result)
-                {
-                    return Ok(new { success = true, message = "Escuela actualizada exitosamente" });
-                }
-
-                return BadRequest("No se pudo actualizar la escuela");
+                return Ok(new { success = true, message = "Escuela actualizada exitosamente" });
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("No se pudo actualizar la escuela");
         }
         catch (ArgumentException ex)
         {
@@ -158,7 +142,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la escuela: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -195,7 +178,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la escuela: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }
@@ -228,7 +210,6 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener escuelas por agencia: {Message}", ex.Message);
             return StatusCode(500, ex.Message);
         }
     }

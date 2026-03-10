@@ -4,6 +4,7 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Services;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -44,7 +45,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener la opción de selección por ID/Error getting option selection by ID");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener la opción de selección por ID", ex);
         }
         finally
         {
@@ -88,7 +89,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener selecciones de opción por clave: {OptionKey}", optionKey);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener selecciones de opción por clave", ex);
         }
     }
 
@@ -153,7 +154,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener las opciones de selección/Error getting option selections");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener las opciones de selección", ex);
         }
     }
 
@@ -190,7 +191,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar la opción de selección/Error inserting option selection");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la opción de selección", ex);
         }
     }
 
@@ -225,7 +226,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar la opción de selección/Error updating option selection");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la opción de selección", ex);
         }
     }
 
@@ -259,7 +260,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al actualizar el orden de visualización de la opción de selección/Error updating option selection display order");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el orden de visualización de la opción de selección", ex);
         }
     }
 
@@ -291,7 +292,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar la opción de selección");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar la opción de selección", ex);
         }
     }
 

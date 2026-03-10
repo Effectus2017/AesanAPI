@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Request;
 using Dapper;
@@ -19,6 +20,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("messages")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork unitOfWork, IHubContext<MessageHub, IMessagesClient> hub) : Controller
 {
     private readonly ILogger<MessagesController> _logger = logger;
@@ -36,21 +38,16 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Obteniendo mensaje por ID: {Id}", queryParameters.Id);
+
+            var message = await _unitOfWork.MessageRepository.GetMessageById(queryParameters.Id);
+
+            if (message == null)
             {
-                _logger.LogInformation("Obteniendo mensaje por ID: {Id}", queryParameters.Id);
-
-                var message = await _unitOfWork.MessageRepository.GetMessageById(queryParameters.Id);
-
-                if (message == null)
-                {
-                    return NotFound($"Mensaje con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(message);
+                return NotFound($"Mensaje con ID {queryParameters.Id} no encontrado");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(message);
         }
         catch (Exception ex)
         {
@@ -70,15 +67,10 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo todos los mensajes");
+            _logger.LogInformation("Obteniendo todos los mensajes");
 
-                var messages = await _unitOfWork.MessageRepository.GetAllMessagesFromDb(queryParameters.UserId);
-                return Ok(messages);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var messages = await _unitOfWork.MessageRepository.GetAllMessagesFromDb(queryParameters.UserId);
+            return Ok(messages);
         }
         catch (Exception ex)
         {
@@ -98,41 +90,36 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("El mensaje es requerido");
-                }
-
-                var created = await _unitOfWork.MessageRepository.InsertMessage(request);
-
-                if (!string.IsNullOrEmpty(created.UserId))
-                {
-                    var groupName = $"user:{created.UserId}";
-                    _logger.LogInformation("[MessagesController] Enviando mensaje al grupo {GroupName}, MessageId: {MessageId}", groupName, created.Id);
-
-                    try
-                    {
-                        await _hub.Clients.Group(groupName).MessageCreated(created);
-                        var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(created.UserId);
-                        await _hub.Clients.Group(groupName).UnreadCountChanged(unread);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "[MessagesController] Error al enviar mensaje via SignalR al grupo {GroupName}", groupName);
-                    }
-                }
-                else
-                {
-                    await _hub.Clients.Group("broadcast").MessageCreated(created);
-                }
-
-                _logger.LogInformation("Mensaje insertado correctamente");
-                return Ok(created);
+                return BadRequest("El mensaje es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var created = await _unitOfWork.MessageRepository.InsertMessage(request);
+
+            if (!string.IsNullOrEmpty(created.UserId))
+            {
+                var groupName = $"user:{created.UserId}";
+                _logger.LogInformation("[MessagesController] Enviando mensaje al grupo {GroupName}, MessageId: {MessageId}", groupName, created.Id);
+
+                try
+                {
+                    await _hub.Clients.Group(groupName).MessageCreated(created);
+                    var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(created.UserId);
+                    await _hub.Clients.Group(groupName).UnreadCountChanged(unread);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[MessagesController] Error al enviar mensaje via SignalR al grupo {GroupName}", groupName);
+                }
+            }
+            else
+            {
+                await _hub.Clients.Group("broadcast").MessageCreated(created);
+            }
+
+            _logger.LogInformation("Mensaje insertado correctamente");
+            return Ok(created);
         }
         catch (Exception ex)
         {
@@ -152,43 +139,38 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
+            if (request == null)
             {
-                if (request == null)
-                {
-                    return BadRequest("El mensaje es requerido");
-                }
-
-                if (!request.Id.HasValue)
-                {
-                    return BadRequest("El ID del mensaje es requerido para actualizar");
-                }
-
-                var success = await _unitOfWork.MessageRepository.UpdateMessage(request);
-                if (!success) return BadRequest("No se pudo actualizar el mensaje");
-
-                if (request.Id is int id)
-                {
-                    var updated = await _unitOfWork.MessageRepository.GetMessageById(id);
-                    if (updated is Message msg)
-                    {
-                        if (!string.IsNullOrEmpty(msg.UserId))
-                        {
-                            var groupName = $"user:{msg.UserId}";
-                            await _hub.Clients.Group(groupName).MessageUpdated(msg);
-                        }
-                        else
-                        {
-                            await _hub.Clients.Group("broadcast").MessageUpdated(msg);
-                        }
-                    }
-                }
-
-                _logger.LogInformation("Mensaje actualizado con ID: {Id}", request.Id.Value);
-                return Ok(true);
+                return BadRequest("El mensaje es requerido");
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            if (!request.Id.HasValue)
+            {
+                return BadRequest("El ID del mensaje es requerido para actualizar");
+            }
+
+            var success = await _unitOfWork.MessageRepository.UpdateMessage(request);
+            if (!success) return BadRequest("No se pudo actualizar el mensaje");
+
+            if (request.Id is int id)
+            {
+                var updated = await _unitOfWork.MessageRepository.GetMessageById(id);
+                if (updated is Message msg)
+                {
+                    if (!string.IsNullOrEmpty(msg.UserId))
+                    {
+                        var groupName = $"user:{msg.UserId}";
+                        await _hub.Clients.Group(groupName).MessageUpdated(msg);
+                    }
+                    else
+                    {
+                        await _hub.Clients.Group("broadcast").MessageUpdated(msg);
+                    }
+                }
+            }
+
+            _logger.LogInformation("Mensaje actualizado con ID: {Id}", request.Id.Value);
+            return Ok(true);
         }
         catch (Exception ex)
         {
@@ -208,33 +190,28 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Eliminando mensaje con ID: {Id}", queryParameters.Id);
+
+            var id = queryParameters.Id;
+            var existing = await _unitOfWork.MessageRepository.GetMessageById(id);
+            var success = await _unitOfWork.MessageRepository.DeleteMessage(id);
+            if (!success) return BadRequest("No se pudo eliminar el mensaje");
+
+            if (existing is Message msg)
             {
-                _logger.LogInformation("Eliminando mensaje con ID: {Id}", queryParameters.Id);
-
-                var id = queryParameters.Id;
-                var existing = await _unitOfWork.MessageRepository.GetMessageById(id);
-                var success = await _unitOfWork.MessageRepository.DeleteMessage(id);
-                if (!success) return BadRequest("No se pudo eliminar el mensaje");
-
-                if (existing is Message msg)
+                if (!string.IsNullOrEmpty(msg.UserId))
                 {
-                    if (!string.IsNullOrEmpty(msg.UserId))
-                    {
-                        var groupName = $"user:{msg.UserId}";
-                        await _hub.Clients.Group(groupName).MessageDeleted(msg.Id);
-                    }
-                    else
-                    {
-                        await _hub.Clients.Group("broadcast").MessageDeleted(msg.Id);
-                    }
+                    var groupName = $"user:{msg.UserId}";
+                    await _hub.Clients.Group(groupName).MessageDeleted(msg.Id);
                 }
-
-                _logger.LogInformation("Mensaje eliminado con ID: {Id}", queryParameters.Id);
-                return Ok(true);
+                else
+                {
+                    await _hub.Clients.Group("broadcast").MessageDeleted(msg.Id);
+                }
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Mensaje eliminado con ID: {Id}", queryParameters.Id);
+            return Ok(true);
         }
         catch (Exception ex)
         {
@@ -254,25 +231,20 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Marcando todos los mensajes como leídos para usuario: {UserId}", queryParameters.UserId);
+
+            var userId = queryParameters.UserId;
+            var success = await _unitOfWork.MessageRepository.MarkAllMessagesAsRead(userId);
+            if (!success) return BadRequest("No se pudieron marcar todos los mensajes como leídos");
+
+            if (!string.IsNullOrEmpty(userId))
             {
-                _logger.LogInformation("Marcando todos los mensajes como leídos para usuario: {UserId}", queryParameters.UserId);
-
-                var userId = queryParameters.UserId;
-                var success = await _unitOfWork.MessageRepository.MarkAllMessagesAsRead(userId);
-                if (!success) return BadRequest("No se pudieron marcar todos los mensajes como leídos");
-
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    var groupName = $"user:{userId}";
-                    await _hub.Clients.Group(groupName).UnreadCountChanged(0);
-                }
-
-                _logger.LogInformation("Todos los mensajes marcados como leídos para usuario: {UserId}", queryParameters.UserId);
-                return Ok(new { message = "Todos los mensajes han sido marcados como leídos" });
+                var groupName = $"user:{userId}";
+                await _hub.Clients.Group(groupName).UnreadCountChanged(0);
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Todos los mensajes marcados como leídos para usuario: {UserId}", queryParameters.UserId);
+            return Ok(new { message = "Todos los mensajes han sido marcados como leídos" });
         }
         catch (Exception ex)
         {
@@ -292,35 +264,30 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
+            _logger.LogInformation("Marcando mensaje como leído con ID: {Id}", queryParameters.Id);
+
+            var id = queryParameters.Id;
+            var existing = await _unitOfWork.MessageRepository.GetMessageById(id);
+            var success = await _unitOfWork.MessageRepository.MarkMessageAsRead(id);
+            if (!success) return BadRequest("No se pudo marcar como leído");
+
+            if (existing is Message msg)
             {
-                _logger.LogInformation("Marcando mensaje como leído con ID: {Id}", queryParameters.Id);
-
-                var id = queryParameters.Id;
-                var existing = await _unitOfWork.MessageRepository.GetMessageById(id);
-                var success = await _unitOfWork.MessageRepository.MarkMessageAsRead(id);
-                if (!success) return BadRequest("No se pudo marcar como leído");
-
-                if (existing is Message msg)
+                if (!string.IsNullOrEmpty(msg.UserId))
                 {
-                    if (!string.IsNullOrEmpty(msg.UserId))
-                    {
-                        var groupName = $"user:{msg.UserId}";
-                        await _hub.Clients.Group(groupName).MessageRead(msg.Id);
-                        var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(msg.UserId);
-                        await _hub.Clients.Group(groupName).UnreadCountChanged(unread);
-                    }
-                    else
-                    {
-                        await _hub.Clients.Group("broadcast").MessageRead(msg.Id);
-                    }
+                    var groupName = $"user:{msg.UserId}";
+                    await _hub.Clients.Group(groupName).MessageRead(msg.Id);
+                    var unread = await _unitOfWork.MessageRepository.GetUnreadMessageCount(msg.UserId);
+                    await _hub.Clients.Group(groupName).UnreadCountChanged(unread);
                 }
-
-                _logger.LogInformation("Mensaje marcado como leído con ID: {Id}", queryParameters.Id);
-                return Ok(new { message = "Mensaje marcado como leído" });
+                else
+                {
+                    await _hub.Clients.Group("broadcast").MessageRead(msg.Id);
+                }
             }
 
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            _logger.LogInformation("Mensaje marcado como leído con ID: {Id}", queryParameters.Id);
+            return Ok(new { message = "Mensaje marcado como leído" });
         }
         catch (Exception ex)
         {
@@ -340,15 +307,10 @@ public class MessagesController(ILogger<MessagesController> logger, IUnitOfWork 
     {
         try
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo conteo de mensajes no leídos para usuario: {UserId}", queryParameters.UserId);
+            _logger.LogInformation("Obteniendo conteo de mensajes no leídos para usuario: {UserId}", queryParameters.UserId);
 
-                var count = await _unitOfWork.MessageRepository.GetUnreadMessageCount(queryParameters.UserId);
-                return Ok(count);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            var count = await _unitOfWork.MessageRepository.GetUnreadMessageCount(queryParameters.UserId);
+            return Ok(count);
         }
         catch (Exception ex)
         {

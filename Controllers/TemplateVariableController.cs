@@ -3,6 +3,7 @@ using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -12,6 +13,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class TemplateVariableController : ControllerBase
 {
     private readonly TemplateVariableService _templateVariableService;

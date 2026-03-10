@@ -2,6 +2,7 @@ using System.Data;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models.Request;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Logging;
 
@@ -41,7 +42,7 @@ public class NotificationMailJobLogRepository(DapperContext context, ILogger<Not
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al insertar NotificationMailJobLog");
-            throw new Exception($"Error al insertar NotificationMailJobLog: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar NotificationMailJobLog", ex);
         }
     }
 }
