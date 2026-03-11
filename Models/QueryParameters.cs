@@ -22,7 +22,7 @@ public class QueryParameters
     public int OptionSelectionId { get; set; } // ID de la opción de selección
     public string? PermissionId { get; set; } // ID del permiso (cambiado a string)
     public string? RoleId { get; set; } // ID del rol
-    public bool? IsActive { get; set; } // Estado activo
+    public bool IsActive { get; set; } // Estado activo
     public string? InactiveJustification { get; set; } // Justificación para inactivación
     public DateTime? InactiveDate { get; set; } // Fecha de inactivación
     public bool? ProvidedRationsService { get; set; } // ¿Brindó servicio de raciones durante su periodo de funcionamiento?

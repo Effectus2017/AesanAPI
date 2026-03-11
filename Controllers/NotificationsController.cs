@@ -2,9 +2,9 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Api.Authentication;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Filters;
 
@@ -16,16 +16,14 @@ namespace Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("notifications")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = ApiKeyAuthenticationOptions.DefaultScheme)]
 [ValidateModelState]
 public class NotificationsController(
-    ILogger<NotificationsController> logger,
     IUnitOfWork unitOfWork,
     IEmailService emailService,
     IPasswordService passwordService,
     INotificationMailJobLogRepository notificationMailJobLogRepository) : ControllerBase
 {
-    private readonly ILogger<NotificationsController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IEmailService _emailService = emailService;
     private readonly IPasswordService _passwordService = passwordService;
@@ -64,7 +62,6 @@ public class NotificationsController(
         var userRequest = MapToUserAgencyRequest(agency);
         await _emailService.SendWelcomeAgencyEmail(userRequest, temporaryPassword, agency.User.UserId);
 
-        _logger.LogInformation("SendWelcomeAgency ejecutado para AgencyId {AgencyId}", request.AgencyId);
         return Ok(new { message = "Correo de bienvenida enviado." });
     }
 

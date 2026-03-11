@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Api.Interfaces;
 using Api.Models.Request;
-using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Filters;
 using Api.Models;
@@ -20,10 +19,9 @@ namespace Api.Controllers
     [Route("household-member")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ValidateModelState]
-    public class HouseholdMemberController(ILogger<HouseholdMemberController> logger, IUnitOfWork unitOfWork) : ControllerBase
+    public class HouseholdMemberController(IUnitOfWork unitOfWork) : ControllerBase
     {
 
-        private readonly ILogger<HouseholdMemberController> _logger = logger;
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
         /// <summary>
@@ -35,16 +33,12 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Obtiene un miembro del hogar por su Id", Description = "Devuelve un miembro del hogar basado en el ID proporcionado.")]
         public async Task<IActionResult> GetHouseholdMemberById([FromQuery] int id)
         {
-            try
+            var result = await _unitOfWork.HouseholdMemberRepository.GetHouseholdMemberById(id);
+            if (result == null)
             {
-                var result = await _unitOfWork.HouseholdMemberRepository.GetHouseholdMemberById(id);
-                if (result == null) return NotFound($"Miembro con ID {id} no encontrado");
-                return Ok(result);
+                return NotFound($"Miembro con ID {id} no encontrado");
             }
-            catch (System.Exception ex)
-            {
-                return StatusCode(500, "Error interno del servidor al obtener el miembro");
-            }
+            return Ok(result);
         }
 
         /// <summary>
@@ -56,15 +50,8 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Obtiene miembros del hogar", Description = "Devuelve una lista de miembros del hogar.")]
         public async Task<IActionResult> GetHouseholdMembers([FromQuery] QueryParameters queryParameters)
         {
-            try
-            {
-                var result = await _unitOfWork.HouseholdMemberRepository.GetAllHouseholdMembers(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
-                return Ok(result);
-            }
-            catch (System.Exception ex)
-            {
-                return StatusCode(500, "Error interno del servidor al obtener los miembros");
-            }
+            var result = await _unitOfWork.HouseholdMemberRepository.GetAllHouseholdMembers(queryParameters.Take, queryParameters.Skip, queryParameters.Alls);
+            return Ok(result);
         }
 
         /// <summary>
@@ -76,21 +63,14 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Crea un nuevo miembro del hogar", Description = "Crea un nuevo miembro del hogar.")]
         public async Task<IActionResult> InsertHouseholdMember([FromBody] HouseholdMemberRequest request)
         {
-            try
-            {
-                var result = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
+            var result = await _unitOfWork.HouseholdMemberRepository.InsertHouseholdMember(request);
 
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al crear el miembro del hogar");
-            }
-            catch (System.Exception ex)
+            if (result)
             {
-                return StatusCode(500, "Error interno del servidor al crear el miembro");
+                return Ok(result);
             }
+
+            return BadRequest("Error al crear el miembro del hogar");
         }
 
         /// <summary>
@@ -102,21 +82,14 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Actualiza un miembro del hogar existente", Description = "Actualiza los datos de un miembro del hogar existente.")]
         public async Task<IActionResult> UpdateHouseholdMember([FromBody] HouseholdMemberRequest request)
         {
-            try
-            {
-                var result = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
+            var result = await _unitOfWork.HouseholdMemberRepository.UpdateHouseholdMember(request);
 
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al actualizar el miembro del hogar");
-            }
-            catch (System.Exception ex)
+            if (result)
             {
-                return StatusCode(500, "Error interno del servidor al actualizar el miembro");
+                return Ok(result);
             }
+
+            return BadRequest("Error al actualizar el miembro del hogar");
         }
 
         /// <summary>
@@ -128,21 +101,14 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Elimina un miembro del hogar existente", Description = "Elimina un miembro del hogar existente.")]
         public async Task<IActionResult> DeleteHouseholdMember([FromQuery] int id)
         {
-            try
-            {
-                var result = await _unitOfWork.HouseholdMemberRepository.DeleteHouseholdMember(id);
+            var result = await _unitOfWork.HouseholdMemberRepository.DeleteHouseholdMember(id);
 
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("Error al eliminar el miembro del hogar");
-            }
-            catch (System.Exception ex)
+            if (result)
             {
-                return StatusCode(500, "Error interno del servidor al eliminar el miembro");
+                return Ok(result);
             }
+
+            return BadRequest("Error al eliminar el miembro del hogar");
         }
     }
 }

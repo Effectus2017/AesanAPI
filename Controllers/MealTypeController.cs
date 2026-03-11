@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("meal-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<MealTypeController> logger) : ControllerBase
+public class MealTypeController(IMealTypeRepository mealTypeRepository) : ControllerBase
 {
     private readonly IMealTypeRepository _mealTypeRepository = mealTypeRepository;
-    private readonly ILogger<MealTypeController> _logger = logger;
 
 
     /// <summary>
@@ -32,29 +31,19 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     [SwaggerOperation(Summary = "Obtiene un tipo de comida por su ID", Description = "Devuelve un tipo de comida basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo tipo de comida por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID del tipo de comida es requerido");
-            }
-
-            var result = await _mealTypeRepository.GetMealTypeById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID del tipo de comida es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _mealTypeRepository.GetMealTypeById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de comida con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el tipo de comida");
+            return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
 
@@ -67,22 +56,14 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     [SwaggerOperation(Summary = "Obtiene todos los tipos de comida", Description = "Devuelve una lista de tipos de comida.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _mealTypeRepository.GetAllMealTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+        var result = await _mealTypeRepository.GetAllMealTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron tipos de comida");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener todos los tipos de comida");
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de comida");
+            return NotFound("No se encontraron tipos de comida");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -94,24 +75,14 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     [SwaggerOperation(Summary = "Crea un nuevo tipo de comida", Description = "Crea un nuevo tipo de comida.")]
     public async Task<ActionResult> Insert([FromBody] DTOMealType request)
     {
-        try
-        {
-            var result = await _mealTypeRepository.InsertMealType(request);
+        var result = await _mealTypeRepository.InsertMealType(request);
 
-            if (result)
-            {
-                _logger.LogInformation("Tipo de comida creado con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear el tipo de comida");
-            return BadRequest("No se pudo crear el tipo de comida");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear el tipo de comida");
-            return StatusCode(500, "Error interno del servidor al crear el tipo de comida");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear el tipo de comida");
     }
 
 
@@ -124,23 +95,14 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     [SwaggerOperation(Summary = "Actualiza un tipo de comida existente", Description = "Actualiza los datos de un tipo de comida existente.")]
     public async Task<IActionResult> Update([FromBody] DTOMealType request)
     {
-        try
-        {
-            var result = await _mealTypeRepository.UpdateMealType(request);
+        var result = await _mealTypeRepository.UpdateMealType(request);
 
-            if (!result)
-            {
-                _logger.LogWarning("Tipo de comida con ID {Id} no encontrado", request.Id);
-                return NotFound($"Tipo de comida con ID {request.Id} no encontrado");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de comida con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el tipo de comida");
+            return NotFound($"Tipo de comida con ID {request.Id} no encontrado");
         }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -152,22 +114,13 @@ public class MealTypeController(IMealTypeRepository mealTypeRepository, ILogger<
     [SwaggerOperation(Summary = "Elimina un tipo de comida existente", Description = "Elimina un tipo de comida existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _mealTypeRepository.DeleteMealType(queryParameters.Id);
+        var result = await _mealTypeRepository.DeleteMealType(queryParameters.Id);
 
-            if (!result)
-            {
-                _logger.LogWarning("Tipo de comida con ID {Id} no encontrado", queryParameters.Id);
-                return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de comida con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar el tipo de comida");
+            return NotFound($"Tipo de comida con ID {queryParameters.Id} no encontrado");
         }
+
+        return NoContent();
     }
 }

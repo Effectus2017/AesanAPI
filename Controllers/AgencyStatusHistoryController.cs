@@ -16,10 +16,9 @@ namespace Api.Controllers;
 [Route("agency-status-history")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class AgencyStatusHistoryController(IAgencyStatusHistoryRepository agencyStatusHistoryRepository, ILogger<AgencyStatusHistoryController> logger) : ControllerBase
+public class AgencyStatusHistoryController(IAgencyStatusHistoryRepository agencyStatusHistoryRepository) : ControllerBase
 {
     private readonly IAgencyStatusHistoryRepository _agencyStatusHistoryRepository = agencyStatusHistoryRepository;
-    private readonly ILogger<AgencyStatusHistoryController> _logger = logger;
 
     /// <summary>
     /// Gets the agency status history with pagination and optional filters.
@@ -30,27 +29,18 @@ public class AgencyStatusHistoryController(IAgencyStatusHistoryRepository agency
     [SwaggerOperation(Summary = "Gets agency status history", Description = "Returns the history of status changes for agencies with pagination and optional filters.")]
     public async Task<ActionResult> GetAgencyStatusHistoryPaged([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _agencyStatusHistoryRepository.GetAgencyStatusHistoryPaged(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.AgencyId > 0 ? queryParameters.AgencyId : null,
+            queryParameters.CreatedAtFrom,
+            queryParameters.CreatedAtTo);
+
+        if (result == null)
         {
-            _logger.LogInformation("Getting agency status history");
-
-            var result = await _agencyStatusHistoryRepository.GetAgencyStatusHistoryPaged(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.AgencyId > 0 ? queryParameters.AgencyId : null,
-                queryParameters.CreatedAtFrom,
-                queryParameters.CreatedAtTo);
-
-            if (result == null)
-            {
-                return NotFound("No agency status history found");
-            }
-
-            return Ok(result);
+            return NotFound("No agency status history found");
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Internal server error while getting agency status history");
-        }
+
+        return Ok(result);
     }
 }

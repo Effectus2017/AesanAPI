@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("operating-period")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class OperatingPeriodController(IOperatingPeriodRepository operatingPeriodRepository, ILogger<OperatingPeriodController> logger) : ControllerBase
+public class OperatingPeriodController(IOperatingPeriodRepository operatingPeriodRepository) : ControllerBase
 {
     private readonly IOperatingPeriodRepository _operatingPeriodRepository = operatingPeriodRepository;
-    private readonly ILogger<OperatingPeriodController> _logger = logger;
 
     /// <summary>
     /// Obtiene un período operativo por su ID
@@ -31,28 +30,19 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
     [SwaggerOperation(Summary = "Obtiene un período operativo por su ID", Description = "Devuelve un período operativo basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo período operativo por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID del período operativo es requerido");
-            }
-
-            var result = await _operatingPeriodRepository.GetOperatingPeriodById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Período operativo con ID {queryParameters.Id} no encontrado");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID del período operativo es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _operatingPeriodRepository.GetOperatingPeriodById(queryParameters.Id);
+
+        if (result == null)
         {
-            return StatusCode(500, "Error interno del servidor al obtener el período operativo");
+            return NotFound($"Período operativo con ID {queryParameters.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -64,21 +54,14 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
     [SwaggerOperation(Summary = "Obtiene todos los períodos operativos", Description = "Devuelve una lista de períodos operativos.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _operatingPeriodRepository.GetAllOperatingPeriods(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _operatingPeriodRepository.GetAllOperatingPeriods(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron períodos operativos");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            return StatusCode(500, "Error interno del servidor al obtener los períodos operativos");
+            return NotFound("No se encontraron períodos operativos");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -90,23 +73,14 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
     [SwaggerOperation(Summary = "Crea un nuevo período operativo", Description = "Crea un nuevo período operativo.")]
     public async Task<ActionResult> Insert([FromBody] DTOOperatingPeriod request)
     {
-        try
-        {
-            var result = await _operatingPeriodRepository.InsertOperatingPeriod(request);
+        var result = await _operatingPeriodRepository.InsertOperatingPeriod(request);
 
-            if (result)
-            {
-                _logger.LogInformation("Período operativo creado con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear el período operativo");
-            return BadRequest("No se pudo crear el período operativo");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            return StatusCode(500, "Error interno del servidor al crear el período operativo");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear el período operativo");
     }
 
     /// <summary>
@@ -118,22 +92,14 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
     [SwaggerOperation(Summary = "Actualiza un período operativo existente", Description = "Actualiza los datos de un período operativo existente.")]
     public async Task<IActionResult> Update([FromBody] DTOOperatingPeriod request)
     {
-        try
-        {
-            var result = await _operatingPeriodRepository.UpdateOperatingPeriod(request);
+        var result = await _operatingPeriodRepository.UpdateOperatingPeriod(request);
 
-            if (!result)
-            {
-                _logger.LogWarning("Período operativo con ID {Id} no encontrado", request.Id);
-                return NotFound($"Período operativo con ID {request.Id} no encontrado");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al actualizar el período operativo");
+            return NotFound($"Período operativo con ID {request.Id} no encontrado");
         }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -145,21 +111,13 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
     [SwaggerOperation(Summary = "Elimina un período operativo existente", Description = "Elimina un período operativo existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _operatingPeriodRepository.DeleteOperatingPeriod(queryParameters.Id);
+        var result = await _operatingPeriodRepository.DeleteOperatingPeriod(queryParameters.Id);
 
-            if (!result)
-            {
-                _logger.LogWarning("Período operativo con ID {Id} no encontrado", queryParameters.Id);
-                return NotFound($"Período operativo con ID {queryParameters.Id} no encontrado");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al eliminar el período operativo");
+            return NotFound($"Período operativo con ID {queryParameters.Id} no encontrado");
         }
+
+        return NoContent();
     }
 }

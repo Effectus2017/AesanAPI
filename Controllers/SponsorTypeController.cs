@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Filters;
-using Api.Models.Errors;
 
 namespace Api.Controllers;
 
@@ -18,10 +17,9 @@ namespace Api.Controllers;
 [Route("sponsor-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository, ILogger<SponsorTypeController> logger) : ControllerBase
+public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository) : ControllerBase
 {
     private readonly ISponsorTypeRepository _sponsorTypeRepository = sponsorTypeRepository;
-    private readonly ILogger<SponsorTypeController> _logger = logger;
 
     /// <summary>
     /// Obtiene un tipo de auspiciador por su ID
@@ -32,21 +30,14 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     [SwaggerOperation(Summary = "Obtiene un tipo de auspiciador por su ID", Description = "Devuelve un tipo de auspiciador basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] int id)
     {
-        try
-        {
-            var result = await _sponsorTypeRepository.GetSponsorTypeById(id);
+        var result = await _sponsorTypeRepository.GetSponsorTypeById(id);
 
-            if (result == null)
-            {
-                return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            return StatusCode(500, "Error interno del servidor al obtener el tipo de auspiciador");
+            return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -58,19 +49,12 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     [SwaggerOperation(Summary = "Obtiene todos los tipos de auspiciador", Description = "Devuelve una lista de tipos de auspiciador.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var types = await _sponsorTypeRepository.GetAllSponsorTypes(queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.Alls,
-                queryParameters.IsList);
-            return Ok(types);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de auspiciador");
-        }
+        var types = await _sponsorTypeRepository.GetAllSponsorTypes(queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Name,
+            queryParameters.Alls,
+            queryParameters.IsList);
+        return Ok(types);
     }
 
     /// <summary>
@@ -82,20 +66,13 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     [SwaggerOperation(Summary = "Crea un nuevo tipo de auspiciador", Description = "Crea un nuevo tipo de auspiciador.")]
     public async Task<ActionResult> Insert([FromBody] DTOSponsorType type)
     {
-        try
+        var result = await _sponsorTypeRepository.InsertSponsorType(type);
+        if (result)
         {
-            var result = await _sponsorTypeRepository.InsertSponsorType(type);
-            if (result)
-            {
-                return Ok(type);
-            }
+            return Ok(type);
+        }
 
-            return BadRequest("No se pudo crear el tipo de auspiciador");
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Error interno del servidor al crear el tipo de auspiciador");
-        }
+        return BadRequest("No se pudo crear el tipo de auspiciador");
     }
 
     /// <summary>
@@ -107,21 +84,14 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     [SwaggerOperation(Summary = "Actualiza un tipo de auspiciador existente", Description = "Actualiza los datos de un tipo de auspiciador existente.")]
     public async Task<IActionResult> Update([FromBody] DTOSponsorType type)
     {
-        try
-        {
-            var result = await _sponsorTypeRepository.UpdateSponsorType(type);
+        var result = await _sponsorTypeRepository.UpdateSponsorType(type);
 
-            if (!result)
-            {
-                return NotFound($"Tipo de auspiciador con ID {type.Id} no encontrado");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al actualizar el tipo de auspiciador");
+            return NotFound($"Tipo de auspiciador con ID {type.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -133,18 +103,13 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     [SwaggerOperation(Summary = "Elimina un tipo de auspiciador existente", Description = "Elimina un tipo de auspiciador existente.")]
     public async Task<IActionResult> Delete([FromQuery] int id)
     {
-        try
+        var result = await _sponsorTypeRepository.DeleteSponsorType(id);
+        if (!result)
         {
-            var result = await _sponsorTypeRepository.DeleteSponsorType(id);
-            if (!result)
-                return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
+            return NotFound($"Tipo de auspiciador con ID {id} no encontrado");
+        }
 
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Error interno del servidor al eliminar el tipo de auspiciador");
-        }
+        return NoContent();
     }
 
     /// <summary>
@@ -156,22 +121,13 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository,
     [SwaggerOperation(Summary = "Obtiene tipos de auspiciador por programa", Description = "Devuelve los tipos de auspiciador válidos para un programa específico.")]
     public async Task<ActionResult> GetSponsorTypesByProgram([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
         {
-            _logger.LogInformation("Obteniendo tipos de auspiciador para el programa: {ProgramId}", queryParameters.ProgramId);
-
-            if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
-            {
-                return BadRequest("El ID del programa es requerido");
-            }
-
-            var result = await _sponsorTypeRepository.GetSponsorTypesByProgram(queryParameters.ProgramId.Value);
-
-            return Ok(result);
+            return BadRequest("El ID del programa es requerido");
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error interno del servidor al obtener los tipos de auspiciador", 500));
-        }
+
+        var result = await _sponsorTypeRepository.GetSponsorTypesByProgram(queryParameters.ProgramId.Value);
+
+        return Ok(result);
     }
 }

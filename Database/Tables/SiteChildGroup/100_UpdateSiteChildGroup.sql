@@ -1,5 +1,5 @@
 -- =============================================
--- Stored Procedure: 102_UpdateSiteChildGroup
+-- Stored Procedure: 100_UpdateSiteChildGroup
 -- Descripción: Actualiza nombre y número de niños de un grupo del sitio.
 -- Versión: 1.0
 -- =============================================

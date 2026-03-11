@@ -1,5 +1,5 @@
 -- =============================================
--- Stored Procedure: 104_GetSiteChildGroupIdsBySiteId
+-- Stored Procedure: 100_GetSiteChildGroupIdsBySiteId
 -- Descripción: Devuelve los Id de los grupos de niños de un sitio.
 -- Versión: 1.0
 -- =============================================

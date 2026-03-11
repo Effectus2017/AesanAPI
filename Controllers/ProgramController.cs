@@ -16,9 +16,8 @@ namespace Api.Controllers;
 [Route("program")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork unitOfWork) : Controller
+public class ProgramController(IUnitOfWork unitOfWork) : Controller
 {
-    private readonly ILogger<ProgramController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -30,24 +29,14 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Obtiene un programa por su ID", Description = "Devuelve un programa basado en el ID proporcionado.")]
     public async Task<IActionResult> GetProgramById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var program = await _unitOfWork.ProgramRepository.GetProgramById(queryParameters.Id);
+
+        if (program == null)
         {
-            _logger.LogInformation("Obteniendo programa por ID: {Id}", queryParameters.Id);
-
-            var program = await _unitOfWork.ProgramRepository.GetProgramById(queryParameters.Id);
-
-            if (program == null)
-            {
-                return NotFound($"Programa con ID {queryParameters.Id} no encontrado");
-            }
-
-            return Ok(program);
+            return NotFound($"Programa con ID {queryParameters.Id} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el programa con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el programa");
-        }
+
+        return Ok(program);
     }
 
     /// <summary>
@@ -60,24 +49,14 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos", Description = "Devuelve una lista de todos los programas. Se pueden filtrar por múltiples nombres separados por coma. Accesible sin autenticación para intención de participación.")]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los programas");
-
-            var programs = await _unitOfWork.ProgramRepository.GetAllProgramsFromDb(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Names,
-                queryParameters.Alls,
-                queryParameters.IsList
-            );
-            return Ok(programs);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los programas");
-            return StatusCode(500, "Error al obtener los programas");
-        }
+        var programs = await _unitOfWork.ProgramRepository.GetAllProgramsFromDb(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Names,
+            queryParameters.Alls,
+            queryParameters.IsList
+        );
+        return Ok(programs);
     }
 
     /// <summary>
@@ -89,29 +68,19 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Inserta un nuevo programa", Description = "Crea un nuevo programa en la base de datos.")]
     public async Task<IActionResult> Insert([FromBody] ProgramRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("El programa es requerido");
-            }
-
-            var result = await _unitOfWork.ProgramRepository.InsertProgram(request);
-
-            if (result)
-            {
-                _logger.LogInformation("Programa insertado con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo insertar el programa");
-            return BadRequest("No se pudo insertar el programa");
+            return BadRequest("El programa es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.ProgramRepository.InsertProgram(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al insertar el programa");
-            return StatusCode(500, "Error al insertar el programa");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo insertar el programa");
     }
 
     /// <summary>
@@ -123,29 +92,19 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Inserta una nueva inscripción de programa", Description = "Crea una nueva inscripción de programa en la base de datos.")]
     public async Task<IActionResult> InsertProgramInscription([FromBody] ProgramInscriptionRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("La inscripción de programa es requerida");
-            }
-
-            var result = await _unitOfWork.ProgramRepository.InsertProgramInscription(request);
-
-            if (result)
-            {
-                _logger.LogInformation("Inscripción de programa insertada");
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo insertar la inscripción del programa");
-            return BadRequest("No se pudo insertar la inscripción del programa");
+            return BadRequest("La inscripción de programa es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.ProgramRepository.InsertProgramInscription(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al insertar la inscripción del programa");
-            return StatusCode(500, "Error al insertar la inscripción del programa");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo insertar la inscripción del programa");
     }
 
     /// <summary>
@@ -159,21 +118,13 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Obtiene todas las inscripciones a programas", Description = "Devuelve una lista paginada de inscripciones a programas.")]
     public async Task<IActionResult> GetAllProgramInscriptions([FromQuery] QueryParameters queryParameters, [FromQuery] int? agencyId = null, [FromQuery] int? programId = null)
     {
-        try
-        {
-            var inscriptions = await _unitOfWork.ProgramRepository.GetAllProgramInscriptions(
-                queryParameters.Take,
-                queryParameters.Skip,
-                agencyId,
-                programId
-            );
-            return Ok(inscriptions);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las inscripciones de programas");
-            return StatusCode(500, "Error al obtener las inscripciones de programas");
-        }
+        var inscriptions = await _unitOfWork.ProgramRepository.GetAllProgramInscriptions(
+            queryParameters.Take,
+            queryParameters.Skip,
+            agencyId,
+            programId
+        );
+        return Ok(inscriptions);
     }
 
     /// <summary>
@@ -185,38 +136,26 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Asigna un evaluador a un programa", Description = "Asigna un usuario con rol 'Evaluador' a un programa específico.")]
     public async Task<IActionResult> AssignEvaluatorToProgram([FromBody] AssignEvaluatorToProgramRequest request)
     {
-        try
+        if (request == null || string.IsNullOrEmpty(request.UserId) || request.ProgramId <= 0)
         {
-            if (request == null || string.IsNullOrEmpty(request.UserId) || request.ProgramId <= 0)
-            {
-                return BadRequest("UserId y ProgramId son requeridos");
-            }
-
-            // Obtener el usuario que realiza la asignación (desde el token JWT)
-            var assignedBy = User?.Identity?.Name ?? request.AssignedBy ?? "System";
-            if (string.IsNullOrEmpty(assignedBy))
-            {
-                assignedBy = "System";
-            }
-
-            _logger.LogInformation("Asignando evaluador {UserId} al programa {ProgramId} por {AssignedBy}", request.UserId, request.ProgramId, assignedBy);
-
-            var result = await _unitOfWork.ProgramRepository.AssignEvaluatorToProgram(request.UserId, request.ProgramId, assignedBy);
-
-            if (result)
-            {
-                _logger.LogInformation("Evaluador {UserId} asignado exitosamente al programa {ProgramId}", request.UserId, request.ProgramId);
-                return Ok(new { success = true, message = "Evaluador asignado exitosamente" });
-            }
-
-            _logger.LogWarning("No se pudo asignar el evaluador {UserId} al programa {ProgramId}", request.UserId, request.ProgramId);
-            return BadRequest(new { success = false, message = "No se pudo asignar el evaluador al programa" });
+            return BadRequest("UserId y ProgramId son requeridos");
         }
-        catch (Exception ex)
+
+        // Obtener el usuario que realiza la asignación (desde el token JWT)
+        var assignedBy = User?.Identity?.Name ?? request.AssignedBy ?? "System";
+        if (string.IsNullOrEmpty(assignedBy))
         {
-            _logger.LogError(ex, "Error al asignar evaluador {UserId} al programa {ProgramId}", request?.UserId, request?.ProgramId);
-            return StatusCode(500, new { success = false, message = "Error interno del servidor al asignar evaluador al programa" });
+            assignedBy = "System";
         }
+
+        var result = await _unitOfWork.ProgramRepository.AssignEvaluatorToProgram(request.UserId, request.ProgramId, assignedBy);
+
+        if (result)
+        {
+            return Ok(new { success = true, message = "Evaluador asignado exitosamente" });
+        }
+
+        return BadRequest(new { success = false, message = "No se pudo asignar el evaluador al programa" });
     }
 
     /// <summary>
@@ -229,31 +168,19 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Remueve la asignación de un evaluador a un programa", Description = "Remueve la asignación de un evaluador a un programa específico.")]
     public async Task<IActionResult> RemoveEvaluatorFromProgram([FromQuery] string userId, [FromQuery] int programId)
     {
-        try
+        if (string.IsNullOrEmpty(userId) || programId <= 0)
         {
-            if (string.IsNullOrEmpty(userId) || programId <= 0)
-            {
-                return BadRequest("UserId y ProgramId son requeridos");
-            }
-
-            _logger.LogInformation("Removiendo evaluador {UserId} del programa {ProgramId}", userId, programId);
-
-            var result = await _unitOfWork.ProgramRepository.RemoveEvaluatorFromProgram(userId, programId);
-
-            if (result)
-            {
-                _logger.LogInformation("Evaluador {UserId} removido exitosamente del programa {ProgramId}", userId, programId);
-                return Ok(new { success = true, message = "Evaluador removido exitosamente" });
-            }
-
-            _logger.LogWarning("No se pudo remover el evaluador {UserId} del programa {ProgramId}", userId, programId);
-            return BadRequest(new { success = false, message = "No se pudo remover el evaluador del programa" });
+            return BadRequest("UserId y ProgramId son requeridos");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.ProgramRepository.RemoveEvaluatorFromProgram(userId, programId);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al remover evaluador {UserId} del programa {ProgramId}", userId, programId);
-            return StatusCode(500, new { success = false, message = "Error interno del servidor al remover evaluador del programa" });
+            return Ok(new { success = true, message = "Evaluador removido exitosamente" });
         }
+
+        return BadRequest(new { success = false, message = "No se pudo remover el evaluador del programa" });
     }
 
     /// <summary>
@@ -265,24 +192,14 @@ public class ProgramController(ILogger<ProgramController> logger, IUnitOfWork un
     [SwaggerOperation(Summary = "Obtiene todos los evaluadores asignados a un programa", Description = "Devuelve una lista de UserIds de los evaluadores asignados a un programa específico.")]
     public async Task<IActionResult> GetEvaluatorsByProgramId(int programId)
     {
-        try
+        if (programId <= 0)
         {
-            if (programId <= 0)
-            {
-                return BadRequest("ProgramId debe ser mayor a 0");
-            }
-
-            _logger.LogInformation("Obteniendo evaluadores del programa {ProgramId}", programId);
-
-            var evaluators = await _unitOfWork.ProgramRepository.GetEvaluatorsByProgramId(programId);
-
-            return Ok(new { success = true, data = evaluators, count = evaluators.Count });
+            return BadRequest("ProgramId debe ser mayor a 0");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener evaluadores del programa {ProgramId}", programId);
-            return StatusCode(500, new { success = false, message = "Error interno del servidor al obtener evaluadores del programa" });
-        }
+
+        var evaluators = await _unitOfWork.ProgramRepository.GetEvaluatorsByProgramId(programId);
+
+        return Ok(new { success = true, data = evaluators, count = evaluators.Count });
     }
 
 }

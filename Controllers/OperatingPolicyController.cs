@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("operating-policy")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class OperatingPolicyController(IOperatingPolicyRepository operatingPolicyRepository, ILogger<OperatingPolicyController> logger) : ControllerBase
+public class OperatingPolicyController(IOperatingPolicyRepository operatingPolicyRepository) : ControllerBase
 {
     private readonly IOperatingPolicyRepository _operatingPolicyRepository = operatingPolicyRepository;
-    private readonly ILogger<OperatingPolicyController> _logger = logger;
 
     /// <summary>
     /// Obtiene una política operativa por su ID
@@ -31,29 +30,19 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     [SwaggerOperation(Summary = "Obtiene una política operativa por su ID", Description = "Devuelve una política operativa basada en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo política operativa por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID de la política operativa es requerido");
-            }
-
-            var result = await _operatingPolicyRepository.GetOperatingPolicyById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID de la política operativa es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _operatingPolicyRepository.GetOperatingPolicyById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener la política operativa con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener la política operativa");
+            return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -65,27 +54,19 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     [SwaggerOperation(Summary = "Obtiene todas las políticas operativas", Description = "Devuelve una lista de políticas operativas.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _operatingPolicyRepository.GetAllOperatingPolicies(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.Alls,
-                queryParameters.IsList);
+        var result = await _operatingPolicyRepository.GetAllOperatingPolicies(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Name,
+            queryParameters.Alls,
+            queryParameters.IsList);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron políticas operativas");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener todas las políticas operativas");
-            return StatusCode(500, "Error interno del servidor al obtener las políticas operativas");
+            return NotFound("No se encontraron políticas operativas");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -97,24 +78,14 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     [SwaggerOperation(Summary = "Crea una nueva política operativa", Description = "Crea una nueva política operativa.")]
     public async Task<ActionResult> Insert([FromBody] DTOOperatingPolicy request)
     {
-        try
-        {
-            var result = await _operatingPolicyRepository.InsertOperatingPolicy(request);
+        var result = await _operatingPolicyRepository.InsertOperatingPolicy(request);
 
-            if (result)
-            {
-                _logger.LogInformation("Política operativa creada con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear la política operativa");
-            return BadRequest("No se pudo crear la política operativa");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear la política operativa");
-            return StatusCode(500, "Error interno del servidor al crear la política operativa");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear la política operativa");
     }
 
     /// <summary>
@@ -126,23 +97,14 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     [SwaggerOperation(Summary = "Actualiza una política operativa existente", Description = "Actualiza los datos de una política operativa existente.")]
     public async Task<IActionResult> Update([FromBody] DTOOperatingPolicy request)
     {
-        try
-        {
-            var result = await _operatingPolicyRepository.UpdateOperatingPolicy(request);
+        var result = await _operatingPolicyRepository.UpdateOperatingPolicy(request);
 
-            if (!result)
-            {
-                _logger.LogWarning("Política operativa con ID {Id} no encontrada", request.Id);
-                return NotFound($"Política operativa con ID {request.Id} no encontrada");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al actualizar la política operativa con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar la política operativa");
+            return NotFound($"Política operativa con ID {request.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -154,22 +116,13 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
     [SwaggerOperation(Summary = "Elimina una política operativa existente", Description = "Elimina una política operativa existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _operatingPolicyRepository.DeleteOperatingPolicy(queryParameters.Id);
+        var result = await _operatingPolicyRepository.DeleteOperatingPolicy(queryParameters.Id);
 
-            if (!result)
-            {
-                _logger.LogWarning("Política operativa con ID {Id} no encontrada", queryParameters.Id);
-                return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al eliminar la política operativa con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar la política operativa");
+            return NotFound($"Política operativa con ID {queryParameters.Id} no encontrada");
         }
+
+        return NoContent();
     }
 }

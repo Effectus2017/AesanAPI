@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("facility")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class FacilityController(IFacilityRepository facilityRepository, ILogger<FacilityController> logger) : ControllerBase
+public class FacilityController(IFacilityRepository facilityRepository) : ControllerBase
 {
     private readonly IFacilityRepository _facilityRepository = facilityRepository;
-    private readonly ILogger<FacilityController> _logger = logger;
 
     /// <summary>
     /// Obtiene una instalación por su ID
@@ -31,30 +30,19 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     [SwaggerOperation(Summary = "Obtiene una instalación por su ID", Description = "Devuelve una instalación basada en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo instalación por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID de la instalación es requerido");
-            }
-
-            var result = await _facilityRepository.GetFacilityById(queryParameters.Id);
-
-            if (result == null)
-            {
-                _logger.LogWarning("Instalación con ID {Id} no encontrada", queryParameters.Id);
-                return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID de la instalación es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _facilityRepository.GetFacilityById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener la instalación con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener la instalación");
+            return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -66,22 +54,14 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     [SwaggerOperation(Summary = "Obtiene todas las instalaciones", Description = "Devuelve una lista de instalaciones.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _facilityRepository.GetAllFacilities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+        var result = await _facilityRepository.GetAllFacilities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron instalaciones");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener todas las instalaciones");
-            return StatusCode(500, "Error interno del servidor al obtener las instalaciones");
+            return NotFound("No se encontraron instalaciones");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -93,22 +73,14 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     [SwaggerOperation(Summary = "Crea una nueva instalación", Description = "Crea una nueva instalación.")]
     public async Task<ActionResult> Insert([FromBody] DTOFacility request)
     {
-        try
-        {
-            var result = await _facilityRepository.InsertFacility(request);
+        var result = await _facilityRepository.InsertFacility(request);
 
-            if (result)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest("No se pudo crear la instalación");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear la instalación");
-            return StatusCode(500, "Error interno del servidor al crear la instalación");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear la instalación");
     }
 
     /// <summary>
@@ -120,23 +92,14 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     [SwaggerOperation(Summary = "Actualiza una instalación existente", Description = "Actualiza los datos de una instalación existente.")]
     public async Task<IActionResult> Update([FromBody] DTOFacility request)
     {
-        try
-        {
-            var result = await _facilityRepository.UpdateFacility(request);
+        var result = await _facilityRepository.UpdateFacility(request);
 
-            if (!result)
-            {
-                _logger.LogWarning("Instalación con ID {Id} no encontrada", request.Id);
-                return NotFound($"Instalación con ID {request.Id} no encontrada");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al actualizar la instalación con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar la instalación");
+            return NotFound($"Instalación con ID {request.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -148,22 +111,13 @@ public class FacilityController(IFacilityRepository facilityRepository, ILogger<
     [SwaggerOperation(Summary = "Elimina una instalación existente", Description = "Elimina una instalación existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _facilityRepository.DeleteFacility(queryParameters.Id);
+        var result = await _facilityRepository.DeleteFacility(queryParameters.Id);
 
-            if (!result)
-            {
-                _logger.LogWarning("Instalación con ID {Id} no encontrada", queryParameters.Id);
-                return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al eliminar la instalación con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar la instalación");
+            return NotFound($"Instalación con ID {queryParameters.Id} no encontrada");
         }
+
+        return NoContent();
     }
 }

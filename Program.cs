@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
 using System.Security.Claims;
 using Api.Filters;
+using Api.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,7 +110,10 @@ builder.Services
             OnTokenValidated = _ => Task.CompletedTask,
             OnAuthenticationFailed = _ => Task.CompletedTask
         };
-    });
+    })
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationOptions.DefaultScheme,
+        options => options.ExpectedApiKey = builder.Configuration["ApplicationSettings:InternalApiKey"]);
 
 builder.Services
     .AddIdentity<User, Role>(config =>
@@ -245,6 +249,7 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ApiExceptionFilter>();
     options.Filters.Add<ValidateModelStateAttribute>();
+    options.Filters.Add<CentralLogActionFilter>();
 }).ConfigureApiBehaviorOptions(options =>
 {
     options.SuppressModelStateInvalidFilter = true;

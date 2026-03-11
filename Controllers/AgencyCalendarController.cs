@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Api.Models;
 using Api.Models.Request;
-using Api.Models.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Api.Interfaces;
@@ -17,105 +16,82 @@ namespace Api.Controllers;
 [Route("agency-calendar")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class AgencyCalendarController(ILogger<AgencyCalendarController> logger, IAgencyCalendarRepository agencyCalendarRepository) : Controller
+public class AgencyCalendarController(IAgencyCalendarRepository agencyCalendarRepository) : Controller
 {
-    private readonly ILogger<AgencyCalendarController> _logger = logger;
     private readonly IAgencyCalendarRepository _agencyCalendarRepository = agencyCalendarRepository ?? throw new ArgumentNullException(nameof(agencyCalendarRepository));
 
     [HttpGet("get-agency-appointments")]
     [SwaggerOperation(Summary = "Obtiene las citas de una agencia", Description = "Devuelve las citas para una agencia específica. Filtra opcionalmente por mes y año.")]
     public async Task<IActionResult> GetAppointments([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.AgencyId <= 0)
         {
-            if (queryParameters.AgencyId <= 0)
-            {
-                return BadRequest("El ID de la agencia debe ser mayor a 0");
-            }
+            return BadRequest("El ID de la agencia debe ser mayor a 0");
+        }
 
-            var result = await _agencyCalendarRepository.GetAppointments(
-                queryParameters.AgencyId,
-                queryParameters.Month,
-                queryParameters.Year
-            );
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las citas para la agencia {AgencyId}", queryParameters.AgencyId);
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _agencyCalendarRepository.GetAppointments(
+            queryParameters.AgencyId,
+            queryParameters.Month,
+            queryParameters.Year
+        );
+        return Ok(result);
     }
 
     [HttpPost("create-appointment")]
     [SwaggerOperation(Summary = "Crea una nueva cita", Description = "Crea una nueva cita para una agencia específica.")]
     public async Task<IActionResult> CreateAppointment([FromBody] AgencyAppointmentRequest request)
     {
-        try
-        {
-            var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+        var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
 
-            var newId = await _agencyCalendarRepository.CreateAppointment(request, userId);
+        var newId = await _agencyCalendarRepository.CreateAppointment(request, userId);
 
-            if (newId.HasValue)
-                return Ok(new { id = newId.Value, success = true });
-            
-            return BadRequest("No se pudo procesar la solicitud");
-        }
-        catch (Exception ex)
+        if (newId.HasValue)
         {
-            _logger.LogError(ex, "Error al crear cita para la agencia {AgencyId}", request.AgencyId);
-            return StatusCode(500, ex.Message);
+            return Ok(new { id = newId.Value, success = true });
         }
+
+        return BadRequest("No se pudo procesar la solicitud");
     }
 
     [HttpPut("update-appointment")]
     [SwaggerOperation(Summary = "Actualiza una cita", Description = "Actualiza una cita existente.")]
     public async Task<IActionResult> UpdateAppointment([FromBody] AgencyAppointmentRequest request)
     {
-        try
+        if (!request.Id.HasValue || request.Id.Value <= 0)
         {
-            if (!request.Id.HasValue || request.Id.Value <= 0)
-                return BadRequest("El ID de la cita es requerido para actualizar");
-
-            var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
-
-            var result = await _agencyCalendarRepository.UpdateAppointment(request.Id.Value, request, userId);
-
-            if (result)
-                return Ok(true);
-            
-            return BadRequest("No se pudo procesar la solicitud");
+            return BadRequest("El ID de la cita es requerido para actualizar");
         }
-        catch (Exception ex)
+
+        var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+
+        var result = await _agencyCalendarRepository.UpdateAppointment(request.Id.Value, request, userId);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al actualizar cita {Id}", request.Id);
-            return StatusCode(500, ex.Message);
+            return Ok(true);
         }
+
+        return BadRequest("No se pudo procesar la solicitud");
     }
 
     [HttpDelete("delete-appointment/{id}")]
     [SwaggerOperation(Summary = "Elimina una cita", Description = "Elimina de forma lógica una cita específica.")]
     public async Task<IActionResult> DeleteAppointment(int id)
     {
-        try
+        if (id <= 0)
         {
-            if (id <= 0)
-                return BadRequest("El ID debe ser mayor a 0");
-
-            var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
-
-            var result = await _agencyCalendarRepository.DeleteAppointment(id, userId);
-
-            if (result)
-                return Ok(true);
-            
-            return BadRequest("No se pudo eliminar la cita");
+            return BadRequest("El ID debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        var userId = User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+
+        var result = await _agencyCalendarRepository.DeleteAppointment(id, userId);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al eliminar cita {Id}", id);
-            return StatusCode(500, ex.Message);
+            return Ok(true);
         }
+
+        return BadRequest("No se pudo eliminar la cita");
     }
 }

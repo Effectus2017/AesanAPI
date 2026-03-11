@@ -35,21 +35,14 @@ public class SiteExcursionController : Controller
     [SwaggerOperation(Summary = "Obtiene una excursión por su ID", Description = "Devuelve una excursión basada en el ID proporcionado.")]
     public async Task<IActionResult> GetSiteExcursionById(int id)
     {
-        try
-        {
-            var result = await _siteExcursionRepository.GetSiteExcursionById(id);
+        var result = await _siteExcursionRepository.GetSiteExcursionById(id);
 
-            if (result == null)
-            {
-                return NotFound($"Excursión con ID {id} no encontrada");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            return StatusCode(500, ex.Message);
+            return NotFound($"Excursión con ID {id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -62,15 +55,8 @@ public class SiteExcursionController : Controller
     [SwaggerOperation(Summary = "Obtiene todas las excursiones de un sitio", Description = "Devuelve una lista de excursiones del sitio especificado.")]
     public async Task<IActionResult> GetSiteExcursionsBySiteId(int siteId, [FromQuery] bool includeInactive = false)
     {
-        try
-        {
-            var result = await _siteExcursionRepository.GetSiteExcursionsBySiteId(siteId, includeInactive);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _siteExcursionRepository.GetSiteExcursionsBySiteId(siteId, includeInactive);
+        return Ok(result);
     }
 
     /// <summary>
@@ -89,15 +75,8 @@ public class SiteExcursionController : Controller
         [FromQuery] DateTime endDate,
         [FromQuery] bool includeInactive = false)
     {
-        try
-        {
-            var result = await _siteExcursionRepository.GetSiteExcursionsByDateRange(siteId, startDate, endDate, includeInactive);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _siteExcursionRepository.GetSiteExcursionsByDateRange(siteId, startDate, endDate, includeInactive);
+        return Ok(result);
     }
 
     /// <summary>
@@ -114,15 +93,8 @@ public class SiteExcursionController : Controller
         int childGroupId,
         [FromQuery] bool includeInactive = false)
     {
-        try
-        {
-            var result = await _siteExcursionRepository.GetSiteExcursionsByChildGroupId(siteId, childGroupId, includeInactive);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _siteExcursionRepository.GetSiteExcursionsByChildGroupId(siteId, childGroupId, includeInactive);
+        return Ok(result);
     }
 
     /// <summary>
@@ -134,15 +106,8 @@ public class SiteExcursionController : Controller
     [SwaggerOperation(Summary = "Crea una nueva excursión", Description = "Crea una nueva excursión en la base de datos.")]
     public async Task<IActionResult> CreateSiteExcursion([FromBody] SiteExcursionRequest request)
     {
-        try
-        {
-            var id = await _siteExcursionRepository.InsertSiteExcursion(request);
-            return Ok(new { id, message = "Excursión creada exitosamente" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        var id = await _siteExcursionRepository.InsertSiteExcursion(request);
+        return Ok(new { id, message = "Excursión creada exitosamente" });
     }
 
     /// <summary>
@@ -155,25 +120,18 @@ public class SiteExcursionController : Controller
     [SwaggerOperation(Summary = "Actualiza una excursión", Description = "Actualiza una excursión existente en la base de datos.")]
     public async Task<IActionResult> UpdateSiteExcursion(int id, [FromBody] SiteExcursionRequest request)
     {
-        try
+        if (request.Id != id)
         {
-            if (request.Id != id)
-            {
-                return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la solicitud");
-            }
-
-            var result = await _siteExcursionRepository.UpdateSiteExcursion(request);
-            if (result)
-            {
-                return Ok(new { message = "Excursión actualizada exitosamente" });
-            }
-
-            return NotFound($"Excursión con ID {id} no encontrada");
+            return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la solicitud");
         }
-        catch (Exception ex)
+
+        var result = await _siteExcursionRepository.UpdateSiteExcursion(request);
+        if (result)
         {
-            return StatusCode(500, ex.Message);
+            return Ok(new { message = "Excursión actualizada exitosamente" });
         }
+
+        return NotFound($"Excursión con ID {id} no encontrada");
     }
 
     /// <summary>
@@ -185,20 +143,12 @@ public class SiteExcursionController : Controller
     [SwaggerOperation(Summary = "Elimina una excursión", Description = "Elimina una excursión de la base de datos (soft delete).")]
     public async Task<IActionResult> DeleteSiteExcursion(int id)
     {
-        try
+        var result = await _siteExcursionRepository.DeleteSiteExcursion(id);
+        if (result)
         {
-            var result = await _siteExcursionRepository.DeleteSiteExcursion(id);
-            if (result)
-            {
-                return Ok(new { message = "Excursión eliminada exitosamente" });
-            }
+            return Ok(new { message = "Excursión eliminada exitosamente" });
+        }
 
-            return NotFound($"Excursión con ID {id} no encontrada");
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        return NotFound($"Excursión con ID {id} no encontrada");
     }
 }
-

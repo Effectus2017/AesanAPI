@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("food-authority")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepository, ILogger<FoodAuthorityController> logger) : ControllerBase
+public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepository) : ControllerBase
 {
     private readonly IFoodAuthorityRepository _foodAuthorityRepository = foodAuthorityRepository;
-    private readonly ILogger<FoodAuthorityController> _logger = logger;
 
     /// <summary>
     /// Obtiene una autoridad alimentaria por su ID
@@ -31,29 +30,19 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     [SwaggerOperation(Summary = "Obtiene una autoridad alimentaria por su ID", Description = "Devuelve una autoridad alimentaria basada en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo autoridad alimentaria por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID de la autoridad alimentaria es requerido");
-            }
-
-            var result = await _foodAuthorityRepository.GetFoodAuthorityById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID de la autoridad alimentaria es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _foodAuthorityRepository.GetFoodAuthorityById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener la autoridad alimentaria con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener la autoridad alimentaria");
+            return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
 
@@ -66,16 +55,8 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     [SwaggerOperation(Summary = "Obtiene todas las autoridades alimentarias", Description = "Devuelve una lista de autoridades alimentarias.")]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _foodAuthorityRepository.GetAllFoodAuthorities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todas las autoridades alimentarias");
-            return StatusCode(500, "Error interno del servidor al obtener las autoridades alimentarias");
-        }
+        var result = await _foodAuthorityRepository.GetAllFoodAuthorities(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+        return Ok(result);
     }
 
 
@@ -88,29 +69,19 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     [SwaggerOperation(Summary = "Crea una nueva autoridad alimentaria", Description = "Crea una nueva autoridad alimentaria.")]
     public async Task<IActionResult> Insert([FromBody] FoodAuthorityRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("La autoridad alimentaria es requerida");
-            }
-
-            var result = await _foodAuthorityRepository.InsertFoodAuthority(request);
-
-            if (result)
-            {
-                _logger.LogInformation("Autoridad alimentaria creada");
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear la autoridad alimentaria");
-            return BadRequest("No se pudo crear la autoridad alimentaria");
+            return BadRequest("La autoridad alimentaria es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _foodAuthorityRepository.InsertFoodAuthority(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear la autoridad alimentaria");
-            return StatusCode(500, "Error interno del servidor al crear la autoridad alimentaria");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear la autoridad alimentaria");
     }
 
     /// <summary>
@@ -122,24 +93,18 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     [SwaggerOperation(Summary = "Actualiza una autoridad alimentaria existente", Description = "Actualiza los datos de una autoridad alimentaria existente.")]
     public async Task<IActionResult> Update([FromBody] DTOFoodAuthority request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("La autoridad alimentaria es requerida");
-            }
-
-            var result = await _foodAuthorityRepository.UpdateFoodAuthority(request);
-            if (!result)
-                return NotFound($"Autoridad alimentaria con ID {request.Id} no encontrada");
-
-            return NoContent();
+            return BadRequest("La autoridad alimentaria es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _foodAuthorityRepository.UpdateFoodAuthority(request);
+        if (!result)
         {
-            _logger.LogError(ex, "Error al actualizar la autoridad alimentaria con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar la autoridad alimentaria");
+            return NotFound($"Autoridad alimentaria con ID {request.Id} no encontrada");
         }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -151,21 +116,13 @@ public class FoodAuthorityController(IFoodAuthorityRepository foodAuthorityRepos
     [SwaggerOperation(Summary = "Elimina una autoridad alimentaria existente", Description = "Elimina una autoridad alimentaria existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _foodAuthorityRepository.DeleteFoodAuthority(queryParameters.Id);
+        var result = await _foodAuthorityRepository.DeleteFoodAuthority(queryParameters.Id);
 
-            if (!result)
-            {
-                return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al eliminar la autoridad alimentaria con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar la autoridad alimentaria");
+            return NotFound($"Autoridad alimentaria con ID {queryParameters.Id} no encontrada");
         }
+
+        return NoContent();
     }
 }

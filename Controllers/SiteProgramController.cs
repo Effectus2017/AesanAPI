@@ -27,20 +27,13 @@ public class SiteProgramController(ISiteProgramService service) : Controller
     [SwaggerOperation(Summary = "Obtiene todos los programas de un sitio")]
     public async Task<IActionResult> GetSiteProgramsBySiteId([FromQuery] int siteId)
     {
-        try
+        if (siteId <= 0)
         {
-            if (siteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor que 0");
-            }
+            return BadRequest("El ID del sitio debe ser mayor que 0");
+        }
 
-            var programs = await _service.GetSiteProgramsBySiteId(siteId);
-            return Ok(programs);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Error interno del servidor al obtener los programas del sitio");
-        }
+        var programs = await _service.GetSiteProgramsBySiteId(siteId);
+        return Ok(programs);
     }
 
     /// <summary>
@@ -50,15 +43,8 @@ public class SiteProgramController(ISiteProgramService service) : Controller
     [SwaggerOperation(Summary = "Inserta una nueva relación sitio-programa")]
     public async Task<IActionResult> InsertSiteProgram([FromBody] SiteProgramRequest request)
     {
-        try
-        {
-            var result = await _service.InsertSiteProgram(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Error interno del servidor al insertar la relación sitio-programa");
-        }
+        var result = await _service.InsertSiteProgram(request);
+        return Ok(result);
     }
 
     /// <summary>
@@ -68,26 +54,18 @@ public class SiteProgramController(ISiteProgramService service) : Controller
     [SwaggerOperation(Summary = "Actualiza una relación sitio-programa existente")]
     public async Task<IActionResult> UpdateSiteProgram([FromBody] SiteProgramRequest request)
     {
-        try
+        if (!request.Id.HasValue)
         {
-            if (!request.Id.HasValue)
-            {
-                return BadRequest("El ID de la relación es requerido para actualizar");
-            }
-
-            var result = await _service.UpdateSiteProgram(request);
-            
-            if (!result)
-            {
-                return NotFound($"No se encontró la relación sitio-programa con ID {request.Id}");
-            }
-
-            return Ok(new { success = true });
+            return BadRequest("El ID de la relación es requerido para actualizar");
         }
-        catch (Exception ex)
+
+        var result = await _service.UpdateSiteProgram(request);
+
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al actualizar la relación sitio-programa");
+            return NotFound($"No se encontró la relación sitio-programa con ID {request.Id}");
         }
+
+        return Ok(new { success = true });
     }
 }
-

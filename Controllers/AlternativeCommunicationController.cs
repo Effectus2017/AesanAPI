@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("alternative-communication")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class AlternativeCommunicationController(IAlternativeCommunicationRepository alternativeCommunicationRepository, ILogger<AlternativeCommunicationController> logger) : ControllerBase
+public class AlternativeCommunicationController(IAlternativeCommunicationRepository alternativeCommunicationRepository) : ControllerBase
 {
     private readonly IAlternativeCommunicationRepository _alternativeCommunicationRepository = alternativeCommunicationRepository;
-    private readonly ILogger<AlternativeCommunicationController> _logger = logger;
 
     /// <summary>
     /// Gets an alternative communication by its ID.
@@ -31,29 +30,19 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     [SwaggerOperation(Summary = "Gets an alternative communication by its ID", Description = "Returns an alternative communication based on the provided ID.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Getting alternative communication by ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("The alternative communication ID is required");
-            }
-
-            var result = await _alternativeCommunicationRepository.GetAlternativeCommunicationById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
-            }
-
-            return Ok(result);
+            return BadRequest("The alternative communication ID is required");
         }
-        catch (Exception ex)
+
+        var result = await _alternativeCommunicationRepository.GetAlternativeCommunicationById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error getting alternative communication by ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Internal server error while getting alternative communication");
+            return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -65,22 +54,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     [SwaggerOperation(Summary = "Gets all alternative communications", Description = "Returns a list of alternative communications.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _alternativeCommunicationRepository.GetAllAlternativeCommunications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+        var result = await _alternativeCommunicationRepository.GetAllAlternativeCommunications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
 
-            if (result == null)
-            {
-                return NotFound("No alternative communications found");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            _logger.LogError(ex, "Error getting all alternative communications");
-            return StatusCode(500, "Internal server error while getting alternative communications");
+            return NotFound("No alternative communications found");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -92,22 +73,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     [SwaggerOperation(Summary = "Creates a new alternative communication", Description = "Creates a new alternative communication.")]
     public async Task<ActionResult> Insert([FromBody] DTOAlternativeCommunication request)
     {
-        try
-        {
-            var result = await _alternativeCommunicationRepository.InsertAlternativeCommunication(request);
+        var result = await _alternativeCommunicationRepository.InsertAlternativeCommunication(request);
 
-            if (result)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest("Could not create the alternative communication");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            _logger.LogError(ex, "Error creating alternative communication");
-            return StatusCode(500, "Internal server error while creating alternative communication");
+            return Ok(result);
         }
+
+        return BadRequest("Could not create the alternative communication");
     }
 
     /// <summary>
@@ -119,22 +92,14 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     [SwaggerOperation(Summary = "Updates an existing alternative communication", Description = "Updates the data of an existing alternative communication.")]
     public async Task<IActionResult> Update([FromBody] DTOAlternativeCommunication request)
     {
-        try
-        {
-            var result = await _alternativeCommunicationRepository.UpdateAlternativeCommunication(request);
+        var result = await _alternativeCommunicationRepository.UpdateAlternativeCommunication(request);
 
-            if (!result)
-            {
-                return NotFound($"Alternative communication with ID {request.Id} not found");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error updating alternative communication with ID {Id}", request.Id);
-            return StatusCode(500, "Internal server error while updating alternative communication");
+            return NotFound($"Alternative communication with ID {request.Id} not found");
         }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -146,21 +111,13 @@ public class AlternativeCommunicationController(IAlternativeCommunicationReposit
     [SwaggerOperation(Summary = "Deletes an existing alternative communication", Description = "Deletes an existing alternative communication.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _alternativeCommunicationRepository.DeleteAlternativeCommunication(queryParameters.Id);
+        var result = await _alternativeCommunicationRepository.DeleteAlternativeCommunication(queryParameters.Id);
 
-            if (!result)
-            {
-                return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error deleting alternative communication with ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Internal server error while deleting alternative communication");
+            return NotFound($"Alternative communication with ID {queryParameters.Id} not found");
         }
+
+        return NoContent();
     }
 }

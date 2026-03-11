@@ -19,9 +19,8 @@ namespace Api.Controllers;
 [Route("site-facility")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISiteFacilityRepository siteFacilityRepository) : Controller
+public class SiteFacilityController(ISiteFacilityRepository siteFacilityRepository) : Controller
 {
-    private readonly ILogger<SiteFacilityController> _logger = logger;
     private readonly ISiteFacilityRepository _siteFacilityRepository = siteFacilityRepository ?? throw new ArgumentNullException(nameof(siteFacilityRepository));
 
     /// <summary>
@@ -33,23 +32,13 @@ public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISit
     [SwaggerOperation(Summary = "Obtiene instalaciones de un sitio", Description = "Devuelve todas las instalaciones para un sitio específico.")]
     public async Task<IActionResult> GetFacilitiesBySite([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.SiteId <= 0)
         {
-            if (queryParameters.SiteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
-            }
-
-            _logger.LogInformation("Obteniendo instalaciones para el sitio {SiteId}", queryParameters.SiteId);
-
-            var result = await _siteFacilityRepository.GetFacilitiesBySite(queryParameters.SiteId.Value);
-            return Ok(result);
+            return BadRequest("El ID del sitio debe ser mayor a 0");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener instalaciones para el sitio {SiteId}", queryParameters.SiteId);
-            return StatusCode(500, ex.Message);
-        }
+
+        var result = await _siteFacilityRepository.GetFacilitiesBySite(queryParameters.SiteId.Value);
+        return Ok(result);
     }
 
     /// <summary>
@@ -62,37 +51,25 @@ public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISit
     [SwaggerOperation(Summary = "Actualiza instalaciones de un sitio", Description = "Actualiza las instalaciones de un sitio específico.")]
     public async Task<IActionResult> UpdateSiteFacilities([FromQuery] int siteId, [FromBody] List<int> facilityTypeIds)
     {
-        try
+        if (siteId <= 0)
         {
-            if (siteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
-            }
-
-            if (facilityTypeIds == null || !facilityTypeIds.Any())
-            {
-                return BadRequest("La lista de tipos de instalación no puede estar vacía");
-            }
-
-            _logger.LogInformation("Actualizando instalaciones para el sitio {SiteId}", siteId);
-
-            var result = await _siteFacilityRepository.UpdateSiteFacilities(siteId, facilityTypeIds);
-
-            if (result)
-            {
-                _logger.LogInformation("Instalaciones actualizadas exitosamente para el sitio {SiteId}", siteId);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("No se pudieron actualizar las instalaciones para el sitio {SiteId}", siteId);
-                return BadRequest("No se pudieron actualizar las instalaciones");
-            }
+            return BadRequest("El ID del sitio debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        if (facilityTypeIds == null || !facilityTypeIds.Any())
         {
-            _logger.LogError(ex, "Error al actualizar instalaciones para el sitio {SiteId}", siteId);
-            return StatusCode(500, ex.Message);
+            return BadRequest("La lista de tipos de instalación no puede estar vacía");
+        }
+
+        var result = await _siteFacilityRepository.UpdateSiteFacilities(siteId, facilityTypeIds);
+
+        if (result)
+        {
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest("No se pudieron actualizar las instalaciones");
         }
     }
 
@@ -106,32 +83,20 @@ public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISit
     [SwaggerOperation(Summary = "Actualiza estado de instalaciones", Description = "Actualiza el estado activo de las instalaciones de un sitio.")]
     public async Task<IActionResult> UpdateFacilityStatus([FromQuery] int siteId, [FromQuery] bool isActive)
     {
-        try
+        if (siteId <= 0)
         {
-            if (siteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
-            }
-
-            _logger.LogInformation("Actualizando estado de instalaciones para el sitio {SiteId}: {IsActive}", siteId, isActive);
-
-            var result = await _siteFacilityRepository.UpdateSiteFacilityIsActive(siteId, isActive);
-
-            if (result)
-            {
-                _logger.LogInformation("Estado de instalaciones actualizado exitosamente para el sitio {SiteId}", siteId);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("No se pudo actualizar el estado de instalaciones para el sitio {SiteId}", siteId);
-                return BadRequest("No se pudo actualizar el estado de instalaciones");
-            }
+            return BadRequest("El ID del sitio debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        var result = await _siteFacilityRepository.UpdateSiteFacilityIsActive(siteId, isActive);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al actualizar estado de instalaciones para el sitio {SiteId}", siteId);
-            return StatusCode(500, ex.Message);
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest("No se pudo actualizar el estado de instalaciones");
         }
     }
 
@@ -144,32 +109,20 @@ public class SiteFacilityController(ILogger<SiteFacilityController> logger, ISit
     [SwaggerOperation(Summary = "Elimina instalaciones de un sitio", Description = "Elimina todas las instalaciones de un sitio específico.")]
     public async Task<IActionResult> DeleteSiteFacilities([FromQuery] int siteId)
     {
-        try
+        if (siteId <= 0)
         {
-            if (siteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
-            }
-
-            _logger.LogInformation("Eliminando instalaciones para el sitio {SiteId}", siteId);
-
-            var result = await _siteFacilityRepository.DeleteSiteFacilities(siteId);
-
-            if (result)
-            {
-                _logger.LogInformation("Instalaciones eliminadas exitosamente para el sitio {SiteId}", siteId);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("No se pudieron eliminar las instalaciones para el sitio {SiteId}", siteId);
-                return BadRequest("No se pudieron eliminar las instalaciones");
-            }
+            return BadRequest("El ID del sitio debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        var result = await _siteFacilityRepository.DeleteSiteFacilities(siteId);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al eliminar instalaciones para el sitio {SiteId}", siteId);
-            return StatusCode(500, ex.Message);
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest("No se pudieron eliminar las instalaciones");
         }
     }
 }

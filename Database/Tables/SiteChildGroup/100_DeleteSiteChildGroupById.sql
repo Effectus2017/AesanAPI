@@ -1,5 +1,5 @@
 -- =============================================
--- Stored Procedure: 103_DeleteSiteChildGroupById
+-- Stored Procedure: 100_DeleteSiteChildGroupById
 -- Descripción: Elimina un grupo de niños por Id.
 --              Primero elimina SiteOperatingDayService que referencia al grupo (FK);
 --              SiteChildGroupService se elimina por CASCADE al borrar SiteChildGroup.

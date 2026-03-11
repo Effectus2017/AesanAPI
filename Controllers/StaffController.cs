@@ -17,9 +17,8 @@ namespace Api.Controllers;
 [Route("staff")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOfWork) : Controller
+public class StaffController(IUnitOfWork unitOfWork) : Controller
 {
-    private readonly ILogger<StaffController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -31,24 +30,14 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Obtiene un miembro del staff por su ID", Description = "Devuelve un miembro del staff basado en el ID proporcionado.")]
     public async Task<IActionResult> GetStaffById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var staff = await _unitOfWork.StaffRepository.GetStaffById(queryParameters.Id);
+
+        if (staff == null)
         {
-            _logger.LogInformation("Obteniendo miembro del staff por ID: {Id}", queryParameters.Id);
-
-            var staff = await _unitOfWork.StaffRepository.GetStaffById(queryParameters.Id);
-
-            if (staff == null)
-            {
-                return NotFound($"Miembro del staff con ID {queryParameters.Id} no encontrado");
-            }
-
-            return Ok(staff);
+            return NotFound($"Miembro del staff con ID {queryParameters.Id} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el miembro del staff con ID {Id}", queryParameters.Id);
-            return StatusCode(500, ex.Message);
-        }
+
+        return Ok(staff);
     }
 
     /// <summary>
@@ -60,27 +49,17 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Obtiene todos los miembros del staff de la base de datos", Description = "Devuelve una lista de todos los miembros del staff. Se pueden filtrar por múltiples nombres separados por coma.")]
     public async Task<IActionResult> GetAllStaff([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todos los miembros del staff");
-
-            var staff = await _unitOfWork.StaffRepository.GetAllStaffFromDb(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.Alls,
-                queryParameters.ExcludeRelated,
-                queryParameters.IsList,
-                queryParameters.StaffTypeId,
-                queryParameters.AgencyId
-            );
-            return Ok(staff);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _unitOfWork.StaffRepository.GetAllStaffFromDb(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Name,
+            queryParameters.Alls,
+            queryParameters.ExcludeRelated,
+            queryParameters.IsList,
+            queryParameters.StaffTypeId,
+            queryParameters.AgencyId
+        );
+        return Ok(result);
     }
 
     /// <summary>
@@ -92,29 +71,19 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Inserta un nuevo miembro del staff", Description = "Crea un nuevo miembro del staff en la base de datos.")]
     public async Task<IActionResult> InsertStaff([FromBody] StaffRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("El miembro del staff es requerido");
-            }
-
-            var staffId = await _unitOfWork.StaffRepository.InsertStaff(request);
-
-            if (staffId > 0)
-            {
-                _logger.LogInformation("Miembro del staff insertado con ID: {Id}", staffId);
-                return Ok(true);
-            }
-
-            _logger.LogWarning("No se pudo insertar el miembro del staff");
-            return BadRequest("No se pudo insertar el miembro del staff");
+            return BadRequest("El miembro del staff es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffRepository.InsertStaff(request);
+
+        if (result > 0)
         {
-            _logger.LogError(ex, "Error al insertar el miembro del staff");
-            return StatusCode(500, ex.Message);
+            return Ok(true);
         }
+
+        return BadRequest("No se pudo insertar el miembro del staff");
     }
 
     /// <summary>
@@ -126,29 +95,19 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Actualiza un miembro del staff existente", Description = "Actualiza un miembro del staff existente en la base de datos.")]
     public async Task<IActionResult> UpdateStaff([FromBody] StaffRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("El miembro del staff es requerido");
-            }
-
-            var result = await _unitOfWork.StaffRepository.UpdateStaff(request);
-
-            if (result)
-            {
-                _logger.LogInformation("Miembro del staff actualizado con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo actualizar el miembro del staff");
-            return BadRequest("No se pudo actualizar el miembro del staff");
+            return BadRequest("El miembro del staff es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffRepository.UpdateStaff(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al actualizar el miembro del staff");
-            return StatusCode(500, ex.Message);
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo actualizar el miembro del staff");
     }
 
     /// <summary>
@@ -160,26 +119,14 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Elimina un miembro del staff", Description = "Realiza una baja lógica del miembro del staff en la base de datos.")]
     public async Task<IActionResult> DeleteStaff([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _unitOfWork.StaffRepository.DeleteStaff(queryParameters.Id);
+
+        if (result)
         {
-            _logger.LogInformation("Eliminando miembro del staff con ID: {Id}", queryParameters.Id);
-
-            var result = await _unitOfWork.StaffRepository.DeleteStaff(queryParameters.Id);
-
-            if (result)
-            {
-                _logger.LogInformation("Miembro del staff eliminado con ID: {Id}", queryParameters.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo eliminar el miembro del staff con ID: {Id}", queryParameters.Id);
-            return BadRequest("No se pudo eliminar el miembro del staff");
+            return Ok(result);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el miembro del staff con ID {Id}", queryParameters.Id);
-            return StatusCode(500, ex.Message);
-        }
+
+        return BadRequest("No se pudo eliminar el miembro del staff");
     }
 
     /// <summary>
@@ -191,31 +138,19 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Elimina completamente un miembro del staff y todas sus relaciones", Description = "Elimina permanentemente un miembro del staff, todas sus relaciones (StaffRelationship, SiteStaff), y si es propietario de una agencia, también elimina la agencia completa.")]
     public async Task<IActionResult> BulkDeleteStaff([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID del staff es requerido");
-            }
-
-            _logger.LogInformation("Eliminando completamente el miembro del staff con ID: {Id} y todas sus relaciones", queryParameters.Id);
-
-            var result = await _unitOfWork.StaffRepository.BulkDeleteStaff(queryParameters.Id);
-
-            if (result)
-            {
-                _logger.LogInformation("Staff {Id} y todas sus relaciones eliminadas exitosamente", queryParameters.Id);
-                return Ok(new { success = true, message = "Staff y todas sus relaciones eliminadas exitosamente" });
-            }
-
-            _logger.LogWarning("No se pudo eliminar el miembro del staff con ID: {Id}", queryParameters.Id);
-            return BadRequest("No se pudo eliminar el miembro del staff");
+            return BadRequest("El ID del staff es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffRepository.BulkDeleteStaff(queryParameters.Id);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al eliminar completamente el miembro del staff con ID {Id}: {Message}", queryParameters.Id, ex.Message);
-            return StatusCode(500, new { error = ex.Message });
+            return Ok(new { success = true, message = "Staff y todas sus relaciones eliminadas exitosamente" });
         }
+
+        return BadRequest("No se pudo eliminar el miembro del staff");
     }
 
     /// <summary>
@@ -227,39 +162,28 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Actualiza la imagen del staff", Description = "Actualiza solo la imagen del staff sin modificar otros campos.")]
     public async Task<IActionResult> UpdateStaffImage([FromBody] StaffImageRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("La información de la imagen es requerida");
-            }
-
-            var result = await _unitOfWork.StaffRepository.UpdateStaffImage(request.StaffId, request.ImageUrl);
-
-            if (result)
-            {
-                _logger.LogInformation("Imagen del staff con ID {StaffId} actualizada exitosamente", request.StaffId);
-
-                var response = new
-                {
-                    Success = true,
-                    Message = "Imagen del staff actualizada exitosamente",
-                    StaffId = request.StaffId,
-                    ImageUrl = request.ImageUrl,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                return Ok(response);
-            }
-
-            _logger.LogWarning("No se pudo actualizar la imagen del staff con ID {StaffId}", request.StaffId);
-            return BadRequest("No se pudo actualizar la imagen del staff");
+            return BadRequest("La información de la imagen es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffRepository.UpdateStaffImage(request.StaffId, request.ImageUrl);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", request?.StaffId);
-            return StatusCode(500, ex.Message);
+            var response = new
+            {
+                Success = true,
+                Message = "Imagen del staff actualizada exitosamente",
+                StaffId = request.StaffId,
+                ImageUrl = request.ImageUrl,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            return Ok(response);
         }
+
+        return BadRequest("No se pudo actualizar la imagen del staff");
     }
 
     /// <summary>
@@ -271,26 +195,14 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Convierte un miembro del staff en usuario", Description = "Convierte un miembro del staff existente en usuario del sistema.")]
     public async Task<IActionResult> ConvertStaffToUser([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _unitOfWork.StaffRepository.ConvertStaffToUser(queryParameters.StaffId, queryParameters.UserId);
+
+        if (result)
         {
-            _logger.LogInformation("Convirtiendo miembro del staff a usuario. StaffId: {StaffId}, UserId: {UserId}", queryParameters.StaffId, queryParameters.UserId);
-
-            var result = await _unitOfWork.StaffRepository.ConvertStaffToUser(queryParameters.StaffId, queryParameters.UserId);
-
-            if (result)
-            {
-                _logger.LogInformation("Miembro del staff convertido a usuario exitosamente. StaffId: {StaffId}", queryParameters.StaffId);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo convertir el miembro del staff a usuario. StaffId: {StaffId}", queryParameters.StaffId);
-            return BadRequest("No se pudo convertir el miembro del staff a usuario");
+            return Ok(result);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al convertir miembro del staff a usuario. StaffId: {StaffId}", queryParameters.StaffId);
-            return StatusCode(500, ex.Message);
-        }
+
+        return BadRequest("No se pudo convertir el miembro del staff a usuario");
     }
 
     /// <summary>
@@ -302,27 +214,16 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Actualiza el estado activo de un miembro del staff", Description = "Actualiza el estado activo de un miembro del staff específico.")]
     public async Task<IActionResult> UpdateStaffActiveStatus([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(
+            queryParameters.StaffId,
+            queryParameters.IsActive);
+
+        if (result)
         {
-            _logger.LogInformation("Actualizando estado activo del miembro del staff: {StaffId}, isActive: {IsActive}",
-                queryParameters.StaffId, queryParameters.IsActive);
-
-            var result = await _unitOfWork.StaffRepository.UpdateStaffActiveStatus(
-                queryParameters.StaffId,
-                queryParameters.IsActive ?? true);
-
-            if (result)
-            {
-                return Ok(new { message = "Estado activo actualizado correctamente" });
-            }
-
-            return BadRequest("No se pudo actualizar el estado activo");
+            return Ok(new { message = "Estado activo actualizado correctamente" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el estado activo del miembro del staff");
-            return StatusCode(500, ex.Message);
-        }
+
+        return BadRequest("No se pudo actualizar el estado activo");
     }
 
     /// <summary>
@@ -334,30 +235,20 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Obtiene todos los miembros del staff de una agencia específica", Description = "Devuelve una lista de todos los miembros del staff de una agencia específica con paginación y filtros.")]
     public async Task<IActionResult> GetStaffByAgency([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _unitOfWork.StaffRepository.GetStaffByAgency(
+            queryParameters.AgencyId,
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Name,
+            queryParameters.StaffTypeId
+        );
+
+        if (result == null)
         {
-            _logger.LogInformation("Obteniendo miembros del staff de la agencia: {AgencyId}", queryParameters.AgencyId);
-
-            var staff = await _unitOfWork.StaffRepository.GetStaffByAgency(
-                queryParameters.AgencyId,
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.StaffTypeId
-            );
-
-            if (staff == null)
-            {
-                return NotFound("No se encontraron miembros del staff para la agencia especificada");
-            }
-
-            return Ok(staff);
+            return NotFound("No se encontraron miembros del staff para la agencia especificada");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", queryParameters.AgencyId);
-            return StatusCode(500, ex.Message);
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -369,26 +260,18 @@ public class StaffController(ILogger<StaffController> logger, IUnitOfWork unitOf
     [SwaggerOperation(Summary = "Obtiene el historial de auditoría de un miembro del staff", Description = "Devuelve el historial completo de cambios realizados en un miembro del staff.")]
     public async Task<IActionResult> GetStaffAuditHistory([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.StaffId <= 0)
         {
-            if (queryParameters.StaffId <= 0)
-            {
-                return BadRequest("El ID del staff es requerido y debe ser mayor a 0.");
-            }
-
-            var auditHistory = await _unitOfWork.StaffRepository.GetStaffAuditHistory(queryParameters.StaffId, queryParameters.Take);
-
-            if (auditHistory == null || !auditHistory.Any())
-            {
-                return NotFound("No se encontró historial de auditoría para el staff especificado.");
-            }
-
-            return Ok(auditHistory);
+            return BadRequest("El ID del staff es requerido y debe ser mayor a 0.");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffRepository.GetStaffAuditHistory(queryParameters.StaffId, queryParameters.Take);
+
+        if (result == null || result.Count == 0)
         {
-            _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", queryParameters.StaffId);
-            return StatusCode(500, ex.Message);
+            return NotFound("No se encontró historial de auditoría para el staff especificado.");
         }
+
+        return Ok(result);
     }
 }

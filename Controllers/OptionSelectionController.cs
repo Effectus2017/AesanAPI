@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("option-selection")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class OptionSelectionController(IOptionSelectionRepository optionSelectionRepository, ILogger<OptionSelectionController> logger) : ControllerBase
+public class OptionSelectionController(IOptionSelectionRepository optionSelectionRepository) : ControllerBase
 {
     private readonly IOptionSelectionRepository _optionSelectionRepository = optionSelectionRepository;
-    private readonly ILogger<OptionSelectionController> _logger = logger;
 
     /// <summary>
     /// Obtiene una opción de selección por su ID
@@ -31,28 +30,19 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Obtiene una opción de selección por su ID", Description = "Devuelve una opción de selección basada en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.OptionSelectionId == 0)
         {
-            _logger.LogInformation("Obteniendo opción de selección por ID: {Id}", queryParameters.OptionSelectionId);
-
-            if (queryParameters.OptionSelectionId == 0)
-            {
-                return BadRequest("El ID de la opción de selección es requerido");
-            }
-
-            var result = await _optionSelectionRepository.GetOptionSelectionById(queryParameters.OptionSelectionId);
-
-            if (result == null)
-            {
-                return NotFound($"Opción de selección con ID {queryParameters.OptionSelectionId} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID de la opción de selección es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _optionSelectionRepository.GetOptionSelectionById(queryParameters.OptionSelectionId);
+
+        if (result == null)
         {
-            return StatusCode(500, "Error interno del servidor al obtener la opción de selección");
+            return NotFound($"Opción de selección con ID {queryParameters.OptionSelectionId} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -64,23 +54,14 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Obtiene todas las opciones de selección", Description = "Devuelve una lista de opciones de selección.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.IsList);
+
+        if (result == null)
         {
-            _logger.LogInformation("Obteniendo todas las opciones de selección");
-
-            var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.IsList);
-
-            if (result == null)
-            {
-                return NotFound("No se encontraron opciones de selección");
-            }
-
-            return Ok(result);
+            return NotFound("No se encontraron opciones de selección");
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Error interno del servidor al obtener las opciones de selección");
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -93,27 +74,20 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Obtiene una opción de selección por su clave de opción", Description = "Devuelve una opción de selección basada en la clave de opción proporcionada. Accesible sin autenticación para intención de participación.")]
     public async Task<ActionResult> GetByOptionKey([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(
-                queryParameters.OptionKey,
-                queryParameters.Names,
-                queryParameters.IsList,
-                queryParameters.SortByNameKeys,
-                queryParameters.SortByNameENKeys,
-                queryParameters.Language);
+        var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(
+            queryParameters.OptionKey,
+            queryParameters.Names,
+            queryParameters.IsList,
+            queryParameters.SortByNameKeys,
+            queryParameters.SortByNameENKeys,
+            queryParameters.Language);
 
-            if (result == null)
-            {
-                return NotFound($"Opción de selección con clave {queryParameters.OptionKey} no encontrada");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            return StatusCode(500, "Error interno del servidor al obtener la opción de selección");
+            return NotFound($"Opción de selección con clave {queryParameters.OptionKey} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -125,28 +99,19 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Crea una nueva opción de selección", Description = "Crea una nueva opción de selección.")]
     public async Task<ActionResult> Insert([FromBody] DTOOptionSelection request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("La opción de selección es requerida");
-            }
-
-            var result = await _optionSelectionRepository.InsertOptionSelection(request);
-
-            if (result)
-            {
-                _logger.LogInformation("Opción de selección creada con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear la opción de selección");
-            return BadRequest("No se pudo crear la opción de selección");
+            return BadRequest("La opción de selección es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _optionSelectionRepository.InsertOptionSelection(request);
+
+        if (result)
         {
-            return StatusCode(500, "Error interno del servidor al crear la opción de selección");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear la opción de selección");
     }
 
     /// <summary>
@@ -158,22 +123,14 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Actualiza una opción de selección existente", Description = "Actualiza los datos de una opción de selección existente.")]
     public async Task<IActionResult> Update([FromBody] DTOOptionSelection request)
     {
-        try
-        {
-            var result = await _optionSelectionRepository.UpdateOptionSelection(request);
+        var result = await _optionSelectionRepository.UpdateOptionSelection(request);
 
-            if (!result)
-            {
-                _logger.LogWarning("Opción de selección con ID {Id} no encontrada", request.Id);
-                return NotFound($"Opción de selección con ID {request.Id} no encontrada");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al actualizar la opción de selección");
+            return NotFound($"Opción de selección con ID {request.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -186,21 +143,14 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Actualiza el orden de visualización de una opción de selección", Description = "Actualiza el orden de visualización de una opción de selección existente.")]
     public async Task<IActionResult> UpdateDisplayOrder([FromQuery] int optionSelectionId, [FromQuery] int displayOrder)
     {
-        try
-        {
-            var result = await _optionSelectionRepository.UpdateOptionSelectionDisplayOrder(optionSelectionId, displayOrder);
+        var result = await _optionSelectionRepository.UpdateOptionSelectionDisplayOrder(optionSelectionId, displayOrder);
 
-            if (!result)
-            {
-                return NotFound($"Opción de selección con ID {optionSelectionId} no encontrada");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al actualizar el orden de visualización de la opción de selección");
+            return NotFound($"Opción de selección con ID {optionSelectionId} no encontrada");
         }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -212,23 +162,13 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Elimina una opción de selección existente", Description = "Elimina una opción de selección existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _optionSelectionRepository.DeleteOptionSelection(queryParameters.Id);
+        var result = await _optionSelectionRepository.DeleteOptionSelection(queryParameters.Id);
 
-            if (!result)
-            {
-                _logger.LogWarning("Opción de selección con ID {Id} no encontrada", queryParameters.Id);
-                return NotFound($"Opción de selección con ID {queryParameters.Id} no encontrada");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            return StatusCode(500, "Error interno del servidor al eliminar la opción de selección");
+            return NotFound($"Opción de selección con ID {queryParameters.Id} no encontrada");
         }
+
+        return NoContent();
     }
 }
-
-

@@ -19,9 +19,8 @@ namespace Api.Controllers;
 [Route("site-calendar")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISiteCalendarRepository siteCalendarRepository) : Controller
+public class SiteCalendarController(ISiteCalendarRepository siteCalendarRepository) : Controller
 {
-    private readonly ILogger<SiteCalendarController> _logger = logger;
     private readonly ISiteCalendarRepository _siteCalendarRepository = siteCalendarRepository ?? throw new ArgumentNullException(nameof(siteCalendarRepository));
 
     /// <summary>
@@ -34,39 +33,29 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     [SwaggerOperation(Summary = "Obtiene días de funcionamiento de un sitio", Description = "Devuelve días de funcionamiento para un sitio específico. Opcionalmente filtra por mes y año para mejorar el rendimiento.")]
     public async Task<IActionResult> GetOperatingDays([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.SiteId <= 0)
         {
-            if (queryParameters.SiteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
-            }
-
-            // Validar mes si se proporciona
-            if (queryParameters.Month.HasValue && (queryParameters.Month < 1 || queryParameters.Month > 12))
-            {
-                return BadRequest("El mes debe estar entre 1 y 12");
-            }
-
-            // Validar año si se proporciona
-            if (queryParameters.Year.HasValue && queryParameters.Year < 2000)
-            {
-                return BadRequest("El año debe ser mayor a 2000");
-            }
-
-            _logger.LogInformation("Obteniendo días de funcionamiento para el sitio {SiteId} (mes: {Month}, año: {Year})",
-                queryParameters.SiteId, queryParameters.Month?.ToString() ?? "todos", queryParameters.Year?.ToString() ?? "todos");
-
-            var result = await _siteCalendarRepository.GetOperatingDays(
-                queryParameters.SiteId.Value,
-                queryParameters.Month,
-                queryParameters.Year
-            );
-            return Ok(result);
+            return BadRequest("El ID del sitio debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        // Validar mes si se proporciona
+        if (queryParameters.Month.HasValue && (queryParameters.Month < 1 || queryParameters.Month > 12))
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest("El mes debe estar entre 1 y 12");
         }
+
+        // Validar año si se proporciona
+        if (queryParameters.Year.HasValue && queryParameters.Year < 2000)
+        {
+            return BadRequest("El año debe ser mayor a 2000");
+        }
+
+        var result = await _siteCalendarRepository.GetOperatingDays(
+            queryParameters.SiteId.Value,
+            queryParameters.Month,
+            queryParameters.Year
+        );
+        return Ok(result);
     }
 
     /// <summary>
@@ -78,29 +67,15 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     [SwaggerOperation(Summary = "Crea un nuevo día de funcionamiento", Description = "Crea un nuevo día de funcionamiento para un sitio específico.")]
     public async Task<IActionResult> CreateOperatingDay([FromBody] SiteOperatingDayRequest request)
     {
-        try
+        var newId = await _siteCalendarRepository.CreateOperatingDay(request);
+
+        if (newId.HasValue)
         {
-            _logger.LogInformation("Creando día de funcionamiento para sitio {SiteId} en fecha {Date}",
-                request.SiteId, request.OperatingDate.Date);
-
-            var newId = await _siteCalendarRepository.CreateOperatingDay(request);
-
-            if (newId.HasValue)
-            {
-                _logger.LogInformation("Día de funcionamiento creado exitosamente con ID {Id} para sitio {SiteId} en fecha {Date}",
-                    newId.Value, request.SiteId, request.OperatingDate.Date);
-                return Ok(new { id = newId.Value, success = true });
-            }
-            else
-            {
-                _logger.LogWarning("No se pudo crear el día de funcionamiento para sitio {SiteId} en fecha {Date}",
-                    request.SiteId, request.OperatingDate.Date);
-                return BadRequest("No se pudo procesar la solicitud");
-            }
+            return Ok(new { id = newId.Value, success = true });
         }
-        catch (Exception ex)
+        else
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest("No se pudo procesar la solicitud");
         }
     }
 
@@ -113,34 +88,20 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     [SwaggerOperation(Summary = "Actualiza un día de funcionamiento", Description = "Actualiza un día de funcionamiento existente.")]
     public async Task<IActionResult> UpdateOperatingDay([FromBody] SiteOperatingDayRequest request)
     {
-        try
+        if (!request.Id.HasValue || request.Id.Value <= 0)
         {
-            if (!request.Id.HasValue || request.Id.Value <= 0)
-            {
-                return BadRequest("El ID del día de funcionamiento es requerido para actualizar");
-            }
-
-            _logger.LogInformation("Actualizando día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
-                request.Id.Value, request.SiteId, request.OperatingDate.Date);
-
-            var result = await _siteCalendarRepository.UpdateOperatingDay(request.Id.Value, request);
-
-            if (result)
-            {
-                _logger.LogInformation("Día de funcionamiento {Id} actualizado exitosamente para sitio {SiteId} en fecha {Date}",
-                    request.Id.Value, request.SiteId, request.OperatingDate.Date);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("No se pudo actualizar el día de funcionamiento {Id} para sitio {SiteId} en fecha {Date}",
-                    request.Id.Value, request.SiteId, request.OperatingDate.Date);
-                return BadRequest("No se pudo procesar la solicitud");
-            }
+            return BadRequest("El ID del día de funcionamiento es requerido para actualizar");
         }
-        catch (Exception ex)
+
+        var result = await _siteCalendarRepository.UpdateOperatingDay(request.Id.Value, request);
+
+        if (result)
         {
-            return StatusCode(500, ex.Message);
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest("No se pudo procesar la solicitud");
         }
     }
 
@@ -154,44 +115,32 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     [SwaggerOperation(Summary = "Actualiza múltiples días de funcionamiento", Description = "Actualiza múltiples días de funcionamiento en una sola operación.")]
     public async Task<IActionResult> BulkUpdateOperatingDays([FromQuery] int siteId, [FromBody] List<SiteOperatingDayRequest> requests)
     {
-        try
+        if (siteId <= 0)
         {
-            if (siteId <= 0)
-            {
-                return BadRequest("El ID del sitio debe ser mayor a 0");
-            }
-
-            if (requests == null || !requests.Any())
-            {
-                return BadRequest("La lista de días de funcionamiento no puede estar vacía");
-            }
-
-            _logger.LogInformation("Actualizando {Count} días de funcionamiento para sitio {SiteId}",
-                requests.Count, siteId);
-
-            // Validar que todos los requests pertenecen al mismo sitio
-            var invalidRequests = requests.Where(r => r.SiteId != siteId).ToList();
-            if (invalidRequests.Any())
-            {
-                return BadRequest("Todos los días de funcionamiento deben pertenecer al mismo sitio");
-            }
-
-            var result = await _siteCalendarRepository.BulkUpdateOperatingDays(siteId, requests);
-
-            if (result)
-            {
-                _logger.LogInformation("Actualización en lote exitosa para sitio {SiteId}", siteId);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("Actualización en lote fallida para sitio {SiteId}", siteId);
-                return BadRequest("No se pudieron procesar todas las solicitudes");
-            }
+            return BadRequest("El ID del sitio debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        if (requests == null || !requests.Any())
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest("La lista de días de funcionamiento no puede estar vacía");
+        }
+
+        // Validar que todos los requests pertenecen al mismo sitio
+        var invalidRequests = requests.Where(r => r.SiteId != siteId).ToList();
+        if (invalidRequests.Any())
+        {
+            return BadRequest("Todos los días de funcionamiento deben pertenecer al mismo sitio");
+        }
+
+        var result = await _siteCalendarRepository.BulkUpdateOperatingDays(siteId, requests);
+
+        if (result)
+        {
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest("No se pudieron procesar todas las solicitudes");
         }
     }
 
@@ -204,31 +153,20 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     [SwaggerOperation(Summary = "Elimina un día de funcionamiento", Description = "Elimina un día de funcionamiento específico.")]
     public async Task<IActionResult> DeleteOperatingDay(int id)
     {
-        try
+        if (id <= 0)
         {
-            if (id <= 0)
-            {
-                return BadRequest("El ID debe ser mayor a 0");
-            }
-
-            _logger.LogInformation("Eliminando día de funcionamiento {Id}", id);
-
-            var result = await _siteCalendarRepository.DeleteOperatingDay(id);
-
-            if (result)
-            {
-                _logger.LogInformation("Día de funcionamiento {Id} eliminado exitosamente", id);
-                return Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("No se pudo eliminar el día de funcionamiento {Id}", id);
-                return BadRequest("No se pudo eliminar el día de funcionamiento");
-            }
+            return BadRequest("El ID debe ser mayor a 0");
         }
-        catch (Exception ex)
+
+        var result = await _siteCalendarRepository.DeleteOperatingDay(id);
+
+        if (result)
         {
-            return StatusCode(500, ex.Message);
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest("No se pudo eliminar el día de funcionamiento");
         }
     }
 
@@ -245,27 +183,18 @@ public class SiteCalendarController(ILogger<SiteCalendarController> logger, ISit
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAllowedDaysByProgramId([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId.Value <= 0)
         {
-            if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId.Value <= 0)
-            {
-                return BadRequest("El ID del programa debe ser mayor que cero");
-            }
-
-            _logger.LogInformation("Obteniendo días permitidos para el programa {ProgramId}", queryParameters.ProgramId.Value);
-
-            var allowedDays = await _siteCalendarRepository.GetAllowedDaysByProgramId(queryParameters.ProgramId.Value);
-
-            if (allowedDays == null || allowedDays.Count == 0)
-            {
-                return NotFound($"No se encontraron días permitidos para el programa {queryParameters.ProgramId.Value}");
-            }
-
-            return Ok(allowedDays);
+            return BadRequest("El ID del programa debe ser mayor que cero");
         }
-        catch (Exception ex)
+
+        var allowedDays = await _siteCalendarRepository.GetAllowedDaysByProgramId(queryParameters.ProgramId.Value);
+
+        if (allowedDays == null || allowedDays.Count == 0)
         {
-            return StatusCode(500, ex.Message);
+            return NotFound($"No se encontraron días permitidos para el programa {queryParameters.ProgramId.Value}");
         }
+
+        return Ok(allowedDays);
     }
 }

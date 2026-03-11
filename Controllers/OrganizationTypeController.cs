@@ -18,10 +18,9 @@ namespace Api.Controllers;
 [Route("organization-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class OrganizationTypeController(IOrganizationTypeRepository organizationTypeRepository, ILogger<OrganizationTypeController> logger) : ControllerBase
+public class OrganizationTypeController(IOrganizationTypeRepository organizationTypeRepository) : ControllerBase
 {
     private readonly IOrganizationTypeRepository _organizationTypeRepository = organizationTypeRepository;
-    private readonly ILogger<OrganizationTypeController> _logger = logger;
 
     /// <summary>
     /// Obtiene un tipo de organización por su ID
@@ -30,8 +29,6 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
     [SwaggerOperation(Summary = "Obtiene un tipo de organización por su ID")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        _logger.LogInformation("Obteniendo tipo de organización por ID: {Id}", queryParameters.Id);
-
         if (queryParameters.Id == 0)
         {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "El ID del tipo de organización es requerido");
@@ -122,8 +119,6 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
     [SwaggerOperation(Summary = "Obtiene tipos de organización por programa")]
     public async Task<ActionResult> GetOrganizationTypesByProgram([FromQuery] QueryParameters queryParameters)
     {
-        _logger.LogInformation("Obteniendo tipos de organización para el programa: {ProgramId}", queryParameters.ProgramId);
-
         if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
         {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "El ID del programa es requerido");

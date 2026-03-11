@@ -14,18 +14,9 @@ namespace Api.Controllers;
 [Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class TemplateVariableController : ControllerBase
+public class TemplateVariableController(TemplateVariableService templateVariableService) : ControllerBase
 {
-    private readonly TemplateVariableService _templateVariableService;
-    private readonly ILogger<TemplateVariableController> _logger;
-
-    public TemplateVariableController(
-        TemplateVariableService templateVariableService,
-        ILogger<TemplateVariableController> logger)
-    {
-        _templateVariableService = templateVariableService;
-        _logger = logger;
-    }
+    private readonly TemplateVariableService _templateVariableService = templateVariableService;
 
     /// <summary>
     /// Obtiene todas las variables disponibles para usar en templates
@@ -34,17 +25,7 @@ public class TemplateVariableController : ControllerBase
     [HttpGet("get-all-template-variables")]
     public ActionResult<List<TemplateVariableResponse>> GetAllTemplateVariables()
     {
-        try
-        {
-            _logger.LogInformation("Obteniendo todas las variables de templates disponibles");
-            var variables = _templateVariableService.GetAllTemplateVariables();
-            return Ok(variables);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las variables de templates");
-            return StatusCode(500, "Error interno del servidor al obtener las variables de templates");
-        }
+        var variables = _templateVariableService.GetAllTemplateVariables();
+        return Ok(variables);
     }
 }
-

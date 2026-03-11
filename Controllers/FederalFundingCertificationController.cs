@@ -17,10 +17,9 @@ namespace Api.Controllers;
 [Route("federal-funding-certification")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class FederalFundingCertificationController(IFederalFundingCertificationRepository federalFundingCertificationRepository, ILogger<FederalFundingCertificationController> logger) : ControllerBase
+public class FederalFundingCertificationController(IFederalFundingCertificationRepository federalFundingCertificationRepository) : ControllerBase
 {
     private readonly IFederalFundingCertificationRepository _federalFundingCertificationRepository = federalFundingCertificationRepository;
-    private readonly ILogger<FederalFundingCertificationController> _logger = logger;
 
     /// <summary>
     /// Obtiene una certificación de fondos federales por su ID
@@ -31,30 +30,19 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     [SwaggerOperation(Summary = "Obtiene una certificación de fondos federales por su ID", Description = "Devuelve una certificación de fondos federales basada en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo certificación de fondos federales por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID de la certificación de fondos federales es requerido");
-            }
-
-            var result = await _federalFundingCertificationRepository.GetFederalFundingCertificationById(queryParameters.Id);
-
-            if (result == null)
-            {
-                _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", queryParameters.Id);
-                return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID de la certificación de fondos federales es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _federalFundingCertificationRepository.GetFederalFundingCertificationById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener la certificación de fondos federales con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener la certificación de fondos federales");
+            return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
 
@@ -67,22 +55,14 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     [SwaggerOperation(Summary = "Obtiene todas las certificaciones de fondos federales", Description = "Devuelve una lista de certificaciones de fondos federales.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _federalFundingCertificationRepository.GetAllFederalFundingCertifications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+        var result = await _federalFundingCertificationRepository.GetAllFederalFundingCertifications(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron certificaciones de fondos federales");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener todas las certificaciones de fondos federales");
-            return StatusCode(500, "Error interno del servidor al obtener las certificaciones de fondos federales");
+            return NotFound("No se encontraron certificaciones de fondos federales");
         }
+
+        return Ok(result);
     }
 
 
@@ -95,24 +75,14 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     [SwaggerOperation(Summary = "Crea una nueva certificación de fondos federales", Description = "Crea una nueva certificación de fondos federales.")]
     public async Task<ActionResult> Insert([FromBody] DTOFederalFundingCertification request)
     {
-        try
-        {
-            var result = await _federalFundingCertificationRepository.InsertFederalFundingCertification(request);
+        var result = await _federalFundingCertificationRepository.InsertFederalFundingCertification(request);
 
-            if (result)
-            {
-                _logger.LogInformation("Certificación de fondos federales creada con ID: {Id}", request.Id);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear la certificación de fondos federales");
-            return BadRequest("No se pudo crear la certificación de fondos federales");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear la certificación de fondos federales");
-            return StatusCode(500, "Error interno del servidor al crear la certificación de fondos federales");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear la certificación de fondos federales");
     }
 
     /// <summary>
@@ -124,22 +94,13 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     [SwaggerOperation(Summary = "Actualiza una certificación de fondos federales existente", Description = "Actualiza los datos de una certificación de fondos federales existente.")]
     public async Task<IActionResult> Update([FromBody] DTOFederalFundingCertification request)
     {
-        try
+        var result = await _federalFundingCertificationRepository.UpdateFederalFundingCertification(request);
+        if (!result)
         {
-            var result = await _federalFundingCertificationRepository.UpdateFederalFundingCertification(request);
-            if (!result)
-            {
-                _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", request.Id);
-                return NotFound($"Certificación de fondos federales con ID {request.Id} no encontrada");
-            }
+            return NotFound($"Certificación de fondos federales con ID {request.Id} no encontrada");
+        }
 
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar la certificación de fondos federales con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar la certificación de fondos federales");
-        }
+        return NoContent();
     }
 
     /// <summary>
@@ -151,21 +112,12 @@ public class FederalFundingCertificationController(IFederalFundingCertificationR
     [SwaggerOperation(Summary = "Elimina una certificación de fondos federales existente", Description = "Elimina una certificación de fondos federales existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _federalFundingCertificationRepository.DeleteFederalFundingCertification(queryParameters.Id);
+        if (!result)
         {
-            var result = await _federalFundingCertificationRepository.DeleteFederalFundingCertification(queryParameters.Id);
-            if (!result)
-            {
-                _logger.LogWarning("Certificación de fondos federales con ID {Id} no encontrada", queryParameters.Id);
-                return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
-            }
+            return NotFound($"Certificación de fondos federales con ID {queryParameters.Id} no encontrada");
+        }
 
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar la certificación de fondos federales con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar la certificación de fondos federales");
-        }
+        return NoContent();
     }
 }

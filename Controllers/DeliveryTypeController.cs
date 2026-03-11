@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using Api.Models.Errors;
 using Api.Filters;
 
 namespace Api.Controllers;
@@ -20,10 +19,9 @@ namespace Api.Controllers;
 [Route("delivery-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeRepository, ILogger<DeliveryTypeController> logger) : ControllerBase
+public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeRepository) : ControllerBase
 {
     private readonly IDeliveryTypeRepository _deliveryTypeRepository = deliveryTypeRepository;
-    private readonly ILogger<DeliveryTypeController> _logger = logger;
 
     /// <summary>
     /// Obtiene un tipo de entrega por su ID.
@@ -34,21 +32,13 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Obtiene un tipo de entrega por su ID", Description = "Devuelve un tipo de entrega basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _deliveryTypeRepository.GetDeliveryTypeById(queryParameters.Id);
+        if (result == null)
         {
-            var result = await _deliveryTypeRepository.GetDeliveryTypeById(queryParameters.Id);
-            if (result == null)
-            {
-                return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
-            }
+            return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
+        }
 
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener el tipo de entrega con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el tipo de entrega");
-        }
+        return Ok(result);
     }
 
     /// <summary>
@@ -60,22 +50,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Obtiene todos los tipos de entrega", Description = "Devuelve una lista de tipos de entrega.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron tipos de entrega");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener todos los tipos de entrega");
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de entrega");
+            return NotFound("No se encontraron tipos de entrega");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -87,22 +69,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Crea un nuevo tipo de entrega", Description = "Crea un nuevo tipo de entrega.")]
     public async Task<ActionResult> Insert([FromBody] DeliveryTypeRequest request)
     {
-        try
-        {
-            var result = await _deliveryTypeRepository.InsertDeliveryType(request);
+        var result = await _deliveryTypeRepository.InsertDeliveryType(request);
 
-            if (result)
-            {
-                return Ok(request);
-            }
-
-            return BadRequest("No se pudo crear el tipo de entrega");
-        }
-        catch (Exception ex)
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear el tipo de entrega");
-            return StatusCode(500, "Error interno del servidor al crear el tipo de entrega");
+            return Ok(request);
         }
+
+        return BadRequest("No se pudo crear el tipo de entrega");
     }
 
     /// <summary>
@@ -114,22 +88,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Actualiza un tipo de entrega existente", Description = "Actualiza los datos de un tipo de entrega existente.")]
     public async Task<IActionResult> Update([FromBody] DeliveryTypeRequest request)
     {
-        try
-        {
-            var result = await _deliveryTypeRepository.UpdateDeliveryType(request);
+        var result = await _deliveryTypeRepository.UpdateDeliveryType(request);
 
-            if (!result)
-            {
-                return NotFound($"Tipo de entrega con ID {request.Id} no encontrado");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (!result)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de entrega con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el tipo de entrega");
+            return NotFound($"Tipo de entrega con ID {request.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -141,21 +107,13 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Elimina un tipo de entrega existente", Description = "Elimina un tipo de entrega existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _deliveryTypeRepository.DeleteDeliveryType(queryParameters.Id);
+        if (!result)
         {
-            var result = await _deliveryTypeRepository.DeleteDeliveryType(queryParameters.Id);
-            if (!result)
-            {
-                return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
-            }
+            return NotFound($"Tipo de entrega con ID {queryParameters.Id} no encontrado");
+        }
 
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el tipo de entrega con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar el tipo de entrega");
-        }
+        return NoContent();
     }
 
     /// <summary>
@@ -167,24 +125,14 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Obtiene tipos de entrega por programa", Description = "Devuelve los tipos de entrega válidos para un programa específico.")]
     public async Task<ActionResult> GetDeliveryTypesByProgram([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
         {
-            _logger.LogInformation("Obteniendo tipos de entrega para el programa: {ProgramId}", queryParameters.ProgramId);
-
-            if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
-            {
-                return BadRequest("El ID del programa es requerido");
-            }
-
-            var result = await _deliveryTypeRepository.GetDeliveryTypesByProgram(queryParameters.ProgramId.Value);
-
-            return Ok(result);
+            return BadRequest("El ID del programa es requerido");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de entrega para el programa {ProgramId}", queryParameters.ProgramId);
-            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, 500));
-        }
+
+        var result = await _deliveryTypeRepository.GetDeliveryTypesByProgram(queryParameters.ProgramId.Value);
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -196,23 +144,13 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Obtiene tipos de entrega por tipo de grupo", Description = "Devuelve los tipos de entrega válidos para un tipo de grupo específico con información sobre si requieren permiso.")]
     public async Task<ActionResult> GetDeliveryTypesByGroupType([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.GroupTypeId == 0)
         {
-            _logger.LogInformation("Obteniendo tipos de entrega para el tipo de grupo: {GroupTypeId}", queryParameters.GroupTypeId);
-
-            if (queryParameters.GroupTypeId == 0)
-            {
-                return BadRequest("El ID del tipo de grupo es requerido");
-            }
-
-            var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId);
-
-            return Ok(result);
+            return BadRequest("El ID del tipo de grupo es requerido");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de entrega para el tipo de grupo {GroupTypeId}", queryParameters.GroupTypeId);
-            return StatusCode(500, new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error interno del servidor al obtener los tipos de entrega", 500));
-        }
+
+        var result = await _deliveryTypeRepository.GetDeliveryTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId);
+
+        return Ok(result);
     }
 }

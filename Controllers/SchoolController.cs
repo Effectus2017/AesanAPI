@@ -17,9 +17,8 @@ namespace Api.Controllers;
 [Route("school")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unitOfWork) : Controller
+public class SchoolController(IUnitOfWork unitOfWork) : Controller
 {
-    private readonly ILogger<SchoolController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -31,26 +30,19 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Obtiene una escuela por su ID", Description = "Devuelve una escuela basada en el ID proporcionado.")]
     public async Task<IActionResult> GetSchoolById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El parámetro id es requerido.");
-            }
-
-            var result = await _unitOfWork.SchoolRepository.GetSchoolById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Escuela con ID {queryParameters.Id} no encontrada");
-            }
-
-            return Ok(result);
+            return BadRequest("El parámetro id es requerido.");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.SchoolRepository.GetSchoolById(queryParameters.Id);
+
+        if (result == null)
         {
-            return StatusCode(500, ex.Message);
+            return NotFound($"Escuela con ID {queryParameters.Id} no encontrada");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -62,26 +54,19 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Obtiene todas las escuelas", Description = "Devuelve una lista paginada de escuelas.")]
     public async Task<IActionResult> GetAllSchools([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _unitOfWork.SchoolRepository.GetAllSchools(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.AgencyId,
-                queryParameters.Alls);
+        var result = await _unitOfWork.SchoolRepository.GetAllSchools(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Name,
+            queryParameters.AgencyId,
+            queryParameters.Alls);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron escuelas");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            return StatusCode(500, ex.Message);
+            return NotFound("No se encontraron escuelas");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -93,26 +78,14 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Inserta una nueva escuela", Description = "Crea una nueva escuela en la base de datos.")]
     public async Task<IActionResult> InsertSchool([FromBody] SchoolRequest request)
     {
-        try
-        {
-            var result = await _unitOfWork.SchoolRepository.InsertSchool(request);
+        var result = await _unitOfWork.SchoolRepository.InsertSchool(request);
 
-            if (result)
-            {
-                return Ok(new { success = true, message = "Escuela creada exitosamente" });
-            }
+        if (result)
+        {
+            return Ok(new { success = true, message = "Escuela creada exitosamente" });
+        }
 
-            return BadRequest("No se pudo crear la escuela");
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Error de validación al insertar escuela: {Message}", ex.Message);
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        return BadRequest("No se pudo crear la escuela");
     }
 
     /// <summary>
@@ -124,26 +97,14 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Actualiza una escuela existente", Description = "Actualiza los datos de una escuela existente.")]
     public async Task<IActionResult> UpdateSchool([FromBody] SchoolRequest request)
     {
-        try
-        {
-            var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
+        var result = await _unitOfWork.SchoolRepository.UpdateSchool(request);
 
-            if (result)
-            {
-                return Ok(new { success = true, message = "Escuela actualizada exitosamente" });
-            }
+        if (result)
+        {
+            return Ok(new { success = true, message = "Escuela actualizada exitosamente" });
+        }
 
-            return BadRequest("No se pudo actualizar la escuela");
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Error de validación al actualizar escuela: {Message}", ex.Message);
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        return BadRequest("No se pudo actualizar la escuela");
     }
 
     /// <summary>
@@ -155,31 +116,19 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Elimina una escuela", Description = "Elimina una escuela de la base de datos (soft delete).")]
     public async Task<IActionResult> DeleteSchool([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id <= 0)
         {
-            if (queryParameters.Id <= 0)
-            {
-                return BadRequest("ID de escuela inválido");
-            }
-
-            var result = await _unitOfWork.SchoolRepository.DeleteSchool(queryParameters.Id);
-
-            if (result)
-            {
-                return Ok(new { success = true, message = "Escuela eliminada exitosamente" });
-            }
-
-            return BadRequest("No se pudo eliminar la escuela");
+            return BadRequest("ID de escuela inválido");
         }
-        catch (ArgumentException ex)
+
+        var result = await _unitOfWork.SchoolRepository.DeleteSchool(queryParameters.Id);
+
+        if (result)
         {
-            _logger.LogWarning(ex, "Error de validación al eliminar escuela: {Message}", ex.Message);
-            return BadRequest(ex.Message);
+            return Ok(new { success = true, message = "Escuela eliminada exitosamente" });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+
+        return BadRequest("No se pudo eliminar la escuela");
     }
 
     /// <summary>
@@ -191,26 +140,19 @@ public class SchoolController(ILogger<SchoolController> logger, IUnitOfWork unit
     [SwaggerOperation(Summary = "Obtiene escuelas por agencia", Description = "Devuelve todas las escuelas de una agencia específica con paginación y búsqueda por nombre.")]
     public async Task<IActionResult> GetSchoolsByAgencyId([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            var result = await _unitOfWork.SchoolRepository.GetSchoolsByAgencyId(
-                queryParameters.AgencyId,
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.Name,
-                queryParameters.IsActive,
-                queryParameters.SchoolCode);
+        var result = await _unitOfWork.SchoolRepository.GetSchoolsByAgencyId(
+            queryParameters.AgencyId,
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Name,
+            queryParameters.IsActive,
+            queryParameters.SchoolCode);
 
-            if (result == null)
-            {
-                return NotFound("No se encontraron escuelas para esta agencia");
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        if (result == null)
         {
-            return StatusCode(500, ex.Message);
+            return NotFound("No se encontraron escuelas para esta agencia");
         }
+
+        return Ok(result);
     }
 }

@@ -18,10 +18,9 @@ namespace Api.Controllers;
 [Route("email-template")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ValidateModelState]
-public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepository, ILogger<EmailTemplateController> logger) : ControllerBase
+public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepository) : ControllerBase
 {
     private readonly IEmailTemplateRepository _emailTemplateRepository = emailTemplateRepository;
-    private readonly ILogger<EmailTemplateController> _logger = logger;
 
     /// <summary>
     /// Obtiene un template de email por su ID
@@ -32,29 +31,19 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     [SwaggerOperation(Summary = "Obtiene un template de email por su ID", Description = "Devuelve un template de email basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            _logger.LogInformation("Obteniendo template de email por ID: {Id}", queryParameters.Id);
-
-            if (queryParameters.Id == 0)
-            {
-                return BadRequest("El ID del template de email es requerido");
-            }
-
-            var result = await _emailTemplateRepository.GetEmailTemplateById(queryParameters.Id);
-
-            if (result == null)
-            {
-                return NotFound($"Template de email con ID {queryParameters.Id} no encontrado");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID del template de email es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _emailTemplateRepository.GetEmailTemplateById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener el template de email con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el template de email");
+            return NotFound($"Template de email con ID {queryParameters.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -66,29 +55,19 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     [SwaggerOperation(Summary = "Obtiene todos los templates de email", Description = "Devuelve una lista de templates de email.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _emailTemplateRepository.GetAllEmailTemplates(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.TemplateKey,
+            queryParameters.Description,
+            queryParameters.Alls);
+
+        if (result == null)
         {
-            _logger.LogInformation("Obteniendo todos los templates de email");
-
-            var result = await _emailTemplateRepository.GetAllEmailTemplates(
-                queryParameters.Take,
-                queryParameters.Skip,
-                queryParameters.TemplateKey,
-                queryParameters.Description,
-                queryParameters.Alls);
-
-            if (result == null)
-            {
-                return NotFound("No se encontraron templates de email");
-            }
-
-            return Ok(result);
+            return NotFound("No se encontraron templates de email");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los templates de email");
-            return StatusCode(500, "Error interno del servidor al obtener los templates de email");
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -100,27 +79,19 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     [SwaggerOperation(Summary = "Obtiene un template de email por su clave", Description = "Devuelve un template de email basado en la clave proporcionada.")]
     public async Task<ActionResult> GetByKey([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.TemplateKey))
         {
-            if (string.IsNullOrEmpty(queryParameters.TemplateKey))
-            {
-                return BadRequest("La clave del template es requerida");
-            }
-
-            var result = await _emailTemplateRepository.GetEmailTemplateByKey(queryParameters.TemplateKey);
-
-            if (result == null)
-            {
-                return NotFound($"Template de email con clave {queryParameters.TemplateKey} no encontrado");
-            }
-
-            return Ok(result);
+            return BadRequest("La clave del template es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _emailTemplateRepository.GetEmailTemplateByKey(queryParameters.TemplateKey);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener el template de email con clave {TemplateKey}", queryParameters.TemplateKey);
-            return StatusCode(500, "Error interno del servidor al obtener el template de email");
+            return NotFound($"Template de email con clave {queryParameters.TemplateKey} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -132,29 +103,19 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     [SwaggerOperation(Summary = "Crea un nuevo template de email", Description = "Crea un nuevo template de email.")]
     public async Task<ActionResult> Insert([FromBody] EmailTemplateRequest request)
     {
-        try
+        if (request == null)
         {
-            if (request == null)
-            {
-                return BadRequest("El template de email es requerido");
-            }
-
-            var result = await _emailTemplateRepository.InsertEmailTemplate(request);
-
-            if (result)
-            {
-                _logger.LogInformation("Template de email creado con clave: {TemplateKey}", request.TemplateKey);
-                return Ok(result);
-            }
-
-            _logger.LogWarning("No se pudo crear el template de email");
-            return BadRequest("No se pudo crear el template de email");
+            return BadRequest("El template de email es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _emailTemplateRepository.InsertEmailTemplate(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al crear el template de email");
-            return StatusCode(500, "Error interno del servidor al crear el template de email");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo crear el template de email");
     }
 
     /// <summary>
@@ -166,28 +127,18 @@ public class EmailTemplateController(IEmailTemplateRepository emailTemplateRepos
     [SwaggerOperation(Summary = "Actualiza un template de email existente", Description = "Actualiza los datos de un template de email existente.")]
     public async Task<IActionResult> Update([FromBody] EmailTemplateRequest request)
     {
-        try
+        if (request == null || request.Id == null || request.Id == 0)
         {
-            if (request == null || request.Id == null || request.Id == 0)
-            {
-                return BadRequest("El ID del template de email es requerido");
-            }
-
-            var result = await _emailTemplateRepository.UpdateEmailTemplate(request);
-
-            if (!result)
-            {
-                _logger.LogWarning("Template de email con ID {Id} no encontrado", request.Id);
-                return NotFound($"Template de email con ID {request.Id} no encontrado");
-            }
-
-            return Ok(result);
+            return BadRequest("El ID del template de email es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _emailTemplateRepository.UpdateEmailTemplate(request);
+
+        if (!result)
         {
-            _logger.LogError(ex, "Error al actualizar el template de email con ID {Id}", request?.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el template de email");
+            return NotFound($"Template de email con ID {request.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 }
-
