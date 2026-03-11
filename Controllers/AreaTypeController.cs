@@ -43,7 +43,7 @@ public class AreaTypeController(IAreaTypeRepository areaTypeRepository) : Contro
     [SwaggerOperation(Summary = "Obtiene todos los tipos de área", Description = "Devuelve una lista de tipos de área.")]
     public async Task<ActionResult> GetAllFromDb([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _areaTypeRepository.GetAllAreaTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _areaTypeRepository.GetAllAreaTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
         if (result == null)
         {
             return NotFound("No se encontraron tipos de área");

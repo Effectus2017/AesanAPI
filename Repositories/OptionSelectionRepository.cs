@@ -59,12 +59,12 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// </summary>
     /// <param name="optionKey">The option key to filter by/La clave de opción para filtrar</param>
     /// <param name="names">Los nombres de las opciones a obtener</param>
-    /// <param name="isList">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
+    /// <param name="forDropdown">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
     /// <param name="sortByNameKeys">Option keys a ordenar por nombre (según language). Comma-separated.</param>
     /// <param name="sortByNameENKeys">Option keys a ordenar por NameEN. Comma-separated.</param>
     /// <param name="language">Idioma para sortByNameKeys: "en" usa NameEN, sino Name.</param>
     /// <returns>List of option selections matching the key/Lista de selecciones de opción que coinciden con la clave</returns>
-    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false, string? sortByNameKeys = null, string? sortByNameENKeys = null, string? language = null)
+    public async Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool forDropdown = false, string? sortByNameKeys = null, string? sortByNameENKeys = null, string? language = null)
     {
         try
         {
@@ -81,10 +81,10 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             if (data == null || !data.Any())
             {
                 _logger.LogInformation("No se encontraron selecciones de opción para la clave: {OptionKey}", optionKey);
-                return isList ? (object)Enumerable.Empty<DTOOptionSelection>() : new { data = Enumerable.Empty<DTOOptionSelection>(), count = 0 };
+                return forDropdown ? (object)Enumerable.Empty<DTOOptionSelection>() : new { data = Enumerable.Empty<DTOOptionSelection>(), count = 0 };
             }
 
-            return isList ? data : new { data, count = data.Count() };
+            return forDropdown ? data : new { data, count = data.Count() };
         }
         catch (Exception ex)
         {
@@ -102,7 +102,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
     /// <param name="name">Name filter (optional)/Filtro de nombre (opcional)</param>
     /// <param name="alls">Whether to get all records ignoring pagination/Si obtener todos los registros ignorando la paginación</param>
     /// <returns>Object containing the list of option selections and total count/Objeto que contiene la lista de selecciones de opciones y el conteo total</returns>
-    public async Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionKey, bool alls, bool isList)
+    public async Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionKey, bool alls, bool forDropdown)
     {
         try
         {
@@ -114,7 +114,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             parameters.Add("@optionKey", optionKey, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.OptionSelections, take, skip, name, optionKey, alls);
                 return await _cache.CacheQuery(

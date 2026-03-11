@@ -15,9 +15,9 @@ public interface IAgencyRepository
     /// </summary>
     Task<dynamic> GetAgencyAssignedUsers(int agencyId, string userId);
     /// <summary>
-    /// isList=true: devuelve IEnumerable de AgencyDropdownItemResponse; isList=false: devuelve PagedResult de AgencyTableResponse.
+    /// forDropdown=true: devuelve IEnumerable de AgencyDropdownItemResponse; forDropdown=false: devuelve PagedResult de AgencyTableResponse.
     /// </summary>
-    Task<object> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber);
+    Task<object> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool forDropdown, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber);
     Task<dynamic> GetAgencyProgramsByUserId(string userId);
 
     /// ------------------------------------------------------------------------------------------------

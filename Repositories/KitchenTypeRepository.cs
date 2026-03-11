@@ -50,7 +50,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
     /// <param name="name">El nombre de los tipos de cocina a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de cocina</param>
     /// <returns>Los tipos de cocina encontrados</returns>
-    public async Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllKitchenTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -61,7 +61,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.KitchenTypes, take, skip, name, alls);
 
@@ -100,8 +100,8 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina con parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
-                take, skip, name, alls, isList);
+            _logger.LogError(ex, "Error al obtener los tipos de cocina con parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}",
+                take, skip, name, alls, forDropdown);
             throw;
         }
     }

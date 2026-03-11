@@ -51,7 +51,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
     /// <param name="name">Los nombres de los tipos de centro a buscar (separados por coma)</param>
     /// <param name="alls">Si se deben obtener todos los tipos de centro</param>
     /// <returns>Los tipos de centro encontrados</returns>
-    public async Task<dynamic> GetAllCenterTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllCenterTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -63,7 +63,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.CenterTypes, take, skip, name, alls);
 

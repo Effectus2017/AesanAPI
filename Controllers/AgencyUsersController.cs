@@ -37,7 +37,7 @@ public class AgencyUserAssignmentController(IUnitOfWork unitOfWork) : Controller
             queryParameters.Take,
             queryParameters.Skip,
             queryParameters.Alls,
-            queryParameters.IsList
+            queryParameters.ForDropdown
         );
 
         return Ok(agencies);

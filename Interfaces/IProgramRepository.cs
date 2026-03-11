@@ -19,7 +19,7 @@ public interface IProgramRepository
     /// <param name="names">Los nombres de los programas a buscar (separados por coma)</param>
     /// <param name="alls">Si se deben obtener todos los programas</param>
     /// <returns>Los programas</returns>
-    Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls, bool isList);
+    Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta un nuevo programa en la base de datos

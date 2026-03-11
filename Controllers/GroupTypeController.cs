@@ -54,7 +54,7 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository) : Con
     [SwaggerOperation(Summary = "Obtiene todos los tipos de grupo", Description = "Devuelve una lista de tipos de grupo.")]
     public async Task<ActionResult> GetAllGroupTypes([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _groupTypeRepository.GetAllGroupTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _groupTypeRepository.GetAllGroupTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

@@ -114,7 +114,7 @@ public class AgencyController(IUnitOfWork unitOfWork, MessageTemplateService mes
             queryParameters.StatusId,
             queryParameters.UserId,
             queryParameters.Alls,
-            queryParameters.IsList,
+            queryParameters.ForDropdown,
             queryParameters.IsPropietary,
             queryParameters.UserFirstName,
             queryParameters.StatusName,

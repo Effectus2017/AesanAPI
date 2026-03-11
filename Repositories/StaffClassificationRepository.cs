@@ -57,9 +57,9 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
     /// <param name="skip">El número de clasificaciones a saltar</param>
     /// <param name="name">El nombre de la clasificación a buscar</param>
     /// <param name="alls">Si se deben obtener todas las clasificaciones</param>
-    /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown), devuelve solo datos; si no, devuelve { data, count }</param>
     /// <returns>Las clasificaciones de staff</returns>
-    public async Task<dynamic> GetAllStaffClassificationsFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllStaffClassificationsFromDb(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -70,38 +70,27 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
             param.Add("@name", name, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            var result = await dbConnection.QueryMultipleAsync("100_GetAllStaffClassifications", param, commandType: CommandType.StoredProcedure);
+
+            if (result == null)
             {
-                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaffClassifications", param, commandType: CommandType.StoredProcedure);
+                return forDropdown ? new List<dynamic>() : null;
+            }
 
-                if (result == null)
-                {
-                    return new List<dynamic>();
-                }
+            var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassificationList).ToList();
+            var count = result.Read<int>().FirstOrDefault();
 
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassificationList).ToList();
+            if (forDropdown)
+            {
                 return data;
             }
-            else
-            {
-                var result = await dbConnection.QueryMultipleAsync("100_GetAllStaffClassifications", param, commandType: CommandType.StoredProcedure);
-
-                if (result == null)
-                {
-                    return null;
-                }
-
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffClassificationList).ToList();
-                var count = result.Read<int>().FirstOrDefault();
-
-                return new { data, count };
-            }
+            return new { data, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las clasificaciones de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
-                take, skip, name, alls, isList);
-            throw; // Preservar la excepción original con toda la información
+            _logger.LogError(ex, "Error al obtener las clasificaciones de staff. Par?metros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}",
+                take, skip, name, alls, forDropdown);
+            throw;
         }
     }
 

@@ -43,7 +43,7 @@ public class CenterTypeController(IUnitOfWork unitOfWork) : Controller
     [SwaggerOperation(Summary = "Obtiene todos los tipos de centro", Description = "Devuelve una lista de tipos de centro.")]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _unitOfWork.CenterTypeRepository.GetAllCenterTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name ?? string.Empty, queryParameters.Alls, queryParameters.IsList);
+        var result = await _unitOfWork.CenterTypeRepository.GetAllCenterTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name ?? string.Empty, queryParameters.Alls, queryParameters.ForDropdown);
         return Ok(result);
     }
 

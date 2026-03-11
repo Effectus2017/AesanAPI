@@ -83,7 +83,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// <param name="name">El nombre de la ciudad</param>
     /// <param name="alls">Si se deben obtener todas las ciudades</param>
     /// <returns>Las ciudades</returns>
-    public async Task<dynamic> GetAllCitiesFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllCitiesFromDb(int take, int skip, string name, bool alls, bool forDropdown)
     {
         using IDbConnection db = _context.CreateConnection();
         var parameters = new DynamicParameters();
@@ -91,9 +91,8 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         parameters.Add("@skip", skip, DbType.Int32);
         parameters.Add("@name", name, DbType.String);
         parameters.Add("@alls", alls, DbType.Boolean);
-        parameters.Add("@isList", isList, DbType.Boolean);
 
-        if (isList)
+        if (forDropdown)
         {
             string cacheKey = string.Format(_appSettings.Cache.Keys.Cities, take, skip, name, alls);
 
@@ -134,7 +133,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// <param name="name">El nombre de la región</param>
     /// <param name="alls">Si se deben obtener todas las regiones</param>
     /// <returns>Las regiones</returns>
-    public async Task<dynamic> GetAllRegionsFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllRegionsFromDb(int take, int skip, string name, bool alls, bool forDropdown)
     {
         using IDbConnection db = _context.CreateConnection();
         var parameters = new DynamicParameters();
@@ -143,7 +142,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         parameters.Add("@name", name, DbType.String);
         parameters.Add("@alls", alls, DbType.Boolean);
 
-        if (isList)
+        if (forDropdown)
         {
             string cacheKey = string.Format(_appSettings.Cache.Keys.Regions, take, skip, name, alls);
 
@@ -180,7 +179,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// </summary>
     /// <param name="cityId">El ID de la ciudad</param>
     /// <returns>Las regiones</returns>
-    public async Task<dynamic> GetRegionsByCityId(int cityId, bool isList)
+    public async Task<dynamic> GetRegionsByCityId(int cityId, bool forDropdown)
     {
         try
         {
@@ -188,7 +187,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
             var parameters = new DynamicParameters();
             parameters.Add("@cityId", cityId, DbType.Int32);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.RegionsByCity, cityId);
 
@@ -232,7 +231,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// </summary>
     /// <param name="regionId">El ID de la región</param>
     /// <returns>Las ciudades asociadas a la región</returns>
-    public async Task<dynamic> GetCitiesByRegionId(int regionId, bool isList)
+    public async Task<dynamic> GetCitiesByRegionId(int regionId, bool forDropdown)
     {
         try
         {
@@ -240,7 +239,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
             var parameters = new DynamicParameters();
             parameters.Add("@regionId", regionId, DbType.Int32);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.CitiesByRegion, regionId);
 

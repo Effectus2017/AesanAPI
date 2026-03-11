@@ -51,7 +51,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     /// <param name="name">El nombre del tipo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos.</param>
     /// <returns>Una lista de tipos de entrega y el total.</returns>
-    public async Task<dynamic> GetAllDeliveryTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllDeliveryTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -62,7 +62,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.DeliveryTypes, take, skip, name, alls);
                 return await _cache.CacheQuery(

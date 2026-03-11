@@ -49,7 +49,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
     /// <param name="name">El nombre de la política operativa a buscar.</param>
     /// <param name="alls">Si se deben obtener todas las políticas operativas.</param>
     /// <returns>Una lista de políticas operativas.</returns>
-    public async Task<dynamic> GetAllOperatingPolicies(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllOperatingPolicies(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -60,7 +60,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.OperatingPolicies, take, skip, name, alls);
                 return await _cache.CacheQuery(

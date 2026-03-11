@@ -20,7 +20,7 @@ public interface IOrganizationTypeRepository
     /// <param name="name">El nombre del tipo de organización a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos de organización.</param>
     /// <returns>Una lista de tipos de organización.</returns>
-    Task<dynamic> GetAllOrganizationTypes(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllOrganizationTypes(int take, int skip, string name, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta un nuevo tipo de organización.

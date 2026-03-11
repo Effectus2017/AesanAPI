@@ -77,7 +77,7 @@ public class StaffRelationshipController(IStaffRelationshipRepository staffRelat
             queryParameters.Take,
             queryParameters.Skip,
             queryParameters.Alls,
-            queryParameters.IsList
+            queryParameters.ForDropdown
         );
 
         if (result == null)

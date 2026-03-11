@@ -165,10 +165,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
     /// <param name="regionId">ID de la región para filtrar.</param>
     /// <param name="agencyId">ID de la agencia para filtrar.</param>
     /// <param name="alls">Si se deben obtener todos los sitios.</param>
-    /// <param name="isList">Si es para lista o paginación.</param>
+    /// <param name="forDropdown">Si es para lista o paginación.</param>
     /// <param name="isDayCareHomeId">ID de la opción IsDayCareHome para filtrar sitios (Sí, No, Ambos).</param>
     /// <returns>Los sitios encontrados como SiteTableResponse.</returns>
-    public async Task<dynamic> GetAllSitesFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool isList, int? isDayCareHomeId = null)
+    public async Task<dynamic> GetAllSitesFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool forDropdown, int? isDayCareHomeId = null)
     {
         try
         {
@@ -183,7 +183,7 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@alls", alls, DbType.Boolean);
             parameters.Add("@isDayCareHomeId", isDayCareHomeId == 0 ? null : isDayCareHomeId, DbType.Int32);
 
-            if (isList)
+            if (forDropdown)
             {
                 using var result = await dbConnection.QueryMultipleAsync("104_GetSites", parameters, commandType: CommandType.StoredProcedure);
 

@@ -50,7 +50,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
     /// <param name="name">El nombre del estado a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los estados.</param>
     /// <returns>Una lista de estados de agencia.</returns>
-    public async Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllAgencyStatuses(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -61,7 +61,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyStatuses, take, skip, name, alls);
                 return await _cache.CacheQuery(

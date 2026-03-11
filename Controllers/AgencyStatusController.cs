@@ -53,7 +53,7 @@ public class AgencyStatusController(IAgencyStatusRepository agencyStatusReposito
     [SwaggerOperation(Summary = "Gets all agency statuses", Description = "Returns a list of agency statuses.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _agencyStatusRepository.GetAllAgencyStatuses(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

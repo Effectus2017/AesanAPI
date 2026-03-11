@@ -76,7 +76,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
             { "Skip", queryParameters.Skip.ToString() },
             { "Name", queryParameters.Name ?? "null" }
         });
-        dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId, queryParameters.IsList);
+        dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId, queryParameters.ForDropdown);
 
         return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
@@ -85,13 +85,13 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     /// Obtiene todos los roles de la base de datos.
     /// </summary>
     /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN); si false, devuelve todos los roles.</param>
-    /// <param name="isList">Si true, devuelve solo la lista (array); si false, devuelve { data, count }.</param>
-    /// <returns>Lista de roles o objeto con data y count según isList.</returns>
+    /// <param name="forDropdown">Si true, devuelve solo la lista (array); si false, devuelve { data, count }.</param>
+    /// <returns>Lista de roles o objeto con data y count según forDropdown.</returns>
     [HttpGet("get-all-roles-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Con isList=true devuelve solo el array de roles. Con isList=false devuelve { data, count }. Con aesanOnly=true solo roles AESAN.")]
-    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false, [FromQuery] bool isList = false)
+    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Con forDropdown=true devuelve solo el array de roles. Con forDropdown=false devuelve { data, count }. Con aesanOnly=true solo roles AESAN.")]
+    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false, [FromQuery] bool forDropdown = false)
     {
-        var result = await _unitOfWork.UserRepository.GetAllRolesFromDb(aesanOnly, isList);
+        var result = await _unitOfWork.UserRepository.GetAllRolesFromDb(aesanOnly, forDropdown);
         return result != null ? Ok(result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
@@ -138,7 +138,7 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos usando un Stored Procedure", Description = "Devuelve una lista de todos los programas.")]
     public async Task<IActionResult> GetAllUsersFromDbWithSP([FromQuery] QueryParameters queryParameters)
     {
-        dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
+        dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.ForDropdown, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
         return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 

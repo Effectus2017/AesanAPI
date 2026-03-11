@@ -7,7 +7,7 @@ public class QueryParameters
     public string? Name { get; set; } // Para endpoints existentes
     public string? Names { get; set; } // Para el filtrado de programas
     public bool Alls { get; set; } = false;
-    public bool IsList { get; set; } = false;
+    public bool ForDropdown { get; set; } = false;
     public bool ExcludeRelated { get; set; } = false;
     public int Id { get; set; }
     public string? StringId { get; set; } // Para IDs de tipo string (como Permission)
@@ -22,7 +22,7 @@ public class QueryParameters
     public int OptionSelectionId { get; set; } // ID de la opción de selección
     public string? PermissionId { get; set; } // ID del permiso (cambiado a string)
     public string? RoleId { get; set; } // ID del rol
-    public bool IsActive { get; set; } // Estado activo
+    public bool IsActive { get; set; } = true; // Estado activo
     public string? InactiveJustification { get; set; } // Justificación para inactivación
     public DateTime? InactiveDate { get; set; } // Fecha de inactivación
     public bool? ProvidedRationsService { get; set; } // ¿Brindó servicio de raciones durante su periodo de funcionamiento?

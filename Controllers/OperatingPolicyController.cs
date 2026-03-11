@@ -59,7 +59,7 @@ public class OperatingPolicyController(IOperatingPolicyRepository operatingPolic
             queryParameters.Skip,
             queryParameters.Name,
             queryParameters.Alls,
-            queryParameters.IsList);
+            queryParameters.ForDropdown);
 
         if (result == null)
         {

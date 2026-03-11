@@ -55,7 +55,7 @@ public class StaffController(IUnitOfWork unitOfWork) : Controller
             queryParameters.Name,
             queryParameters.Alls,
             queryParameters.ExcludeRelated,
-            queryParameters.IsList,
+            queryParameters.ForDropdown,
             queryParameters.StaffTypeId,
             queryParameters.AgencyId
         );

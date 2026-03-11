@@ -45,7 +45,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
     /// <param name="name">El nombre del tipo de organización a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los tipos de organización.</param>
     /// <returns>Una lista de tipos de organización.</returns>
-    public async Task<dynamic> GetAllOrganizationTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllOrganizationTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -56,7 +56,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.OrganizationTypes, take, skip, name, alls);
 
@@ -95,8 +95,8 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting organization types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}",
-                take, skip, name, alls, isList);
+            _logger.LogError(ex, "Error getting organization types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}",
+                take, skip, name, alls, forDropdown);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }

@@ -50,7 +50,7 @@ public class DeliveryTypeController(IDeliveryTypeRepository deliveryTypeReposito
     [SwaggerOperation(Summary = "Obtiene todos los tipos de entrega", Description = "Devuelve una lista de tipos de entrega.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _deliveryTypeRepository.GetAllDeliveryTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

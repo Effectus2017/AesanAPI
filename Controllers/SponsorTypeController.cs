@@ -53,7 +53,7 @@ public class SponsorTypeController(ISponsorTypeRepository sponsorTypeRepository)
             queryParameters.Skip,
             queryParameters.Name,
             queryParameters.Alls,
-            queryParameters.IsList);
+            queryParameters.ForDropdown);
         return Ok(types);
     }
 

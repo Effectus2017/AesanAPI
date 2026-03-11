@@ -58,9 +58,9 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     /// <param name="skip">Número de registros a saltar</param>
     /// <param name="alls">Si se deben obtener todas las agencias</param>
     /// <returns>Lista de agencias asignadas al usuario</returns>
-    public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip, bool alls, bool isList)
+    public async Task<dynamic> GetUserAssignedAgencies(string userId, int take, int skip, bool alls, bool forDropdown)
     {
-        return await GetUserAssignedAgenciesV2(userId, take, skip, alls, isList);
+        return await GetUserAssignedAgenciesV2(userId, take, skip, alls, forDropdown);
     }
 
 
@@ -199,7 +199,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     /// <summary>
     /// Obtiene las agencias asignadas a un usuario (V2)
     /// </summary>
-    public async Task<dynamic> GetUserAssignedAgenciesV2(string userId, int take, int skip, bool alls, bool isList)
+    public async Task<dynamic> GetUserAssignedAgenciesV2(string userId, int take, int skip, bool alls, bool forDropdown)
     {
         try
         {
@@ -210,7 +210,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
             parameters.Add("@userId", userId, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, take, skip);
                 return await _cache.CacheQuery(

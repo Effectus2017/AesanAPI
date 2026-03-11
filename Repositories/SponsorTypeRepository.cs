@@ -48,7 +48,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
     /// <param name="take">Número de tipos de auspiciador a obtener</param>
     /// <param name="skip">Número de tipos de auspiciador a saltar</param>
     /// <param name="name">Nombre del tipo de auspiciador</param>
-    public async Task<dynamic> GetAllSponsorTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllSponsorTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -60,7 +60,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.SponsorTypes, take, skip, name, alls);
 

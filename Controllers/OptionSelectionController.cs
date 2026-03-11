@@ -54,7 +54,7 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
     [SwaggerOperation(Summary = "Obtiene todas las opciones de selección", Description = "Devuelve una lista de opciones de selección.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.IsList);
+        var result = await _optionSelectionRepository.GetAllOptionSelections(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.OptionType, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {
@@ -77,7 +77,7 @@ public class OptionSelectionController(IOptionSelectionRepository optionSelectio
         var result = await _optionSelectionRepository.GetOptionSelectionByOptionKey(
             queryParameters.OptionKey,
             queryParameters.Names,
-            queryParameters.IsList,
+            queryParameters.ForDropdown,
             queryParameters.SortByNameKeys,
             queryParameters.SortByNameENKeys,
             queryParameters.Language);

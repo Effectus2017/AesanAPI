@@ -255,17 +255,6 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var schools = result.Read<dynamic>().Select(_mappingService.MapSchool).ToList();
             var count = result.ReadFirstOrDefault<int>();
 
-            // Filtro defensivo: el SP debe filtrar por @agencyId; si la BD devolvió escuelas de otras agencias, no las exponemos
-            var filtered = schools.Where(s => s.AgencyId == agencyId).ToList();
-            if (filtered.Count != schools.Count)
-            {
-                _logger.LogError(
-                    "101_GetSchoolsByAgencyId devolvió escuelas de otras agencias. Solicitado AgencyId={AgencyId}. Se filtraron {FilteredOut} filas incorrectas. Revisar que el SP en la BD tenga WHERE s.AgencyId = @agencyId.",
-                    agencyId,
-                    schools.Count - filtered.Count);
-                return new { data = filtered, count = filtered.Count };
-            }
-
             _logger.LogInformation("Total schools retrieved for agency {AgencyId}: {Count}", agencyId, schools.Count);
 
             return new { data = schools, count };

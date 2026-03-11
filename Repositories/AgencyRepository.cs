@@ -205,7 +205,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
     /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool forDropdown, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
     {
         try
         {
@@ -231,7 +231,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@sdrNumber", sdrNumber);
 
             // Usar nuevo SP con nueva lógica de acceso (misma convención que Staff: TableResponse/DropdownItemResponse + PagedResult)
-            if (isList)
+            if (forDropdown)
             {
                 using var result = await dbConnection.QueryMultipleAsync("120_GetAgencies", param, commandType: CommandType.StoredProcedure);
 

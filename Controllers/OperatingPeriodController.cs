@@ -54,7 +54,7 @@ public class OperatingPeriodController(IOperatingPeriodRepository operatingPerio
     [SwaggerOperation(Summary = "Obtiene todos los períodos operativos", Description = "Devuelve una lista de períodos operativos.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _operatingPeriodRepository.GetAllOperatingPeriods(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _operatingPeriodRepository.GetAllOperatingPeriods(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

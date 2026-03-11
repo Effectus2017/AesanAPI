@@ -79,7 +79,7 @@ public class GeoController(IUnitOfWork unitOfWork) : Controller
     [SwaggerOperation(Summary = "Obtiene todas las ciudades de la base de datos", Description = "Devuelve una lista de todas las ciudades. Accesible sin autenticación para intención de participación.")]
     public async Task<IActionResult> GetCities([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _unitOfWork.GeoRepository.GetAllCitiesFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _unitOfWork.GeoRepository.GetAllCitiesFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {
@@ -98,7 +98,7 @@ public class GeoController(IUnitOfWork unitOfWork) : Controller
     [SwaggerOperation(Summary = "Obtiene todas las regiones de la base de datos", Description = "Devuelve una lista de todas las regiones.")]
     public async Task<IActionResult> GetAllRegions([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _unitOfWork.GeoRepository.GetAllRegionsFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _unitOfWork.GeoRepository.GetAllRegionsFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {
@@ -123,7 +123,7 @@ public class GeoController(IUnitOfWork unitOfWork) : Controller
             return BadRequest("El ID de la ciudad es requerido");
         }
 
-        var result = await _unitOfWork.GeoRepository.GetRegionsByCityId(queryParameters.CityId, queryParameters.IsList);
+        var result = await _unitOfWork.GeoRepository.GetRegionsByCityId(queryParameters.CityId, queryParameters.ForDropdown);
 
         if (result == null)
         {
@@ -147,7 +147,7 @@ public class GeoController(IUnitOfWork unitOfWork) : Controller
             return BadRequest("El ID de la región es requerido");
         }
 
-        var result = await _unitOfWork.GeoRepository.GetCitiesByRegionId(queryParameters.RegionId, queryParameters.IsList);
+        var result = await _unitOfWork.GeoRepository.GetCitiesByRegionId(queryParameters.RegionId, queryParameters.ForDropdown);
 
         if (result == null)
         {

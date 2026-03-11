@@ -18,7 +18,7 @@ public interface ISponsorTypeRepository
     /// <param name="skip">Número de tipos de auspiciador a saltar</param>
     /// <param name="name">Nombre del tipo de auspiciador</param>
     /// <param name="alls">Indica si se deben obtener todos los tipos de auspiciador</param>
-    Task<dynamic> GetAllSponsorTypes(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllSponsorTypes(int take, int skip, string name, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta un nuevo tipo de auspiciador

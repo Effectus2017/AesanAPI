@@ -54,7 +54,7 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository)
     [SwaggerOperation(Summary = "Obtiene todos los tipos de cocina", Description = "Devuelve una lista de tipos de cocina.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _kitchenTypeRepository.GetAllKitchenTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _kitchenTypeRepository.GetAllKitchenTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

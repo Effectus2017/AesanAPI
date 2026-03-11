@@ -49,9 +49,9 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
     /// <param name="skip">El número de tipos de área a saltar</param>
     /// <param name="name">El nombre del tipo de área</param>
     /// <param name="alls">Indica si se deben obtener todos los tipos de área</param>
-    /// <param name="isList">Indica si se debe retornar una lista o un objeto</param>
+    /// <param name="forDropdown">Si es para dropdown, devuelve solo la lista; si no, devuelve { data, count }</param>
     /// <returns>Los tipos de área obtenidos</returns>
-    public async Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -61,9 +61,8 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            parameters.Add("@isList", isList, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.AreaTypes, take, skip, name, alls);
                 return await _cache.CacheQuery(
@@ -91,7 +90,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting area types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}", take, skip, name, alls, isList);
+            _logger.LogError(ex, "Error getting area types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}", take, skip, name, alls, forDropdown);
             throw;
         }
     }

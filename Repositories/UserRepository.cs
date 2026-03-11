@@ -250,11 +250,11 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="name">El nombre del usuario</param>
     /// <param name="userId">El ID del usuario</param>
     /// <returns>Una lista de usuarios</returns>
-    public dynamic GetAllUsersFromDb(int take, int skip, string name, string userId, bool isList)
+    public dynamic GetAllUsersFromDb(int take, int skip, string name, string userId, bool forDropdown)
     {
         try
         {
-            if (isList)
+            if (forDropdown)
             {
                 var _result = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToList();
                 var _currentUser = _mapper.Map<List<User>, List<DTOUser>>(_result);
@@ -282,13 +282,13 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
     /// <param name="agencyId">ID de la agencia para filtrar</param>
-    /// <param name="isList">Si es true, retorna solo la lista sin paginación</param>
+    /// <param name="forDropdown">Si es true, retorna solo la lista sin paginación</param>
     /// <param name="roles">Lista de roles para filtrar</param>
     /// <param name="alls">Si es true, retorna todos los usuarios sin filtros ni paginación</param>
     /// <param name="excludeAdministrators">Si es true, excluye usuarios con rol Administrator o Super-Administrator</param>
     /// <param name="isPropietary">Si true, solo usuarios de agencia NUTRE (IsPropietary=1). Si false, solo auspiciadores. Null = sin filtro.</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false, bool? isPropietary = null)
+    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool forDropdown = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false, bool? isPropietary = null)
     {
         try
         {
@@ -336,7 +336,7 @@ public class UserRepository(UserManager<User> userManager,
                 return user;
             }).ToList();
 
-            if (isList)
+            if (forDropdown)
             {
                 return data;
             }
@@ -354,18 +354,18 @@ public class UserRepository(UserManager<User> userManager,
     /// Obtiene todos los roles de la base de datos, opcionalmente solo AESAN, en formato lista o { data, count }.
     /// </summary>
     /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN).</param>
-    /// <param name="isList">Si true, retorna solo la lista; si false, retorna { data, count }.</param>
-    public async Task<dynamic> GetAllRolesFromDb(bool aesanOnly = false, bool isList = false)
+    /// <param name="forDropdown">Si true, retorna solo la lista; si false, retorna { data, count }.</param>
+    public async Task<dynamic> GetAllRolesFromDb(bool aesanOnly = false, bool forDropdown = false)
     {
         if (aesanOnly)
         {
             var roles = await GetAesanRoles();
-            return isList ? (dynamic)roles : new { data = roles, count = roles.Count };
+            return forDropdown ? (dynamic)roles : new { data = roles, count = roles.Count };
         }
 
         var _result = _roleManager.Roles.OrderBy(r => r.Name).ToList();
         var _currentRoles = _mapper.Map<List<Role>, List<DTORole>>(_result);
-        if (isList)
+        if (forDropdown)
             return _currentRoles;
         return new { data = _currentRoles, count = _result.Count };
     }

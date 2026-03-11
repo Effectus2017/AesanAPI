@@ -19,9 +19,9 @@ public interface IStaffClassificationRepository
     /// <param name="skip">El número de clasificaciones a saltar</param>
     /// <param name="name">El nombre de la clasificación a buscar</param>
     /// <param name="alls">Si se deben obtener todas las clasificaciones</param>
-    /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown)</param>
     /// <returns>Las clasificaciones de staff</returns>
-    Task<dynamic> GetAllStaffClassificationsFromDb(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllStaffClassificationsFromDb(int take, int skip, string name, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta una nueva clasificación de staff en la base de datos

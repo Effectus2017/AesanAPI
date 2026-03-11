@@ -48,7 +48,7 @@ public class EducationLevelController(IEducationLevelRepository educationLevelRe
     [SwaggerOperation(Summary = "Obtiene todos los niveles educativos", Description = "Devuelve una lista de niveles educativos.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _educationLevelRepository.GetAllEducationLevels(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _educationLevelRepository.GetAllEducationLevels(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

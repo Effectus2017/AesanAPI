@@ -51,7 +51,7 @@ public class OrganizationTypeController(IOrganizationTypeRepository organization
     [SwaggerOperation(Summary = "Obtiene todos los tipos de organización")]
     public async Task<ActionResult> GetAllFromDb([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _organizationTypeRepository.GetAllOrganizationTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
+        var result = await _organizationTypeRepository.GetAllOrganizationTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
 
         if (result == null)
         {

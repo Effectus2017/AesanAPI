@@ -55,7 +55,7 @@ public class StaffTypeController(IUnitOfWork unitOfWork) : Controller
             queryParameters.Skip,
             queryParameters.Names,
             queryParameters.Alls,
-            queryParameters.IsList
+            queryParameters.ForDropdown
         );
         return Ok(staffTypes);
     }

@@ -52,7 +52,7 @@ public class SiteController(IUnitOfWork unitOfWork, MessageTemplateService messa
     [SwaggerOperation(Summary = "Obtiene todos los sitios", Description = "Devuelve una lista paginada de sitios.")]
     public async Task<IActionResult> GetAllSitesFromDB([FromQuery] QueryParameters queryParameters)
     {
-        var result = await _unitOfWork.SiteRepository.GetAllSitesFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.IsList, queryParameters.IsDayCareHomeId);
+        var result = await _unitOfWork.SiteRepository.GetAllSitesFromDB(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.CityId, queryParameters.RegionId, queryParameters.AgencyId, queryParameters.Alls, queryParameters.ForDropdown, queryParameters.IsDayCareHomeId);
 
         if (result == null)
         {
@@ -172,7 +172,7 @@ public class SiteController(IUnitOfWork unitOfWork, MessageTemplateService messa
 
         var result = await _unitOfWork.SiteRepository.UpdateSiteActiveStatus(
             queryParameters.SiteId.Value,
-            queryParameters.IsActive ?? true,
+            queryParameters.IsActive,
             queryParameters.InactiveJustification,
             queryParameters.InactiveDate,
             queryParameters.ProvidedRationsService);

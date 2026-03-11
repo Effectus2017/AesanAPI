@@ -109,10 +109,10 @@ public class StaffRepository(
     /// <param name="name">El nombre del miembro del staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
     /// <param name="excludeRelated">Si es true, excluye staff ya relacionado en StaffRelationship (usado en modal Add)</param>
-    /// <param name="isList">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
+    /// <param name="forDropdown">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool isList, int? staffTypeId = null, int? agencyId = null)
+    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool forDropdown, int? staffTypeId = null, int? agencyId = null)
     {
         try
         {
@@ -126,7 +126,7 @@ public class StaffRepository(
             param.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             param.Add("@excludeRelated", excludeRelated, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 var result = await dbConnection.QueryMultipleAsync("101_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 

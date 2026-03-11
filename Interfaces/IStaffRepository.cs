@@ -27,11 +27,11 @@ public interface IStaffRepository
     /// <param name="name">El nombre del miembro del staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
     /// <param name="excludeRelated">Si es true, excluye staff ya relacionado en StaffRelationship (usado en modal Add)</param>
-    /// <param name="isList">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
+    /// <param name="forDropdown">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <param name="agencyId">ID de la agencia para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool isList, int? staffTypeId = null, int? agencyId = null);
+    Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool forDropdown, int? staffTypeId = null, int? agencyId = null);
 
     /// <summary>
     /// Inserta un nuevo miembro del staff en la base de datos

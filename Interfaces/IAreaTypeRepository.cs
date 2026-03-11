@@ -6,7 +6,7 @@ namespace Api.Interfaces;
 public interface IAreaTypeRepository
 {
     Task<dynamic> GetAreaTypeById(int id);
-    Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool forDropdown);
     Task<bool> InsertAreaType(AreaTypeRequest areaType);
     Task<bool> UpdateAreaType(DTOAreaType areaType);
     Task<bool> DeleteAreaType(int id);

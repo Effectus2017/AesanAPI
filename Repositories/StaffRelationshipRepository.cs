@@ -67,37 +67,35 @@ public class StaffRelationshipRepository(
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
     /// <param name="alls">Si se deben obtener todos los registros</param>
-    /// <param name="isList">Si es para lista simple</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown), devuelve solo datos; si no, devuelve { data, count }</param>
     /// <returns>Lista de todas las relaciones activas</returns>
-    public async Task<dynamic> GetAllActiveRelationshipsFromDb(int take, int skip, bool alls, bool isList)
+    public async Task<dynamic> GetAllActiveRelationshipsFromDb(int take, int skip, bool alls, bool forDropdown)
     {
         try
         {
             _logger.LogInformation("Obteniendo todas las relaciones activas");
 
-            string cacheKey = $"StaffRelationship_AllActive_{take}_{skip}_{alls}_{isList}";
+            string cacheKey = $"StaffRelationship_AllActive_{take}_{skip}_{alls}_{forDropdown}";
 
-            if (isList)
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@take", take, DbType.Int32);
+            param.Add("@skip", skip, DbType.Int32);
+            param.Add("@alls", alls, DbType.Boolean);
+
+            if (forDropdown)
             {
                 return await _cache.CacheQuery<dynamic>(
                     cacheKey,
                     async () =>
                     {
-                        using IDbConnection dbConnection = _context.CreateConnection();
-                        var param = new DynamicParameters();
-                        param.Add("@take", take, DbType.Int32);
-                        param.Add("@skip", skip, DbType.Int32);
-                        param.Add("@alls", alls, DbType.Boolean);
-                        param.Add("@isList", isList, DbType.Boolean);
-
-                        var result = await dbConnection.QueryAsync<dynamic>("100_GetAllActiveStaffRelationships", param, commandType: CommandType.StoredProcedure);
-
+                        var result = await dbConnection.QueryMultipleAsync("100_GetAllActiveStaffRelationships", param, commandType: CommandType.StoredProcedure);
                         if (result == null)
                         {
                             return new List<dynamic>();
                         }
-
-                        var data = result.Select(_mappingService.MapStaffRelationship).ToList();
+                        _ = result.ReadFirstOrDefault<int>(); // TotalCount, primer result set
+                        var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                         return data;
                     },
                     _logger,
@@ -107,22 +105,13 @@ public class StaffRelationshipRepository(
             }
             else
             {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new DynamicParameters();
-                param.Add("@take", take, DbType.Int32);
-                param.Add("@skip", skip, DbType.Int32);
-                param.Add("@alls", alls, DbType.Boolean);
-                param.Add("@isList", isList, DbType.Boolean);
-
                 var result = await dbConnection.QueryMultipleAsync("100_GetAllActiveStaffRelationships", param, commandType: CommandType.StoredProcedure);
-
                 if (result == null)
                 {
                     return null;
                 }
-
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                 var count = result.ReadFirstOrDefault<int>();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                 return new { data, count };
             }
         }

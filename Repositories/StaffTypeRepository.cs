@@ -56,9 +56,9 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
     /// <param name="skip">El número de tipos de staff a saltar</param>
     /// <param name="name">El nombre del tipo de staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de staff</param>
-    /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown)</param>
     /// <returns>Los tipos de staff</returns>
-    public async Task<dynamic> GetAllStaffTypesFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllStaffTypesFromDb(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -69,7 +69,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
             param.Add("@name", name, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.StaffTypes, take, skip, name, alls);
 
@@ -109,7 +109,7 @@ public class StaffTypeRepository(DapperContext context, ILogger<StaffTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}", take, skip, name, alls, isList);
+            _logger.LogError(ex, "Error al obtener los tipos de staff. Parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}", take, skip, name, alls, forDropdown);
             throw; // Preservar la excepción original con toda la información
         }
     }

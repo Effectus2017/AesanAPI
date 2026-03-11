@@ -50,9 +50,9 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
     /// <param name="skip">Número de tipos de grupo a saltar</param>
     /// <param name="name">Nombre del tipo de grupo a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de grupo</param>
-    /// <param name="isList">Si se debe retornar una lista o un objeto con el conteo</param>
+    /// <param name="forDropdown">Si se debe retornar una lista o un objeto con el conteo</param>
     /// <returns>Lista de tipos de grupo o un objeto con el conteo</returns>
-    public async Task<dynamic> GetAllGroupTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllGroupTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -63,7 +63,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.GroupTypes, take, skip, name, alls);
 
