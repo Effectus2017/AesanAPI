@@ -18,7 +18,7 @@ public interface IGroupTypeRepository
     /// <param name="skip">Número de tipos de grupo a saltar</param>
     /// <param name="name">Nombre del tipo de grupo a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de grupo</param>
-    Task<dynamic> GetAllGroupTypes(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllGroupTypes(int take, int skip, string name, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta un tipo de grupo

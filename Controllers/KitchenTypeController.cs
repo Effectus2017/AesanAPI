@@ -1,4 +1,5 @@
 using Api.Interfaces;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -15,10 +16,10 @@ namespace Api.Controllers;
 [ApiController]
 [Route("kitchen-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository, ILogger<KitchenTypeController> logger) : ControllerBase
+[ValidateModelState]
+public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository) : ControllerBase
 {
     private readonly IKitchenTypeRepository _kitchenTypeRepository = kitchenTypeRepository;
-    private readonly ILogger<KitchenTypeController> _logger = logger;
 
     /// <summary>
     /// Obtiene un tipo de cocina por su ID
@@ -29,34 +30,19 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Obtiene un tipo de cocina por su ID", Description = "Devuelve un tipo de cocina basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo tipo de cocina por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del tipo de cocina es requerido");
-                }
-
-                var result = await _kitchenTypeRepository.GetKitchenTypeById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Tipo de cocina con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("El ID del tipo de cocina es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _kitchenTypeRepository.GetKitchenTypeById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de cocina con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el tipo de cocina");
+            return NotFound($"Tipo de cocina con ID {queryParameters.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -68,27 +54,14 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Obtiene todos los tipos de cocina", Description = "Devuelve una lista de tipos de cocina.")]
     public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _kitchenTypeRepository.GetAllKitchenTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
+
+        if (result == null)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _kitchenTypeRepository.GetAllKitchenTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron tipos de cocina");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound("No se encontraron tipos de cocina");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los tipos de cocina");
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de cocina");
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -100,28 +73,14 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Crea un nuevo tipo de cocina", Description = "Crea un nuevo tipo de cocina.")]
     public async Task<ActionResult> Insert([FromBody] KitchenTypeRequest request)
     {
-        try
+        var result = await _kitchenTypeRepository.InsertKitchenType(request);
+
+        if (result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _kitchenTypeRepository.InsertKitchenType(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo crear el tipo de cocina");
-                return BadRequest("No se pudo crear el tipo de cocina");
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al crear el tipo de cocina");
-            return StatusCode(500, "Error interno del servidor al crear el tipo de cocina");
-        }
+
+        return BadRequest("No se pudo crear el tipo de cocina");
     }
 
     /// <summary>
@@ -133,27 +92,14 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Actualiza un tipo de cocina existente", Description = "Actualiza los datos de un tipo de cocina existente.")]
     public async Task<IActionResult> Update([FromBody] DTOKitchenType request)
     {
-        try
+        var result = await _kitchenTypeRepository.UpdateKitchenType(request);
+
+        if (!result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _kitchenTypeRepository.UpdateKitchenType(request);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de cocina con ID {request.Id} no encontrado");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Tipo de cocina con ID {request.Id} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el tipo de cocina con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el tipo de cocina");
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -166,27 +112,14 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Actualiza el orden de visualización de un tipo de cocina", Description = "Actualiza el orden de visualización de un tipo de cocina existente.")]
     public async Task<IActionResult> UpdateDisplayOrder([FromQuery] int kitchenTypeId, [FromQuery] int displayOrder)
     {
-        try
+        var result = await _kitchenTypeRepository.UpdateKitchenTypeDisplayOrder(kitchenTypeId, displayOrder);
+
+        if (!result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _kitchenTypeRepository.UpdateKitchenTypeDisplayOrder(kitchenTypeId, displayOrder);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de cocina con ID {kitchenTypeId} no encontrado");
-                }
-
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Tipo de cocina con ID {kitchenTypeId} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del tipo de cocina con ID {Id}", kitchenTypeId);
-            return StatusCode(500, "Error interno del servidor al actualizar el orden de visualización del tipo de cocina");
-        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -198,28 +131,14 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Elimina un tipo de cocina existente", Description = "Elimina un tipo de cocina existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _kitchenTypeRepository.DeleteKitchenType(queryParameters.Id);
+
+        if (!result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _kitchenTypeRepository.DeleteKitchenType(queryParameters.Id);
-
-                if (!result)
-                {
-                    _logger.LogWarning("Tipo de cocina con ID {Id} no encontrado", queryParameters.Id);
-                    return NotFound($"Tipo de cocina con ID {queryParameters.Id} no encontrado");
-                }
-
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Tipo de cocina con ID {queryParameters.Id} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el tipo de cocina con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar el tipo de cocina");
-        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -231,29 +150,14 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Obtiene tipos de cocina por programa", Description = "Devuelve los tipos de cocina válidos para un programa específico.")]
     public async Task<ActionResult> GetKitchenTypesByProgram([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo tipos de cocina para el programa: {ProgramId}", queryParameters.ProgramId);
-
-                if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
-                {
-                    return BadRequest("El ID del programa es requerido");
-                }
-
-                var result = await _kitchenTypeRepository.GetKitchenTypesByProgram(queryParameters.ProgramId.Value);
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("El ID del programa es requerido");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina para el programa {ProgramId}", queryParameters.ProgramId);
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de cocina");
-        }
+
+        var result = await _kitchenTypeRepository.GetKitchenTypesByProgram(queryParameters.ProgramId.Value);
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -265,33 +169,18 @@ public class KitchenTypeController(IKitchenTypeRepository kitchenTypeRepository,
     [SwaggerOperation(Summary = "Obtiene tipos de cocina por tipo de grupo y programa", Description = "Devuelve los tipos de cocina válidos para un tipo de grupo y programa específicos.")]
     public async Task<ActionResult> GetKitchenTypesByGroupType([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.GroupTypeId == 0)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo tipos de cocina para el tipo de grupo: {GroupTypeId}, programa: {ProgramId}", queryParameters.GroupTypeId, queryParameters.ProgramId);
-
-                if (queryParameters.GroupTypeId == 0)
-                {
-                    return BadRequest("El ID del tipo de grupo es requerido");
-                }
-
-                if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
-                {
-                    return BadRequest("El ID del programa es requerido");
-                }
-
-                var result = await _kitchenTypeRepository.GetKitchenTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId.Value);
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("El ID del tipo de grupo es requerido");
         }
-        catch (Exception ex)
+
+        if (!queryParameters.ProgramId.HasValue || queryParameters.ProgramId == 0)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina para el tipo de grupo {GroupTypeId} y programa {ProgramId}", queryParameters.GroupTypeId, queryParameters.ProgramId);
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de cocina");
+            return BadRequest("El ID del programa es requerido");
         }
+
+        var result = await _kitchenTypeRepository.GetKitchenTypesByGroupType(queryParameters.GroupTypeId, queryParameters.ProgramId.Value);
+
+        return Ok(result);
     }
 }

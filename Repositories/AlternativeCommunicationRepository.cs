@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AlternativeCommunicationRepository(DapperContext context, ILogger<AlternativeCommunicationRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAlternativeCommunicationRepository
+public class AlternativeCommunicationRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAlternativeCommunicationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AlternativeCommunicationRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -40,7 +40,6 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
                 var data = await result.ReadSingleAsync<DTOAlternativeCommunication>();
                 return data;
             },
-            _logger,
             _appSettings
         );
     }
@@ -76,7 +75,6 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             },
-            _logger,
             _appSettings
         );
     }
@@ -112,8 +110,7 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la comunicación alternativa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la comunicación alternativa", ex);
         }
     }
 
@@ -149,8 +146,7 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la comunicación alternativa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la comunicación alternativa Id={alternativeCommunication.Id}", ex);
         }
     }
 
@@ -185,8 +181,7 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la comunicación alternativa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la comunicación alternativa Id={id}", ex);
         }
     }
 
@@ -199,6 +194,5 @@ public class AlternativeCommunicationRepository(DapperContext context, ILogger<A
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.AlternativeCommunications);
-        _logger.LogInformation("Cache invalidado para AlternativeCommunication Repository");
     }
 }

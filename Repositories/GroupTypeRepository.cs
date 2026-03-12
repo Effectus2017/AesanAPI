@@ -6,15 +6,14 @@ using Api.Models;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
-public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGroupTypeRepository
+public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGroupTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<GroupTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -37,8 +36,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de grupo con ID {GroupTypeId}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de grupo con ID {id}", ex);
         }
     }
 
@@ -49,9 +47,9 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
     /// <param name="skip">Número de tipos de grupo a saltar</param>
     /// <param name="name">Nombre del tipo de grupo a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de grupo</param>
-    /// <param name="isList">Si se debe retornar una lista o un objeto con el conteo</param>
+    /// <param name="forDropdown">Si se debe retornar una lista o un objeto con el conteo</param>
     /// <returns>Lista de tipos de grupo o un objeto con el conteo</returns>
-    public async Task<dynamic> GetAllGroupTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllGroupTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -62,7 +60,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.GroupTypes, take, skip, name, alls);
 
@@ -80,7 +78,6 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
                         var data = result.Read<dynamic>().Select(_mappingService.MapGroupTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -101,8 +98,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de grupo");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de grupo", ex);
         }
     }
 
@@ -135,8 +131,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de grupo", ex);
         }
     }
 
@@ -167,8 +162,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el tipo de grupo Id={groupType.Id}", ex);
         }
     }
 
@@ -200,8 +194,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el orden de visualización del tipo de grupo Id={groupTypeId}", ex);
         }
     }
 
@@ -231,8 +224,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de grupo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el tipo de grupo Id={id}", ex);
         }
     }
 
@@ -254,8 +246,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la ubicación del sitio para el tipo de grupo con ID {GroupTypeId}", groupTypeId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la ubicación del sitio para el tipo de grupo con ID {groupTypeId}", ex);
         }
     }
 
@@ -272,8 +263,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el ID del tipo de grupo Comedor");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el ID del tipo de grupo Comedor", ex);
         }
     }
 
@@ -295,8 +285,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de grupo para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de grupo para el programa {programId}", ex);
         }
     }
 
@@ -313,7 +302,6 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.GroupTypes);
-        _logger.LogInformation("Cache invalidado para GroupType Repository");
     }
 
 }

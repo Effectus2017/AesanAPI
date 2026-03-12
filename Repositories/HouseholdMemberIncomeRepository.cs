@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -13,10 +14,9 @@ namespace Api.Repositories
     /// <summary>
     /// Repositorio para manejar las operaciones CRUD de ingresos de miembros del hogar
     /// </summary>
-    public class HouseholdMemberIncomeRepository(DapperContext context, ILogger<HouseholdMemberIncomeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IHouseholdMemberIncomeRepository
+    public class HouseholdMemberIncomeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IHouseholdMemberIncomeRepository
     {
         private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-        private readonly ILogger<HouseholdMemberIncomeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -84,8 +84,7 @@ namespace Api.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al insertar el ingreso del miembro del hogar");
-                throw;
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el ingreso del miembro del hogar", ex);
             }
         }
 
@@ -111,8 +110,7 @@ namespace Api.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al actualizar el ingreso del miembro del hogar");
-                throw;
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el ingreso del miembro del hogar", ex);
             }
         }
 
@@ -135,8 +133,7 @@ namespace Api.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el ingreso del miembro del hogar");
-                throw;
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el ingreso del miembro del hogar", ex);
             }
         }
     }

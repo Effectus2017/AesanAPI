@@ -5,16 +5,16 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
 using Api.Services;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class ProgramRepository(DapperContext context, ILogger<ProgramRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, RoleManager<Role> roleManager) : IProgramRepository
+public class ProgramRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, RoleManager<Role> roleManager) : IProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<ProgramRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -44,8 +44,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el programa con ID {ProgramId}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el programa con ID {id}", ex);
         }
     }
 
@@ -57,7 +56,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     /// <param name="names">Los nombres de los programas a buscar (separados por coma)</param>
     /// <param name="alls">Si se deben obtener todos los programas</param>
     /// <returns>Los programas</returns>
-    public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls, bool isList)
+    public async Task<dynamic> GetAllProgramsFromDb(int take, int skip, string names, bool alls, bool forDropdown)
     {
         try
         {
@@ -68,7 +67,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             param.Add("@names", names, DbType.String);
             param.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.Programs, take, skip, names, alls);
 
@@ -86,7 +85,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
                         var data = result.Read<dynamic>().Select(_mappingService.MapProgramList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -107,8 +105,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los programas");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los programas", ex);
         }
     }
 
@@ -144,8 +141,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las inscripciones de programas");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener las inscripciones de programas", ex);
         }
     }
 
@@ -158,8 +154,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     {
         try
         {
-            _logger.LogInformation("Insertando nuevo programa");
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@name", programRequest.Name, DbType.String, ParameterDirection.Input);
@@ -174,8 +168,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el programa");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el programa", ex);
         }
     }
 
@@ -188,8 +181,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
     {
         try
         {
-            _logger.LogInformation("Insertando nueva inscripción de programa");
-
             using IDbConnection dbConnection = _context.CreateConnection();
 
             // Crear tabla temporal con los datos
@@ -304,8 +295,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la inscripción del programa");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la inscripción del programa", ex);
         }
     }
 
@@ -385,8 +375,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar sitio directamente: {Message}", ex.Message);
-            throw new Exception($"Error al insertar sitio: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar sitio", ex);
         }
     }
 
@@ -408,8 +397,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el siguiente número de sitio", ex);
         }
     }
 
@@ -437,7 +425,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
             if (id > 0)
             {
-                _logger.LogInformation($"Evaluador {userId} asignado exitosamente al programa {programId}");
                 return true;
             }
 
@@ -445,8 +432,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar evaluador {UserId} al programa {ProgramId}", userId, programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al asignar evaluador {userId} al programa {programId}", ex);
         }
     }
 
@@ -472,7 +458,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
             if (success > 0)
             {
-                _logger.LogInformation($"Evaluador {userId} removido exitosamente del programa {programId}");
                 return true;
             }
 
@@ -480,8 +465,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover evaluador {UserId} del programa {ProgramId}", userId, programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al remover evaluador {userId} del programa {programId}", ex);
         }
     }
 
@@ -498,7 +482,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
             var evaluatorRole = await _roleManager.FindByNameAsync("Evaluador");
             if (evaluatorRole == null)
             {
-                _logger.LogWarning("Rol 'Evaluador' no encontrado en el sistema");
                 return [];
             }
 
@@ -523,8 +506,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener evaluadores del programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener evaluadores del programa {programId}", ex);
         }
     }
 
@@ -553,7 +535,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
 
             if (programsAssigned > 0)
             {
-                _logger.LogInformation($"Evaluador {userId} agregado a {programsAssigned} programas activos");
                 return programsAssigned;
             }
 
@@ -561,8 +542,7 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al agregar evaluador {UserId} a todos los programas activos", userId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al agregar evaluador {userId} a todos los programas activos", ex);
         }
     }
 
@@ -581,7 +561,6 @@ public class ProgramRepository(DapperContext context, ILogger<ProgramRepository>
         _cache.Remove(_appSettings.Cache.Keys.Programs);
         _cache.Remove(_appSettings.Cache.Keys.ProgramInscriptions);
 
-        _logger.LogInformation("Cache invalidado para Program Repository");
     }
 
 }

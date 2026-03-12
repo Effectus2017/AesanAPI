@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,10 +16,10 @@ namespace Api.Controllers;
 [ApiController]
 [Route("group-type")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogger<GroupTypeController> logger) : ControllerBase
+[ValidateModelState]
+public class GroupTypeController(IGroupTypeRepository groupTypeRepository) : ControllerBase
 {
     private readonly IGroupTypeRepository _groupTypeRepository = groupTypeRepository;
-    private readonly ILogger<GroupTypeController> _logger = logger;
 
     /// <summary>
     /// Obtiene un tipo de grupo por su ID
@@ -29,34 +30,19 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Obtiene un tipo de grupo por su ID", Description = "Devuelve un tipo de grupo basado en el ID proporcionado.")]
     public async Task<ActionResult> GetById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id == 0)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo tipo de grupo por ID: {Id}", queryParameters.Id);
-
-                if (queryParameters.Id == 0)
-                {
-                    return BadRequest("El ID del tipo de grupo es requerido");
-                }
-
-                var result = await _groupTypeRepository.GetGroupTypeById(queryParameters.Id);
-
-                if (result == null)
-                {
-                    return NotFound($"Tipo de grupo con ID {queryParameters.Id} no encontrado");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("El ID del tipo de grupo es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _groupTypeRepository.GetGroupTypeById(queryParameters.Id);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de grupo con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al obtener el tipo de grupo");
+            return NotFound($"Tipo de grupo con ID {queryParameters.Id} no encontrado");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -68,27 +54,14 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Obtiene todos los tipos de grupo", Description = "Devuelve una lista de tipos de grupo.")]
     public async Task<ActionResult> GetAllGroupTypes([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _groupTypeRepository.GetAllGroupTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.ForDropdown);
+
+        if (result == null)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _groupTypeRepository.GetAllGroupTypes(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls, queryParameters.IsList);
-
-                if (result == null)
-                {
-                    return NotFound("No se encontraron tipos de grupo");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound("No se encontraron tipos de grupo");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener todos los tipos de grupo");
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de grupo");
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -100,27 +73,14 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Crea un nuevo tipo de grupo", Description = "Crea un nuevo tipo de grupo.")]
     public async Task<ActionResult> Insert([FromBody] DTOGroupType request)
     {
-        try
+        var result = await _groupTypeRepository.InsertGroupType(request);
+
+        if (result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _groupTypeRepository.InsertGroupType(request);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest("No se pudo crear el tipo de grupo");
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al crear el tipo de grupo");
-            return StatusCode(500, "Error interno del servidor al crear el tipo de grupo");
-        }
+
+        return BadRequest("No se pudo crear el tipo de grupo");
     }
 
     /// <summary>
@@ -132,27 +92,14 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Actualiza un tipo de grupo existente", Description = "Actualiza los datos de un tipo de grupo existente.")]
     public async Task<IActionResult> Update([FromBody] DTOGroupType request)
     {
-        try
+        var result = await _groupTypeRepository.UpdateGroupType(request);
+
+        if (!result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _groupTypeRepository.UpdateGroupType(request);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de grupo con ID {request.Id} no encontrado");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Tipo de grupo con ID {request.Id} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el tipo de grupo con ID {Id}", request.Id);
-            return StatusCode(500, "Error interno del servidor al actualizar el tipo de grupo");
-        }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -165,27 +112,14 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Actualiza el orden de visualización de un tipo de grupo", Description = "Actualiza el orden de visualización de un tipo de grupo existente.")]
     public async Task<IActionResult> UpdateDisplayOrder([FromQuery] int groupTypeId, [FromQuery] int displayOrder)
     {
-        try
+        var result = await _groupTypeRepository.UpdateGroupTypeDisplayOrder(groupTypeId, displayOrder);
+
+        if (!result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _groupTypeRepository.UpdateGroupTypeDisplayOrder(groupTypeId, displayOrder);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de grupo con ID {groupTypeId} no encontrado");
-                }
-
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Tipo de grupo con ID {groupTypeId} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del tipo de grupo con ID {Id}", groupTypeId);
-            return StatusCode(500, "Error interno del servidor al actualizar el orden de visualización del tipo de grupo");
-        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -197,27 +131,14 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Elimina un tipo de grupo existente", Description = "Elimina un tipo de grupo existente.")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _groupTypeRepository.DeleteGroupType(queryParameters.Id);
+
+        if (!result)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _groupTypeRepository.DeleteGroupType(queryParameters.Id);
-
-                if (!result)
-                {
-                    return NotFound($"Tipo de grupo con ID {queryParameters.Id} no encontrado");
-                }
-
-                return NoContent();
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound($"Tipo de grupo con ID {queryParameters.Id} no encontrado");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el tipo de grupo con ID {Id}", queryParameters.Id);
-            return StatusCode(500, "Error interno del servidor al eliminar el tipo de grupo");
-        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -229,34 +150,19 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Obtiene la ubicación del sitio por tipo de grupo", Description = "Devuelve la ubicación del sitio basada en el tipo de grupo proporcionado.")]
     public async Task<ActionResult> GetSiteLocationByGroupType([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.GroupTypeId == 0)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo ubicación del sitio para tipo de grupo ID: {GroupTypeId}", queryParameters.GroupTypeId);
-
-                if (queryParameters.GroupTypeId == 0)
-                {
-                    return BadRequest("El ID del tipo de grupo es requerido");
-                }
-
-                var result = await _groupTypeRepository.GetSiteLocationByGroupType(queryParameters.GroupTypeId);
-
-                if (result == null)
-                {
-                    return NotFound($"No se encontró ubicación del sitio para el tipo de grupo con ID {queryParameters.GroupTypeId}");
-                }
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("El ID del tipo de grupo es requerido");
         }
-        catch (Exception ex)
+
+        var result = await _groupTypeRepository.GetSiteLocationByGroupType(queryParameters.GroupTypeId);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener la ubicación del sitio para el tipo de grupo con ID {GroupTypeId}", queryParameters.GroupTypeId);
-            return StatusCode(500, "Error interno del servidor al obtener la ubicación del sitio");
+            return NotFound($"No se encontró ubicación del sitio para el tipo de grupo con ID {queryParameters.GroupTypeId}");
         }
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -268,28 +174,13 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository, ILogg
     [SwaggerOperation(Summary = "Obtiene tipos de grupo por programa", Description = "Devuelve los tipos de grupo válidos para un programa específico.")]
     public async Task<ActionResult> GetGroupTypesByProgram([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo tipos de grupo para el programa: {ProgramId}", queryParameters.ProgramId);
-
-                if (queryParameters.ProgramId == 0 || !queryParameters.ProgramId.HasValue)
-                {
-                    return BadRequest("El ID del programa es requerido");
-                }
-
-                var result = await _groupTypeRepository.GetGroupTypesByProgram(queryParameters.ProgramId.Value);
-
-                return Ok(result);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("El ID del programa es requerido");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los tipos de grupo para el programa {ProgramId}", queryParameters.ProgramId);
-            return StatusCode(500, "Error interno del servidor al obtener los tipos de grupo");
-        }
+
+        var result = await _groupTypeRepository.GetGroupTypesByProgram(queryParameters.ProgramId.Value);
+
+        return Ok(result);
     }
 }

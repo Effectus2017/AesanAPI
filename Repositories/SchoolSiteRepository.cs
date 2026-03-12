@@ -9,16 +9,16 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
 /// <summary>
 /// Repositorio para operaciones con SchoolSite
 /// </summary>
-public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISchoolSiteRepository
+public class SchoolSiteRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISchoolSiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SchoolSiteRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -51,8 +51,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener sites por school {SchoolId}: {Message}", schoolId, ex.Message);
-            throw new Exception($"Error al obtener sites por school: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener sites por school {schoolId}", ex);
         }
     }
 
@@ -78,8 +77,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener school por site {SiteId}: {Message}", siteId, ex.Message);
-            throw new Exception($"Error al obtener school por site: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener school por site {siteId}", ex);
         }
     }
 
@@ -107,7 +105,6 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
 
             if (id == 0)
             {
-                _logger.LogError("Error al insertar la asignación School-Site");
                 return false;
             }
 
@@ -117,8 +114,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la asignación School-Site: {Message}", ex.Message);
-            throw new Exception($"Error al insertar la asignación School-Site: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la asignación School-Site", ex);
         }
         finally
         {
@@ -160,8 +156,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la asignación School-Site: {Message}", ex.Message);
-            throw new Exception($"Error al actualizar la asignación School-Site: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la asignación School-Site", ex);
         }
     }
 
@@ -182,8 +177,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al contar sitios Comedor por school {SchoolId}: {Message}", schoolId, ex.Message);
-            throw new Exception($"Error al contar sitios Comedor por escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al contar sitios Comedor por escuela {schoolId}", ex);
         }
     }
 
@@ -203,8 +197,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al contar sitios por school {SchoolId}: {Message}", schoolId, ex.Message);
-            throw new Exception($"Error al contar sitios por escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al contar sitios por escuela {schoolId}", ex);
         }
     }
 
@@ -231,8 +224,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener rango Comedor por school {SchoolId}: {Message}", schoolId, ex.Message);
-            throw new Exception($"Error al obtener rango del Comedor por escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener rango del Comedor por escuela {schoolId}", ex);
         }
     }
 
@@ -258,8 +250,7 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la asignación School-Site: {Message}", ex.Message);
-            throw new Exception($"Error al eliminar la asignación School-Site: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar la asignación School-Site", ex);
         }
     }
 
@@ -269,6 +260,5 @@ public class SchoolSiteRepository(DapperContext context, ILogger<SchoolSiteRepos
     private void InvalidateCache()
     {
         _cache.Remove(_appSettings.Cache.Keys.SchoolSites);
-        _logger.LogInformation("Cache invalidado para SchoolSite Repository");
     }
 }

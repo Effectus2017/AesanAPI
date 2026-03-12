@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingPeriodRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOperatingPeriodRepository
+public class OperatingPeriodRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOperatingPeriodRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<OperatingPeriodRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -41,8 +41,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting operating period by id: {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error getting operating period by id: {id}", ex);
         }
     }
 
@@ -54,7 +53,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
     /// <param name="name">El nombre del período operativo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los períodos operativos.</param>
     /// <returns>Una lista de períodos operativos.</returns>
-    public async Task<dynamic> GetAllOperatingPeriods(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllOperatingPeriods(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -65,7 +64,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.OperatingPeriods, take, skip, name, alls);
                 return await _cache.CacheQuery(
@@ -82,7 +81,6 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
                         var data = result.Read<dynamic>().Select(_mappingService.MapOperatingPeriodList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -103,8 +101,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all operating periods");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error getting all operating periods", ex);
         }
     }
 
@@ -139,8 +136,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el período operativo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el período operativo", ex);
         }
     }
 
@@ -176,8 +172,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el período operativo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el período operativo", ex);
         }
     }
 
@@ -212,8 +207,7 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el período operativo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el período operativo", ex);
         }
     }
 
@@ -230,7 +224,6 @@ public class OperatingPeriodRepository(DapperContext context, ILogger<OperatingP
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.OperatingPeriods);
-        _logger.LogInformation("Cache invalidado para OperatingPeriod Repository");
     }
 
 }

@@ -4,18 +4,17 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.DTO;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAreaTypeRepository
+public class AreaTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAreaTypeRepository
 {
     private readonly DapperContext _context = context;
-    private readonly ILogger<AreaTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -37,8 +36,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting area type by id: {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error getting area type by id: {id}", ex);
         }
     }
 
@@ -49,9 +47,9 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
     /// <param name="skip">El número de tipos de área a saltar</param>
     /// <param name="name">El nombre del tipo de área</param>
     /// <param name="alls">Indica si se deben obtener todos los tipos de área</param>
-    /// <param name="isList">Indica si se debe retornar una lista o un objeto</param>
+    /// <param name="forDropdown">Si es para dropdown, devuelve solo la lista; si no, devuelve { data, count }</param>
     /// <returns>Los tipos de área obtenidos</returns>
-    public async Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllAreaTypes(int take, int skip, string name, bool alls, bool forDropdown)
     {
         try
         {
@@ -61,9 +59,8 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", name, DbType.String);
             parameters.Add("@alls", alls, DbType.Boolean);
-            parameters.Add("@isList", isList, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.AreaTypes, take, skip, name, alls);
                 return await _cache.CacheQuery(
@@ -75,7 +72,6 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
                         var data = result.Read<dynamic>().Select(_mappingService.MapAreaTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -91,8 +87,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting area types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, isList={IsList}", take, skip, name, alls, isList);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error getting area types with parameters: take={take}, skip={skip}, name={name}, alls={alls}, forDropdown={forDropdown}", ex);
         }
     }
 
@@ -118,8 +113,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error inserting area type: {AreaType}", areaType);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error inserting area type", ex);
         }
     }
 
@@ -144,8 +138,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating area type: {AreaType}", areaType);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error updating area type", ex);
         }
     }
 
@@ -166,8 +159,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting area type with id {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error deleting area type with id {id}", ex);
         }
     }
 
@@ -189,8 +181,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de área para la ciudad {CityId}", cityId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de área para la ciudad {cityId}", ex);
         }
     }
 

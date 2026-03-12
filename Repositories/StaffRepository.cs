@@ -10,12 +10,12 @@ using Api.Services.Mappers;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
 public class StaffRepository(
     DapperContext context,
-    ILogger<StaffRepository> logger,
     IMemoryCache cache,
     IOptions<ApplicationSettings> appSettings,
     MappingService mappingService,
@@ -26,7 +26,6 @@ public class StaffRepository(
 ) : IStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<StaffRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -72,8 +71,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el miembro del staff con ID {StaffId}", id);
-            throw new Exception($"Error al obtener el miembro del staff con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el miembro del staff con ID {id}", ex);
         }
     }
 
@@ -97,8 +95,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el miembro del staff con UserId {UserId}", userId);
-            throw new Exception($"Error al obtener el miembro del staff con UserId {userId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el miembro del staff con UserId {userId}", ex);
         }
     }
 
@@ -110,10 +107,10 @@ public class StaffRepository(
     /// <param name="name">El nombre del miembro del staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los miembros del staff</param>
     /// <param name="excludeRelated">Si es true, excluye staff ya relacionado en StaffRelationship (usado en modal Add)</param>
-    /// <param name="isList">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
+    /// <param name="forDropdown">DEPRECATED - Usar excludeRelated en su lugar (mantenido por compatibilidad)</param>
     /// <param name="staffTypeId">ID del tipo de staff para filtrar</param>
     /// <returns>Los miembros del staff</returns>
-    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool isList, int? staffTypeId = null, int? agencyId = null)
+    public async Task<dynamic> GetAllStaffFromDb(int take, int skip, string name, bool alls, bool excludeRelated, bool forDropdown, int? staffTypeId = null, int? agencyId = null)
     {
         try
         {
@@ -127,7 +124,7 @@ public class StaffRepository(
             param.Add("@agencyId", agencyId == 0 ? null : agencyId, DbType.Int32);
             param.Add("@excludeRelated", excludeRelated, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 var result = await dbConnection.QueryMultipleAsync("101_GetAllStaff", param, commandType: CommandType.StoredProcedure);
 
@@ -156,8 +153,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los miembros del staff");
-            throw new Exception($"Error al obtener los miembros del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los miembros del staff", ex);
         }
     }
 
@@ -171,8 +167,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Insertando nuevo miembro del staff - Email: {Email}, PositionId: {PositionId}, StaffTypeId: {StaffTypeId}, StatusId: {StatusId}, UserId: {UserId}", staffRequest.Email, staffRequest.PositionId, staffRequest.StaffTypeId, staffRequest.StatusId, staffRequest.UserId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@firstName", staffRequest.FirstName ?? "", DbType.String, ParameterDirection.Input);
@@ -224,8 +218,6 @@ public class StaffRepository(
                 // Si se proporcionó una sitio, crear la asociación
                 if (staffRequest.SiteId.HasValue && staffRequest.SiteId.Value > 0)
                 {
-                    _logger.LogInformation("Asignando staff {StaffId} a la sitio {SiteId}", staffId, staffRequest.SiteId.Value);
-
                     var siteStaffRequest = new SiteStaffRequest
                     {
                         SiteId = staffRequest.SiteId.Value,
@@ -237,11 +229,9 @@ public class StaffRepository(
                     try
                     {
                         await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
-                        _logger.LogInformation("Staff {StaffId} asignado exitosamente a la sitio {SiteId}", staffId, staffRequest.SiteId.Value);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        _logger.LogWarning(ex, "Error al asignar staff {StaffId} a la sitio {SiteId}, pero el staff fue creado exitosamente", staffId, staffRequest.SiteId.Value);
                         // No lanzar excepción aquí porque el staff ya fue creado exitosamente
                     }
                 }
@@ -258,14 +248,14 @@ public class StaffRepository(
 
             if (staffId <= 0)
             {
-                throw new Exception($"Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
+                throw new ApiException(ErrorCode.VALIDATION_ERROR, "Error al insertar el miembro del staff: El stored procedure no retornó un ID válido. Esto puede indicar un error de foreign key constraint o un problema con los datos enviados.");
             }
 
             return staffId;
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error al insertar el miembro del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el miembro del staff", ex);
         }
     }
 
@@ -278,8 +268,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Actualizando miembro del staff con ID {StaffId}", staffRequest.Id);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", staffRequest.Id, DbType.Int32);
@@ -353,8 +341,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el miembro del staff con ID {StaffId}", staffRequest.Id);
-            throw new Exception($"Error al actualizar el miembro del staff con ID {staffRequest.Id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el miembro del staff con ID {staffRequest.Id}", ex);
         }
     }
 
@@ -375,8 +362,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar contratos por clasificación para staff {StaffId}", staffId);
-            throw new Exception($"Error al eliminar contratos por clasificación del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar contratos por clasificación del staff", ex);
         }
         finally
         {
@@ -411,8 +397,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar contrato por clasificación para staff {StaffId}", staffId);
-            throw new Exception($"Error al insertar contrato por clasificación del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar contrato por clasificación del staff", ex);
         }
         finally
         {
@@ -439,8 +424,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar origen de salario para staff {StaffId}", staffId);
-            throw new Exception($"Error al insertar origen de salario del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar origen de salario del staff", ex);
         }
         finally
         {
@@ -467,8 +451,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar orígenes de salario para staff {StaffId}", staffId);
-            throw new Exception($"Error al eliminar orígenes de salario del staff: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar orígenes de salario del staff", ex);
         }
         finally
         {
@@ -499,8 +482,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Eliminando miembro del staff con ID {StaffId}", id);
-
             // Obtener el registro actual para auditoría
             var currentStaff = await GetStaffById(id);
 
@@ -532,8 +513,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el miembro del staff con ID {StaffId}", id);
-            throw new Exception($"Error al eliminar el miembro del staff con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el miembro del staff con ID {id}", ex);
         }
     }
 
@@ -546,8 +526,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Eliminando completamente el miembro del staff con ID {StaffId} y todas sus relaciones", id);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", id, DbType.Int32);
@@ -560,17 +538,14 @@ public class StaffRepository(
             if (result > 0)
             {
                 InvalidateCache(id);
-                _logger.LogInformation("Staff {StaffId} y todas sus relaciones eliminadas exitosamente", id);
                 return true;
             }
 
-            _logger.LogWarning("No se pudo eliminar el staff con ID {StaffId}", id);
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar completamente el miembro del staff con ID {StaffId}: {Message}", id, ex.Message);
-            throw new Exception($"Error al eliminar completamente el miembro del staff con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar completamente el miembro del staff con ID {id}", ex);
         }
     }
 
@@ -584,8 +559,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Actualizando imagen del staff con ID {StaffId}", staffId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", staffId, DbType.Int32, ParameterDirection.Input);
@@ -595,8 +568,6 @@ public class StaffRepository(
 
             if (rowsAffected > 0)
             {
-                _logger.LogInformation("Imagen del staff con ID {StaffId} actualizada exitosamente", staffId);
-
                 // Invalidar cache para este staff
                 InvalidateCache(staffId);
 
@@ -604,14 +575,12 @@ public class StaffRepository(
             }
             else
             {
-                _logger.LogWarning("No se pudo actualizar la imagen del staff con ID {StaffId}", staffId);
                 return false;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la imagen del staff con ID {StaffId}", staffId);
-            throw new Exception($"Error al actualizar la imagen del staff con ID {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la imagen del staff con ID {staffId}", ex);
         }
     }
 
@@ -625,8 +594,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Convirtiendo miembro del staff con ID {StaffId} a usuario", staffId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", staffId, DbType.Int32);
@@ -644,8 +611,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al convertir miembro del staff con ID {StaffId} a usuario", staffId);
-            throw new Exception($"Error al convertir miembro del staff con ID {staffId} a usuario: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al convertir miembro del staff con ID {staffId} a usuario", ex);
         }
     }
 
@@ -659,8 +625,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Actualizando estado activo del miembro del staff con ID {StaffId}", staffId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", staffId, DbType.Int32);
@@ -685,8 +649,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar estado activo del miembro del staff con ID {StaffId}", staffId);
-            throw new Exception($"Error al actualizar estado activo del miembro del staff con ID {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar estado activo del miembro del staff con ID {staffId}", ex);
         }
     }
 
@@ -702,20 +665,17 @@ public class StaffRepository(
             var staffResult = await GetStaffById(staffId);
             if (staffResult == null)
             {
-                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - Staff con ID {StaffId} no encontrado", staffId);
                 return;
             }
 
             // Convertir a DTOStaff (GetStaffById ya retorna DTOStaff mapeado)
             if (staffResult is not DTOStaff staff)
             {
-                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - No se pudo convertir el staff con ID {StaffId} a DTOStaff", staffId);
                 return;
             }
 
             if (!staff.AgencyId.HasValue)
             {
-                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - Staff {StaffId} no tiene AgencyId", staffId);
                 return;
             }
 
@@ -723,7 +683,6 @@ public class StaffRepository(
             var evaluatorUserId = await _agencyRepository.GetEvaluatorUserIdByAgencyId(staff.AgencyId.Value);
             if (string.IsNullOrEmpty(evaluatorUserId))
             {
-                _logger.LogWarning("NotifyEvaluatorOnStaffInactivation - No se encontró evaluador asignado para la agencia {AgencyId}", staff.AgencyId.Value);
                 return;
             }
 
@@ -749,15 +708,10 @@ public class StaffRepository(
             };
 
             // Enviar mensaje interno Y email usando templates separados
-            _logger.LogInformation("NotifyEvaluatorOnStaffInactivation - Enviando notificación al evaluador {EvaluatorUserId} para staff {StaffId}", evaluatorUserId, staffId);
-
             await _messageTemplateService.SendMessageAndEmailFromTemplate(messageTemplateKey: "StaffInactivated", emailTemplateKey: "StaffInactivated", recipientUserId: evaluatorUserId, variables: variables, language: "es");
-
-            _logger.LogInformation("NotifyEvaluatorOnStaffInactivation - Notificación enviada exitosamente para staff {StaffId}", staffId);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al enviar notificación al evaluador para staff {StaffId}: {Message}", staffId, ex.Message);
             // No lanzar excepción para no fallar la operación principal
         }
     }
@@ -775,7 +729,6 @@ public class StaffRepository(
 
             if (staff == null)
             {
-                _logger.LogWarning("NotifySuperAdminIfNutreUser - Staff con ID {StaffId} no encontrado", staffId);
                 return;
             }
             
@@ -790,7 +743,6 @@ public class StaffRepository(
 
             if (superAdminIds.Count == 0)
             {
-                _logger.LogWarning("NotifySuperAdminIfNutreUser - No se encontraron Super Admins para notificar sobre staff {StaffId}", staffId);
                 return;
             }
 
@@ -817,8 +769,6 @@ public class StaffRepository(
             };
 
             // 5. Enviar notificaciones a cada Super Admin
-            _logger.LogInformation("NotifySuperAdminIfNutreUser - Enviando notificación a {Count} Super Admins para staff {StaffId}", superAdminIds.Count, staffId);
-
             foreach (var adminId in superAdminIds)
             {
                 await _messageTemplateService.SendMessageAndEmailFromTemplate(
@@ -830,9 +780,8 @@ public class StaffRepository(
                 );
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al enviar notificación a Super Admins para staff {StaffId}: {Message}", staffId, ex.Message);
         }
     }
 
@@ -858,7 +807,6 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener IDs de Super Admins");
             return new List<string>();
         }
     }
@@ -873,8 +821,6 @@ public class StaffRepository(
     {
         try
         {
-            _logger.LogInformation("Actualizando AgencyId del staff con ID {StaffId} a {AgencyId}", staffId, agencyId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", staffId, DbType.Int32);
@@ -892,8 +838,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el AgencyId del staff con ID {StaffId}", staffId);
-            throw new Exception($"Error al actualizar el AgencyId del staff con ID {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el AgencyId del staff con ID {staffId}", ex);
         }
     }
 
@@ -935,8 +880,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los miembros del staff de la agencia {AgencyId}", agencyId);
-            throw new Exception($"Error al obtener los miembros del staff de la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los miembros del staff de la agencia {agencyId}", ex);
         }
     }
 
@@ -960,8 +904,7 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener historial de auditoría para staff {StaffId}", staffId);
-            throw new Exception($"Error al obtener historial de auditoría para staff {staffId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener historial de auditoría para staff {staffId}", ex);
         }
     }
 
@@ -982,15 +925,12 @@ public class StaffRepository(
             // Caso 1: No hay asignación actual y no se proporcionó nueva sitio → No hacer nada
             if (currentAssignment == null && (!newSiteId.HasValue || newSiteId.Value <= 0))
             {
-                _logger.LogInformation("No hay cambios en la asignación de sitio para el staff {StaffId}", staffId);
                 return;
             }
 
             // Caso 2: No hay asignación actual pero se proporcionó una sitio → Crear nueva
             if (currentAssignment == null && newSiteId.HasValue && newSiteId.Value > 0)
             {
-                _logger.LogInformation("Creando nueva asignación: Staff {StaffId} → Sitio {SiteId}", staffId, newSiteId.Value);
-
                 var siteStaffRequest = new SiteStaffRequest
                 {
                     SiteId = newSiteId.Value,
@@ -1000,24 +940,19 @@ public class StaffRepository(
                 };
 
                 await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
-                _logger.LogInformation("Asignación creada exitosamente");
                 return;
             }
 
             // Caso 3: Hay asignación actual pero no se proporcionó sitio → Desasignar
             if (currentAssignment != null && (!newSiteId.HasValue || newSiteId.Value <= 0))
             {
-                _logger.LogInformation("Eliminando asignación: Staff {StaffId} de Sitio {SiteId}", staffId, currentAssignment.SiteId);
                 await _siteStaffRepository.UnassignStaffFromSite(currentAssignment.SiteId, staffId);
-                _logger.LogInformation("Asignación eliminada exitosamente");
                 return;
             }
 
             // Caso 4: Hay asignación actual y cambió la sitio → Desasignar anterior y crear nueva
             if (currentAssignment != null && newSiteId.HasValue && newSiteId.Value > 0 && currentAssignment.SiteId != newSiteId.Value)
             {
-                _logger.LogInformation("Cambiando asignación: Staff {StaffId} de Sitio {OldSiteId} → {NewSiteId}", staffId, currentAssignment.SiteId, newSiteId.Value);
-
                 // Desasignar de la sitio anterior
                 await _siteStaffRepository.UnassignStaffFromSite(currentAssignment.SiteId, staffId);
 
@@ -1031,7 +966,6 @@ public class StaffRepository(
                 };
 
                 await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
-                _logger.LogInformation("Asignación actualizada exitosamente");
                 return;
             }
 
@@ -1043,22 +977,14 @@ public class StaffRepository(
 
                 if (isPrimaryChanged)
                 {
-                    _logger.LogInformation("Actualizando asignación existente: Staff {StaffId} en Sitio {SiteId}", staffId, newSiteId.Value);
-
                     var updateRequest = new UpdateSiteStaffRequest { IsPrimary = isPrimary, Comments = $"Asignación actualizada automáticamente" };
 
                     await _siteStaffRepository.UpdateSiteStaff(currentAssignment.Id, updateRequest);
-                    _logger.LogInformation("Asignación actualizada exitosamente");
-                }
-                else
-                {
-                    _logger.LogInformation("No hay cambios en la asignación de sitio para el staff {StaffId}", staffId);
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error al manejar la asignación de sitio para el staff {StaffId}, pero la actualización del staff fue exitosa", staffId);
             // No lanzar excepción aquí porque el staff ya fue actualizado exitosamente
         }
     }
@@ -1076,7 +1002,6 @@ public class StaffRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al invalidar caché para miembro del staff con ID {StaffId}", staffId);
         }
     }
 }

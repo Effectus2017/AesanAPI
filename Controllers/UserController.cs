@@ -6,6 +6,7 @@ using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Api.Filters;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json;
 
@@ -19,6 +20,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("user")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingService, IUserRoleExtensionRequestRepository extensionRequestRepository, IEmailService emailService) : Controller
 {
     private readonly ILoggingService _loggingService = loggingService;
@@ -40,22 +42,9 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Obtiene un usuario por su ID", Description = "Devuelve un usuario basado en el ID proporcionado.")]
     public async Task<IActionResult> GetUserById([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo usuario con ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-                DTOUser _result = await _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al obtener usuario", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        _loggingService.LogInformation("Obteniendo usuario con ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+        DTOUser _result = await _unitOfWork.UserRepository.GetUserById(queryParameters.UserId);
+        return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// <summary>
@@ -68,22 +57,9 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Obtiene un usuario por su ID usando SP", Description = "Devuelve un usuario completo con datos desde Staff y Agency usando Stored Procedure.")]
     public async Task<IActionResult> GetUserByIdWithSP([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo usuario con SP, ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-                DTOUser _result = await _unitOfWork.UserRepository.GetUserByIdWithSP(queryParameters.UserId);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al obtener usuario con SP", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        _loggingService.LogInformation("Obteniendo usuario con SP, ID: " + queryParameters.UserId, new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+        DTOUser _result = await _unitOfWork.UserRepository.GetUserByIdWithSP(queryParameters.UserId);
+        return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// <summary>
@@ -95,55 +71,28 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Obtiene todos los usuarios de la base de datos", Description = "Devuelve una lista de todos los usuarios.")]
     public async Task<IActionResult> GetAllUsersFromDb([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo lista de usuarios", new Dictionary<string, string> {
-                    { "Take", queryParameters.Take.ToString() },
-                    { "Skip", queryParameters.Skip.ToString() },
-                    { "Name", queryParameters.Name ?? "null" }
-                });
-                dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId, queryParameters.IsList);
+        _loggingService.LogInformation("Obteniendo lista de usuarios", new Dictionary<string, string> {
+            { "Take", queryParameters.Take.ToString() },
+            { "Skip", queryParameters.Skip.ToString() },
+            { "Name", queryParameters.Name ?? "null" }
+        });
+        dynamic _result = _unitOfWork.UserRepository.GetAllUsersFromDb(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.UserId, queryParameters.ForDropdown);
 
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al obtener lista de usuarios", new Dictionary<string, string> {
-                { "Take", queryParameters.Take.ToString() },
-                { "Skip", queryParameters.Skip.ToString() },
-                { "Name", queryParameters.Name ?? "null" }
-            });
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// <summary>
     /// Obtiene todos los roles de la base de datos.
     /// </summary>
     /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN); si false, devuelve todos los roles.</param>
-    /// <param name="isList">Si true, devuelve solo la lista (array); si false, devuelve { data, count }.</param>
-    /// <returns>Lista de roles o objeto con data y count según isList.</returns>
+    /// <param name="forDropdown">Si true, devuelve solo la lista (array); si false, devuelve { data, count }.</param>
+    /// <returns>Lista de roles o objeto con data y count según forDropdown.</returns>
     [HttpGet("get-all-roles-from-db")]
-    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Con isList=true devuelve solo el array de roles. Con isList=false devuelve { data, count }. Con aesanOnly=true solo roles AESAN.")]
-    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false, [FromQuery] bool isList = false)
+    [SwaggerOperation(Summary = "Obtiene todos los roles de la base de datos", Description = "Con forDropdown=true devuelve solo el array de roles. Con forDropdown=false devuelve { data, count }. Con aesanOnly=true solo roles AESAN.")]
+    public async Task<IActionResult> GetAllRolesFromDb([FromQuery] bool aesanOnly = false, [FromQuery] bool forDropdown = false)
     {
-        try
-        {
-            if (!ModelState.IsValid)
-                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-
-            var result = await _unitOfWork.UserRepository.GetAllRolesFromDb(aesanOnly, isList);
-            return result != null ? Ok(result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        var result = await _unitOfWork.UserRepository.GetAllRolesFromDb(aesanOnly, forDropdown);
+        return result != null ? Ok(result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// <summary>
@@ -159,18 +108,8 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
         [FromQuery] string? primaryRoleId = null,
         [FromQuery] List<string>? excludeRoleIds = null)
     {
-        try
-        {
-            if (!ModelState.IsValid)
-                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-
-            var roles = await _unitOfWork.UserRepository.GetAvailableSecondaryRoles(primaryRoleId, excludeRoleIds);
-            return Ok(new { data = roles, count = roles.Count });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        var roles = await _unitOfWork.UserRepository.GetAvailableSecondaryRoles(primaryRoleId, excludeRoleIds);
+        return Ok(new { data = roles, count = roles.Count });
     }
 
     /// <summary>
@@ -182,21 +121,13 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Obtiene los roles de un usuario", Description = "Devuelve todos los roles asignados al usuario (primario + secundarios activos).")]
     public async Task<IActionResult> GetUserRoles(string userId)
     {
-        try
+        if (string.IsNullOrWhiteSpace(userId))
         {
-            if (!ModelState.IsValid)
-                return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-
-            if (string.IsNullOrWhiteSpace(userId))
-                return StatusCode(StatusCodes.Status400BadRequest, new { message = "UserId es requerido" });
-
-            var roles = await _unitOfWork.UserRepository.GetUserRoles(userId);
-            return Ok(new { data = roles, count = roles.Count });
+            return StatusCode(StatusCodes.Status400BadRequest, new { message = "UserId es requerido" });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+
+        var roles = await _unitOfWork.UserRepository.GetUserRoles(userId);
+        return Ok(new { data = roles, count = roles.Count });
     }
 
     /// <summary>
@@ -207,20 +138,8 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Obtiene todos los programas de la base de datos usando un Stored Procedure", Description = "Devuelve una lista de todos los programas.")]
     public async Task<IActionResult> GetAllUsersFromDbWithSP([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.IsList, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
-                return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        dynamic _result = await _unitOfWork.UserRepository.GetAllUsersFromDbWithSP(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.AgencyId, queryParameters.ForDropdown, queryParameters.Roles, queryParameters.Alls, queryParameters.ExcludeAdministrators, queryParameters.IsPropietary);
+        return _result != null ? StatusCode(StatusCodes.Status200OK, _result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// ------------------------------------------------------------------------------------------------
@@ -238,34 +157,18 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Aplicación al programa de auspiciadores", Description = "Crea una agencia y un usuario en el sistema.")]
     public async Task<IActionResult> RegisterUserAgency([FromBody] UserAgencyRequest model)
     {
-        try
+        _loggingService.LogInformation("Registrando usuario en la agencia", new Dictionary<string, string> {
+            { "Email", model.Staff?.Email ?? "null" },
+            { "AgencyName", model.Agency?.Name ?? "null" }
+        });
+
+        if (model.Agency == null || model.Staff == null)
         {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Registrando usuario en la agencia", new Dictionary<string, string> {
-                    { "Email", model.Staff?.Email ?? "null" },
-                    { "AgencyName", model.Agency?.Name ?? "null" }
-                });
-
-                if (model.Agency == null || model.Staff == null)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Los campos 'Agency' y 'Staff' son requeridos." });
-                }
-
-                var result = await _unitOfWork.UserRepository.RegisterUserAgency(model);
-                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Los campos 'Agency' y 'Staff' son requeridos." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al registrar usuario en agencia", new Dictionary<string, string> {
-                { "Email", model.Staff?.Email ?? "null" },
-                { "AgencyName", model.Agency?.Name ?? "null" }
-            });
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+
+        var result = await _unitOfWork.UserRepository.RegisterUserAgency(model);
+        return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// <summary>
@@ -277,34 +180,21 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Agrega un usuario a la base de datos", Description = "Agrega un usuario a la base de datos.")]
     public async Task<IActionResult> AddUserToDb([FromBody] DTOUser entity, [FromQuery] QueryParameters queryParameters)
     {
-        try
+        _loggingService.LogInformation("Agregando usuario a la base de datos", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
+
+        if (entity == null)
         {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Agregando usuario a la base de datos", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
-
-                if (entity == null)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
-                }
-
-                var usePrimarySecondary = !string.IsNullOrWhiteSpace(entity.PrimaryRoleName);
-                if (!usePrimarySecondary && (entity.Roles == null || !entity.Roles.Any()))
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe asignar al menos un rol: use 'Roles' (lista) o 'PrimaryRoleName' (y opcionalmente 'SecondaryRoles')." });
-                }
-
-                var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles ?? new List<string>(), queryParameters.AgencyId);
-                return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
-
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El campo 'entity' es requerido." });
         }
-        catch (Exception ex)
+
+        var usePrimarySecondary = !string.IsNullOrWhiteSpace(entity.PrimaryRoleName);
+        if (!usePrimarySecondary && (entity.Roles == null || !entity.Roles.Any()))
         {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe asignar al menos un rol: use 'Roles' (lista) o 'PrimaryRoleName' (y opcionalmente 'SecondaryRoles')." });
         }
+
+        var result = await _unitOfWork.UserRepository.RegisterUser(entity, entity.Roles ?? new List<string>(), queryParameters.AgencyId);
+        return result != null ? StatusCode(StatusCodes.Status200OK, result) : StatusCode(StatusCodes.Status400BadRequest, ModelState);
     }
 
     /// <summary>
@@ -318,55 +208,43 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [HttpPut("update-user-from-db-with-sp")]
     public async Task<IActionResult> PutWithSP([FromBody] DTOUser entity, [FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (entity == null)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-            }
+            return BadRequest(new { Message = "La entidad no puede ser nula" });
+        }
 
-            if (entity == null)
-            {
-                return BadRequest(new { Message = "La entidad no puede ser nula" });
-            }
+        _loggingService.LogInformation("Iniciando actualización de usuario con SP", new Dictionary<string, string>
+        {
+            { "User", JsonSerializer.Serialize(entity) },
+            { "UserId", entity.Id },
+            { "Email", entity.Email },
+            { "AgencyId", entity.AgencyId?.ToString() ?? "N/A" }
+        });
 
-            _loggingService.LogInformation("Iniciando actualización de usuario con SP", new Dictionary<string, string>
+        // Obtener el ID del usuario logueado
+        var currentUserId = queryParameters.CurrentUserId;
+
+        if (string.IsNullOrEmpty(currentUserId))
+        {
+            await _loggingService.LogError(new Exception("No se pudo obtener el ID del usuario logueado"), "Error al obtener usuario logueado");
+            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo identificar al usuario" });
+        }
+
+        bool result = await _unitOfWork.UserRepository.UpdateWithSP(entity, currentUserId);
+
+        if (result)
+        {
+            _loggingService.LogInformation("Usuario actualizado exitosamente con SP", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
+            return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
+        }
+        else
+        {
+            await _loggingService.LogError(new Exception("UpdateWithSP retornó false"), "Fallo en actualización de usuario con SP", new Dictionary<string, string>
             {
                 { "User", JsonSerializer.Serialize(entity) },
-                { "UserId", entity.Id },
-                { "Email", entity.Email },
-                { "AgencyId", entity.AgencyId?.ToString() ?? "N/A" }
+                { "UserId", entity.Id }
             });
-
-            // Obtener el ID del usuario logueado
-            var currentUserId = queryParameters.CurrentUserId;
-
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                await _loggingService.LogError(new Exception("No se pudo obtener el ID del usuario logueado"), "Error al obtener usuario logueado");
-                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo identificar al usuario" });
-            }
-
-            bool result = await _unitOfWork.UserRepository.UpdateWithSP(entity, currentUserId);
-
-            if (result)
-            {
-                _loggingService.LogInformation("Usuario actualizado exitosamente con SP", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
-                return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
-            }
-            else
-            {
-                await _loggingService.LogError(new Exception("UpdateWithSP retornó false"), "Fallo en actualización de usuario con SP", new Dictionary<string, string>
-                {
-                    { "User", JsonSerializer.Serialize(entity) },
-                    { "UserId", entity.Id }
-                });
-                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar el usuario" });
-            }
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Valid = false, Message = "Error interno al actualizar el usuario", Detail = ex.Message });
+            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar el usuario" });
         }
     }
 
@@ -377,40 +255,45 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Solicitar extensión de rol temporal", Description = "Crea una solicitud de extensión y notifica por email a administradores.")]
     public async Task<IActionResult> RequestRoleExtension([FromBody] RoleExtensionRequestRequest request, [FromQuery] QueryParameters queryParameters)
     {
-        try
+        var userId = queryParameters.CurrentUserId ?? queryParameters.UserId;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = queryParameters.CurrentUserId ?? queryParameters.UserId;
-            if (string.IsNullOrEmpty(userId))
-                return StatusCode(StatusCodes.Status401Unauthorized, new { Message = "Usuario no identificado." });
-
-            if (request.RequestedValidTo == default)
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "RequestedValidTo es requerido." });
-
-            var roleId = request.RoleId;
-            if (string.IsNullOrEmpty(roleId) && !string.IsNullOrWhiteSpace(request.RoleName))
-                roleId = await _unitOfWork.UserRepository.GetRoleIdByNameAsync(request.RoleName!.Trim());
-            if (string.IsNullOrEmpty(roleId))
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe indicar RoleId o RoleName válido." });
-
-            var id = await _extensionRequestRepository.InsertAsync(userId, roleId, request.RequestedValidTo, request.Reason);
-            if (id <= 0)
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "No se pudo crear la solicitud." });
-
-            var user = await _unitOfWork.UserRepository.GetUserByIdWithSP(userId);
-            var userName = user != null ? $"{user.FirstName} {user.FatherLastName}".Trim() : "Usuario";
-            var userEmail = user?.Email ?? "";
-            var roleName = request.RoleName ?? (user?.SecondaryRoles?.FirstOrDefault(r => r.RoleId == roleId)?.RoleName) ?? "Rol temporal";
-            var adminEmails = await _unitOfWork.UserRepository.GetUserEmailsByRoleNameAsync("administrator");
-            if (adminEmails != null && adminEmails.Any())
-                await _emailService.SendRoleExtensionRequestToAdmins(adminEmails, userName, userEmail, roleName, request.RequestedValidTo, request.Reason);
-
-            return StatusCode(StatusCodes.Status200OK, new { Id = id, Message = "Solicitud enviada. Un administrador revisará su petición." });
+            return StatusCode(StatusCodes.Status401Unauthorized, new { Message = "Usuario no identificado." });
         }
-        catch (Exception ex)
+
+        if (request.RequestedValidTo == default)
         {
-            await _loggingService.LogError(ex, "Error al solicitar extensión de rol");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "RequestedValidTo es requerido." });
         }
+
+        var roleId = request.RoleId;
+        if (string.IsNullOrEmpty(roleId) && !string.IsNullOrWhiteSpace(request.RoleName))
+        {
+            roleId = await _unitOfWork.UserRepository.GetRoleIdByNameAsync(request.RoleName!.Trim());
+        }
+
+        if (string.IsNullOrEmpty(roleId))
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Debe indicar RoleId o RoleName válido." });
+        }
+
+        var id = await _extensionRequestRepository.InsertAsync(userId, roleId, request.RequestedValidTo, request.Reason);
+        if (id <= 0)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "No se pudo crear la solicitud." });
+        }
+
+        var user = await _unitOfWork.UserRepository.GetUserByIdWithSP(userId);
+        var userName = user != null ? $"{user.FirstName} {user.FatherLastName}".Trim() : "Usuario";
+        var userEmail = user?.Email ?? "";
+        var roleName = request.RoleName ?? (user?.SecondaryRoles?.FirstOrDefault(r => r.RoleId == roleId)?.RoleName) ?? "Rol temporal";
+        var adminEmails = await _unitOfWork.UserRepository.GetUserEmailsByRoleNameAsync("administrator");
+        if (adminEmails != null && adminEmails.Any())
+        {
+            await _emailService.SendRoleExtensionRequestToAdmins(adminEmails, userName, userEmail, roleName, request.RequestedValidTo, request.Reason);
+        }
+
+        return StatusCode(StatusCodes.Status200OK, new { Id = id, Message = "Solicitud enviada. Un administrador revisará su petición." });
     }
 
     /// <summary>
@@ -420,16 +303,8 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Listar solicitudes de extensión", Description = "Solo administradores. Por defecto devuelve pendientes.")]
     public async Task<IActionResult> GetRoleExtensionRequests([FromQuery] string? status = "Pending", [FromQuery] int take = 50, [FromQuery] int skip = 0)
     {
-        try
-        {
-            var (rows, total) = await _extensionRequestRepository.GetAsync(status, take, skip);
-            return StatusCode(StatusCodes.Status200OK, new { data = rows, total });
-        }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al listar solicitudes de extensión");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
-        }
+        var (rows, total) = await _extensionRequestRepository.GetAsync(status, take, skip);
+        return StatusCode(StatusCodes.Status200OK, new { data = rows, total });
     }
 
     /// <summary>
@@ -439,25 +314,21 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Aprobar solicitud de extensión", Description = "Opcionalmente indicar newValidTo para una fecha distinta a la solicitada.")]
     public async Task<IActionResult> ApproveRoleExtensionRequest([FromRoute] int id, [FromBody] ApproveExtensionRequest? body, [FromQuery] QueryParameters queryParameters)
     {
-        try
+        var processedBy = queryParameters.CurrentUserId ?? queryParameters.UserId;
+        var newValidTo = body?.NewValidTo;
+        var ok = await _extensionRequestRepository.ApproveAsync(id, newValidTo, processedBy);
+        if (!ok)
         {
-            var processedBy = queryParameters.CurrentUserId ?? queryParameters.UserId;
-            var newValidTo = body?.NewValidTo;
-            var ok = await _extensionRequestRepository.ApproveAsync(id, newValidTo, processedBy);
-            if (!ok)
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Solicitud no encontrada o ya procesada." });
-
-            var request = await _extensionRequestRepository.GetByIdAsync(id);
-            if (request != null && !string.IsNullOrEmpty(request.UserEmail))
-                await _emailService.SendRoleExtensionApprovedEmail(request.UserEmail, request.UserName ?? "Usuario", request.RoleName, newValidTo ?? request.RequestedValidTo);
-
-            return StatusCode(StatusCodes.Status200OK, new { Message = "Solicitud aprobada." });
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Solicitud no encontrada o ya procesada." });
         }
-        catch (Exception ex)
+
+        var request = await _extensionRequestRepository.GetByIdAsync(id);
+        if (request != null && !string.IsNullOrEmpty(request.UserEmail))
         {
-            await _loggingService.LogError(ex, "Error al aprobar solicitud de extensión");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+            await _emailService.SendRoleExtensionApprovedEmail(request.UserEmail, request.UserName ?? "Usuario", request.RoleName, newValidTo ?? request.RequestedValidTo);
         }
+
+        return StatusCode(StatusCodes.Status200OK, new { Message = "Solicitud aprobada." });
     }
 
     /// <summary>
@@ -467,24 +338,20 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Rechazar solicitud de extensión")]
     public async Task<IActionResult> RejectRoleExtensionRequest([FromRoute] int id, [FromQuery] QueryParameters queryParameters)
     {
-        try
+        var processedBy = queryParameters.CurrentUserId ?? queryParameters.UserId;
+        var ok = await _extensionRequestRepository.RejectAsync(id, processedBy);
+        if (!ok)
         {
-            var processedBy = queryParameters.CurrentUserId ?? queryParameters.UserId;
-            var ok = await _extensionRequestRepository.RejectAsync(id, processedBy);
-            if (!ok)
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Solicitud no encontrada o ya procesada." });
-
-            var request = await _extensionRequestRepository.GetByIdAsync(id);
-            if (request != null && !string.IsNullOrEmpty(request.UserEmail))
-                await _emailService.SendRoleExtensionRejectedEmail(request.UserEmail, request.UserName ?? "Usuario", request.RoleName);
-
-            return StatusCode(StatusCodes.Status200OK, new { Message = "Solicitud rechazada." });
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "Solicitud no encontrada o ya procesada." });
         }
-        catch (Exception ex)
+
+        var request = await _extensionRequestRepository.GetByIdAsync(id);
+        if (request != null && !string.IsNullOrEmpty(request.UserEmail))
         {
-            await _loggingService.LogError(ex, "Error al rechazar solicitud de extensión");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
+            await _emailService.SendRoleExtensionRejectedEmail(request.UserEmail, request.UserName ?? "Usuario", request.RoleName);
         }
+
+        return StatusCode(StatusCodes.Status200OK, new { Message = "Solicitud rechazada." });
     }
 
     /// <summary>
@@ -498,35 +365,21 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [HttpPut("update-user-from-db")]
     public async Task<IActionResult> Put([FromBody] DTOUser entity)
     {
-        try
+        if (entity == null)
         {
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-            }
-
-            if (entity == null)
-            {
-                return BadRequest(new { Message = "La entidad no puede ser nula" });
-            }
-
-            bool result = await _unitOfWork.UserRepository.Update(entity);
-
-            if (result)
-            {
-                _loggingService.LogInformation("Usuario actualizado exitosamente", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
-                return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar el usuario" });
-            }
+            return BadRequest(new { Message = "La entidad no puede ser nula" });
         }
-        catch (Exception ex)
-        {
 
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Valid = false, Message = "Error interno al actualizar el usuario", Detail = ex.Message });
+        bool result = await _unitOfWork.UserRepository.Update(entity);
+
+        if (result)
+        {
+            _loggingService.LogInformation("Usuario actualizado exitosamente", new Dictionary<string, string> { { "User", JsonSerializer.Serialize(entity) } });
+            return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Usuario actualizado exitosamente" });
+        }
+        else
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar el usuario" });
         }
     }
 
@@ -539,23 +392,16 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [HttpDelete("delete-user-from-db")]
     public async Task<IActionResult> Delete([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters != null)
         {
-            if (queryParameters != null)
-            {
-                bool _result = await _unitOfWork.UserRepository.Delete(queryParameters.UserId);
+            bool _result = await _unitOfWork.UserRepository.Delete(queryParameters.UserId);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Eliminado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "No se pudo eliminar el usuario" });
-            }
+            return _result
+                ? StatusCode(StatusCodes.Status202Accepted, new { Valid = _result, Message = "Eliminado correctamente" })
+                : StatusCode(StatusCodes.Status200OK, new { Valid = _result, Message = "No se pudo eliminar el usuario" });
+        }
 
-            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "El UserId es requerido" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "El UserId es requerido" });
     }
 
     /// <summary>
@@ -565,23 +411,11 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.ChangePassword(queryParameters.UserId, queryParameters.Password, queryParameters.NewPassword);
+        bool _result = await _unitOfWork.UserRepository.ChangePassword(queryParameters.UserId, queryParameters.Password, queryParameters.NewPassword);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        return _result
+            ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+            : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
     }
 
     /// <summary>
@@ -593,23 +427,11 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [AllowAnonymous]
     public async Task<IActionResult> ResetPassword([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.ResetPassword(queryParameters.UserId);
+        bool _result = await _unitOfWork.UserRepository.ResetPassword(queryParameters.UserId);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        return _result
+            ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+            : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
     }
 
     /// <summary>
@@ -623,23 +445,11 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Actualiza la contraseña temporal de un usuario", Description = "Permite cambiar la contraseña temporal (p. ej. tras primer login). No requiere token; se valida con email y contraseña temporal.")]
     public async Task<IActionResult> UpdateTemporalPassword([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                bool _result = await _unitOfWork.UserRepository.UpdateTemporalPassword(queryParameters.Email, queryParameters.NewPassword, queryParameters.TemporaryPassword);
+        bool _result = await _unitOfWork.UserRepository.UpdateTemporalPassword(queryParameters.Email, queryParameters.NewPassword, queryParameters.TemporaryPassword);
 
-                return _result
-                    ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
-                    : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
-        }
+        return _result
+            ? StatusCode(StatusCodes.Status202Accepted, new { Valid = true, Message = "Actualizado correctamente" })
+            : StatusCode(StatusCodes.Status200OK, new { Valid = false, Message = "No se pudo actualizar" });
     }
 
     /// <summary>
@@ -651,36 +461,20 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Fuerza una nueva contraseña para un usuario", Description = "Permite a un administrador asignar una nueva contraseña a un usuario.")]
     public async Task<IActionResult> ForcePassword([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.UserId))
         {
-            if (ModelState.IsValid)
-            {
-                if (string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "UserId y NewPassword son requeridos." });
-                }
-
-                bool result = await _unitOfWork.UserRepository.ForcePassword(queryParameters.UserId);
-
-                if (result)
-                {
-                    return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Contraseña actualizada exitosamente" });
-                }
-                else
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar la contraseña" });
-                }
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "UserId y NewPassword son requeridos." });
         }
-        catch (Exception ex)
+
+        bool result = await _unitOfWork.UserRepository.ForcePassword(queryParameters.UserId);
+
+        if (result)
         {
-            await _loggingService.LogError(ex, "Error al forzar contraseña", new Dictionary<string, string> {
-                { "ErrorType", ex.GetType().Name },
-                { "ErrorMessage", ex.Message }
-            });
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetResponseFromException(ex));
+            return StatusCode(StatusCodes.Status200OK, new { Valid = true, Message = "Contraseña actualizada exitosamente" });
+        }
+        else
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, new { Valid = false, Message = "No se pudo actualizar la contraseña" });
         }
     }
 
@@ -693,23 +487,15 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Inicia el proceso de restablecimiento de contraseña", Description = "Envía un correo electrónico con un enlace para restablecer la contraseña.")]
     public async Task<IActionResult> ForgotPassword([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.Email))
         {
-            if (string.IsNullOrEmpty(queryParameters.Email))
-            {
-                return BadRequest(new { Message = "El correo electrónico es requerido." });
-            }
-
-            // Por seguridad, siempre devolver éxito aunque el email no exista
-            await _unitOfWork.UserRepository.GeneratePasswordResetTokenAndSendEmail(queryParameters.Email);
-
-            return Ok(new { Message = "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña." });
+            return BadRequest(new { Message = "El correo electrónico es requerido." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error en el proceso de contraseña olvidada", new Dictionary<string, string> { { "Email", queryParameters.Email } });
-            return StatusCode(500, new { Message = "Error al procesar la solicitud." });
-        }
+
+        // Por seguridad, siempre devolver éxito aunque el email no exista
+        await _unitOfWork.UserRepository.GeneratePasswordResetTokenAndSendEmail(queryParameters.Email);
+
+        return Ok(new { Message = "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña." });
     }
 
     /// <summary>
@@ -721,27 +507,19 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Valida un token de restablecimiento de contraseña", Description = "Verifica si el token de restablecimiento es válido.")]
     public async Task<IActionResult> ValidateResetToken([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.Email) || string.IsNullOrEmpty(queryParameters.Token))
         {
-            if (string.IsNullOrEmpty(queryParameters.Email) || string.IsNullOrEmpty(queryParameters.Token))
-            {
-                return BadRequest(new { Message = "El correo electrónico y el token son requeridos." });
-            }
-
-            var isValid = await _unitOfWork.UserRepository.ValidatePasswordResetToken(queryParameters.Email, queryParameters.Token);
-
-            if (!isValid)
-            {
-                return BadRequest(new { Message = "El token no es válido o ha expirado." });
-            }
-
-            return Ok(new { Valid = true });
+            return BadRequest(new { Message = "El correo electrónico y el token son requeridos." });
         }
-        catch (Exception ex)
+
+        var isValid = await _unitOfWork.UserRepository.ValidatePasswordResetToken(queryParameters.Email, queryParameters.Token);
+
+        if (!isValid)
         {
-            await _loggingService.LogError(ex, "Error al validar token de restablecimiento", new Dictionary<string, string> { { "Email", queryParameters.Email } });
-            return StatusCode(500, new { Message = "Error al validar el token." });
+            return BadRequest(new { Message = "El token no es válido o ha expirado." });
         }
+
+        return Ok(new { Valid = true });
     }
 
     /// <summary>
@@ -753,33 +531,25 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Restablece la contraseña usando un token", Description = "Cambia la contraseña del usuario usando un token válido.")]
     public async Task<IActionResult> ResetPasswordWithToken([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.Email) ||
+            string.IsNullOrEmpty(queryParameters.Token) ||
+            string.IsNullOrEmpty(queryParameters.NewPassword))
         {
-            if (string.IsNullOrEmpty(queryParameters.Email) ||
-                string.IsNullOrEmpty(queryParameters.Token) ||
-                string.IsNullOrEmpty(queryParameters.NewPassword))
-            {
-                return BadRequest(new { Message = "Todos los campos son requeridos." });
-            }
-
-            var result = await _unitOfWork.UserRepository.ResetPasswordWithToken(
-                queryParameters.Email,
-                queryParameters.Token,
-                queryParameters.NewPassword
-            );
-
-            if (!result)
-            {
-                return BadRequest(new { Message = "No se pudo restablecer la contraseña. El token puede ser inválido o haber expirado." });
-            }
-
-            return Ok(new { Message = "Contraseña restablecida exitosamente." });
+            return BadRequest(new { Message = "Todos los campos son requeridos." });
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.UserRepository.ResetPasswordWithToken(
+            queryParameters.Email,
+            queryParameters.Token,
+            queryParameters.NewPassword
+        );
+
+        if (!result)
         {
-            await _loggingService.LogError(ex, "Error al restablecer contraseña con token", new Dictionary<string, string> { { "Email", queryParameters.Email } });
-            return StatusCode(500, new { Message = "Error al restablecer la contraseña." });
+            return BadRequest(new { Message = "No se pudo restablecer la contraseña. El token puede ser inválido o haber expirado." });
         }
+
+        return Ok(new { Message = "Contraseña restablecida exitosamente." });
     }
 
     /// <summary>
@@ -792,22 +562,14 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Verifica si un correo electrónico existe", Description = "Verifica si un correo electrónico ya está registrado en el sistema (AspNetUsers o Staff).")]
     public async Task<IActionResult> CheckEmailExists([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.Email))
         {
-            if (string.IsNullOrEmpty(queryParameters.Email))
-            {
-                return BadRequest(new { Message = "El correo electrónico es requerido." });
-            }
-
-            var exists = await _unitOfWork.UserRepository.EmailExists(queryParameters.Email);
-
-            return Ok(exists);
+            return BadRequest(new { Message = "El correo electrónico es requerido." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al verificar si el correo existe", new Dictionary<string, string> { { "Email", queryParameters.Email } });
-            return StatusCode(500, new { Message = "Error al verificar el correo electrónico." });
-        }
+
+        var exists = await _unitOfWork.UserRepository.EmailExists(queryParameters.Email);
+
+        return Ok(exists);
     }
 
     /// <summary>
@@ -820,38 +582,28 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Verifica si un IUE existe", Description = "Verifica si un Identificador Único de Entidad (IUE) ya está registrado en el sistema.")]
     public async Task<IActionResult> CheckUieExists([FromQuery(Name = "uieNumber")] long? uieNumber)
     {
-        try
+        if (!uieNumber.HasValue)
         {
-            if (!uieNumber.HasValue)
-            {
-                return BadRequest(new { Message = "El número IUE es requerido." });
-            }
-
-            var uieNumberValue = uieNumber.Value;
-            
-            // Log para debugging
-            _loggingService.LogInformation($"Verificando IUE: {uieNumberValue}", new Dictionary<string, string> 
-            { 
-                { "UieNumber", uieNumberValue.ToString() },
-                { "UieNumberType", uieNumberValue.GetType().Name }
-            });
-
-            var exists = await _unitOfWork.AgencyRepository.UieNumberExists(uieNumberValue);
-
-            // Log del resultado
-            _loggingService.LogInformation($"Resultado verificación IUE: {exists}", new Dictionary<string, string> 
-            { 
-                { "UieNumber", uieNumberValue.ToString() },
-                { "Exists", exists.ToString() }
-            });
-
-            return Ok(exists);
+            return BadRequest(new { Message = "El número IUE es requerido." });
         }
-        catch (Exception ex)
+
+        var uieNumberValue = uieNumber.Value;
+
+        _loggingService.LogInformation($"Verificando IUE: {uieNumberValue}", new Dictionary<string, string>
         {
-            await _loggingService.LogError(ex, "Error al verificar si el IUE existe", new Dictionary<string, string> { { "UieNumber", uieNumber?.ToString() ?? "null" } });
-            return StatusCode(500, new { Message = "Error al verificar el IUE." });
-        }
+            { "UieNumber", uieNumberValue.ToString() },
+            { "UieNumberType", uieNumberValue.GetType().Name }
+        });
+
+        var exists = await _unitOfWork.AgencyRepository.UieNumberExists(uieNumberValue);
+
+        _loggingService.LogInformation($"Resultado verificación IUE: {exists}", new Dictionary<string, string>
+        {
+            { "UieNumber", uieNumberValue.ToString() },
+            { "Exists", exists.ToString() }
+        });
+
+        return Ok(exists);
     }
 
     /// <summary>
@@ -864,22 +616,14 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Verifica si un SDR existe", Description = "Verifica si un Número de Registro del Departamento de Estado (SDR) ya está registrado en el sistema.")]
     public async Task<IActionResult> CheckSdrExists([FromQuery(Name = "sdrNumber")] long? sdrNumber)
     {
-        try
+        if (!sdrNumber.HasValue)
         {
-            if (!sdrNumber.HasValue)
-            {
-                return BadRequest(new { Message = "El número SDR es requerido." });
-            }
-
-            var exists = await _unitOfWork.AgencyRepository.SdrNumberExists(sdrNumber.Value);
-
-            return Ok(exists);
+            return BadRequest(new { Message = "El número SDR es requerido." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al verificar si el SDR existe", new Dictionary<string, string> { { "SdrNumber", sdrNumber?.ToString() ?? "null" } });
-            return StatusCode(500, new { Message = "Error al verificar el SDR." });
-        }
+
+        var exists = await _unitOfWork.AgencyRepository.SdrNumberExists(sdrNumber.Value);
+
+        return Ok(exists);
     }
 
     /// <summary>
@@ -892,56 +636,36 @@ public class UserController(IUnitOfWork unitOfWork, ILoggingService loggingServi
     [SwaggerOperation(Summary = "Verifica si un EIN existe", Description = "Verifica si un Número de Seguro Social Patronal (EIN) ya está registrado en el sistema.")]
     public async Task<IActionResult> CheckEinExists([FromQuery(Name = "einNumber")] int? einNumber)
     {
-        try
+        if (!einNumber.HasValue)
         {
-            if (!einNumber.HasValue)
-            {
-                return BadRequest(new { Message = "El número EIN es requerido." });
-            }
-
-            var exists = await _unitOfWork.AgencyRepository.EinNumberExists(einNumber.Value);
-
-            return Ok(exists);
+            return BadRequest(new { Message = "El número EIN es requerido." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al verificar si el EIN existe", new Dictionary<string, string> { { "EinNumber", einNumber?.ToString() ?? "null" } });
-            return StatusCode(500, new { Message = "Error al verificar el EIN." });
-        }
+
+        var exists = await _unitOfWork.AgencyRepository.EinNumberExists(einNumber.Value);
+
+        return Ok(exists);
     }
 
     [HttpPut("update-user-avatar")]
     [SwaggerOperation(Summary = "Actualiza el avatar del usuario", Description = "Actualiza la imagen de perfil del usuario.")]
     public async Task<IActionResult> UpdateUserAvatar([FromBody] UserAvatarRequest request)
     {
-        try
+        if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.ImageUrl))
         {
-            // Validar parámetros requeridos
-            if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.ImageUrl))
-            {
-                _loggingService.LogWarning("ID de usuario o URL de imagen no proporcionados");
-                return BadRequest(new { message = "ID de usuario y URL de imagen son requeridos" });
-            }
-
-            // Limpiar la URL de la imagen (solucionar problemas con barras invertidas)
-            var cleanImageUrl = request.ImageUrl.Replace("\\\\", "/").Replace("\\", "/");
-            _loggingService.LogInformation("Actualizando avatar del usuario", new Dictionary<string, string> {
-                { "UserId", request.UserId },
-                { "OriginalUrl", request.ImageUrl },
-                { "CleanUrl", cleanImageUrl }
-            });
-
-            // Llamar al método del repositorio para actualizar el avatar
-            var result = await _unitOfWork.UserRepository.UpdateUserAvatar(request.UserId, cleanImageUrl);
-
-            // Devolver el resultado
-            return Ok(result);
+            _loggingService.LogWarning("ID de usuario o URL de imagen no proporcionados");
+            return BadRequest(new { message = "ID de usuario y URL de imagen son requeridos" });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al actualizar el avatar del usuario", new Dictionary<string, string> { { "UserId", request.UserId } });
-            return StatusCode(500, new { message = "Error al actualizar el avatar del usuario", error = ex.Message });
-        }
+
+        var cleanImageUrl = request.ImageUrl.Replace("\\\\", "/").Replace("\\", "/");
+        _loggingService.LogInformation("Actualizando avatar del usuario", new Dictionary<string, string> {
+            { "UserId", request.UserId },
+            { "OriginalUrl", request.ImageUrl },
+            { "CleanUrl", cleanImageUrl }
+        });
+
+        var result = await _unitOfWork.UserRepository.UpdateUserAvatar(request.UserId, cleanImageUrl);
+
+        return Ok(result);
     }
 
 }

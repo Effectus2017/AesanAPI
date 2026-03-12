@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IMealTypeRepository
+public class MealTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IMealTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<MealTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -40,7 +40,6 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
                 var data = await result.ReadSingleAsync<DTOMealType>();
                 return data;
             },
-            _logger,
             _appSettings
         );
     }
@@ -76,7 +75,6 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             },
-            _logger,
             _appSettings
         );
     }
@@ -112,8 +110,7 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de comida");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de comida", ex);
         }
     }
 
@@ -149,8 +146,7 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de comida");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el tipo de comida Id={mealType.Id}", ex);
         }
     }
 
@@ -185,8 +181,7 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de comida");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el tipo de comida Id={id}", ex);
         }
     }
 
@@ -199,6 +194,5 @@ public class MealTypeRepository(DapperContext context, ILogger<MealTypeRepositor
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.MealTypes);
-        _logger.LogInformation("Cache invalidado para MealType Repository");
     }
 }

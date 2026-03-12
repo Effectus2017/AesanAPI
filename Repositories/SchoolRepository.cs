@@ -6,6 +6,7 @@ using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
 using Api.Services;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -15,10 +16,9 @@ namespace Api.Repositories;
 /// <summary>
 /// Repositorio para operaciones con School
 /// </summary>
-public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISchoolRepository
+public class SchoolRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISchoolRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SchoolRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -45,8 +45,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la escuela por ID {Id}: {Message}", id, ex.Message);
-            throw new Exception($"Error al obtener la escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la escuela por ID {id}", ex);
         }
     }
 
@@ -79,8 +78,7 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todas las escuelas: {Message}", ex.Message);
-            throw new Exception($"Error al obtener las escuelas: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener las escuelas", ex);
         }
     }
 
@@ -119,14 +117,12 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             int id = parameters.Get<int>("@id");
 
             InvalidateCache();
-            _logger.LogInformation("Escuela creada exitosamente: ID {Id}, Nombre {Name}", id, request.Name);
 
             return id > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la escuela {Name} para la agencia {AgencyId}: {Message}", request.Name, request.AgencyId, ex.Message);
-            throw new Exception($"Error al insertar la escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar la escuela para la agencia {request.AgencyId}", ex);
         }
     }
 
@@ -172,19 +168,16 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
             if (rowsAffected == 0)
             {
-                _logger.LogWarning("No se encontró la escuela con ID {Id} para actualizar", request.Id.Value);
-                throw new Exception("No se encontró la escuela para actualizar");
+                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, "No se encontró la escuela para actualizar");
             }
 
             InvalidateCache();
-            _logger.LogInformation("Escuela actualizada exitosamente: ID {Id}, Nombre {Name}", request.Id.Value, request.Name);
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la escuela ID {Id}: {Message}", request.Id, ex.Message);
-            throw new Exception($"Error al actualizar la escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la escuela ID {request.Id}", ex);
         }
     }
 
@@ -212,19 +205,16 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
 
             if (rowsAffected == 0)
             {
-                _logger.LogWarning("No se encontró la escuela con ID {Id} para eliminar", id);
-                throw new Exception("No se encontró la escuela para eliminar");
+                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, "No se encontró la escuela para eliminar");
             }
 
             InvalidateCache();
-            _logger.LogInformation("Escuela eliminada exitosamente: ID {Id}", id);
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la escuela ID {Id}: {Message}", id, ex.Message);
-            throw new Exception($"Error al eliminar la escuela: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la escuela ID {id}", ex);
         }
     }
 
@@ -254,25 +244,11 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
             var schools = result.Read<dynamic>().Select(_mappingService.MapSchool).ToList();
             var count = result.ReadFirstOrDefault<int>();
 
-            // Filtro defensivo: el SP debe filtrar por @agencyId; si la BD devolvió escuelas de otras agencias, no las exponemos
-            var filtered = schools.Where(s => s.AgencyId == agencyId).ToList();
-            if (filtered.Count != schools.Count)
-            {
-                _logger.LogError(
-                    "101_GetSchoolsByAgencyId devolvió escuelas de otras agencias. Solicitado AgencyId={AgencyId}. Se filtraron {FilteredOut} filas incorrectas. Revisar que el SP en la BD tenga WHERE s.AgencyId = @agencyId.",
-                    agencyId,
-                    schools.Count - filtered.Count);
-                return new { data = filtered, count = filtered.Count };
-            }
-
-            _logger.LogInformation("Total schools retrieved for agency {AgencyId}: {Count}", agencyId, schools.Count);
-
             return new { data = schools, count };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener escuelas por agencia {AgencyId}: {Message}", agencyId, ex.Message);
-            throw new Exception($"Error al obtener las escuelas de la agencia: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener escuelas por agencia {agencyId}", ex);
         }
     }
 
@@ -282,6 +258,5 @@ public class SchoolRepository(DapperContext context, ILogger<SchoolRepository> l
     private void InvalidateCache()
     {
         _cache.Remove(_appSettings.Cache.Keys.Schools);
-        _logger.LogInformation("Cache invalidado para School Repository");
     }
 }

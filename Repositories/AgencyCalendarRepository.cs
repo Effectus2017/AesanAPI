@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using Api.Data;
 using Api.Interfaces;
+using Api.Models.Errors;
 using Api.Models.Request;
 using Api.Models.Response;
 
@@ -11,10 +12,9 @@ namespace Api.Repositories;
 /// Repositorio para la gestión de calendario de citas de agencias
 /// Implementa las operaciones CRUD
 /// </summary>
-public class AgencyCalendarRepository(DapperContext context, ILogger<AgencyCalendarRepository> logger) : IAgencyCalendarRepository
+public class AgencyCalendarRepository(DapperContext context) : IAgencyCalendarRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyCalendarRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<AgencyCalendarResponse> GetAppointments(int agencyId, int? month = null, int? year = null)
     {
@@ -33,7 +33,6 @@ public class AgencyCalendarRepository(DapperContext context, ILogger<AgencyCalen
             var agencyInfo = await multi.ReadFirstOrDefaultAsync<AgencyCalendarResponse>();
             if (agencyInfo == null)
             {
-                _logger.LogWarning("No se encontró la agencia con ID {AgencyId}", agencyId);
                 return new AgencyCalendarResponse
                 {
                     AgencyId = agencyId,
@@ -56,8 +55,7 @@ public class AgencyCalendarRepository(DapperContext context, ILogger<AgencyCalen
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener citas para la agencia {AgencyId}", agencyId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener citas para la agencia {agencyId}", ex);
         }
     }
 
@@ -83,8 +81,7 @@ public class AgencyCalendarRepository(DapperContext context, ILogger<AgencyCalen
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear cita para la agencia {AgencyId}", request.AgencyId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al crear cita para la agencia {request.AgencyId}", ex);
         }
     }
 
@@ -110,8 +107,7 @@ public class AgencyCalendarRepository(DapperContext context, ILogger<AgencyCalen
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la cita {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la cita {id}", ex);
         }
     }
 
@@ -135,8 +131,7 @@ public class AgencyCalendarRepository(DapperContext context, ILogger<AgencyCalen
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la cita {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la cita {id}", ex);
         }
     }
 }

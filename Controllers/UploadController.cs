@@ -4,6 +4,7 @@ using Api.Models.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -13,11 +14,11 @@ namespace Api.Controllers;
 [ApiController]
 [Route("upload")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileStorageService, ILogger<UploadController> logger) : Controller
+[ValidateModelState]
+public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileStorageService) : Controller
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IFileStorageService _fileStorageService = fileStorageService ?? throw new ArgumentNullException(nameof(fileStorageService));
-    private readonly ILogger<UploadController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     [HttpPost]
     [Route("upload-agency-file")]
@@ -29,61 +30,48 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
         [FromQuery(Name = "documentType")] string documentType
         )
     {
+        var files = Request.Form.Files;
+        if (!files.Any())
+        {
+            return BadRequest(new { error = "No se recibieron archivos" });
+        }
+
+        var file = files[0];
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { error = "El archivo está vacío" });
+        }
+
+        // Guardar el archivo usando el servicio
+        var (storedFileName, relativePath) = await _fileStorageService.SaveFile(
+            file,
+            $"agency_{agencyId}",
+            FileType.AgencyDocument
+        );
+
+        // Crear registro en la base de datos usando el repositorio
+        var agencyFile = new AgencyFileRequest
+        {
+            AgencyId = agencyId,
+            FileName = file.FileName,
+            StoredFileName = storedFileName,
+            FileUrl = relativePath,
+            ContentType = file.ContentType,
+            FileSize = file.Length,
+            Description = description,
+            DocumentType = documentType,
+            UploadedBy = User.Identity?.Name ?? userId
+        };
+
         try
         {
-            _logger.LogInformation($"Iniciando carga de archivo para la agencia {agencyId}");
-
-            var files = Request.Form.Files;
-            if (!files.Any())
-            {
-                _logger.LogWarning("No se recibieron archivos en la solicitud");
-                return BadRequest(new { error = "No se recibieron archivos" });
-            }
-
-            var file = files[0];
-            if (file == null || file.Length == 0)
-            {
-                _logger.LogWarning("El archivo está vacío o es nulo");
-                return BadRequest(new { error = "El archivo está vacío" });
-            }
-
-            // Guardar el archivo usando el servicio
-            var (storedFileName, relativePath) = await _fileStorageService.SaveFile(
-                file,
-                $"agency_{agencyId}",
-                FileType.AgencyDocument
-            );
-
-            // Crear registro en la base de datos usando el repositorio
-            var agencyFile = new AgencyFileRequest
-            {
-                AgencyId = agencyId,
-                FileName = file.FileName,
-                StoredFileName = storedFileName,
-                FileUrl = relativePath,
-                ContentType = file.ContentType,
-                FileSize = file.Length,
-                Description = description,
-                DocumentType = documentType,
-                UploadedBy = User.Identity.Name ?? userId
-            };
-
-            try
-            {
-                var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(agencyFile);
-                return new { file = storedFileName, url = relativePath, id = newFileId };
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Si la agencia no existe, eliminamos el archivo que acabamos de guardar
-                await _fileStorageService.DeleteFile(storedFileName, FileType.AgencyDocument);
-                _logger.LogWarning(ex, "Error al agregar archivo: {Message}", ex.Message);
-                return BadRequest(new { error = ex.Message });
-            }
+            var newFileId = await _unitOfWork.AgencyFilesRepository.AddAgencyFile(agencyFile);
+            return new { file = storedFileName, url = relativePath, id = newFileId };
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Error al subir archivo");
+            // Si la agencia no existe, eliminamos el archivo que acabamos de guardar
+            await _fileStorageService.DeleteFile(storedFileName, FileType.AgencyDocument);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -93,47 +81,35 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
     [Consumes("multipart/form-data")]
     public async Task<dynamic> UploadAgencyLogo([FromQuery(Name = "agencyId")] int agencyId)
     {
-        try
+        var files = Request.Form.Files;
+        if (!files.Any())
         {
-            _logger.LogInformation($"Iniciando carga de logo para la agencia {agencyId}");
-
-            var files = Request.Form.Files;
-            if (!files.Any())
-            {
-                _logger.LogWarning("No se recibieron archivos en la solicitud");
-                return BadRequest(new { error = "No se recibieron archivos" });
-            }
-
-            var file = files[0];
-            if (file == null || file.Length == 0)
-            {
-                _logger.LogWarning("El archivo está vacío o es nulo");
-                return BadRequest(new { error = "El archivo está vacío" });
-            }
-
-            // Validar que sea una imagen
-            if (!file.ContentType.StartsWith("image/"))
-            {
-                return BadRequest(new { error = "El archivo debe ser una imagen" });
-            }
-
-            // Guardar el archivo usando el servicio
-            var (storedFileName, fileUrl) = await _fileStorageService.SaveFile(
-                file,
-                $"agency_{agencyId}",
-                FileType.AgencyLogo
-            );
-
-            // Actualizar el logo en la agencia
-            await _unitOfWork.AgencyRepository.UpdateAgencyLogo(agencyId, fileUrl);
-
-            return new { file = storedFileName, url = fileUrl };
+            return BadRequest(new { error = "No se recibieron archivos" });
         }
-        catch (Exception ex)
+
+        var file = files[0];
+        if (file == null || file.Length == 0)
         {
-            _logger.LogError(ex, "Error al subir logo");
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = "El archivo está vacío" });
         }
+
+        // Validar que sea una imagen
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            return BadRequest(new { error = "El archivo debe ser una imagen" });
+        }
+
+        // Guardar el archivo usando el servicio
+        var (storedFileName, fileUrl) = await _fileStorageService.SaveFile(
+            file,
+            $"agency_{agencyId}",
+            FileType.AgencyLogo
+        );
+
+        // Actualizar el logo en la agencia
+        await _unitOfWork.AgencyRepository.UpdateAgencyLogo(agencyId, fileUrl);
+
+        return new { file = storedFileName, url = fileUrl };
     }
 
     [HttpPost]
@@ -141,47 +117,34 @@ public class UploadController(IUnitOfWork unitOfWork, IFileStorageService fileSt
     [Consumes("multipart/form-data")]
     public async Task<dynamic> UploadUserAvatar([FromQuery(Name = "userId")] string userId)
     {
-        try
+        var files = Request.Form.Files;
+        if (!files.Any())
         {
-            _logger.LogInformation($"Iniciando carga de avatar para el usuario {userId}");
-
-            var files = Request.Form.Files;
-            if (!files.Any())
-            {
-                _logger.LogWarning("No se recibieron archivos en la solicitud");
-                return BadRequest(new { error = "No se recibieron archivos" });
-            }
-
-            var file = files[0];
-            if (file == null || file.Length == 0)
-            {
-                _logger.LogWarning("El archivo está vacío o es nulo");
-                return BadRequest(new { error = "El archivo está vacío" });
-            }
-
-            // Validar que sea una imagen
-            if (!file.ContentType.StartsWith("image/"))
-            {
-                return BadRequest(new { error = "El archivo debe ser una imagen" });
-            }
-
-            // Guardar el archivo usando el servicio
-            var (storedFileName, fileUrl) = await _fileStorageService.SaveFile(
-                file,
-                $"user_{userId}",
-                FileType.UserAvatar
-            );
-
-            // Actualizar el avatar en el usuario
-            await _unitOfWork.UserRepository.UpdateUserAvatar(userId, fileUrl);
-
-            return new { file = storedFileName, url = fileUrl };
+            return BadRequest(new { error = "No se recibieron archivos" });
         }
-        catch (Exception ex)
+
+        var file = files[0];
+        if (file == null || file.Length == 0)
         {
-            _logger.LogError(ex, "Error al subir avatar");
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = "El archivo está vacío" });
         }
+
+        // Validar que sea una imagen
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            return BadRequest(new { error = "El archivo debe ser una imagen" });
+        }
+
+        // Guardar el archivo usando el servicio
+        var (storedFileName, fileUrl) = await _fileStorageService.SaveFile(
+            file,
+            $"user_{userId}",
+            FileType.UserAvatar
+        );
+
+        // Actualizar el avatar en el usuario
+        await _unitOfWork.UserRepository.UpdateUserAvatar(userId, fileUrl);
+
+        return new { file = storedFileName, url = fileUrl };
     }
 }
-

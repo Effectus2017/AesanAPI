@@ -19,7 +19,7 @@ public interface IEducationLevelRepository
     /// <param name="name">El nombre del nivel educativo a buscar.</param>
     /// <param name="alls">Si se deben obtener todos los niveles educativos.</param>
     /// <returns>Una lista de niveles educativos.</returns>
-    Task<dynamic> GetAllEducationLevels(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllEducationLevels(int take, int skip, string name, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta un nuevo nivel educativo.

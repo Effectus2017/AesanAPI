@@ -15,7 +15,7 @@ public interface ISiteRepository
     /// <summary>
     /// Obtiene todos los sitios
     /// </summary>
-    Task<dynamic> GetAllSitesFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool isList, int? isDayCareHomeId = null);
+    Task<dynamic> GetAllSitesFromDB(int take, int skip, string name, int? cityId, int? regionId, int? agencyId, bool alls, bool forDropdown, int? isDayCareHomeId = null);
 
     /// <summary>
     /// Inserta un nuevo sitio

@@ -57,9 +57,9 @@ public interface IStaffRelationshipRepository
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
     /// <param name="alls">Si se deben obtener todos los registros</param>
-    /// <param name="isList">Si es para lista simple</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown)</param>
     /// <returns>Lista de todas las relaciones activas</returns>
-    Task<dynamic> GetAllActiveRelationshipsFromDb(int take, int skip, bool alls, bool isList);
+    Task<dynamic> GetAllActiveRelationshipsFromDb(int take, int skip, bool alls, bool forDropdown);
 
     /// <summary>
     /// Obtiene las relaciones por tipo específico

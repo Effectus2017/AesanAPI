@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -16,6 +17,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("emaillog")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ValidateModelState]
 public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailService emailService, ILoggingService loggingService) : ControllerBase
 {
     private readonly IEmailLogRepository _emailLogRepository = emailLogRepository;
@@ -31,27 +33,14 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
     [SwaggerOperation(Summary = "Obtiene logs de correo por usuario", Description = "Devuelve todos los logs de correo electrónico asociados a un usuario específico.")]
     public async Task<IActionResult> GetEmailLogsByUserId([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.UserId))
         {
-            if (ModelState.IsValid)
-            {
-                if (string.IsNullOrEmpty(queryParameters.UserId))
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El ID de usuario es requerido." });
-                }
-
-                _loggingService.LogInformation("Obteniendo logs de correo para usuario {UserId}", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
-                var logs = await _emailLogRepository.GetEmailLogsByUserId(queryParameters.UserId);
-                return StatusCode(StatusCodes.Status200OK, logs);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El ID de usuario es requerido." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al obtener logs de correo por usuario", new Dictionary<string, string> { { "UserId", queryParameters?.UserId ?? "null" } });
-            return StatusCode(StatusCodes.Status500InternalServerError, Utilities.GetResponseFromException(ex));
-        }
+
+        _loggingService.LogInformation("Obteniendo logs de correo para usuario {UserId}", new Dictionary<string, string> { { "UserId", queryParameters.UserId } });
+        var logs = await _emailLogRepository.GetEmailLogsByUserId(queryParameters.UserId);
+        return StatusCode(StatusCodes.Status200OK, logs);
     }
 
     /// <summary>
@@ -63,27 +52,14 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
     [SwaggerOperation(Summary = "Obtiene logs de correo por email", Description = "Devuelve todos los logs de correo electrónico para un email específico.")]
     public async Task<IActionResult> GetEmailLogsByEmail([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (string.IsNullOrEmpty(queryParameters.Email))
         {
-            if (ModelState.IsValid)
-            {
-                if (string.IsNullOrEmpty(queryParameters.Email))
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El email es requerido." });
-                }
-
-                _loggingService.LogInformation("Obteniendo logs de correo para email {Email}", new Dictionary<string, string> { { "Email", queryParameters.Email } });
-                var logs = await _emailLogRepository.GetEmailLogsByEmail(queryParameters.Email);
-                return StatusCode(StatusCodes.Status200OK, logs);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El email es requerido." });
         }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al obtener logs de correo por email", new Dictionary<string, string> { { "Email", queryParameters?.Email ?? "null" } });
-            return StatusCode(StatusCodes.Status500InternalServerError, Utilities.GetResponseFromException(ex));
-        }
+
+        _loggingService.LogInformation("Obteniendo logs de correo para email {Email}", new Dictionary<string, string> { { "Email", queryParameters.Email } });
+        var logs = await _emailLogRepository.GetEmailLogsByEmail(queryParameters.Email);
+        return StatusCode(StatusCodes.Status200OK, logs);
     }
 
     /// <summary>
@@ -95,33 +71,20 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
     [SwaggerOperation(Summary = "Obtiene un log de correo por ID", Description = "Devuelve un log de correo electrónico específico por su ID.")]
     public async Task<IActionResult> GetEmailLogById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        if (queryParameters.Id <= 0)
         {
-            if (ModelState.IsValid)
-            {
-                if (queryParameters.Id <= 0)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El ID debe ser mayor que 0." });
-                }
-
-                _loggingService.LogInformation("Obteniendo log de correo con ID {Id}", new Dictionary<string, string> { { "Id", queryParameters.Id.ToString() } });
-                var log = await _emailLogRepository.GetEmailLogById(queryParameters.Id);
-                
-                if (log == null)
-                {
-                    return StatusCode(StatusCodes.Status404NotFound, new { Message = "No se encontró el log de correo con el ID especificado." });
-                }
-
-                return StatusCode(StatusCodes.Status200OK, log);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El ID debe ser mayor que 0." });
         }
-        catch (Exception ex)
+
+        _loggingService.LogInformation("Obteniendo log de correo con ID {Id}", new Dictionary<string, string> { { "Id", queryParameters.Id.ToString() } });
+        var log = await _emailLogRepository.GetEmailLogById(queryParameters.Id);
+
+        if (log == null)
         {
-            await _loggingService.LogError(ex, "Error al obtener log de correo por ID", new Dictionary<string, string> { { "Id", queryParameters.Id.ToString() } });
-            return StatusCode(StatusCodes.Status500InternalServerError, Utilities.GetResponseFromException(ex));
+            return StatusCode(StatusCodes.Status404NotFound, new { Message = "No se encontró el log de correo con el ID especificado." });
         }
+
+        return StatusCode(StatusCodes.Status200OK, log);
     }
 
     /// <summary>
@@ -133,22 +96,9 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
     [SwaggerOperation(Summary = "Obtiene correos fallidos", Description = "Devuelve todos los logs de correos electrónicos que fallaron al enviarse.")]
     public async Task<IActionResult> GetFailedEmailLogs([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                _loggingService.LogInformation("Obteniendo logs de correos fallidos", new Dictionary<string, string> { { "Email", queryParameters.Email ?? "Todos" } });
-                var logs = await _emailLogRepository.GetFailedEmailLogs(queryParameters.Email);
-                return StatusCode(StatusCodes.Status200OK, logs);
-            }
-
-            return StatusCode(StatusCodes.Status400BadRequest, Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            await _loggingService.LogError(ex, "Error al obtener logs de correos fallidos");
-            return StatusCode(StatusCodes.Status500InternalServerError, Utilities.GetResponseFromException(ex));
-        }
+        _loggingService.LogInformation("Obteniendo logs de correos fallidos", new Dictionary<string, string> { { "Email", queryParameters.Email ?? "Todos" } });
+        var logs = await _emailLogRepository.GetFailedEmailLogs(queryParameters.Email);
+        return StatusCode(StatusCodes.Status200OK, logs);
     }
 
     /// <summary>
@@ -160,34 +110,26 @@ public class EmailLogController(IEmailLogRepository emailLogRepository, IEmailSe
     [SwaggerOperation(Summary = "Reenvía un correo electrónico", Description = "Reenvía un correo electrónico basado en un log existente. Puede forzar el reenvío incluso si el correo original fue exitoso.")]
     public async Task<IActionResult> ResendEmail([FromBody] ResendEmailRequest request)
     {
-        try
+        if (request == null || request.EmailLogId <= 0)
         {
-            if (request == null || request.EmailLogId <= 0)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El ID del log de correo es requerido y debe ser mayor que 0." });
-            }
-
-            _loggingService.LogInformation("Reenviando correo desde log {EmailLogId}", new Dictionary<string, string> 
-            { 
-                { "EmailLogId", request.EmailLogId.ToString() },
-                { "ForceResend", request.ForceResend.ToString() }
-            });
-
-            var result = await _emailService.ResendEmail(request.EmailLogId, request.ForceResend);
-            
-            if (result)
-            {
-                return StatusCode(StatusCodes.Status200OK, new { Message = "Correo reenviado exitosamente." });
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { Message = "No se pudo reenviar el correo. Verifique que el log existe y que el correo original no fue exitoso (o use forceResend=true)." });
-            }
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "El ID del log de correo es requerido y debe ser mayor que 0." });
         }
-        catch (Exception ex)
+
+        _loggingService.LogInformation("Reenviando correo desde log {EmailLogId}", new Dictionary<string, string>
         {
-            await _loggingService.LogError(ex, "Error al reenviar correo", new Dictionary<string, string> { { "EmailLogId", request?.EmailLogId.ToString() ?? "null" } });
-            return StatusCode(StatusCodes.Status500InternalServerError, Utilities.GetResponseFromException(ex));
+            { "EmailLogId", request.EmailLogId.ToString() },
+            { "ForceResend", request.ForceResend.ToString() }
+        });
+
+        var result = await _emailService.ResendEmail(request.EmailLogId, request.ForceResend);
+
+        if (result)
+        {
+            return StatusCode(StatusCodes.Status200OK, new { Message = "Correo reenviado exitosamente." });
+        }
+        else
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, new { Message = "No se pudo reenviar el correo. Verifique que el log existe y que el correo original no fue exitoso (o use forceResend=true)." });
         }
     }
 }

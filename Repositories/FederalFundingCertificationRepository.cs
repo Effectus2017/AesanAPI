@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class FederalFundingCertificationRepository(DapperContext context, ILogger<FederalFundingCertificationRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFederalFundingCertificationRepository
+public class FederalFundingCertificationRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFederalFundingCertificationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<FederalFundingCertificationRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -40,7 +40,6 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
                 var data = await result.ReadSingleAsync<DTOFederalFundingCertification>();
                 return data;
             },
-            _logger,
             _appSettings
         );
     }
@@ -76,7 +75,6 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             },
-            _logger,
             _appSettings
         );
     }
@@ -113,8 +111,7 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la certificación de fondos federales");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la certificación de fondos federales", ex);
         }
     }
 
@@ -151,8 +148,7 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la certificación de fondos federales");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la certificación de fondos federales Id={certification.Id}", ex);
         }
     }
 
@@ -187,8 +183,7 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la certificación de fondos federales");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la certificación de fondos federales Id={id}", ex);
         }
     }
 
@@ -201,6 +196,5 @@ public class FederalFundingCertificationRepository(DapperContext context, ILogge
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.FederalFundingCertifications);
-        _logger.LogInformation("Cache invalidado para FederalFundingCertification Repository");
     }
 }

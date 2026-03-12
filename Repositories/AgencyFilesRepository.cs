@@ -2,6 +2,7 @@ using System.Data;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Api.Models.Request;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -15,10 +16,9 @@ namespace Api.Repositories;
 /// <remarks>
 /// Constructor del repositorio de archivos de agencia
 /// </remarks>
-public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyFilesRepository
+public class AgencyFilesRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IAgencyFilesRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyFilesRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -46,8 +46,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el archivo con ID {FileId}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el archivo con ID {id}", ex);
         }
     }
 
@@ -80,8 +79,6 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
                 if (!string.IsNullOrEmpty(file.FileUrl))
                 {
                     string baseUrl = Utilities.GetUrl(_appSettings);
-                    _logger.LogInformation("URL Base obtenida: {BaseUrl}", baseUrl);
-                    _logger.LogInformation("Configuración actual: {@AppSettings}", _appSettings);
                     file.FileUrl = $"{baseUrl.TrimEnd('/')}/{file.FileUrl}";
                 }
             }
@@ -90,8 +87,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los archivos de la agencia {AgencyId}", agencyId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los archivos de la agencia {agencyId}", ex);
         }
     }
 
@@ -131,8 +127,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al agregar archivo a la agencia {AgencyId}", request.AgencyId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al agregar archivo a la agencia {request.AgencyId}", ex);
         }
     }
 
@@ -175,8 +170,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el archivo con ID {FileId}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el archivo con ID {id}", ex);
         }
     }
 
@@ -206,8 +200,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el archivo con ID {FileId}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el archivo con ID {id}", ex);
         }
     }
 
@@ -217,7 +210,6 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
     private void InvalidateCache(int agencyId)
     {
         // Si se implementa caché para este repositorio, aquí se invalidaría
-        _logger.LogInformation("Invalidando caché para archivos de la agencia {AgencyId}", agencyId);
     }
 
     /// <summary>
@@ -254,8 +246,7 @@ public class AgencyFilesRepository(DapperContext context, ILogger<AgencyFilesRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar el archivo con ID {FileId}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al verificar el archivo con ID {id}", ex);
         }
     }
 }

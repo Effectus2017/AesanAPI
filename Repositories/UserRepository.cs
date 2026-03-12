@@ -16,6 +16,7 @@ using Api.Data;
 using System.Data;
 using Dapper;
 using Api.Services;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -94,11 +95,9 @@ public class UserRepository(UserManager<User> userManager,
         {
             var properties = new Dictionary<string, string>
             {
-                { "UserId", userId },
-                { "ErrorMessage", ex.Message }
+                { "UserId", userId }
             };
-            await _loggingService.LogError(ex, "Error al obtener usuario", properties);
-            throw new Exception($"Error al obtener el usuario: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el usuario", ex);
         }
     }
 
@@ -217,11 +216,9 @@ public class UserRepository(UserManager<User> userManager,
         {
             var properties = new Dictionary<string, string>
             {
-                { "UserId", userId },
-                { "ErrorMessage", ex.Message }
+                { "UserId", userId }
             };
-            await _loggingService.LogError(ex, "Error al obtener usuario con SP", properties);
-            throw new Exception($"Error al obtener el usuario con SP: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el usuario con SP", ex);
         }
     }
 
@@ -253,11 +250,11 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="name">El nombre del usuario</param>
     /// <param name="userId">El ID del usuario</param>
     /// <returns>Una lista de usuarios</returns>
-    public dynamic GetAllUsersFromDb(int take, int skip, string name, string userId, bool isList)
+    public dynamic GetAllUsersFromDb(int take, int skip, string name, string userId, bool forDropdown)
     {
         try
         {
-            if (isList)
+            if (forDropdown)
             {
                 var _result = _userManager.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToList();
                 var _currentUser = _mapper.Map<List<User>, List<DTOUser>>(_result);
@@ -274,7 +271,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener todos los usuarios de la base de datos", ex);
         }
     }
 
@@ -285,13 +282,13 @@ public class UserRepository(UserManager<User> userManager,
     /// <param name="skip">El número de usuarios a saltar</param>
     /// <param name="name">El nombre del usuario a buscar</param>
     /// <param name="agencyId">ID de la agencia para filtrar</param>
-    /// <param name="isList">Si es true, retorna solo la lista sin paginación</param>
+    /// <param name="forDropdown">Si es true, retorna solo la lista sin paginación</param>
     /// <param name="roles">Lista de roles para filtrar</param>
     /// <param name="alls">Si es true, retorna todos los usuarios sin filtros ni paginación</param>
     /// <param name="excludeAdministrators">Si es true, excluye usuarios con rol Administrator o Super-Administrator</param>
     /// <param name="isPropietary">Si true, solo usuarios de agencia NUTRE (IsPropietary=1). Si false, solo auspiciadores. Null = sin filtro.</param>
     /// <returns>Una lista de usuarios con el conteo total</returns>
-    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool isList = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false, bool? isPropietary = null)
+    public async Task<dynamic> GetAllUsersFromDbWithSP(int take, int skip, string name, int? agencyId = null, bool forDropdown = false, List<string> roles = null, bool alls = false, bool excludeAdministrators = false, bool? isPropietary = null)
     {
         try
         {
@@ -339,7 +336,7 @@ public class UserRepository(UserManager<User> userManager,
                 return user;
             }).ToList();
 
-            if (isList)
+            if (forDropdown)
             {
                 return data;
             }
@@ -348,8 +345,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            await _loggingService.LogError(ex, "Error al obtener usuarios con SP");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener usuarios con SP", ex);
         }
     }
 
@@ -358,18 +354,18 @@ public class UserRepository(UserManager<User> userManager,
     /// Obtiene todos los roles de la base de datos, opcionalmente solo AESAN, en formato lista o { data, count }.
     /// </summary>
     /// <param name="aesanOnly">Si true, devuelve solo roles AESAN (Name, DisplayName, DisplayNameEN).</param>
-    /// <param name="isList">Si true, retorna solo la lista; si false, retorna { data, count }.</param>
-    public async Task<dynamic> GetAllRolesFromDb(bool aesanOnly = false, bool isList = false)
+    /// <param name="forDropdown">Si true, retorna solo la lista; si false, retorna { data, count }.</param>
+    public async Task<dynamic> GetAllRolesFromDb(bool aesanOnly = false, bool forDropdown = false)
     {
         if (aesanOnly)
         {
             var roles = await GetAesanRoles();
-            return isList ? (dynamic)roles : new { data = roles, count = roles.Count };
+            return forDropdown ? (dynamic)roles : new { data = roles, count = roles.Count };
         }
 
         var _result = _roleManager.Roles.OrderBy(r => r.Name).ToList();
         var _currentRoles = _mapper.Map<List<Role>, List<DTORole>>(_result);
-        if (isList)
+        if (forDropdown)
             return _currentRoles;
         return new { data = _currentRoles, count = _result.Count };
     }
@@ -855,7 +851,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            throw new Exception("Error al obtener los claims del usuario", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los claims del usuario", ex);
         }
     }
 
@@ -1314,7 +1310,9 @@ public class UserRepository(UserManager<User> userManager,
                         roleNamesList = currentRoles.ToList();
                     }
                     if (roleNamesList == null || !roleNamesList.Any())
-                        throw new Exception($"El usuario {entity.Id} no tiene un rol asignado");
+                    {
+                        throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"El usuario {entity.Id} no tiene un rol asignado");
+                    }
                 }
                 rolesForLog = string.Join(",", roleNamesList.Where(r => !string.IsNullOrWhiteSpace(r)));
                 parameters.Add("@primaryRoleName", null, DbType.String);
@@ -1364,7 +1362,7 @@ public class UserRepository(UserManager<User> userManager,
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new Exception($"Error al actualizar el usuario con SP: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el usuario con SP: {ex.Message}", ex);
         }
     }
 
@@ -1492,7 +1490,7 @@ public class UserRepository(UserManager<User> userManager,
                 await _loggingService.LogError(ex.InnerException, "Inner Exception: Tipo: {ErrorType}. Mensaje: {ErrorMessage}", new Dictionary<string, string> { { "ErrorType", ex.InnerException.GetType().Name }, { "ErrorMessage", ex.InnerException.Message } });
             }
 
-            throw new Exception($"Error al actualizar el usuario: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el usuario: {ex.Message}", ex);
         }
     }
 
@@ -1538,7 +1536,7 @@ public class UserRepository(UserManager<User> userManager,
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
         }
     }
 
@@ -1718,7 +1716,7 @@ public class UserRepository(UserManager<User> userManager,
 
             if (user == null)
             {
-                throw new Exception("Usuario no encontrado");
+                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, "Usuario no encontrado");
             }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -1727,7 +1725,7 @@ public class UserRepository(UserManager<User> userManager,
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al generar el token de restablecimiento de contraseña", new Dictionary<string, string> { { "Email", email } });
-            throw new Exception("No se pudo generar el token de restablecimiento de contraseña", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "No se pudo generar el token de restablecimiento de contraseña", ex);
         }
     }
 
@@ -1951,7 +1949,7 @@ public class UserRepository(UserManager<User> userManager,
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al insertar la contraseña temporal");
-            throw new Exception("No se pudo insertar la contraseña temporal", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "No se pudo insertar la contraseña temporal", ex);
         }
     }
 
@@ -1972,7 +1970,7 @@ public class UserRepository(UserManager<User> userManager,
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al obtener la contraseña temporal");
-            throw new Exception("No se pudo obtener la contraseña temporal", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "No se pudo obtener la contraseña temporal", ex);
         }
     }
 
@@ -1992,7 +1990,7 @@ public class UserRepository(UserManager<User> userManager,
         catch (Exception ex)
         {
             await _loggingService.LogError(ex, "Error al eliminar la contraseña temporal");
-            throw new Exception("No se pudo eliminar la contraseña temporal", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "No se pudo eliminar la contraseña temporal", ex);
         }
     }
 

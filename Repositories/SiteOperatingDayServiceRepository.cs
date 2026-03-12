@@ -2,9 +2,9 @@ using System.Data;
 using Dapper;
 using Api.Data;
 using Api.Interfaces;
+using Api.Models.Errors;
 using Api.Models.Request;
 using Api.Models.Response;
-using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
 
@@ -12,10 +12,9 @@ namespace Api.Repositories;
 /// Repositorio para la gestión de servicios de alimentación por día de funcionamiento
 /// Implementa las operaciones CRUD para servicios relacionados con días operativos
 /// </summary>
-public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<SiteOperatingDayServiceRepository> logger) : ISiteOperatingDayServiceRepository
+public class SiteOperatingDayServiceRepository(DapperContext context) : ISiteOperatingDayServiceRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SiteOperatingDayServiceRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Obtiene todos los servicios de un día de funcionamiento
@@ -33,15 +32,11 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
 
             var servicesList = services.ToList();
 
-            _logger.LogInformation("Se obtuvieron {Count} servicios para el día de funcionamiento {OperatingDayId}",
-                servicesList.Count, operatingDayId);
-
             return servicesList;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener servicios para el día de funcionamiento {OperatingDayId}", operatingDayId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener servicios para el día de funcionamiento {operatingDayId}", ex);
         }
     }
 
@@ -63,8 +58,7 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener servicio con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener servicio con ID {id}", ex);
         }
     }
 
@@ -112,16 +106,11 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
             upsertParams.Add("@totime", request.EndTime, DbType.Time);
             await dbConnection.ExecuteAsync("101_UpsertSiteChildGroupService", upsertParams, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Servicio creado con ID {Id} para el día de funcionamiento {OperatingDayId}",
-                id, request.OperatingDayId);
-
             return id;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear servicio para el día de funcionamiento {OperatingDayId}",
-                request.OperatingDayId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al crear servicio para el día de funcionamiento {request.OperatingDayId}", ex);
         }
     }
 
@@ -183,15 +172,11 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
 
             var rowsInserted = parameters.Get<int>("@rowsInserted");
 
-            _logger.LogInformation("Se crearon {RowsInserted} servicios en batch de {TotalRequests} solicitados",
-                rowsInserted, requests.Count);
-
             return rowsInserted;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear servicios en batch");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al crear servicios en batch", ex);
         }
         finally
         {
@@ -233,14 +218,11 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
                 await dbConnection.ExecuteAsync("101_UpsertSiteChildGroupService", upsertParams, commandType: CommandType.StoredProcedure);
             }
 
-            _logger.LogInformation("Servicio con ID {Id} actualizado exitosamente", id);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar servicio con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar servicio con ID {id}", ex);
         }
     }
 
@@ -258,14 +240,11 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
 
             await dbConnection.ExecuteAsync("100_DeleteSiteOperatingDayService", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Servicio con ID {Id} eliminado exitosamente", id);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar servicio con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar servicio con ID {id}", ex);
         }
     }
 
@@ -284,15 +263,11 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
 
             await dbConnection.ExecuteAsync("100_ToggleSiteOperatingDayService", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Servicio con ID {Id} {Status} exitosamente",
-                id, isEnabled ? "habilitado" : "deshabilitado");
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al cambiar estado del servicio con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al cambiar estado del servicio con ID {id}", ex);
         }
     }
 
@@ -319,8 +294,7 @@ public class SiteOperatingDayServiceRepository(DapperContext context, ILogger<Si
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al validar horarios del servicio para el día {OperatingDayId}", operatingDayId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al validar horarios del servicio para el día {operatingDayId}", ex);
         }
     }
 }

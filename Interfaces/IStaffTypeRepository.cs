@@ -19,9 +19,9 @@ public interface IStaffTypeRepository
     /// <param name="skip">El número de tipos de staff a saltar</param>
     /// <param name="name">El nombre del tipo de staff a buscar</param>
     /// <param name="alls">Si se deben obtener todos los tipos de staff</param>
-    /// <param name="isList">Si es para lista simple (dropdown)</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown)</param>
     /// <returns>Los tipos de staff</returns>
-    Task<dynamic> GetAllStaffTypesFromDb(int take, int skip, string name, bool alls, bool isList);
+    Task<dynamic> GetAllStaffTypesFromDb(int take, int skip, string name, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta un nuevo tipo de staff en la base de datos

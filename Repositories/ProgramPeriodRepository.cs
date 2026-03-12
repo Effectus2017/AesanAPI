@@ -3,18 +3,17 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Response;
+using Api.Models.Errors;
 using Dapper;
-using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
 
 /// <summary>
 /// Repositorio para gestionar períodos de programas
 /// </summary>
-public class ProgramPeriodRepository(DapperContext context, ILogger<ProgramPeriodRepository> logger) : IProgramPeriodRepository
+public class ProgramPeriodRepository(DapperContext context) : IProgramPeriodRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<ProgramPeriodRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Obtiene todos los períodos de un programa
@@ -37,8 +36,7 @@ public class ProgramPeriodRepository(DapperContext context, ILogger<ProgramPerio
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener períodos del programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener períodos del programa {programId}", ex);
         }
     }
 
@@ -64,8 +62,7 @@ public class ProgramPeriodRepository(DapperContext context, ILogger<ProgramPerio
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener período del programa {ProgramId} para el año {Year}", programId, year);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener período del programa {programId} para el año {year}", ex);
         }
     }
 
@@ -95,8 +92,7 @@ public class ProgramPeriodRepository(DapperContext context, ILogger<ProgramPerio
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar período de programa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar período de programa", ex);
         }
     }
 
@@ -133,8 +129,7 @@ public class ProgramPeriodRepository(DapperContext context, ILogger<ProgramPerio
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar período de programa {Id}", request.Id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar período de programa {request.Id}", ex);
         }
     }
 }

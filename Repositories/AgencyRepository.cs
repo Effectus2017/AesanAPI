@@ -9,6 +9,7 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -95,8 +96,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error getting agency by id {id}: {ex.Message}");
-            throw new Exception($"Error al obtener la agencia con ID {id}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la agencia con ID {id}", ex);
         }
     }
 
@@ -160,8 +160,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error getting agency by id {agencyId} and user id {userId}: {ex.Message}");
-            throw new Exception($"Error al obtener la agencia con ID {agencyId} y usuario {userId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la agencia con ID {agencyId} y usuario {userId}", ex);
         }
     }
 
@@ -199,15 +198,14 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error getting agency assigned users for agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al obtener los usuarios asignados a la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los usuarios asignados a la agencia {agencyId}", ex);
         }
     }
 
     /// <summary>
     /// Obtiene todas las agencias de la base de datos
     /// </summary>
-    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool isList, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
+    public async Task<dynamic> GetAllAgenciesFromDb(int take, int skip, string name, int? regionId, int? cityId, int? programId, int? statusId, string? userId, bool alls, bool forDropdown, bool? isPropietary, string? userFirstName, string? statusName, DateTime? createdAtFrom, DateTime? createdAtTo, long? uieNumber, int? einNumber, long? sdrNumber)
     {
         try
         {
@@ -233,7 +231,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             param.Add("@sdrNumber", sdrNumber);
 
             // Usar nuevo SP con nueva lógica de acceso (misma convención que Staff: TableResponse/DropdownItemResponse + PagedResult)
-            if (isList)
+            if (forDropdown)
             {
                 using var result = await dbConnection.QueryMultipleAsync("120_GetAgencies", param, commandType: CommandType.StoredProcedure);
 
@@ -320,8 +318,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error getting all agencies from database: {ex.Message}");
-            throw new Exception($"Error al obtener las agencias de la base de datos: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener las agencias de la base de datos", ex);
         }
     }
 
@@ -345,8 +342,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error getting agency programs by user id {userId}: {ex.Message}");
-            throw new Exception($"Error al obtener los programas de la agencia para el usuario {userId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los programas de la agencia para el usuario {userId}", ex);
         }
     }
 
@@ -399,7 +395,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
 
             if (agencyId <= 0)
             {
-                throw new Exception("Error al insertar la agencia");
+                throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la agencia");
             }
 
             // Insertar la solicitud de participación de la Agencia
@@ -452,8 +448,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error inserting agency: {ex.Message}");
-            throw new Exception($"Error al insertar la agencia: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la agencia", ex);
         }
     }
 
@@ -514,8 +509,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error inserting agency inscription for agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al insertar la inscripción de la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar la inscripción de la agencia {agencyId}", ex);
         }
     }
 
@@ -549,8 +543,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error al insertar funciones de autoridad de la Junta de Directores para la inscripción {agencyInscriptionId}: {ex.Message}");
-            throw new Exception($"Error al insertar funciones de autoridad de la Junta de Directores: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar funciones de autoridad de la Junta de Directores", ex);
         }
     }
 
@@ -584,8 +577,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error inserting agency program for agency {agencyId} and program {programId}: {ex.Message}");
-            throw new Exception($"Error al insertar el programa {programId} para la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar el programa {programId} para la agencia {agencyId}", ex);
         }
     }
 
@@ -694,9 +686,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             if (ex.Message.Contains("IUE") || ex.Message.Contains("EIN") || ex.Message.Contains("SDR") || 
                 ex.Message.Contains("ya está registrado") || ex.Message.Contains("otra agencia"))
             {
-                await _logger.LogError(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado: {ex.Message}");
                 // Re-lanzar el mensaje original del stored procedure que ya es descriptivo
-                throw new Exception(ex.Message, ex);
+                throw new ApiException(ErrorCode.CONFLICT, ex.Message, ex);
             }
             
             // Verificar si es una violación de constraint UNIQUE de la base de datos
@@ -720,12 +711,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
                     errorMessage = $"El Número de Registro del Departamento de Estado (SDR) ya está registrado en otra agencia.";
                 }
                 
-                await _logger.LogError(ex, $"Intento de actualizar agencia {agencyId} con identificador duplicado (constraint): {errorMessage}");
-                throw new Exception(errorMessage, ex);
+                throw new ApiException(ErrorCode.CONFLICT, errorMessage, ex);
             }
             
-            await _logger.LogError(ex, $"Error updating agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al actualizar la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la agencia {agencyId}", ex);
         }
     }
 
@@ -752,7 +741,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         catch (Exception ex)
         {
             await _logger.LogError(ex, $"Error updating agency logo for agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al actualizar el logo de la agencia {agencyId}: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el logo de la agencia {agencyId}", ex);
         }
     }
 
@@ -871,8 +860,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error updating agency status for agency {agencyId} to status {statusId}: {ex.Message}");
-            throw new Exception($"Error al actualizar el estado de la agencia {agencyId} al estado {statusId}: {ex.Message}", ex);
+            await _logger.LogError(ex, $"Error updating agency status for agency {agencyId} to status {statusId}");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el estado de la agencia {agencyId} al estado {statusId}", ex);
         }
     }
 
@@ -908,8 +897,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error updating agency program for agency {agencyId} and program {programId}: {ex.Message}");
-            throw new Exception($"Error al actualizar el programa {programId} de la agencia {agencyId}: {ex.Message}", ex);
+            await _logger.LogError(ex, $"Error updating agency program for agency {agencyId} and program {programId}");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el programa {programId} de la agencia {agencyId}", ex);
         }
     }
 
@@ -951,8 +940,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error updating agency inscription for agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al actualizar la inscripción de la agencia {agencyId}: {ex.Message}", ex);
+            await _logger.LogError(ex, $"Error updating agency inscription for agency {agencyId}");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la inscripción de la agencia {agencyId}", ex);
         }
     }
 
@@ -1022,7 +1011,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             {
                 var errorMessage = $"No se puede eliminar una agencia propietaria. Esta agencia está protegida y no puede ser eliminada bajo ninguna circunstancia.";
                 await _logger.LogError(new Exception(errorMessage), $"Intento de eliminar agencia propietaria {agencyId}");
-                throw new Exception(errorMessage);
+                throw new ApiException(ErrorCode.RELATED_DATA_PROTECTED, errorMessage);
             }
 
             using IDbConnection dbConnection = _context.CreateConnection();
@@ -1043,8 +1032,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error deleting agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al eliminar la agencia {agencyId}: {ex.Message}", ex);
+            await _logger.LogError(ex, $"Error deleting agency {agencyId}");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la agencia {agencyId}", ex);
         }
     }
 
@@ -1078,8 +1067,8 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, $"Error updating completed registration date for agency {agencyId}: {ex.Message}");
-            throw new Exception($"Error al actualizar la fecha de registro completado de la agencia {agencyId}: {ex.Message}", ex);
+            await _logger.LogError(ex, $"Error updating completed registration date for agency {agencyId}");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la fecha de registro completado de la agencia {agencyId}", ex);
         }
     }
 

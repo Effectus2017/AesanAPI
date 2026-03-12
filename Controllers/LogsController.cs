@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 
 namespace Api.Controllers;
 
@@ -15,7 +16,8 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class LogsController(ILogsQueryService logsQueryService, ILogger<LogsController> logger) : ControllerBase
+[ValidateModelState]
+public class LogsController(ILogsQueryService logsQueryService) : ControllerBase
 {
     private static readonly Dictionary<string, string> CategoryToPermission = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -50,39 +52,33 @@ public class LogsController(ILogsQueryService logsQueryService, ILogger<LogsCont
             return StatusCode(StatusCodes.Status403Forbidden, new { message = $"No tiene permiso para ver logs de la categoría {category}." });
         }
 
-        try
-        {
-            var page = queryParameters.Page < 1 ? 1 : queryParameters.Page;
-            var pageSize = queryParameters.PageSize < 1 ? 20 : queryParameters.PageSize > 100 ? 100 : queryParameters.PageSize;
+        var page = queryParameters.Page < 1 ? 1 : queryParameters.Page;
+        var pageSize = queryParameters.PageSize < 1 ? 20 : queryParameters.PageSize > 100 ? 100 : queryParameters.PageSize;
 
-            var (items, totalCount) = await logsQueryService.GetLogsPagedAsync(
-                category,
-                queryParameters.LogFrom,
-                queryParameters.LogTo,
-                page,
-                pageSize,
-                cancellationToken);
+        var (items, totalCount) = await logsQueryService.GetLogsPagedAsync(
+            category,
+            queryParameters.LogFrom,
+            queryParameters.LogTo,
+            page,
+            pageSize,
+            cancellationToken);
 
-            return Ok(new
-            {
-                items,
-                totalCount,
-                page,
-                pageSize
-            });
-        }
-        catch (Exception ex)
+        return Ok(new
         {
-            logger.LogError(ex, "Error al obtener logs para categoría {Category}", category);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error al obtener los logs." });
-        }
+            items,
+            totalCount,
+            page,
+            pageSize
+        });
     }
 
     private bool UserHasPermission(string permissionValueKey)
     {
         var permissionsClaim = User.FindFirst(c => c.Type == "permissions" && c.Value == permissionValueKey);
         if (permissionsClaim != null)
+        {
             return true;
+        }
 
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
         if (string.Equals(role, "super_administrator", StringComparison.OrdinalIgnoreCase) ||

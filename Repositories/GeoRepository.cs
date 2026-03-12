@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -10,10 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGeoRepository
+public class GeoRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGeoRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<GeoRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -41,8 +41,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la ciudad por ID: {CityId}", cityId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la ciudad por ID: {cityId}", ex);
         }
     }
 
@@ -69,8 +68,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la región por ID: {RegionId}", regionId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la región por ID: {regionId}", ex);
         }
     }
 
@@ -83,7 +81,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// <param name="name">El nombre de la ciudad</param>
     /// <param name="alls">Si se deben obtener todas las ciudades</param>
     /// <returns>Las ciudades</returns>
-    public async Task<dynamic> GetAllCitiesFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllCitiesFromDb(int take, int skip, string name, bool alls, bool forDropdown)
     {
         using IDbConnection db = _context.CreateConnection();
         var parameters = new DynamicParameters();
@@ -91,9 +89,8 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         parameters.Add("@skip", skip, DbType.Int32);
         parameters.Add("@name", name, DbType.String);
         parameters.Add("@alls", alls, DbType.Boolean);
-        parameters.Add("@isList", isList, DbType.Boolean);
 
-        if (isList)
+        if (forDropdown)
         {
             string cacheKey = string.Format(_appSettings.Cache.Keys.Cities, take, skip, name, alls);
 
@@ -105,7 +102,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                 return data;
             },
-            _logger,
             _appSettings,
             TimeSpan.FromMinutes(1)
         );
@@ -134,7 +130,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// <param name="name">El nombre de la región</param>
     /// <param name="alls">Si se deben obtener todas las regiones</param>
     /// <returns>Las regiones</returns>
-    public async Task<dynamic> GetAllRegionsFromDb(int take, int skip, string name, bool alls, bool isList)
+    public async Task<dynamic> GetAllRegionsFromDb(int take, int skip, string name, bool alls, bool forDropdown)
     {
         using IDbConnection db = _context.CreateConnection();
         var parameters = new DynamicParameters();
@@ -143,7 +139,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         parameters.Add("@name", name, DbType.String);
         parameters.Add("@alls", alls, DbType.Boolean);
 
-        if (isList)
+        if (forDropdown)
         {
             string cacheKey = string.Format(_appSettings.Cache.Keys.Regions, take, skip, name, alls);
 
@@ -155,7 +151,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                 return data;
             },
-            _logger,
             _appSettings,
             TimeSpan.FromMinutes(1)
         );
@@ -180,7 +175,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// </summary>
     /// <param name="cityId">El ID de la ciudad</param>
     /// <returns>Las regiones</returns>
-    public async Task<dynamic> GetRegionsByCityId(int cityId, bool isList)
+    public async Task<dynamic> GetRegionsByCityId(int cityId, bool forDropdown)
     {
         try
         {
@@ -188,7 +183,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
             var parameters = new DynamicParameters();
             parameters.Add("@cityId", cityId, DbType.Int32);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.RegionsByCity, cityId);
 
@@ -200,7 +195,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                         var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -221,8 +215,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las regiones por ID de ciudad: {CityId}", cityId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las regiones por ID de ciudad: {cityId}", ex);
         }
     }
 
@@ -232,7 +225,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
     /// </summary>
     /// <param name="regionId">El ID de la región</param>
     /// <returns>Las ciudades asociadas a la región</returns>
-    public async Task<dynamic> GetCitiesByRegionId(int regionId, bool isList)
+    public async Task<dynamic> GetCitiesByRegionId(int regionId, bool forDropdown)
     {
         try
         {
@@ -240,7 +233,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
             var parameters = new DynamicParameters();
             parameters.Add("@regionId", regionId, DbType.Int32);
 
-            if (isList)
+            if (forDropdown)
             {
                 string cacheKey = string.Format(_appSettings.Cache.Keys.CitiesByRegion, regionId);
 
@@ -252,7 +245,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                         var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -273,8 +265,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las ciudades por ID de región: {RegionId}", regionId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las ciudades por ID de región: {regionId}", ex);
         }
     }
 
@@ -300,9 +291,5 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.Cities);
         _cache.Remove(_appSettings.Cache.Keys.Regions);
-
-        _logger.LogInformation("Cache invalidado para Geo Repository");
     }
-
-
 }

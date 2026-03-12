@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Api.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,10 +14,10 @@ namespace Api.Controllers
     [ApiController]
     [Route("household-member-income")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class HouseholdMemberIncomeController(IHouseholdMemberIncomeRepository repository, ILogger<HouseholdMemberIncomeController> logger) : ControllerBase
+    [ValidateModelState]
+    public class HouseholdMemberIncomeController(IHouseholdMemberIncomeRepository repository) : ControllerBase
     {
         private readonly IHouseholdMemberIncomeRepository _repository = repository;
-        private readonly ILogger<HouseholdMemberIncomeController> _logger = logger;
 
         /// <summary>
         /// Obtiene todos los ingresos de un miembro del hogar
@@ -25,20 +26,8 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Obtiene todos los ingresos de un miembro del hogar", Description = "Devuelve una lista de ingresos de un miembro del hogar.")]
         public async Task<ActionResult> GetAll([FromQuery] QueryParameters queryParameters)
         {
-            try
-            {
-                if (ModelState.IsValid)
-                {
-                    var result = await _repository.GetAllAsync(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
-                    return Ok(result);
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener los ingresos del miembro con ID {Id}", queryParameters.MemberId);
-                return StatusCode(500, "Error interno del servidor al obtener los ingresos");
-            }
+            var result = await _repository.GetAllAsync(queryParameters.Take, queryParameters.Skip, queryParameters.Name, queryParameters.Alls);
+            return Ok(result);
         }
 
         /// <summary>
@@ -48,17 +37,12 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Obtiene un ingreso de miembro del hogar por su Id", Description = "Devuelve un ingreso de miembro del hogar basado en el ID proporcionado.")]
         public async Task<ActionResult> GetById([FromQuery] int id)
         {
-            try
+            var result = await _repository.GetByIdAsync(id);
+            if (result == null)
             {
-                var result = await _repository.GetByIdAsync(id);
-                if (result == null) return NotFound($"Ingreso con ID {id} no encontrado");
-                return Ok(result);
+                return NotFound($"Ingreso con ID {id} no encontrado");
             }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener el ingreso con ID {Id}", id);
-                return StatusCode(500, "Error interno del servidor al obtener el ingreso");
-            }
+            return Ok(result);
         }
 
         /// <summary>
@@ -68,20 +52,8 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Crea un nuevo ingreso de miembro del hogar", Description = "Crea un nuevo ingreso de miembro del hogar.")]
         public async Task<ActionResult> Insert([FromBody] DTOHouseholdMemberIncome entity)
         {
-            try
-            {
-                if (ModelState.IsValid)
-                {
-                    var id = await _repository.InsertAsync(entity);
-                    return CreatedAtAction(nameof(GetById), new { id }, entity);
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear el ingreso de miembro del hogar");
-                return StatusCode(500, "Error interno del servidor al crear el ingreso");
-            }
+            var id = await _repository.InsertAsync(entity);
+            return CreatedAtAction(nameof(GetById), new { id }, entity);
         }
 
         /// <summary>
@@ -91,21 +63,12 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Actualiza un ingreso de miembro del hogar existente", Description = "Actualiza los datos de un ingreso de miembro del hogar existente.")]
         public async Task<ActionResult> Update([FromBody] DTOHouseholdMemberIncome entity)
         {
-            try
+            var updated = await _repository.UpdateAsync(entity);
+            if (!updated)
             {
-                if (ModelState.IsValid)
-                {
-                    var updated = await _repository.UpdateAsync(entity);
-                    if (!updated) return NotFound($"Ingreso con ID {entity.Id} no encontrado");
-                    return NoContent();
-                }
-                return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+                return NotFound($"Ingreso con ID {entity.Id} no encontrado");
             }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar el ingreso con ID {Id}", entity.Id);
-                return StatusCode(500, "Error interno del servidor al actualizar el ingreso");
-            }
+            return NoContent();
         }
 
         /// <summary>
@@ -115,17 +78,12 @@ namespace Api.Controllers
         [SwaggerOperation(Summary = "Elimina un ingreso de miembro del hogar existente", Description = "Elimina un ingreso de miembro del hogar existente.")]
         public async Task<ActionResult> Delete([FromQuery] int id)
         {
-            try
+            var deleted = await _repository.DeleteAsync(id);
+            if (!deleted)
             {
-                var deleted = await _repository.DeleteAsync(id);
-                if (!deleted) return NotFound($"Ingreso con ID {id} no encontrado");
-                return NoContent();
+                return NotFound($"Ingreso con ID {id} no encontrado");
             }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Error al eliminar el ingreso con ID {Id}", id);
-                return StatusCode(500, "Error interno del servidor al eliminar el ingreso");
-            }
+            return NoContent();
         }
     }
 }

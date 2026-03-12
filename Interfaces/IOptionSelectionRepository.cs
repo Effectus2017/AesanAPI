@@ -17,12 +17,12 @@ public interface IOptionSelectionRepository
     /// </summary>
     /// <param name="optionKey">La clave de la selección de opción</param>
     /// <param name="names">Los nombres de las opciones a obtener</param>
-    /// <param name="isList">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
+    /// <param name="forDropdown">Si true, devuelve la lista directamente; si false, devuelve { data, count }</param>
     /// <param name="sortByNameKeys">Option keys a ordenar por nombre (según language). Comma-separated.</param>
     /// <param name="sortByNameENKeys">Option keys a ordenar por NameEN. Comma-separated.</param>
     /// <param name="language">Idioma para sortByNameKeys: "en" usa NameEN, sino Name.</param>
     /// <returns>La selección de opción encontrada o null si no se encuentra</returns>
-    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool isList = false, string? sortByNameKeys = null, string? sortByNameENKeys = null, string? language = null);
+    Task<dynamic> GetOptionSelectionByOptionKey(string optionKey, string names, bool forDropdown = false, string? sortByNameKeys = null, string? sortByNameENKeys = null, string? language = null);
 
     /// <summary>
     /// Obtiene todas las selecciones de opciones
@@ -32,9 +32,9 @@ public interface IOptionSelectionRepository
     /// <param name="name">El nombre de la selección de opción</param>
     /// <param name="optionType">El tipo de opción</param>
     /// <param name="alls">Si se deben obtener todas las selecciones de opciones</param>
-    /// <param name="isList">Si se debe devolver una lista o un objeto</param>
+    /// <param name="forDropdown">Si se debe devolver una lista o un objeto</param>
     /// <returns>La selección de opción encontrada o null si no se encuentra</returns>
-    Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionType, bool alls, bool isList);
+    Task<dynamic> GetAllOptionSelections(int take, int skip, string name, string optionType, bool alls, bool forDropdown);
 
     /// <summary>
     /// Inserta una nueva selección de opción

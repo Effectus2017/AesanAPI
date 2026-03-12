@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Interfaces;
 using Api.Models.Response;
 using Api.Services;
@@ -15,9 +16,9 @@ namespace Api.Controllers;
 [ApiController]
 [Route("reports")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class ReportsController(ILogger<ReportsController> logger, IReportsRepository reportsRepository) : Controller
+[ValidateModelState]
+public class ReportsController(IReportsRepository reportsRepository) : Controller
 {
-    private readonly ILogger<ReportsController> _logger = logger;
     private readonly IReportsRepository _reportsRepository = reportsRepository ?? throw new ArgumentNullException(nameof(reportsRepository));
 
     /// <summary>
@@ -33,29 +34,18 @@ public class ReportsController(ILogger<ReportsController> logger, IReportsReposi
     )]
     public async Task<IActionResult> GetSchoolHierarchyTree([FromQuery] int year, [FromQuery] int? sponsorId = null)
     {
-        try
+        if (year <= 0)
         {
-            if (year <= 0)
-            {
-                return BadRequest("El año debe ser un valor válido mayor a 0");
-            }
-
-            _logger.LogInformation("Obteniendo estructura jerárquica para año: {Year}, SponsorId: {SponsorId}", year, sponsorId);
-
-            var result = await _reportsRepository.GetHierarchyStructure(year, sponsorId);
-
-            if (result == null)
-            {
-                return NotFound("No se encontró información para los parámetros especificados");
-            }
-
-            return Ok(result);
+            return BadRequest("El año debe ser un valor válido mayor a 0");
         }
-        catch (Exception ex)
+
+        var result = await _reportsRepository.GetHierarchyStructure(year, sponsorId);
+
+        if (result == null)
         {
-            _logger.LogError(ex, "Error al obtener la estructura jerárquica: {Message}", ex.Message);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error al obtener la estructura jerárquica", error = ex.Message });
+            return NotFound("No se encontró información para los parámetros especificados");
         }
+
+        return Ok(result);
     }
 }
-

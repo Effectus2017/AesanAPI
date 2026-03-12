@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Api.Filters;
 using Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -16,9 +17,9 @@ namespace Api.Controllers;
 [ApiController]
 [Route("staff-classification")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class StaffClassificationController(ILogger<StaffClassificationController> logger, IUnitOfWork unitOfWork) : Controller
+[ValidateModelState]
+public class StaffClassificationController(IUnitOfWork unitOfWork) : Controller
 {
-    private readonly ILogger<StaffClassificationController> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -30,29 +31,14 @@ public class StaffClassificationController(ILogger<StaffClassificationController
     [SwaggerOperation(Summary = "Obtiene una clasificación de staff por su ID", Description = "Devuelve una clasificación de staff basada en el ID proporcionado.")]
     public async Task<IActionResult> GetStaffClassificationById([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var staffClassification = await _unitOfWork.StaffClassificationRepository.GetStaffClassificationById(queryParameters.Id);
+
+        if (staffClassification == null)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Obteniendo clasificación de staff con ID: {Id}", queryParameters.Id);
-
-                var staffClassification = await _unitOfWork.StaffClassificationRepository.GetStaffClassificationById(queryParameters.Id);
-
-                if (staffClassification == null)
-                {
-                    return NotFound("Clasificación de staff no encontrada");
-                }
-
-                return Ok(staffClassification);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return NotFound("Clasificación de staff no encontrada");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener la clasificación de staff");
-            return StatusCode(500, "Error al obtener la clasificación de staff");
-        }
+
+        return Ok(staffClassification);
     }
 
     /// <summary>
@@ -64,28 +50,14 @@ public class StaffClassificationController(ILogger<StaffClassificationController
     [SwaggerOperation(Summary = "Obtiene todas las clasificaciones de staff", Description = "Devuelve una lista paginada de todas las clasificaciones de staff disponibles.")]
     public async Task<IActionResult> GetAllStaffClassifications([FromQuery] QueryParameters queryParameters)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-
-                var staffClassifications = await _unitOfWork.StaffClassificationRepository.GetAllStaffClassificationsFromDb(
-                    queryParameters.Take,
-                    queryParameters.Skip,
-                    queryParameters.Names,
-                    queryParameters.Alls,
-                    queryParameters.IsList
-                );
-                return Ok(staffClassifications);
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener las clasificaciones de staff");
-            return StatusCode(500, "Error al obtener las clasificaciones de staff");
-        }
+        var staffClassifications = await _unitOfWork.StaffClassificationRepository.GetAllStaffClassificationsFromDb(
+            queryParameters.Take,
+            queryParameters.Skip,
+            queryParameters.Names,
+            queryParameters.Alls,
+            queryParameters.ForDropdown
+        );
+        return Ok(staffClassifications);
     }
 
     /// <summary>
@@ -97,34 +69,19 @@ public class StaffClassificationController(ILogger<StaffClassificationController
     [SwaggerOperation(Summary = "Inserta una nueva clasificación de staff", Description = "Crea una nueva clasificación de staff en la base de datos.")]
     public async Task<IActionResult> InsertStaffClassification([FromBody] StaffClassificationRequest request)
     {
-        try
+        if (request == null)
         {
-            if (ModelState.IsValid)
-            {
-                if (request == null)
-                {
-                    return BadRequest("La clasificación de staff es requerida");
-                }
-
-                var result = await _unitOfWork.StaffClassificationRepository.InsertStaffClassification(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Clasificación de staff insertada con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo insertar la clasificación de staff");
-                return BadRequest("No se pudo insertar la clasificación de staff");
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("La clasificación de staff es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffClassificationRepository.InsertStaffClassification(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al insertar la clasificación de staff");
-            return StatusCode(500, "Error al insertar la clasificación de staff");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo insertar la clasificación de staff");
     }
 
     /// <summary>
@@ -136,34 +93,19 @@ public class StaffClassificationController(ILogger<StaffClassificationController
     [SwaggerOperation(Summary = "Actualiza una clasificación de staff existente", Description = "Actualiza una clasificación de staff existente en la base de datos.")]
     public async Task<IActionResult> UpdateStaffClassification([FromBody] StaffClassificationRequest request)
     {
-        try
+        if (request == null)
         {
-            if (ModelState.IsValid)
-            {
-                if (request == null)
-                {
-                    return BadRequest("La clasificación de staff es requerida");
-                }
-
-                var result = await _unitOfWork.StaffClassificationRepository.UpdateStaffClassification(request);
-
-                if (result)
-                {
-                    _logger.LogInformation("Clasificación de staff actualizada con ID: {Id}", request.Id);
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo actualizar la clasificación de staff");
-                return BadRequest("No se pudo actualizar la clasificación de staff");
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return BadRequest("La clasificación de staff es requerida");
         }
-        catch (Exception ex)
+
+        var result = await _unitOfWork.StaffClassificationRepository.UpdateStaffClassification(request);
+
+        if (result)
         {
-            _logger.LogError(ex, "Error al actualizar la clasificación de staff");
-            return StatusCode(500, "Error al actualizar la clasificación de staff");
+            return Ok(result);
         }
+
+        return BadRequest("No se pudo actualizar la clasificación de staff");
     }
 
     /// <summary>
@@ -175,29 +117,13 @@ public class StaffClassificationController(ILogger<StaffClassificationController
     [SwaggerOperation(Summary = "Elimina una clasificación de staff", Description = "Realiza una baja lógica de una clasificación de staff existente.")]
     public async Task<IActionResult> DeleteStaffClassification([FromQuery] QueryParameters queryParameters)
     {
-        try
+        var result = await _unitOfWork.StaffClassificationRepository.DeleteStaffClassification(queryParameters.Id);
+
+        if (result)
         {
-            if (ModelState.IsValid)
-            {
-                _logger.LogInformation("Eliminando clasificación de staff con ID: {Id}", queryParameters.Id);
-
-                var result = await _unitOfWork.StaffClassificationRepository.DeleteStaffClassification(queryParameters.Id);
-
-                if (result)
-                {
-                    return Ok(result);
-                }
-
-                _logger.LogWarning("No se pudo eliminar la clasificación de staff");
-                return BadRequest("No se pudo eliminar la clasificación de staff");
-            }
-
-            return BadRequest(Utilities.GetErrorListFromModelState(ModelState));
+            return Ok(result);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar la clasificación de staff");
-            return StatusCode(500, "Error al eliminar la clasificación de staff");
-        }
+
+        return BadRequest("No se pudo eliminar la clasificación de staff");
     }
 }

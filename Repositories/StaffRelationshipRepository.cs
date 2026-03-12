@@ -8,6 +8,7 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
@@ -16,13 +17,11 @@ namespace Api.Repositories;
 /// </summary>
 public class StaffRelationshipRepository(
     DapperContext context,
-    ILogger<StaffRelationshipRepository> logger,
     IMemoryCache cache,
     IOptions<ApplicationSettings> appSettings,
     MappingService mappingService) : IStaffRelationshipRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<StaffRelationshipRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -36,8 +35,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Obteniendo relaciones del empleado con ID {StaffId}", staffId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@staffId", staffId, DbType.Int32);
@@ -55,8 +52,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las relaciones del empleado con ID {StaffId}", staffId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las relaciones del empleado con ID {staffId}", ex);
         }
     }
 
@@ -66,69 +62,54 @@ public class StaffRelationshipRepository(
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="skip">Número de registros a saltar</param>
     /// <param name="alls">Si se deben obtener todos los registros</param>
-    /// <param name="isList">Si es para lista simple</param>
+    /// <param name="forDropdown">Si es para lista simple (dropdown), devuelve solo datos; si no, devuelve { data, count }</param>
     /// <returns>Lista de todas las relaciones activas</returns>
-    public async Task<dynamic> GetAllActiveRelationshipsFromDb(int take, int skip, bool alls, bool isList)
+    public async Task<dynamic> GetAllActiveRelationshipsFromDb(int take, int skip, bool alls, bool forDropdown)
     {
         try
         {
-            _logger.LogInformation("Obteniendo todas las relaciones activas");
+            string cacheKey = $"StaffRelationship_AllActive_{take}_{skip}_{alls}_{forDropdown}";
 
-            string cacheKey = $"StaffRelationship_AllActive_{take}_{skip}_{alls}_{isList}";
+            using IDbConnection dbConnection = _context.CreateConnection();
+            var param = new DynamicParameters();
+            param.Add("@take", take, DbType.Int32);
+            param.Add("@skip", skip, DbType.Int32);
+            param.Add("@alls", alls, DbType.Boolean);
 
-            if (isList)
+            if (forDropdown)
             {
                 return await _cache.CacheQuery<dynamic>(
                     cacheKey,
                     async () =>
                     {
-                        using IDbConnection dbConnection = _context.CreateConnection();
-                        var param = new DynamicParameters();
-                        param.Add("@take", take, DbType.Int32);
-                        param.Add("@skip", skip, DbType.Int32);
-                        param.Add("@alls", alls, DbType.Boolean);
-                        param.Add("@isList", isList, DbType.Boolean);
-
-                        var result = await dbConnection.QueryAsync<dynamic>("100_GetAllActiveStaffRelationships", param, commandType: CommandType.StoredProcedure);
-
+                        var result = await dbConnection.QueryMultipleAsync("100_GetAllActiveStaffRelationships", param, commandType: CommandType.StoredProcedure);
                         if (result == null)
                         {
                             return new List<dynamic>();
                         }
-
-                        var data = result.Select(_mappingService.MapStaffRelationship).ToList();
+                        _ = result.ReadFirstOrDefault<int>(); // TotalCount, primer result set
+                        var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
             }
             else
             {
-                using IDbConnection dbConnection = _context.CreateConnection();
-                var param = new DynamicParameters();
-                param.Add("@take", take, DbType.Int32);
-                param.Add("@skip", skip, DbType.Int32);
-                param.Add("@alls", alls, DbType.Boolean);
-                param.Add("@isList", isList, DbType.Boolean);
-
                 var result = await dbConnection.QueryMultipleAsync("100_GetAllActiveStaffRelationships", param, commandType: CommandType.StoredProcedure);
-
                 if (result == null)
                 {
                     return null;
                 }
-
-                var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                 var count = result.ReadFirstOrDefault<int>();
+                var data = result.Read<dynamic>().Select(_mappingService.MapStaffRelationship).ToList();
                 return new { data, count };
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todas las relaciones activas");
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener todas las relaciones activas", ex);
         }
     }
 
@@ -142,8 +123,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Obteniendo relación con ID {Id}", id);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
@@ -156,8 +135,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la relación con ID {Id}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la relación con ID {id}", ex);
         }
     }
 
@@ -170,8 +148,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Creando nueva relación entre empleados {StaffId} y {RelatedStaffId}", request.StaffId, request.RelatedStaffId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@staffId", request.StaffId, DbType.Int32);
@@ -193,8 +169,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear la relación entre empleados {StaffId} y {RelatedStaffId}", request.StaffId, request.RelatedStaffId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al crear la relación entre empleados {request.StaffId} y {request.RelatedStaffId}", ex);
         }
     }
 
@@ -207,8 +182,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Actualizando relación con ID {Id}", request.Id);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@id", request.Id, DbType.Int32);
@@ -237,8 +210,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la relación con ID {Id}", request.Id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la relación con ID {request.Id}", ex);
         }
     }
 
@@ -251,8 +223,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Desactivando relación con ID {Id}", id);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
@@ -278,8 +248,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al desactivar la relación con ID {Id}", id);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al desactivar la relación con ID {id}", ex);
         }
     }
 
@@ -293,8 +262,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Verificando existencia de relación entre empleados {StaffId} y {RelatedStaffId}", staffId, relatedStaffId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@staffId", staffId, DbType.Int32);
@@ -308,8 +275,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar si existe relación entre empleados {StaffId} y {RelatedStaffId}", staffId, relatedStaffId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al verificar si existe relación entre empleados {staffId} y {relatedStaffId}", ex);
         }
     }
 
@@ -323,8 +289,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Obteniendo relaciones por tipo {RelationshipTypeId}", relationshipTypeId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@relationshipTypeId", relationshipTypeId, DbType.Int32);
@@ -341,8 +305,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las relaciones por tipo {RelationshipTypeId}", relationshipTypeId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las relaciones por tipo {relationshipTypeId}", ex);
         }
     }
 
@@ -357,8 +320,6 @@ public class StaffRelationshipRepository(
     {
         try
         {
-            _logger.LogInformation("Verificando si empleado {StaffId} puede tener tipo de relación {RelationshipTypeId}", staffId, relationshipTypeId);
-
             using IDbConnection dbConnection = _context.CreateConnection();
             var param = new DynamicParameters();
             param.Add("@staffId", staffId, DbType.Int32);
@@ -373,8 +334,7 @@ public class StaffRelationshipRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar si el empleado {StaffId} puede tener el tipo de relación {RelationshipTypeId}", staffId, relationshipTypeId);
-            throw new Exception(ex.Message);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al verificar si el empleado {staffId} puede tener el tipo de relación {relationshipTypeId}", ex);
         }
     }
 
@@ -396,9 +356,9 @@ public class StaffRelationshipRepository(
                 _cache.Remove(_appSettings.Cache.Keys.Staff);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al invalidar caché para staff con ID {StaffId}", staffId);
+            // Ignorar errores de invalidación de caché
         }
     }
 }

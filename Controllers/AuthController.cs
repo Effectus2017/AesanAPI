@@ -6,20 +6,21 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Api.Models;
 using Api.Models.Request;
+using Api.Filters;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("auth")]
+[ValidateModelState]
 /// <summary>
 /// Controlador que maneja la autenticación y gestión de contraseñas de usuarios.
 /// Proporciona endpoints para inicio de sesión y restablecimiento de contraseñas.
 /// </summary>
-public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logger, IConfiguration configuration)
+public class AuthController(IUnitOfWork unitOfWork, IConfiguration configuration)
     : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly ILogger<AuthController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     /// <summary>
@@ -28,19 +29,7 @@ public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logg
     [HttpPost("login")]
     public async Task<ActionResult<object>> Login([FromBody] LoginRequest model)
     {
-        try
-        {
-            if (ModelState.IsValid)
-            {
-                return await _unitOfWork.UserRepository.Login(model);
-            }
-
-            return BadRequest();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return await _unitOfWork.UserRepository.Login(model);
     }
 
     /// <summary>
@@ -51,26 +40,18 @@ public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logg
     [HttpPost("select-role")]
     public async Task<ActionResult<object>> SelectRole([FromBody] SelectRoleRequest model)
     {
-        try
+        if (model == null || string.IsNullOrWhiteSpace(model.Role))
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.Role))
-            {
-                return BadRequest(new { Message = "El rol es requerido." });
-            }
-
-            var userId = ValidateBearerTokenAndGetUserId();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { Message = "Token inválido o expirado." });
-            }
-
-            return await _unitOfWork.UserRepository.SelectRole(userId, model.Role);
+            return BadRequest(new { Message = "El rol es requerido." });
         }
-        catch (Exception ex)
+
+        var userId = ValidateBearerTokenAndGetUserId();
+        if (string.IsNullOrEmpty(userId))
         {
-            _logger.LogWarning(ex, "SelectRole error");
-            return BadRequest(ex.Message);
+            return Unauthorized(new { Message = "Token inválido o expirado." });
         }
+
+        return await _unitOfWork.UserRepository.SelectRole(userId, model.Role);
     }
 
     /// <summary>
@@ -117,9 +98,8 @@ public class AuthController(IUnitOfWork unitOfWork, ILogger<AuthController> logg
 
             return userId;
         }
-        catch (Exception ex)
+        catch
         {
-            _logger.LogDebug(ex, "JWT validation failed for select-role");
             return null;
         }
     }

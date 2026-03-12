@@ -3,13 +3,13 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models.Request;
 using Dapper;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
-public class LogApplicationRepository(DapperContext context, ILogger<LogApplicationRepository> logger) : ILogApplicationRepository
+public class LogApplicationRepository(DapperContext context) : ILogApplicationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<LogApplicationRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<long> InsertAsync(LogApplicationRequest request, CancellationToken cancellationToken = default)
     {
@@ -40,8 +40,7 @@ public class LogApplicationRepository(DapperContext context, ILogger<LogApplicat
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar LogApplication");
-            throw new Exception($"Error al insertar LogApplication: {ex.Message}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar LogApplication", ex);
         }
     }
 }
