@@ -28,7 +28,7 @@ public class ApiExceptionFilter(ILogger<ApiExceptionFilter> logger) : IException
             _logger.LogError(exception, "Unhandled Exception: {Message}", exception.Message);
         }
 
-        context.Result = new ObjectResult(apiException)
+        context.Result = new ObjectResult(new { code = apiException.Code, message = apiException.Message })
         {
             StatusCode = apiException.StatusCode
         };

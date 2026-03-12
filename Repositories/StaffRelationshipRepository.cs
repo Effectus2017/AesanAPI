@@ -153,6 +153,7 @@ public class StaffRelationshipRepository(
             param.Add("@staffId", request.StaffId, DbType.Int32);
             param.Add("@relatedStaffId", request.RelatedStaffId, DbType.Int32);
             param.Add("@relationshipTypeId", request.RelationshipTypeId, DbType.Int32);
+            param.Add("@comment", request.Comment, DbType.String);
             param.Add("@id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("100_InsertStaffRelationship", param, commandType: CommandType.StoredProcedure);

@@ -27,6 +27,11 @@ public class StaffRelationshipRequest
     [Required(ErrorMessage = "El tipo de parentesco es requerido")]
     [Range(1, int.MaxValue, ErrorMessage = "El tipo de parentesco debe ser mayor a 0")]
     public int RelationshipTypeId { get; set; }
+
+    /// <summary>
+    /// Comentario opcional sobre la relación
+    /// </summary>
+    public string? Comment { get; set; }
 }
 
 /// <summary>

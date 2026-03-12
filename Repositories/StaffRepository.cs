@@ -863,7 +863,7 @@ public class StaffRepository(
             param.Add("@name", name, DbType.String);
             param.Add("@staffTypeId", staffTypeId, DbType.Int32);
 
-            var result = await dbConnection.QueryMultipleAsync("100_GetStaffByAgency", param, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("101_GetStaffByAgency", param, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {

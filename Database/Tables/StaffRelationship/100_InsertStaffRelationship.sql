@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE [dbo].[100_InsertStaffRelationship]
     @staffId INT,
     @relatedStaffId INT,
     @relationshipTypeId INT,
+    @comment NVARCHAR(500) = NULL,
     @id INT OUTPUT
 AS
 BEGIN
@@ -79,9 +80,9 @@ BEGIN
         
         -- Insertar la relación
         INSERT INTO StaffRelationship
-        (StaffId, RelatedStaffId, RelationshipTypeId, IsActive, CreatedAt)
+        (StaffId, RelatedStaffId, RelationshipTypeId, IsActive, Comment, CreatedAt)
     VALUES
-        (@staffId, @relatedStaffId, @relationshipTypeId, 1, GETDATE());
+        (@staffId, @relatedStaffId, @relationshipTypeId, 1, @comment, GETDATE());
         
         -- Establecer el parámetro de salida
         SET @id = SCOPE_IDENTITY();
