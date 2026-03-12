@@ -3,18 +3,17 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Response;
+using Api.Models.Errors;
 using Dapper;
-using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
 
 /// <summary>
 /// Repositorio para gestionar relaciones sitio-programa
 /// </summary>
-public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRepository> logger) : ISiteProgramRepository
+public class SiteProgramRepository(DapperContext context) : ISiteProgramRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SiteProgramRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Obtiene todos los programas de un sitio
@@ -37,8 +36,7 @@ public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener programas del sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener programas del sitio {siteId}", ex);
         }
     }
 
@@ -68,8 +66,7 @@ public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar relación sitio-programa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar relación sitio-programa", ex);
         }
     }
 
@@ -99,8 +96,7 @@ public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar relación sitio-programa para SiteId={SiteId}, ProgramId={ProgramId}", request.SiteId, request.ProgramId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar relación sitio-programa para SiteId={request.SiteId}, ProgramId={request.ProgramId}", ex);
         }
     }
 
@@ -123,13 +119,11 @@ public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRep
             );
 
             var rowsAffected = parameters.Get<int>("@rowsAffected");
-            _logger.LogInformation("Se eliminaron {Count} programas del sitio {SiteId}", rowsAffected, siteId);
             return rowsAffected;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar programas del sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar programas del sitio {siteId}", ex);
         }
     }
 
@@ -166,8 +160,7 @@ public class SiteProgramRepository(DapperContext context, ILogger<SiteProgramRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar relación sitio-programa {Id}", request.Id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar relación sitio-programa {request.Id}", ex);
         }
     }
 }

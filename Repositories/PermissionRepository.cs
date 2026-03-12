@@ -2,17 +2,16 @@ using System.Data;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class PermissionRepository(DapperContext context, ILogger<PermissionRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IPermissionRepository
+public class PermissionRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IPermissionRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<PermissionRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -33,8 +32,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el permiso por ValueKey");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el permiso por ValueKey", ex);
         }
     }
 
@@ -56,8 +54,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el permiso por ID");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el permiso por ID", ex);
         }
     }
 
@@ -88,8 +85,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todos los permisos");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener todos los permisos", ex);
         }
     }
 
@@ -110,8 +106,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los permisos del usuario");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los permisos del usuario", ex);
         }
     }
 
@@ -145,8 +140,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el permiso");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el permiso", ex);
         }
     }
 
@@ -177,8 +171,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el permiso");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el permiso", ex);
         }
     }
 
@@ -208,8 +201,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el permiso");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el permiso", ex);
         }
     }
 
@@ -242,8 +234,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar permiso al usuario");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al asignar permiso al usuario", ex);
         }
     }
 
@@ -276,8 +267,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover permiso del usuario");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al remover permiso del usuario", ex);
         }
     }
 
@@ -310,8 +300,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar permiso al rol");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al asignar permiso al rol", ex);
         }
     }
 
@@ -344,8 +333,7 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover permiso del rol");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al remover permiso del rol", ex);
         }
     }
 
@@ -356,6 +344,5 @@ public class PermissionRepository(DapperContext context, ILogger<PermissionRepos
             _cache.Remove($"Permission_{permissionId}");
         }
         _cache.Remove("Permissions");
-        _logger.LogInformation("Cache invalidado para Permission Repository");
     }
 }

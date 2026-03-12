@@ -7,7 +7,6 @@ using Api.Services;
 using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
@@ -16,10 +15,9 @@ namespace Api.Repositories;
 /// Repository for managing option selections in the database
 /// Repositorio para gestionar selecciones de opciones en la base de datos
 /// </summary>
-public class OptionSelectionRepository(DapperContext context, ILogger<OptionSelectionRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOptionSelectionRepository
+public class OptionSelectionRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOptionSelectionRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<OptionSelectionRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -44,12 +42,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la opción de selección por ID/Error getting option selection by ID");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener la opción de selección por ID", ex);
-        }
-        finally
-        {
-            _logger.LogInformation("Fin de la ejecución de GetOptionSelectionById");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la opción de selección por ID {id}", ex);
         }
     }
 
@@ -80,7 +73,6 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
 
             if (data == null || !data.Any())
             {
-                _logger.LogInformation("No se encontraron selecciones de opción para la clave: {OptionKey}", optionKey);
                 return forDropdown ? (object)Enumerable.Empty<DTOOptionSelection>() : new { data = Enumerable.Empty<DTOOptionSelection>(), count = 0 };
             }
 
@@ -88,8 +80,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener selecciones de opción por clave: {OptionKey}", optionKey);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener selecciones de opción por clave", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener selecciones de opción por clave: {optionKey}", ex);
         }
     }
 
@@ -131,7 +122,6 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
                         var data = result.Read<dynamic>().Select(_mappingService.MapOptionSelectionList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -153,7 +143,6 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las opciones de selección/Error getting option selections");
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener las opciones de selección", ex);
         }
     }
@@ -190,7 +179,6 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la opción de selección/Error inserting option selection");
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la opción de selección", ex);
         }
     }
@@ -225,8 +213,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la opción de selección/Error updating option selection");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la opción de selección", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la opción de selección Id={optionSelection.Id}", ex);
         }
     }
 
@@ -259,8 +246,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización de la opción de selección/Error updating option selection display order");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el orden de visualización de la opción de selección", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el orden de visualización de la opción de selección Id={optionSelectionId}", ex);
         }
     }
 
@@ -291,8 +277,7 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la opción de selección");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar la opción de selección", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la opción de selección Id={id}", ex);
         }
     }
 
@@ -307,7 +292,5 @@ public class OptionSelectionRepository(DapperContext context, ILogger<OptionSele
             _cache.Remove($"OptionSelection_{optionSelectionId}");
         }
         _cache.Remove("OptionSelections");
-        _logger.LogInformation("Cache invalidado para OptionSelection Repository");
     }
-
 }

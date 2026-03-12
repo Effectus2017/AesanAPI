@@ -4,18 +4,17 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.DTO;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAreaTypeRepository
+public class AreaTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAreaTypeRepository
 {
     private readonly DapperContext _context = context;
-    private readonly ILogger<AreaTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -37,8 +36,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting area type by id: {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error getting area type by id: {id}", ex);
         }
     }
 
@@ -74,7 +72,6 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
                         var data = result.Read<dynamic>().Select(_mappingService.MapAreaTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -90,8 +87,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting area types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}", take, skip, name, alls, forDropdown);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error getting area types with parameters: take={take}, skip={skip}, name={name}, alls={alls}, forDropdown={forDropdown}", ex);
         }
     }
 
@@ -117,8 +113,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error inserting area type: {AreaType}", areaType);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error inserting area type", ex);
         }
     }
 
@@ -143,8 +138,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating area type: {AreaType}", areaType);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error updating area type", ex);
         }
     }
 
@@ -165,8 +159,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting area type with id {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error deleting area type with id {id}", ex);
         }
     }
 
@@ -188,8 +181,7 @@ public class AreaTypeRepository(DapperContext context, ILogger<AreaTypeRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de área para la ciudad {CityId}", cityId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de área para la ciudad {cityId}", ex);
         }
     }
 

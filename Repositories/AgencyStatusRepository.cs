@@ -3,18 +3,17 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAgencyStatusRepository
+public class AgencyStatusRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IAgencyStatusRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyStatusRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -37,8 +36,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el estado de agencia por ID");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el estado de agencia por ID {id}", ex);
         }
     }
 
@@ -78,7 +76,6 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
                         var data = result.Read<dynamic>().Select(_mappingService.MapAgencyStatus).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -99,8 +96,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener todos los estados de agencia");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener todos los estados de agencia", ex);
         }
     }
 
@@ -134,8 +130,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el estado de agencia");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el estado de agencia", ex);
         }
     }
 
@@ -170,8 +165,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el estado de agencia");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el estado de agencia Id={status.Id}", ex);
         }
     }
 
@@ -204,8 +198,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del estado de agencia");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el orden de visualización del estado de agencia Id={statusId}", ex);
         }
     }
 
@@ -236,8 +229,7 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el estado de agencia");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el estado de agencia Id={id}", ex);
         }
     }
 
@@ -250,7 +242,5 @@ public class AgencyStatusRepository(DapperContext context, ILogger<AgencyStatusR
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.AgencyStatuses);
-        _logger.LogInformation("Cache invalidado para AgencyStatus Repository");
     }
-
 }

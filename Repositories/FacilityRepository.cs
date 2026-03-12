@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class FacilityRepository(DapperContext context, ILogger<FacilityRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFacilityRepository
+public class FacilityRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFacilityRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<FacilityRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -40,7 +40,6 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
                 var data = await result.ReadSingleAsync<DTOFacility>();
                 return data;
             },
-            _logger,
             _appSettings
         );
     }
@@ -76,7 +75,6 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             },
-            _logger,
             _appSettings
         );
     }
@@ -112,8 +110,7 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la facilidad");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la facilidad", ex);
         }
     }
 
@@ -149,8 +146,7 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la facilidad");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la facilidad Id={facility.Id}", ex);
         }
     }
 
@@ -185,8 +181,7 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la facilidad");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la facilidad Id={id}", ex);
         }
     }
 
@@ -199,6 +194,5 @@ public class FacilityRepository(DapperContext context, ILogger<FacilityRepositor
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.Facilities);
-        _logger.LogInformation("Cache invalidado para Facility Repository");
     }
 }

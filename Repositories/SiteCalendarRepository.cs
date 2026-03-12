@@ -6,7 +6,6 @@ using Api.Models;
 using Api.Models.Request;
 using Api.Models.Response;
 using Api.Models.Errors;
-using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
 
@@ -14,10 +13,9 @@ namespace Api.Repositories;
 /// Repositorio para la gestión de calendario de funcionamiento de sitios
 /// Implementa las operaciones CRUD y específicas para días de funcionamiento
 /// </summary>
-public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarRepository> logger, ISiteOperatingDayServiceRepository? serviceRepository = null) : ISiteCalendarRepository
+public class SiteCalendarRepository(DapperContext context, ISiteOperatingDayServiceRepository? serviceRepository = null) : ISiteCalendarRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SiteCalendarRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ISiteOperatingDayServiceRepository? _serviceRepository = serviceRepository;
 
     /// <summary>
@@ -41,7 +39,6 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             var siteInfo = await multi.ReadFirstOrDefaultAsync<SiteInfoResponse>();
             if (siteInfo == null)
             {
-                _logger.LogWarning("No se encontró el sitio con ID {SiteId}", siteId);
                 return new SiteCalendarResponse
                 {
                     SiteId = siteId,
@@ -70,15 +67,11 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                 OperatingDays = operatingDaysList
             };
 
-            _logger.LogInformation("Se obtuvieron {Count} días de funcionamiento para el sitio {SiteId} (mes: {Month}, año: {Year})",
-                operatingDaysList.Count, siteId, month?.ToString() ?? "todos", year?.ToString() ?? "todos");
-
             return response;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener días de funcionamiento para el sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener días de funcionamiento para el sitio {siteId}", ex);
         }
     }
 
@@ -119,9 +112,8 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Error al cargar servicios en batch para {Count} días de funcionamiento", operatingDayIds.Count);
             // En caso de error, inicializar lista vacía para cada día
             foreach (var day in operatingDays)
             {
@@ -162,26 +154,18 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                     disableParameters.Add("@operatingDayId", newId.Value, DbType.Int32);
 
                     await dbConnection.ExecuteAsync("100_DisableServicesForHolidayDay", disableParameters, commandType: CommandType.StoredProcedure);
-
-                    _logger.LogInformation("Servicios deshabilitados para día feriado {OperatingDayId}", newId.Value);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    _logger.LogWarning(ex, "Error al deshabilitar servicios para día feriado {OperatingDayId}", newId.Value);
                     // No lanzamos excepción para no fallar la creación del día
                 }
             }
-
-            _logger.LogInformation("Creación de día de funcionamiento para sitio {SiteId} en fecha {Date}: {Success}",
-                request.SiteId, request.OperatingDate.Date, newId.HasValue ? "Exitosa" : "Fallida");
 
             return newId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear día de funcionamiento para el sitio {SiteId} en fecha {Date}",
-                request.SiteId, request.OperatingDate.Date);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al crear día de funcionamiento para el sitio {request.SiteId} en fecha {request.OperatingDate.Date}", ex);
         }
     }
 
@@ -219,12 +203,9 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                         enableParameters.Add("@operatingDayId", id, DbType.Int32);
 
                         await dbConnection.ExecuteAsync("100_EnableServicesForNonHolidayDay", enableParameters, commandType: CommandType.StoredProcedure);
-
-                        _logger.LogInformation("Servicios habilitados para día que dejó de ser feriado {OperatingDayId}", id);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        _logger.LogWarning(ex, "Error al habilitar servicios para día que dejó de ser feriado {OperatingDayId}", id);
                         // No lanzamos excepción para no fallar la actualización del día
                     }
                 }
@@ -237,19 +218,13 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                         disableParameters.Add("@operatingDayId", id, DbType.Int32);
 
                         await dbConnection.ExecuteAsync("100_DisableServicesForHolidayDay", disableParameters, commandType: CommandType.StoredProcedure);
-
-                        _logger.LogInformation("Servicios deshabilitados para día feriado {OperatingDayId}", id);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        _logger.LogWarning(ex, "Error al deshabilitar servicios para día feriado {OperatingDayId}", id);
                         // No lanzamos excepción para no fallar la actualización del día
                     }
                 }
             }
-
-            _logger.LogInformation("Actualización de día de funcionamiento {Id}: {Success}",
-                id, success ? "Exitosa" : "Fallida");
 
             // Recalcular días de funcionamiento desde la API para asegurar que OperatingDaysCalculated
             // refleje el cambio (p. ej. al marcar/desmarcar feriado) con datos ya persistidos
@@ -262,8 +237,7 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar día de funcionamiento {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar día de funcionamiento {id}", ex);
         }
     }
 
@@ -295,24 +269,19 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                     }
                     if (success) successCount++;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    _logger.LogError(ex, "Error al procesar día de funcionamiento para sitio {SiteId} en fecha {Date}",
-                        request.SiteId, request.OperatingDate.Date);
+                    // Continuar con el siguiente día
                 }
             }
 
             var allSuccessful = successCount == totalCount;
 
-            _logger.LogInformation("Actualización en lote para sitio {SiteId}: {SuccessCount}/{TotalCount} exitosos",
-                siteId, successCount, totalCount);
-
             return allSuccessful;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error en actualización en lote para sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error en actualización en lote para sitio {siteId}", ex);
         }
     }
 
@@ -337,15 +306,11 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
             var rowsAffected = (int)result.RowsAffected;
             var success = rowsAffected > 0;
 
-            _logger.LogInformation("Eliminación de día de funcionamiento {Id}: {Success}",
-                id, success ? "Exitosa" : "Fallida");
-
             return success;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar día de funcionamiento {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar día de funcionamiento {id}", ex);
         }
     }
 
@@ -367,12 +332,10 @@ public class SiteCalendarRepository(DapperContext context, ILogger<SiteCalendarR
                 commandType: CommandType.StoredProcedure
             );
 
-            _logger.LogInformation("Recálculo de días de funcionamiento para sitio {SiteId}: Exitoso", siteId);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al recalcular días de funcionamiento para sitio {SiteId}", siteId);
             return false;
         }
     }

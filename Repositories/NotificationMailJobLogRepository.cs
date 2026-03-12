@@ -4,14 +4,11 @@ using Api.Interfaces;
 using Api.Models.Request;
 using Api.Models.Errors;
 using Dapper;
-using Microsoft.Extensions.Logging;
-
 namespace Api.Repositories;
 
-public class NotificationMailJobLogRepository(DapperContext context, ILogger<NotificationMailJobLogRepository> logger) : INotificationMailJobLogRepository
+public class NotificationMailJobLogRepository(DapperContext context) : INotificationMailJobLogRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<NotificationMailJobLogRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<int> InsertAsync(NotificationMailJobLogRequest request, CancellationToken cancellationToken = default)
     {
@@ -41,7 +38,6 @@ public class NotificationMailJobLogRepository(DapperContext context, ILogger<Not
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar NotificationMailJobLog");
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar NotificationMailJobLog", ex);
         }
     }

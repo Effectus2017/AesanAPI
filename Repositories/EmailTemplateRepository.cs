@@ -6,7 +6,6 @@ using Api.Models;
 using Api.Models.Request;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Api.Models.Errors;
 
@@ -18,12 +17,10 @@ namespace Api.Repositories;
 /// </summary>
 public class EmailTemplateRepository(
     DapperContext context,
-    ILogger<EmailTemplateRepository> logger,
     IMemoryCache cache,
     IOptions<ApplicationSettings> appSettings) : IEmailTemplateRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<EmailTemplateRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -48,12 +45,7 @@ public class EmailTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el template de email por ID/Error getting email template by ID");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
-        }
-        finally
-        {
-            _logger.LogInformation("Fin de la ejecución de GetEmailTemplateById");
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el template de email por ID", ex);
         }
     }
 
@@ -78,8 +70,7 @@ public class EmailTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener template de email por clave: {TemplateKey}", templateKey);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener template de email por clave: {templateKey}", ex);
         }
     }
 
@@ -118,8 +109,7 @@ public class EmailTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los templates de email/Error getting email templates");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los templates de email", ex);
         }
     }
 
@@ -159,8 +149,7 @@ public class EmailTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el template de email/Error inserting email template");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el template de email", ex);
         }
     }
 
@@ -177,7 +166,6 @@ public class EmailTemplateRepository(
         {
             if (emailTemplate.Id == null || emailTemplate.Id == 0)
             {
-                _logger.LogWarning("Intento de actualizar template sin ID");
                 return false;
             }
 
@@ -203,8 +191,7 @@ public class EmailTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el template de email/Error updating email template");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el template de email", ex);
         }
     }
 
@@ -215,9 +202,7 @@ public class EmailTemplateRepository(
     private void InvalidateCache()
     {
         _cache.Remove("EmailTemplates");
-        // Invalidar todos los caches por key usando patrón
-        _cache.RemoveByPattern("EmailTemplate_", _logger);
-        _logger.LogInformation("Cache invalidado para EmailTemplate Repository");
+        _cache.RemoveByPattern("EmailTemplate_");
     }
 
     /// <summary>
@@ -229,7 +214,6 @@ public class EmailTemplateRepository(
     {
         string cacheKey = string.Format(_appSettings.Cache.Keys.EmailTemplateByKey, templateKey);
         _cache.Remove(cacheKey);
-        _logger.LogInformation("Cache invalidado para EmailTemplate con key: {TemplateKey}", templateKey);
     }
 }
 

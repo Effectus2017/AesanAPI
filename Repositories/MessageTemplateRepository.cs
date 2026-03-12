@@ -6,7 +6,6 @@ using Api.Models;
 using Api.Models.Request;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Api.Models.Errors;
 
@@ -18,12 +17,10 @@ namespace Api.Repositories;
 /// </summary>
 public class MessageTemplateRepository(
     DapperContext context,
-    ILogger<MessageTemplateRepository> logger,
     IMemoryCache cache,
     IOptions<ApplicationSettings> appSettings) : IMessageTemplateRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<MessageTemplateRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -46,8 +43,7 @@ public class MessageTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el template de mensaje por ID");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el template de mensaje por ID {id}", ex);
         }
     }
 
@@ -73,15 +69,13 @@ public class MessageTemplateRepository(
                         commandType: CommandType.StoredProcedure);
                     return result;
                 },
-                _logger,
                 _appSettings,
                 TimeSpan.FromMinutes(30)
             );
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener template de mensaje por clave: {TemplateKey}", templateKey);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener template de mensaje por clave: {templateKey}", ex);
         }
     }
 
@@ -114,8 +108,7 @@ public class MessageTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los templates de mensaje");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los templates de mensaje", ex);
         }
     }
 
@@ -156,8 +149,7 @@ public class MessageTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el template de mensaje");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el template de mensaje", ex);
         }
     }
 
@@ -171,7 +163,6 @@ public class MessageTemplateRepository(
         {
             if (messageTemplate.Id == null || messageTemplate.Id == 0)
             {
-                _logger.LogWarning("Intento de actualizar template sin ID");
                 return false;
             }
 
@@ -201,8 +192,7 @@ public class MessageTemplateRepository(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el template de mensaje");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el template de mensaje Id={messageTemplate.Id}", ex);
         }
     }
 
@@ -213,7 +203,6 @@ public class MessageTemplateRepository(
     private void InvalidateCache()
     {
         _cache.Remove("MessageTemplates");
-        _logger.LogInformation("Cache invalidado para MessageTemplate Repository");
     }
 }
 

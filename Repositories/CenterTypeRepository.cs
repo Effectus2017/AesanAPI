@@ -5,6 +5,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,10 +13,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ICenterTypeRepository
+public class CenterTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ICenterTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<CenterTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -38,8 +38,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de centro con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de centro con ID {id}", ex);
         }
     }
 
@@ -81,7 +80,6 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                         var data = result.Read<dynamic>().Select(_mappingService.MapCenterTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -102,8 +100,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de centro");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de centro", ex);
         }
     }
 
@@ -132,8 +129,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de centro");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de centro", ex);
         }
     }
 
@@ -159,8 +155,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de centro");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el tipo de centro", ex);
         }
     }
 
@@ -187,8 +182,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de centro");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el tipo de centro", ex);
         }
     }
 
@@ -210,8 +204,7 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de centro para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de centro para el programa {programId}", ex);
         }
     }
 
@@ -248,11 +241,9 @@ public class CenterTypeRepository(DapperContext context, ILogger<CenterTypeRepos
                 }
             }
 
-            _logger.LogInformation("Cache invalidado para CenterType Repository");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error al invalidar cache de CenterType");
         }
     }
 

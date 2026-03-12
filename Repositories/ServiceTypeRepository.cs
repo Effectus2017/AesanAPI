@@ -3,17 +3,16 @@ using Api.Data;
 using Api.Interfaces;
 using Api.Models.Response;
 using Dapper;
-using Microsoft.Extensions.Logging;
+using Api.Models.Errors;
 
 namespace Api.Repositories;
 
 /// <summary>
 /// Repositorio para tipos de servicio por programa (AESAN-257).
 /// </summary>
-public class ServiceTypeRepository(DapperContext context, ILogger<ServiceTypeRepository> logger) : IServiceTypeRepository
+public class ServiceTypeRepository(DapperContext context) : IServiceTypeRepository
 {
     private readonly DapperContext _context = context;
-    private readonly ILogger<ServiceTypeRepository> _logger = logger;
 
     /// <inheritdoc />
     public async Task<IEnumerable<ServiceTypeByProgramResponse>> GetServiceTypesByProgram(int programId)
@@ -32,8 +31,7 @@ public class ServiceTypeRepository(DapperContext context, ILogger<ServiceTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener tipos de servicio para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener tipos de servicio para el programa {programId}", ex);
         }
     }
 }

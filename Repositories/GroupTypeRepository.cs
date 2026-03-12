@@ -6,16 +6,14 @@ using Api.Models;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Api.Models.Errors;
 
 namespace Api.Repositories;
 
-public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGroupTypeRepository
+public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGroupTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<GroupTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -38,8 +36,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de grupo con ID {GroupTypeId}", id);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de grupo con ID {id}", ex);
         }
     }
 
@@ -81,7 +78,6 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
                         var data = result.Read<dynamic>().Select(_mappingService.MapGroupTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -102,8 +98,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de grupo");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de grupo", ex);
         }
     }
 
@@ -136,7 +131,6 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de grupo");
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de grupo", ex);
         }
     }
@@ -168,8 +162,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de grupo");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el tipo de grupo", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el tipo de grupo Id={groupType.Id}", ex);
         }
     }
 
@@ -201,8 +194,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del tipo de grupo");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el orden de visualización del tipo de grupo", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el orden de visualización del tipo de grupo Id={groupTypeId}", ex);
         }
     }
 
@@ -232,8 +224,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de grupo");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el tipo de grupo", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el tipo de grupo Id={id}", ex);
         }
     }
 
@@ -255,8 +246,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la ubicación del sitio para el tipo de grupo con ID {GroupTypeId}", groupTypeId);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la ubicación del sitio para el tipo de grupo con ID {groupTypeId}", ex);
         }
     }
 
@@ -273,8 +263,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el ID del tipo de grupo Comedor");
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener el ID del tipo de grupo Comedor", ex);
         }
     }
 
@@ -296,8 +285,7 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de grupo para el programa {ProgramId}", programId);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de grupo para el programa", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de grupo para el programa {programId}", ex);
         }
     }
 
@@ -314,7 +302,6 @@ public class GroupTypeRepository(DapperContext context, ILogger<GroupTypeReposit
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.GroupTypes);
-        _logger.LogInformation("Cache invalidado para GroupType Repository");
     }
 
 }

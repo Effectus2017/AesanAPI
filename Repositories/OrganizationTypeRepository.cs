@@ -8,16 +8,14 @@ using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
 using Api.Models.Errors;
 using Microsoft.Data.SqlClient;
 
 namespace Api.Repositories;
 
-public class OrganizationTypeRepository(DapperContext context, ILogger<OrganizationTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOrganizationTypeRepository
+public class OrganizationTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOrganizationTypeRepository
 {
     private readonly DapperContext _context = context;
-    private readonly ILogger<OrganizationTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -74,7 +72,6 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
                         var data = result.Read<dynamic>().Select(_mappingService.MapOrganizationType).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -95,9 +92,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting organization types with parameters: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}",
-                take, skip, name, alls, forDropdown);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error getting organization types with parameters: take={take}, skip={skip}, name={name}, alls={alls}, forDropdown={forDropdown}", ex);
         }
     }
 
@@ -193,8 +188,7 @@ public class OrganizationTypeRepository(DapperContext context, ILogger<Organizat
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de organización para el programa {ProgramId}", programId);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, ex.Message, ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de organización para el programa {programId}", ex);
         }
     }
 

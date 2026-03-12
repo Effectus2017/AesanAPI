@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class EducationLevelRepository(DapperContext context, ILogger<EducationLevelRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IEducationLevelRepository
+public class EducationLevelRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IEducationLevelRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<EducationLevelRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -38,8 +38,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el nivel educativo con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el nivel educativo con ID {id}", ex);
         }
     }
 
@@ -91,8 +90,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los niveles educativos");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los niveles educativos", ex);
         }
     }
 
@@ -123,8 +121,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el nivel educativo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el nivel educativo", ex);
         }
     }
 
@@ -160,8 +157,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el nivel educativo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el nivel educativo", ex);
         }
     }
 
@@ -196,8 +192,7 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el nivel educativo");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el nivel educativo con ID {id}", ex);
         }
     }
 
@@ -210,6 +205,5 @@ public class EducationLevelRepository(DapperContext context, ILogger<EducationLe
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.EducationLevels);
-        _logger.LogInformation("Cache invalidado para EducationLevel Repository");
     }
 }

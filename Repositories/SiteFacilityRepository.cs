@@ -3,8 +3,8 @@ using Dapper;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models.Request;
+using Api.Models.Errors;
 using Api.Models.Response;
-using Microsoft.Extensions.Logging;
 
 namespace Api.Repositories;
 
@@ -12,10 +12,9 @@ namespace Api.Repositories;
 /// Repositorio para la gestión de instalaciones de sitios
 /// Implementa las operaciones CRUD para instalaciones específicas de sitios
 /// </summary>
-public class SiteFacilityRepository(DapperContext context, ILogger<SiteFacilityRepository> logger) : ISiteFacilityRepository
+public class SiteFacilityRepository(DapperContext context) : ISiteFacilityRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SiteFacilityRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Obtiene todas las instalaciones de un sitio específico
@@ -31,14 +30,11 @@ public class SiteFacilityRepository(DapperContext context, ILogger<SiteFacilityR
 
             var result = await dbConnection.QueryAsync<SiteFacilityResponse>("100_GetFacilitiesBySite", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Se obtuvieron {Count} instalaciones para el sitio {SiteId}", result.Count(), siteId);
-
             return result.ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener instalaciones para el sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener instalaciones para el sitio {siteId}", ex);
         }
     }
 
@@ -57,14 +53,11 @@ public class SiteFacilityRepository(DapperContext context, ILogger<SiteFacilityR
 
             await dbConnection.ExecuteAsync("100_UpdateSiteFacilities", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Instalaciones actualizadas exitosamente para el sitio {SiteId}", siteId);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar instalaciones para el sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar instalaciones para el sitio {siteId}", ex);
         }
     }
 
@@ -83,14 +76,11 @@ public class SiteFacilityRepository(DapperContext context, ILogger<SiteFacilityR
 
             await dbConnection.ExecuteAsync("102_UpdateSiteFacilityIsActive", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Estado de instalaciones actualizado para el sitio {SiteId}: {IsActive}", siteId, isActive);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar estado de instalaciones para el sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar estado de instalaciones para el sitio {siteId}", ex);
         }
     }
 
@@ -108,14 +98,11 @@ public class SiteFacilityRepository(DapperContext context, ILogger<SiteFacilityR
 
             await dbConnection.ExecuteAsync("100_DeleteSiteFacilitiesBySiteId", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation("Instalaciones eliminadas exitosamente para el sitio {SiteId}", siteId);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar instalaciones para el sitio {SiteId}", siteId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar instalaciones para el sitio {siteId}", ex);
         }
     }
 }

@@ -3,6 +3,7 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -10,10 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGeoRepository
+public class GeoRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IGeoRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<GeoRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -41,8 +41,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la ciudad por ID: {CityId}", cityId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la ciudad por ID: {cityId}", ex);
         }
     }
 
@@ -69,8 +68,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la región por ID: {RegionId}", regionId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la región por ID: {regionId}", ex);
         }
     }
 
@@ -104,7 +102,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                 return data;
             },
-            _logger,
             _appSettings,
             TimeSpan.FromMinutes(1)
         );
@@ -154,7 +151,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                 var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                 return data;
             },
-            _logger,
             _appSettings,
             TimeSpan.FromMinutes(1)
         );
@@ -199,7 +195,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                         var data = result.Read<DTORegion>().Select(_mappingService.MapRegionList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -220,8 +215,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las regiones por ID de ciudad: {CityId}", cityId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las regiones por ID de ciudad: {cityId}", ex);
         }
     }
 
@@ -251,7 +245,6 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
                         var data = result.Read<DTOCity>().Select(_mappingService.MapCityList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -272,8 +265,7 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las ciudades por ID de región: {RegionId}", regionId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las ciudades por ID de región: {regionId}", ex);
         }
     }
 
@@ -299,9 +291,5 @@ public class GeoRepository(ILogger<GeoRepository> logger, DapperContext context,
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.Cities);
         _cache.Remove(_appSettings.Cache.Keys.Regions);
-
-        _logger.LogInformation("Cache invalidado para Geo Repository");
     }
-
-
 }

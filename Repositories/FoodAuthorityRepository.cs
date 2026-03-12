@@ -3,16 +3,16 @@ using Api.Data;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Errors;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorityRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFoodAuthorityRepository
+public class FoodAuthorityRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings) : IFoodAuthorityRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<FoodAuthorityRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
 
@@ -34,8 +34,7 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la autoridad alimentaria por ID");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la autoridad alimentaria por ID {id}", ex);
         }
     }
 
@@ -66,7 +65,6 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
                 var count = await result.ReadSingleAsync<int>();
                 return new { data, count };
             },
-            _logger,
             _appSettings
         );
     }
@@ -99,8 +97,7 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la autoridad alimentaria");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la autoridad alimentaria", ex);
         }
     }
 
@@ -136,8 +133,7 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la autoridad alimentaria");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la autoridad alimentaria Id={foodAuthority.Id}", ex);
         }
     }
 
@@ -172,8 +168,7 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la autoridad alimentaria");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la autoridad alimentaria Id={id}", ex);
         }
     }
 
@@ -186,6 +181,5 @@ public class FoodAuthorityRepository(DapperContext context, ILogger<FoodAuthorit
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.FoodAuthorities);
-        _logger.LogInformation("Cache invalidado para FoodAuthority Repository");
     }
 }

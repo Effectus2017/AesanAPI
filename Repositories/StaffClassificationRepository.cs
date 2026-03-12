@@ -13,10 +13,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class StaffClassificationRepository(DapperContext context, ILogger<StaffClassificationRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IStaffClassificationRepository
+public class StaffClassificationRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IStaffClassificationRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<StaffClassificationRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -45,8 +44,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la clasificación de staff con ID {StaffClassificationId}", id);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener la clasificación de staff", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la clasificación de staff con ID {id}", ex);
         }
     }
 
@@ -88,9 +86,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las clasificaciones de staff. Par?metros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}",
-                take, skip, name, alls, forDropdown);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las clasificaciones de staff. take={take}, skip={skip}, name={name}, alls={alls}, forDropdown={forDropdown}", ex);
         }
     }
 
@@ -116,7 +112,6 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la clasificación de staff");
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la clasificación de staff", ex);
         }
     }
@@ -144,8 +139,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la clasificación de staff con ID {StaffClassificationId}", staffClassificationRequest.Id);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la clasificación de staff", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la clasificación de staff con ID {staffClassificationRequest.Id}", ex);
         }
     }
 
@@ -168,8 +162,7 @@ public class StaffClassificationRepository(DapperContext context, ILogger<StaffC
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la clasificación de staff con ID {StaffClassificationId}", id);
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar la clasificación de staff", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la clasificación de staff con ID {id}", ex);
         }
     }
 

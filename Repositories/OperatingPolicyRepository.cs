@@ -5,15 +5,14 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Services;
 using Dapper;
+using Api.Models.Errors;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 namespace Api.Repositories;
 
-public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingPolicyRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOperatingPolicyRepository
+public class OperatingPolicyRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IOperatingPolicyRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<OperatingPolicyRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -36,8 +35,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la política operativa con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la política operativa con ID {id}", ex);
         }
     }
 
@@ -77,7 +75,6 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
                         var data = result.Read<dynamic>().Select(_mappingService.MapOperatingPolicyList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -99,8 +96,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las políticas operativas");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener las políticas operativas", ex);
         }
     }
 
@@ -134,8 +130,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar la política operativa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar la política operativa", ex);
         }
     }
 
@@ -167,8 +162,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la política operativa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar la política operativa Id={operatingPolicy.Id}", ex);
         }
     }
 
@@ -199,8 +193,7 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar la política operativa");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar la política operativa Id={id}", ex);
         }
     }
 
@@ -215,7 +208,5 @@ public class OperatingPolicyRepository(DapperContext context, ILogger<OperatingP
             _cache.Remove($"OperatingPolicy_{operatingPolicyId}");
         }
         _cache.Remove("OperatingPolicies");
-        _logger.LogInformation("Cache invalidado para OperatingPolicy Repository");
     }
-
 }

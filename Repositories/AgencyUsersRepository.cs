@@ -11,10 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, IEmailService emailService, Lazy<IUserRepository> userRepository, Lazy<IAgencyRepository> agencyRepository, MappingService mappingService) : IAgencyUsersRepository
+public class AgencyUsersRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, IEmailService emailService, Lazy<IUserRepository> userRepository, Lazy<IAgencyRepository> agencyRepository, MappingService mappingService) : IAgencyUsersRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<AgencyUsersRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
@@ -45,8 +44,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener la agencia asignada al usuario {UserId}", userId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener la agencia asignada al usuario {userId}", ex);
         }
     }
 
@@ -94,8 +92,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al desasignar la agencia del usuario");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al desasignar la agencia del usuario", ex);
         }
     }
 
@@ -115,7 +112,6 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
     {
         // Invalidar listas completas
         _cache.Remove(string.Format(_appSettings.Cache.Keys.AgencyUsers, userId, "*", "*"));
-        _logger.LogInformation("Cache invalidado para AgencyUsers Repository");
     }
 
     // =============================================
@@ -180,7 +176,6 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
                     if (user != null && agency != null)
                     {
                         await _emailService.SendAgencyAssignmentEmail(user, agency);
-                        _logger.LogInformation($"Correo de asignación enviado al usuario {userId} para monitorear la agencia {agencyId}");
                     }
                 }
 
@@ -191,8 +186,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar la agencia al usuario");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al asignar la agencia al usuario", ex);
         }
     }
 
@@ -227,7 +221,6 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
                         var data = result.Read<dynamic>().Select(_mappingService.MapAgencyUserList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -248,8 +241,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener las agencias asignadas al usuario {UserId} con V2", userId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener las agencias asignadas al usuario {userId} con V2", ex);
         }
     }
 
@@ -280,8 +272,7 @@ public class AgencyUsersRepository(DapperContext context, ILogger<AgencyUsersRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar la agencia principal del usuario con V2");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar la agencia principal del usuario con V2", ex);
         }
     }
 

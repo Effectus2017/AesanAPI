@@ -5,16 +5,15 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Services;
 using Dapper;
+using Api.Models.Errors;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IKitchenTypeRepository
+public class KitchenTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IKitchenTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<KitchenTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -37,8 +36,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de cocina con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de cocina con ID {id}", ex);
         }
     }
 
@@ -79,7 +77,6 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
                         var data = result.Read<dynamic>().Select(_mappingService.MapKitchenTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -100,9 +97,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina con parámetros: take={Take}, skip={Skip}, name={Name}, alls={Alls}, forDropdown={ForDropdown}",
-                take, skip, name, alls, forDropdown);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de cocina. take={take}, skip={skip}, name={name}, alls={alls}, forDropdown={forDropdown}", ex);
         }
     }
 
@@ -134,8 +129,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de cocina");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de cocina", ex);
         }
     }
 
@@ -166,8 +160,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de cocina");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el tipo de cocina", ex);
         }
     }
 
@@ -199,8 +192,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el orden de visualización del tipo de cocina");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el orden de visualización del tipo de cocina. kitchenTypeId={kitchenTypeId}", ex);
         }
     }
 
@@ -230,8 +222,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de cocina");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el tipo de cocina con ID {id}", ex);
         }
     }
 
@@ -253,8 +244,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de cocina para el programa {programId}", ex);
         }
     }
 
@@ -278,8 +268,7 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de cocina para el tipo de grupo {GroupTypeId} y programa {ProgramId}", groupTypeId, programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de cocina para groupTypeId={groupTypeId}, programId={programId}", ex);
         }
     }
 
@@ -290,7 +279,6 @@ public class KitchenTypeRepository(DapperContext context, ILogger<KitchenTypeRep
             _cache.Remove($"KitchenType_{kitchenTypeId}");
         }
         _cache.Remove("KitchenTypes");
-        _logger.LogInformation("Cache invalidado para KitchenType Repository");
     }
 
 }

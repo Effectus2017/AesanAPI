@@ -4,19 +4,18 @@ using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
 using Api.Models.Request;
+using Api.Models.Errors;
 using Api.Models.Response;
 using Api.Services;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IDeliveryTypeRepository
+public class DeliveryTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : IDeliveryTypeRepository
 {
     private readonly DapperContext _context = context;
-    private readonly ILogger<DeliveryTypeRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value;
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -38,8 +37,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de entrega con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de entrega con ID {id}", ex);
         }
     }
 
@@ -79,7 +77,6 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
                         var data = result.Read<dynamic>().Select(_mappingService.MapDeliveryTypeList).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -100,8 +97,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de entrega");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de entrega", ex);
         }
     }
 
@@ -128,8 +124,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de entrega");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de entrega", ex);
         }
     }
 
@@ -155,8 +150,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de entrega");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar el tipo de entrega Id={deliveryType.Id}", ex);
         }
     }
 
@@ -178,8 +172,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de entrega");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al eliminar el tipo de entrega Id={id}", ex);
         }
     }
 
@@ -201,8 +194,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de entrega para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de entrega para el programa {programId}", ex);
         }
     }
 
@@ -226,8 +218,7 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de entrega para el tipo de grupo {GroupTypeId}", groupTypeId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de entrega para el tipo de grupo {groupTypeId}", ex);
         }
     }
 
@@ -239,7 +230,5 @@ public class DeliveryTypeRepository(DapperContext context, ILogger<DeliveryTypeR
     {
         // Invalida el cache para todos los tipos de entrega
         _cache.Remove(string.Format(_appSettings.Cache.Keys.DeliveryTypes, 0, 0, "", false));
-        _logger.LogInformation("Cache invalidado para DeliveryType Repository");
     }
-
 }

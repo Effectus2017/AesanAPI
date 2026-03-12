@@ -16,10 +16,9 @@ using Microsoft.Extensions.Options;
 using Api.Models.Errors;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, ILogger<SiteRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository, IGroupTypeRepository groupTypeRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository, IGroupTypeRepository groupTypeRepository) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SiteRepository> _logger = logger;
     private readonly IMemoryCache _cache = cache;
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -383,11 +382,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     try
                     {
                         await _siteProgramRepository.Value.InsertSiteProgram(siteProgramRequest, dbConnection, transaction);
-                        _logger.LogInformation("Se creó relación sitio-programa: SiteId={SiteId}, ProgramId={ProgramId}", siteId, programId);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        _logger.LogError(ex, "Error al crear relación sitio-programa para SiteId={SiteId}, ProgramId={ProgramId}", siteId, programId);
                         // No fallar la creación del sitio si falla la relación programa
                     }
                 }
@@ -451,7 +448,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
                 if (!schoolSiteResult)
                 {
-                    _logger.LogWarning("No se pudo crear la relación SchoolSite para el sitio {SiteId} y escuela {SchoolId}", siteId, request.SchoolId);
                 }
             }
 
@@ -652,21 +648,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                             try
                             {
                                 await _siteProgramRepository.Value.InsertSiteProgram(siteProgramRequest, dbConnection, transaction);
-                                _logger.LogInformation("Se actualizó relación sitio-programa: SiteId={SiteId}, ProgramId={ProgramId}", request.Id.Value, programId);
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
-                                _logger.LogError(ex, "Error al actualizar relación sitio-programa para SiteId={SiteId}, ProgramId={ProgramId}", request.Id.Value, programId);
                                 // Continuar con los demás programas
                             }
                         }
 
                         transaction.Commit();
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         transaction.Rollback();
-                        _logger.LogError(ex, "Error al sincronizar programas del sitio {SiteId}", request.Id.Value);
                         // No fallar la actualización del sitio si falla la sincronización de programas
                     }
                 }
@@ -696,7 +689,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         SiteResponse? site = await GetSiteById(siteId);
         if (site == null)
         {
-            _logger.LogWarning("Sitio {SiteId} no encontrado para actualizar grupos", siteId);
             return false;
         }
 
@@ -719,7 +711,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 await ReplaceServicesForOperatingDaysBySlot(siteId, operatingFrom.Value, operatingTo.Value, newGroupIds, newChildGroups, dbConnection);
             }
 
-            _logger.LogInformation("Grupos de niños actualizados para el sitio {SiteId}", siteId);
             return true;
         }
         catch (Exception ex)
@@ -770,7 +761,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
         // Invalidar listas completas
         _cache.Remove(_appSettings.Cache.Keys.Sites);
-        _logger.LogInformation("Cache invalidado para Site Repository");
     }
 
     /// <summary>
@@ -936,26 +926,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 commandType: CommandType.StoredProcedure
             );
 
-            if (result != null)
-            {
-                int daysDeleted = (int)result.DaysDeleted;
-                int daysInserted = (int)result.DaysInserted;
-                int servicesInserted = (int)result.ServicesInserted;
-                
-                _logger.LogInformation(
-                    "Sincronización de calendario completada para sitio {SiteId}: {DaysDeleted} días eliminados, {DaysInserted} días insertados, {ServicesInserted} servicios insertados",
-                    siteId, 
-                    daysDeleted, 
-                    daysInserted, 
-                    servicesInserted
-                );
-            }
-
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al sincronizar calendario con patrón semanal para el sitio {SiteId}", siteId);
             // No propagamos el error para no fallar la actualización del sitio
             // La sincronización fallida no debe impedir que el sitio se actualice
             return false;
@@ -1011,9 +985,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             var codes = await connection.QueryAsync<string>("112_GetExistingSiteCodes", commandType: CommandType.StoredProcedure);
             return codes?.ToList() ?? [];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al obtener códigos de sitios existentes");
             return [];
         }
     }
@@ -1042,9 +1015,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             var parts = agencyCode.Split('-');
             return parts.Length >= 3 ? parts[^1] : "001";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al obtener código de secuencia de agencia {AgencyId}", agencyId);
             return "001";
         }
     }
@@ -1234,7 +1206,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar grupos de niños para el sitio {SiteId}", siteId);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar grupos de niños para el sitio {siteId}", ex);
         }
         finally
@@ -1422,9 +1393,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 currentDate = currentDate.AddDays(1);
             }
 
-            _logger.LogInformation("Se insertaron {DaysInserted} días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}. Días de la semana seleccionados: {OperatingDaysOfWeek}",
-                daysInserted, siteId, operatingFromDate.Date, operatingToDate.Date, string.Join(", ", operatingDaysOfWeek));
-
             // Después de crear los días, crear los servicios para cada día
             if (services != null && services.Count > 0)
             {
@@ -1435,8 +1403,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar días de funcionamiento para el sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                siteId, operatingFromDate.Date, operatingToDate.Date);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al insertar días de funcionamiento para el sitio {siteId}", ex);
         }
         finally
@@ -1472,21 +1438,18 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Si no hay programas, usar comportamiento por defecto (todos los días)
             if (programIds == null || programIds.Count == 0)
             {
-                _logger.LogInformation("No se proporcionaron programas - usando comportamiento por defecto (todos los días)");
                 return true;
             }
 
             // Verificar si tiene PDAM
             if (programIds.Contains(PROGRAM_ID_PDAM))
             {
-                _logger.LogInformation("Programa PDAM detectado - Solo Lunes a Viernes");
                 return false;
             }
 
             // Verificar si tiene PSAV
             if (programIds.Contains(PROGRAM_ID_PSAV))
             {
-                _logger.LogInformation("Programa PSAV detectado - Solo Lunes a Viernes (sábados y domingos se agregan manualmente)");
                 return false;
             }
 
@@ -1496,7 +1459,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 // Si es Day Care Home (Hogares), todos los días
                 if (isDayCareHome == true)
                 {
-                    _logger.LogInformation("Programa PACNA - Hogares (isDayCareHome=true) - Todos los días");
                     return true;
                 }
 
@@ -1529,7 +1491,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                                 // Centro Diurno: Solo Lunes a Viernes
                                 if (centerTypeName.Equals(CENTER_TYPE_CUIDADO_DIURNO, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    _logger.LogInformation("Programa PACNA - Centro Diurno ({CenterTypeName}) - Solo Lunes a Viernes (sábados y domingos se agregan manualmente)", centerTypeName);
                                     return false;
                                 }
 
@@ -1537,30 +1498,25 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                                 if (centerTypeName.Equals(CENTER_TYPE_CUIDADO_ADULTO, StringComparison.OrdinalIgnoreCase) ||
                                     centerTypeName.Equals(CENTER_TYPE_ALBERGUE, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    _logger.LogInformation("Programa PACNA - {CenterTypeName} - Todos los días", centerTypeName);
                                     return true;
                                 }
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        _logger.LogWarning(ex, "Error al obtener CenterType con ID {CenterTypeId}, usando comportamiento por defecto", centerTypeId.Value);
                     }
                 }
 
                 // Si no se pudo determinar el tipo de centro, usar comportamiento por defecto
-                _logger.LogInformation("Programa PACNA - No se pudo determinar el tipo de centro - usando comportamiento por defecto (todos los días)");
                 return true;
             }
 
             // Por defecto, incluir fines de semana (comportamiento actual)
-            _logger.LogInformation("No aplica ninguna regla específica - usando comportamiento por defecto (todos los días)");
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error al determinar configuración de días de funcionamiento");
             // En caso de error, usar comportamiento por defecto
             return true;
         }
@@ -1579,13 +1535,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             // Validar que hay servicios para procesar
             if (services == null || services.Count == 0)
             {
-                _logger.LogInformation("No hay servicios para insertar para el sitio {SiteId}", siteId);
                 return;
             }
-
-            // Log detallado de los servicios recibidos
-            _logger.LogInformation("Preparando {ServiceCount} servicios para insertar en días de funcionamiento del sitio {SiteId}",
-                services.Count, siteId);
 
             // Helper para verificar si un servicio tiene al menos un servicio activo con horarios válidos
             bool HasValidService(SiteServiceRequest service)
@@ -1607,33 +1558,8 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
 
             if (validServices.Count == 0)
             {
-                _logger.LogWarning("No hay servicios válidos para insertar para el sitio {SiteId}. Todos los servicios están desactivados o no tienen horarios válidos. " +
-                    "Total de servicios recibidos: {TotalCount}",
-                    siteId, services.Count);
-
-                // Log detallado de cada servicio para diagnóstico
-                foreach (var service in services)
-                {
-                    _logger.LogDebug("Servicio inválido - ChildGroupId: {ChildGroupId}, " +
-                        "Breakfast: {Breakfast} (From: {BreakfastFrom}, To: {BreakfastTo}), " +
-                        "Lunch: {Lunch} (From: {LunchFrom}, To: {LunchTo}), " +
-                        "Dinner: {Dinner} (From: {DinnerFrom}, To: {DinnerTo}), " +
-                        "SnackAM: {SnackAM} (From: {SnackAMFrom}, To: {SnackAMTo}), " +
-                        "SnackPM: {SnackPM} (From: {SnackPMFrom}, To: {SnackPMTo}), " +
-                        "SnackNight: {SnackNight} (From: {SnackNightFrom}, To: {SnackNightTo})",
-                        service.ChildGroupId,
-                        service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
-                        service.Lunch, service.LunchFrom, service.LunchTo,
-                        service.Dinner, service.DinnerFrom, service.DinnerTo,
-                        service.SnackAM, service.SnackAMFrom, service.SnackAMTo,
-                        service.SnackPM, service.SnackPMFrom, service.SnackPMTo,
-                        service.SnackNight, service.SnackNightFrom, service.SnackNightTo);
-                }
                 return;
             }
-
-            _logger.LogInformation("Se encontraron {ValidCount} servicios válidos de {TotalCount} servicios recibidos para el sitio {SiteId}",
-                validServices.Count, services.Count, siteId);
 
             foreach (var service in validServices)
             {
@@ -1651,15 +1577,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                     (service.SnackExtended == true && service.SnackExtendedFrom.HasValue && service.SnackExtendedTo.HasValue) ? 1 : 0,
                     (service.SnackAtRisk == true && service.SnackAtRiskFrom.HasValue && service.SnackAtRiskTo.HasValue) ? 1 : 0
                 }.Sum();
-
-                _logger.LogDebug("Servicio válido - ChildGroupId: {ChildGroupId}, Servicios activos: {ActiveCount}, " +
-                    "Breakfast: {Breakfast} (From: {BreakfastFrom}, To: {BreakfastTo}), " +
-                    "Lunch: {Lunch} (From: {LunchFrom}, To: {LunchTo}), " +
-                    "Dinner: {Dinner} (From: {DinnerFrom}, To: {DinnerTo})",
-                    service.ChildGroupId, activeServicesCount,
-                    service.Breakfast, service.BreakfastFrom, service.BreakfastTo,
-                    service.Lunch, service.LunchFrom, service.LunchTo,
-                    service.Dinner, service.DinnerFrom, service.DinnerTo);
             }
 
             // Crear DataTable para Table-Valued Parameter (SiteServiceForOperatingDaysType)
@@ -1713,10 +1630,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 // Esto asegura que el stored procedure solo procese servicios con valor true
                 object ConvertBoolToDbValue(bool? value) => value == true ? (object)true : DBNull.Value;
 
-                // Log de cada servicio antes de agregarlo al DataTable
-                _logger.LogDebug("Agregando servicio al DataTable - ChildGroupId: {ChildGroupId}, Breakfast: {Breakfast}, Lunch: {Lunch}, Dinner: {Dinner}",
-                    service.ChildGroupId, service.Breakfast, service.Lunch, service.Dinner);
-
                 dataTable.Rows.Add(
                     service.ChildGroupId,
                     // Breakfast - Solo enviar true (1) si es true, DBNull.Value si es false o null
@@ -1762,10 +1675,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 );
             }
 
-            // Log del DataTable antes de enviarlo
-            _logger.LogInformation("DataTable creado con {RowCount} filas para el sitio {SiteId}",
-                dataTable.Rows.Count, siteId);
-
             // Preparar parámetros para el stored procedure
             var parameters = new DynamicParameters();
             parameters.Add("@siteId", siteId, DbType.Int32);
@@ -1774,50 +1683,10 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@services", dataTable.AsTableValuedParameter("SiteServiceForOperatingDaysType"));
             parameters.Add("@rowsInserted", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            // Llamar al stored procedure
-            _logger.LogInformation("Llamando al stored procedure 100_InsertServicesForOperatingDays para el sitio {SiteId}", siteId);
             await dbConnection.ExecuteAsync("100_InsertServicesForOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
-
-            var rowsInserted = parameters.Get<int>("@rowsInserted");
-
-            _logger.LogInformation("Se crearon {RowsInserted} servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                rowsInserted, siteId, operatingFromDate.Date, operatingToDate.Date);
-
-            // Si no se insertaron servicios, log de advertencia con más detalles
-            if (rowsInserted == 0)
-            {
-                _logger.LogWarning("No se insertaron servicios para el sitio {SiteId}. " +
-                    "DataTable tenía {RowCount} filas con servicios válidos. " +
-                    "Verificar que: " +
-                    "1) Los días de funcionamiento existan en el rango {FromDate} a {ToDate}, " +
-                    "2) Los días de funcionamiento estén activos (IsActive=1), " +
-                    "3) Los servicios tengan valores true (1) y horarios no nulos en el stored procedure.",
-                    siteId, dataTable.Rows.Count, operatingFromDate.Date, operatingToDate.Date);
-
-                // Log adicional: verificar si existen días de funcionamiento
-                var daysCountParams = new DynamicParameters();
-                daysCountParams.Add("@siteid", siteId, DbType.Int32);
-                daysCountParams.Add("@fromdate", operatingFromDate.Date, DbType.Date);
-                daysCountParams.Add("@todate", operatingToDate.Date, DbType.Date);
-                var daysCount = await dbConnection.QuerySingleAsync<int>(
-                    "103_GetSiteOperatingDaysCountBySiteAndDateRange",
-                    daysCountParams,
-                    transaction,
-                    commandType: CommandType.StoredProcedure);
-
-                _logger.LogWarning("Días de funcionamiento encontrados para el sitio {SiteId} en el rango {FromDate} a {ToDate}: {DaysCount}",
-                    siteId, operatingFromDate.Date, operatingToDate.Date, daysCount);
-            }
-            else
-            {
-                _logger.LogInformation("✓ Éxito: Se insertaron {RowsInserted} servicios en SiteOperatingDayService para el sitio {SiteId}",
-                    rowsInserted, siteId);
-            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                siteId, operatingFromDate.Date, operatingToDate.Date);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar servicios para los días de funcionamiento", ex);
         }
         finally
@@ -1884,9 +1753,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                 "107_DeleteSiteOperatingDayServicesByGroupServiceAndDateRange",
                 deleteParams,
                 commandType: CommandType.StoredProcedure);
-            _logger.LogInformation(
-                "Se eliminó servicio quitado: SiteId={SiteId}, ChildGroupId={ChildGroupId}, ServiceTypeId={ServiceTypeId}",
-                siteId, cg, st);
         }
 
         // Paso 2: Insertar/actualizar los servicios que permanecen
@@ -1926,8 +1792,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
                             commandType: CommandType.StoredProcedure);
                         if (!operatingDayId.HasValue || operatingDayId.Value <= 0)
                         {
-                            _logger.LogWarning("No se encontró día de funcionamiento para sitio {SiteId} y fecha {Date}; se omite inserción para ChildGroupId={ChildGroupId}, ServiceTypeId={ServiceTypeId}",
-                                siteId, date, childGroupId, slot.ServiceTypeId);
                             continue;
                         }
 
@@ -1986,8 +1850,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         if (toInsert.Count > 0)
         {
             await _siteOperatingDayServiceRepository.Value.CreateServicesBatch(toInsert, dbConnection, null);
-            _logger.LogInformation("Se insertaron {Count} servicios por slot para el sitio {SiteId} (rango {From} a {To})",
-                toInsert.Count, siteId, fromDate, toDate);
         }
     }
 
@@ -2005,7 +1867,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         {
             if (services == null || services.Count == 0)
             {
-                _logger.LogInformation("No hay servicios para fusionar para el sitio {SiteId}", siteId);
                 return;
             }
 
@@ -2026,7 +1887,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             var validServices = services.Where(HasValidService).ToList();
             if (validServices.Count == 0)
             {
-                _logger.LogInformation("No hay servicios válidos para fusionar para el sitio {SiteId}", siteId);
                 return;
             }
 
@@ -2111,16 +1971,9 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
             parameters.Add("@rowsupdated", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await dbConnection.ExecuteAsync("101_MergeServicesForOperatingDays", parameters, transaction, commandType: CommandType.StoredProcedure);
-
-            var rowsUpdated = parameters.Get<int>("@rowsupdated");
-            _logger.LogInformation(
-                "Actualización de horarios de servicios para sitio {SiteId}: {RowsUpdated} filas actualizadas (desde {FromDate} hasta {ToDate})",
-                siteId, rowsUpdated, operatingFromDate.Date, operatingToDate.Date);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al fusionar servicios para los días de funcionamiento del sitio {SiteId} desde {FromDate} hasta {ToDate}",
-                siteId, operatingFromDate.Date, operatingToDate.Date);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al fusionar servicios para los días de funcionamiento", ex);
         }
         finally
@@ -2212,7 +2065,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el siguiente número de sitio para la agencia {AgencyId}", agencyId);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el siguiente número de sitio para la agencia {agencyId}", ex);
         }
     }
@@ -2644,7 +2496,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar información de Day Care Home para el sitio {SiteId}", siteId);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar información de Day Care Home para el sitio {siteId}", ex);
         }
         finally
@@ -2679,7 +2530,6 @@ public class SiteRepository(DapperContext context, ILogger<SiteRepository> logge
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar tipos de participantes para el sitio {SiteId}", siteId);
             throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al actualizar tipos de participantes para el sitio {siteId}", ex);
         }
         finally

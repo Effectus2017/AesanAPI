@@ -5,16 +5,15 @@ using Api.Interfaces;
 using Api.Models;
 using Api.Services;
 using Dapper;
+using Api.Models.Errors;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Repositories;
 
-public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRepository> logger, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISponsorTypeRepository
+public class SponsorTypeRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService) : ISponsorTypeRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly ILogger<SponsorTypeRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ApplicationSettings _appSettings = appSettings?.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
@@ -37,8 +36,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener el tipo de auspiciador con ID {Id}", id);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener el tipo de auspiciador con ID {id}", ex);
         }
     }
 
@@ -78,7 +76,6 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
                         var data = result.Read<dynamic>().Select(_mappingService.MapSponsorType).ToList();
                         return data;
                     },
-                    _logger,
                     _appSettings,
                     TimeSpan.FromMinutes(1)
                 );
@@ -101,8 +98,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de auspiciador");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener los tipos de auspiciador", ex);
         }
     }
 
@@ -136,8 +132,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al insertar el tipo de auspiciador");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al insertar el tipo de auspiciador", ex);
         }
     }
 
@@ -169,8 +164,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al actualizar el tipo de auspiciador");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al actualizar el tipo de auspiciador", ex);
         }
     }
 
@@ -200,8 +194,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar el tipo de auspiciador");
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al eliminar el tipo de auspiciador", ex);
         }
     }
 
@@ -223,8 +216,7 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener los tipos de auspiciador para el programa {ProgramId}", programId);
-            throw;
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al obtener los tipos de auspiciador para el programa {programId}", ex);
         }
     }
 
@@ -239,7 +231,6 @@ public class SponsorTypeRepository(DapperContext context, ILogger<SponsorTypeRep
             _cache.Remove($"SponsorType_{sponsorTypeId}");
         }
         _cache.Remove("SponsorTypes");
-        _logger.LogInformation("Cache invalidado para SponsorType Repository");
     }
 
 }
