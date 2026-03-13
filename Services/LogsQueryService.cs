@@ -2,6 +2,7 @@ using System.Data;
 using Api.Data;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Response;
 using Dapper;
 
 namespace Api.Services;
@@ -17,7 +18,7 @@ public class LogsQueryService(DapperContext context) : ILogsQueryService
 
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
-    public async Task<(IReadOnlyList<CentralLogEntryDto> Items, int TotalCount)> GetLogsPagedAsync(
+    public async Task<PagedResult<CentralLogEntryDto>> GetLogsPagedAsync(
         string category,
         DateTime? from,
         DateTime? to,
@@ -27,7 +28,7 @@ public class LogsQueryService(DapperContext context) : ILogsQueryService
     {
         if (string.IsNullOrWhiteSpace(category) || !ValidCategories.Contains(category))
         {
-            return (Array.Empty<CentralLogEntryDto>(), 0);
+            return new PagedResult<CentralLogEntryDto> { Data = [], Count = 0 };
         }
 
         var storedProcedure = category.ToLowerInvariant() switch
@@ -41,7 +42,7 @@ public class LogsQueryService(DapperContext context) : ILogsQueryService
 
         if (storedProcedure == null)
         {
-            return (Array.Empty<CentralLogEntryDto>(), 0);
+            return new PagedResult<CentralLogEntryDto> { Data = [], Count = 0 };
         }
 
         if (page < 1) page = 1;
@@ -68,6 +69,6 @@ public class LogsQueryService(DapperContext context) : ILogsQueryService
             row.TotalCount = null;
         }
 
-        return (rows, totalCount);
+        return new PagedResult<CentralLogEntryDto> { Data = rows, Count = totalCount };
     }
 }

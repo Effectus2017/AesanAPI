@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Api.Interfaces;
 using Api.Models;
+using Api.Models.Response;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,7 +56,7 @@ public class LogsController(ILogsQueryService logsQueryService) : ControllerBase
         var page = queryParameters.Page < 1 ? 1 : queryParameters.Page;
         var pageSize = queryParameters.PageSize < 1 ? 20 : queryParameters.PageSize > 100 ? 100 : queryParameters.PageSize;
 
-        var (items, totalCount) = await logsQueryService.GetLogsPagedAsync(
+        var result = await logsQueryService.GetLogsPagedAsync(
             category,
             queryParameters.LogFrom,
             queryParameters.LogTo,
@@ -63,13 +64,7 @@ public class LogsController(ILogsQueryService logsQueryService) : ControllerBase
             pageSize,
             cancellationToken);
 
-        return Ok(new
-        {
-            items,
-            totalCount,
-            page,
-            pageSize
-        });
+        return Ok(result);
     }
 
     private bool UserHasPermission(string permissionValueKey)

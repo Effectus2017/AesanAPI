@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Models.Response;
 
 namespace Api.Interfaces;
 
@@ -12,7 +13,7 @@ public interface ILogsQueryService
     /// Obtiene entradas de log paginadas para una categoría.
     /// Categorías: Audit, Email, Job, Application.
     /// </summary>
-    Task<(IReadOnlyList<CentralLogEntryDto> Items, int TotalCount)> GetLogsPagedAsync(
+    Task<PagedResult<CentralLogEntryDto>> GetLogsPagedAsync(
         string category,
         DateTime? from,
         DateTime? to,
