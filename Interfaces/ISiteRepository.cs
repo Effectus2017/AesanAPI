@@ -20,12 +20,16 @@ public interface ISiteRepository
     /// <summary>
     /// Inserta un nuevo sitio
     /// </summary>
-    Task<bool> InsertSite(SiteRequest request);
+    /// <param name="request">Datos del sitio</param>
+    /// <param name="userId">Id del usuario para auditoría (opcional)</param>
+    Task<bool> InsertSite(SiteRequest request, string? userId = null);
 
     /// <summary>
     /// Actualiza un sitio existente
     /// </summary>
-    Task<bool> UpdateSite(SiteRequest request);
+    /// <param name="request">Datos del sitio</param>
+    /// <param name="userId">Id del usuario para auditoría (opcional)</param>
+    Task<bool> UpdateSite(SiteRequest request, string? userId = null);
 
     /// <summary>
     /// Elimina un sitio

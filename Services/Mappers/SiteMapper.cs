@@ -239,13 +239,8 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 CityName = item.CityName ?? string.Empty,
                 RegionName = item.RegionName ?? string.Empty,
                 IsActive = item.IsActive ?? true,
-                GroupTypeName = item.GroupTypeName,
                 GeneralEnrollment = item.generalenrollment ?? item.GeneralEnrollment,
-                SiteNumber = item.SiteNumber ?? 0,
-                AgencyCode = item.AgencyCode,
-                SiteCode = item.SiteCode,
-                SchoolName = item.SchoolName,
-                SchoolId = item.SchoolId
+                SiteCode = item.SiteCode
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

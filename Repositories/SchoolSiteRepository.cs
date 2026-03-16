@@ -37,7 +37,7 @@ public class SchoolSiteRepository(DapperContext context, IMemoryCache cache, IOp
             parameters.Add("@skip", skip, DbType.Int32);
             parameters.Add("@name", string.IsNullOrWhiteSpace(name) ? null : name?.Trim(), DbType.String);
 
-            using var result = await dbConnection.QueryMultipleAsync("100_GetSchoolSitesBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            using var result = await dbConnection.QueryMultipleAsync("101_GetSchoolSitesBySchoolId", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {

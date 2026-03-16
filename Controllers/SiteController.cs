@@ -71,7 +71,8 @@ public class SiteController(IUnitOfWork unitOfWork, MessageTemplateService messa
     [SwaggerOperation(Summary = "Inserta un nuevo sitio", Description = "Crea un nuevo sitio en la base de datos.")]
     public async Task<IActionResult> InsertSite([FromBody] SiteRequest request)
     {
-        var result = await _unitOfWork.SiteRepository.InsertSite(request);
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        var result = await _unitOfWork.SiteRepository.InsertSite(request, userId);
 
         if (result)
         {
@@ -96,7 +97,8 @@ public class SiteController(IUnitOfWork unitOfWork, MessageTemplateService messa
             ModelState.AddModelError("InactiveJustification", "Se requiere justificación para inactiva el sitio");
         }
 
-        var result = await _unitOfWork.SiteRepository.UpdateSite(request);
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        var result = await _unitOfWork.SiteRepository.UpdateSite(request, userId);
 
         if (result)
         {
