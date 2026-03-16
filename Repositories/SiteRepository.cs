@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 using Api.Models.Errors;
 namespace Api.Repositories;
 
-public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository, IGroupTypeRepository groupTypeRepository) : ISiteRepository
+public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<ApplicationSettings> appSettings, MappingService mappingService, Lazy<ISchoolSiteRepository> schoolSiteRepository, Lazy<ICenterTypeRepository> centerTypeRepository, Lazy<ISiteOperatingDayServiceRepository> siteOperatingDayServiceRepository, Lazy<ISitePersonInChargeRepository> sitePersonInChargeRepository, Lazy<IAgencyRepository> agencyRepository, Lazy<ISiteCalendarRepository> siteCalendarRepository, Lazy<ISiteProgramRepository> siteProgramRepository, IServiceTypeRepository serviceTypeRepository, IGroupTypeRepository groupTypeRepository, ICentralLogService centralLogService) : ISiteRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly IMemoryCache _cache = cache;
@@ -24,6 +24,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly Lazy<ISchoolSiteRepository> _schoolSiteRepository = schoolSiteRepository ?? throw new ArgumentNullException(nameof(schoolSiteRepository));
     private readonly IGroupTypeRepository _groupTypeRepository = groupTypeRepository ?? throw new ArgumentNullException(nameof(groupTypeRepository));
+    private readonly ICentralLogService _centralLogService = centralLogService ?? throw new ArgumentNullException(nameof(centralLogService));
     private readonly Lazy<ICenterTypeRepository> _centerTypeRepository = centerTypeRepository ?? throw new ArgumentNullException(nameof(centerTypeRepository));
     private readonly Lazy<ISiteOperatingDayServiceRepository> _siteOperatingDayServiceRepository = siteOperatingDayServiceRepository ?? throw new ArgumentNullException(nameof(siteOperatingDayServiceRepository));
     private readonly Lazy<ISitePersonInChargeRepository> _sitePersonInChargeRepository = sitePersonInChargeRepository ?? throw new ArgumentNullException(nameof(sitePersonInChargeRepository));
@@ -184,7 +185,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
 
             if (forDropdown)
             {
-                using var result = await dbConnection.QueryMultipleAsync("104_GetSites", parameters, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("105_GetSites", parameters, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -196,7 +197,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
             }
             else
             {
-                using var result = await dbConnection.QueryMultipleAsync("104_GetSites", parameters, commandType: CommandType.StoredProcedure);
+                using var result = await dbConnection.QueryMultipleAsync("105_GetSites", parameters, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -222,8 +223,9 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
     /// Inserta un nuevo sitio
     /// </summary>
     /// <param name="request">La solicitud del sitio a insertar.</param>
-    /// <returns>El ID del sitio insertado.</returns>
-    public async Task<bool> InsertSite(SiteRequest request)
+    /// <param name="userId">Id del usuario para auditoría (opcional).</param>
+    /// <returns>True si se insertó correctamente.</returns>
+    public async Task<bool> InsertSite(SiteRequest request, string? userId = null)
     {
         IDbConnection? dbConnection = null;
         IDbTransaction? transaction = null;
@@ -453,8 +455,10 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
 
             transaction.Commit();
 
-            // Invalidar caché
-            //InvalidateCache(siteId);
+            if (siteId > 0 && !string.IsNullOrEmpty(userId))
+            {
+                await _centralLogService.LogAuditChangeAsync("Site", siteId.ToString(), "INSERT", userId, null, new { request.SiteCode, request.AgencyId, request.SchoolId, request.Name }, null, "SiteCreate");
+            }
 
             return siteId > 0;
         }
@@ -479,8 +483,9 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
     /// Actualiza un sitio existente
     /// </summary>
     /// <param name="request">La solicitud del sitio a actualizar.</param>
+    /// <param name="userId">Id del usuario para auditoría (opcional).</param>
     /// <returns>True si el sitio se actualizó correctamente, false en caso contrario.</returns>
-    public async Task<bool> UpdateSite(SiteRequest request)
+    public async Task<bool> UpdateSite(SiteRequest request, string? userId = null)
     {
         try
         {
@@ -625,6 +630,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
                 if (request.ProgramIds != null)
                 {
                     using var transaction = dbConnection.BeginTransaction();
+
                     try
                     {
                         // Eliminar programas existentes del sitio
@@ -666,6 +672,11 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
 
                 // Invalidar caché
                 //InvalidateCache(request.Id.Value);
+            }
+
+            if (rowsAffected > 0 && !string.IsNullOrEmpty(userId) && request.Id.HasValue)
+            {
+                await _centralLogService.LogAuditChangeAsync("Site", request.Id.Value.ToString(), "UPDATE", userId, null, new { request.SiteCode, request.AgencyId, request.SchoolId, request.Name }, null, "SiteUpdate");
             }
 
             return rowsAffected > 0;
