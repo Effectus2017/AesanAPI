@@ -24,9 +24,10 @@ public class GroupTypeMapper
 
             return new DTOGroupType
             {
-                Id = item.Id,
-                Name = item.Name,
-                NameEN = item.NameEN
+                Id = (int)(item.Id ?? item.id),
+                Name = (string)(item.Name ?? item.name ?? ""),
+                NameEN = (string)(item.NameEN ?? item.nameen ?? ""),
+                Code = (string)(item.Code ?? item.code ?? "")
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
@@ -55,11 +56,12 @@ public class GroupTypeMapper
 
             return new DTOGroupType
             {
-                Id = item.Id,
-                Name = item.Name,
-                NameEN = item.NameEN,
-                IsActive = item.IsActive,
-                DisplayOrder = item.DisplayOrder
+                Id = (int)(item.Id ?? item.id),
+                Name = (string)(item.Name ?? item.name ?? ""),
+                NameEN = (string)(item.NameEN ?? item.nameen ?? ""),
+                Code = (string)(item.Code ?? item.code ?? ""),
+                IsActive = (bool)(item.IsActive ?? item.isactive ?? true),
+                DisplayOrder = (int)(item.DisplayOrder ?? item.displayorder ?? 0)
             };
         }
         catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)

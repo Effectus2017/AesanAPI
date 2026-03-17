@@ -1,14 +1,16 @@
--- 100_UpdateGroupType.sql
--- Actualiza un tipo de grupo en la tabla GroupType
--- Convención: nombre del SP en PascalCase, parámetros y alias en lowercase
--- Última actualización: 2024-06-10
+-- =============================================
+-- Stored Procedure: 101_UpdateGroupType
+-- Versión 2: igual que 100_ pero incluye columna Code.
+-- Parámetros en lowercase según convención.
+-- =============================================
 
-CREATE OR ALTER PROCEDURE [100_UpdateGroupType]
+CREATE OR ALTER PROCEDURE [dbo].[101_UpdateGroupType]
     @id INT,
     @name NVARCHAR(100),
     @nameen NVARCHAR(255),
     @isactive BIT,
-    @displayorder INT
+    @displayorder INT,
+    @code NVARCHAR(50) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -21,6 +23,7 @@ BEGIN
             NameEN = @nameen,
             IsActive = @isactive,
             DisplayOrder = @displayorder,
+            Code = @code,
             UpdatedAt = GETDATE()
         WHERE Id = @id;
 
@@ -34,4 +37,4 @@ BEGIN
         ROLLBACK TRANSACTION;
         THROW;
     END CATCH
-END; 
+END;

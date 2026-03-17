@@ -1,11 +1,11 @@
 -- =============================================
--- Stored Procedure: 103_CountSitesBySchoolId
+-- Stored Procedure: 100_CountSitesBySchoolId
 -- Descripción: Cuenta cuántos sitios activos tiene una escuela.
 -- Usado para validar regla: el primer sitio de la escuela debe ser Comedor.
 -- Fecha: 2026-02-13
 -- =============================================
 
-CREATE OR ALTER PROCEDURE [dbo].[103_CountSitesBySchoolId]
+CREATE OR ALTER PROCEDURE [dbo].[100_CountSitesBySchoolId]
     @schoolId INT
 AS
 BEGIN

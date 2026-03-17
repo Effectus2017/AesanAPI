@@ -6,9 +6,9 @@
 
 CREATE OR ALTER PROCEDURE [100_InsertGroupType]
     @name NVARCHAR(100),
-    @nameEN NVARCHAR(255),
-    @isActive BIT,
-    @displayOrder INT,
+    @nameen NVARCHAR(255),
+    @isactive BIT,
+    @displayorder INT,
     @id INT OUTPUT
 AS
 BEGIN
@@ -17,7 +17,7 @@ BEGIN
     INSERT INTO GroupType
         (Name, NameEN, IsActive, DisplayOrder, CreatedAt)
     VALUES
-        (@name, @nameEN, @isActive, @displayOrder, GETDATE());
+        (@name, @nameen, @isactive, @displayorder, GETDATE());
 
     SET @id = SCOPE_IDENTITY();
     RETURN @id;

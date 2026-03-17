@@ -4,13 +4,13 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT gt.Id,
-        gt.Name,
-        gt.NameEN,
-        gt.IsActive,
-        gt.DisplayOrder,
-        gt.CreatedAt,
-        gt.UpdatedAt
+    SELECT id = gt.Id,
+        name = gt.Name,
+        nameen = gt.NameEN,
+        isactive = gt.IsActive,
+        displayorder = gt.DisplayOrder,
+        createdat = gt.CreatedAt,
+        updatedat = gt.UpdatedAt
     FROM GroupType gt
         INNER JOIN GroupTypeProgram gtp ON gt.Id = gtp.GroupTypeId
     WHERE gtp.ProgramId = @programId

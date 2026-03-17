@@ -1,9 +1,9 @@
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using Api.Data;
-using Api.Exceptions;
 using Api.Extensions;
 using Api.Interfaces;
 using Api.Models;
@@ -462,7 +462,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
 
             return siteId > 0;
         }
-        catch (SiteValidationException)
+        catch (ApiException)
         {
             transaction?.Rollback();
             throw;
@@ -2154,9 +2154,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
 
         if (count >= 1)
         {
-            throw new SiteValidationException(
-                "ONE_COMEDOR_PER_SCHOOL",
-                "La escuela solo debe tener un Comedor registrado.");
+            throw new ApiException(ErrorCode.ONE_COMEDOR_PER_SCHOOL, "La escuela solo debe tener un Comedor registrado.", (int)HttpStatusCode.BadRequest);
         }
     }
 
@@ -2181,9 +2179,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
 
         if (!comedorId.HasValue || request.GroupTypeId != comedorId.Value)
         {
-            throw new SiteValidationException(
-                "FIRST_SITE_MUST_BE_COMEDOR",
-                "El primer sitio de la escuela debe ser de tipo Comedor.");
+            throw new ApiException(ErrorCode.FIRST_SITE_MUST_BE_COMEDOR, "El primer sitio de la escuela debe ser de tipo Comedor.", (int)HttpStatusCode.BadRequest);
         }
     }
 
@@ -2222,9 +2218,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
         var comedorRange = await _schoolSiteRepository.Value.GetComedorOperatingDateRangeBySchoolId(schoolId.Value);
         if (!comedorRange.HasValue)
         {
-            throw new SiteValidationException(
-                "SCHOOL_MUST_HAVE_COMEDOR_FIRST",
-                "La escuela debe tener un sitio Comedor antes de agregar otros sitios. El primer sitio de la escuela debe ser de tipo Comedor.");
+            throw new ApiException(ErrorCode.SCHOOL_MUST_HAVE_COMEDOR_FIRST, "La escuela debe tener un sitio Comedor antes de agregar otros sitios. El primer sitio de la escuela debe ser de tipo Comedor.", (int)HttpStatusCode.BadRequest);
         }
 
         var (comedorFrom, comedorTo) = comedorRange.Value;
@@ -2246,7 +2240,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
         if (fromDate < fromLimit || toDate > toLimit)
         {
             var message = $"Las fechas de funcionamiento del sitio deben estar dentro del periodo del Comedor de la escuela ({fromLimit:yyyy-MM-dd} a {toLimit:yyyy-MM-dd}).";
-            throw new SiteValidationException("SITE_DATES_OUTSIDE_COMEDOR_RANGE", message);
+            throw new ApiException(ErrorCode.SITE_DATES_OUTSIDE_COMEDOR_RANGE, message, (int)HttpStatusCode.BadRequest);
         }
     }
 
@@ -2269,9 +2263,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
         if (allServices.Count == 0)
         {
             var programNames = string.Join(", ", programIdsToCheck.Select(p => p == 1 ? "PDAM" : p == 2 ? "PSAV" : "PACNA"));
-            throw new SiteValidationException(
-                "MISSING_STRONG_SERVICE",
-                $"Para {programNames} debe incluir al menos uno de los siguientes servicios: Almuerzo o Cena (según programa). Incluya al menos uno en su selección.");
+            throw new ApiException(ErrorCode.MISSING_STRONG_SERVICE, $"Para {programNames} debe incluir al menos uno de los siguientes servicios: Almuerzo o Cena (según programa). Incluya al menos uno en su selección.", (int)HttpStatusCode.BadRequest);
         }
 
         foreach (var programId in programIdsToCheck)
@@ -2289,9 +2281,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
             {
                 var names = string.Join(", ", typesByProgram.Where(t => t.IsStrongService).Select(t => t.Name));
                 var programName = programId == 1 ? "PDAM" : programId == 2 ? "PSAV" : "PACNA";
-                throw new SiteValidationException(
-                    "MISSING_STRONG_SERVICE",
-                    $"Para el programa {programName} debe incluir al menos uno de los siguientes servicios: {names}. Incluya al menos uno en su selección.");
+                throw new ApiException(ErrorCode.MISSING_STRONG_SERVICE, $"Para el programa {programName} debe incluir al menos uno de los siguientes servicios: {names}. Incluya al menos uno en su selección.", (int)HttpStatusCode.BadRequest);
             }
         }
     }
@@ -2346,9 +2336,7 @@ public class SiteRepository(DapperContext context, IMemoryCache cache, IOptions<
                     {
                         var nameA = nameByType.TryGetValue(typeA, out var nA) ? nA : $"Servicio {typeA}";
                         var nameB = nameByType.TryGetValue(typeB, out var nB) ? nB : $"Servicio {typeB}";
-                        throw new SiteValidationException(
-                            "INSUFFICIENT_TIME_BETWEEN_SERVICES",
-                            $"Entre {nameA} y {nameB} debe haber al menos {minMinutes} minutos. Ajuste los horarios.");
+                        throw new ApiException(ErrorCode.INSUFFICIENT_TIME_BETWEEN_SERVICES, $"Entre {nameA} y {nameB} debe haber al menos {minMinutes} minutos. Ajuste los horarios.", (int)HttpStatusCode.BadRequest);
                     }
                 }
             }

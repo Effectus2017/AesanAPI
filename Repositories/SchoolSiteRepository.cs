@@ -172,7 +172,7 @@ public class SchoolSiteRepository(DapperContext context, IMemoryCache cache, IOp
             parameters.Add("@schoolId", schoolId, DbType.Int32);
             parameters.Add("@excludeSiteId", excludeSiteId, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("102_CountSitesWithComedorGroupTypeBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_CountSitesWithComedorGroupTypeBySchoolId", parameters, commandType: CommandType.StoredProcedure);
             return result != null ? (int)result.cnt : 0;
         }
         catch (Exception ex)
@@ -192,7 +192,7 @@ public class SchoolSiteRepository(DapperContext context, IMemoryCache cache, IOp
             var parameters = new DynamicParameters();
             parameters.Add("@schoolId", schoolId, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("103_CountSitesBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_CountSitesBySchoolId", parameters, commandType: CommandType.StoredProcedure);
             return result != null ? (int)result.cnt : 0;
         }
         catch (Exception ex)
@@ -212,7 +212,7 @@ public class SchoolSiteRepository(DapperContext context, IMemoryCache cache, IOp
             var parameters = new DynamicParameters();
             parameters.Add("@schoolId", schoolId, DbType.Int32);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("104_GetComedorOperatingDateRangeBySchoolId", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<dynamic>("100_GetComedorOperatingDateRangeBySchoolId", parameters, commandType: CommandType.StoredProcedure);
             if (result == null)
             {
                 return null;

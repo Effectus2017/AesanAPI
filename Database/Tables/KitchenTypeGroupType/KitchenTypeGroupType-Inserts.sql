@@ -15,13 +15,9 @@ DECLARE @KitchenTypePSS INT = (SELECT Id
 FROM KitchenType
 WHERE Name LIKE '%(PSS) Preparadas y Servidas en el Sitio%');
 
--- Obtener IDs de GroupType
-DECLARE @GroupTypeComedor INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Comedor');
-DECLARE @GroupTypeSatelite INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Satélite');
+-- Obtener IDs de GroupType (por Code)
+DECLARE @GroupTypeComedor INT = (SELECT Id FROM GroupType WHERE Code = N'DINING_ROOM');
+DECLARE @GroupTypeSatelite INT = (SELECT Id FROM GroupType WHERE Code = N'SATELLITE');
 
 -- Insertar relaciones
 -- Cocina Central (CC) -> Solo Satélite
@@ -67,28 +63,14 @@ DECLARE @KitchenTypeCGA INT = (SELECT Id
 FROM KitchenType
 WHERE Name = N'(CGA) Compañía de Gestión de Alimentos');
 
--- Obtener IDs adicionales de GroupType
-DECLARE @GroupTypeNA INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'N/A');
-DECLARE @GroupTypeConsumeExterno INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Consume en Comedor-Grupo Externo');
-DECLARE @GroupTypeConsumeInterno INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Consume en Comedor-Grupo Interno');
-DECLARE @GroupTypeDomicilio INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Domicilio');
-DECLARE @GroupTypeNonCongregate INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Non-Congregate');
-DECLARE @GroupTypeServiExpreso INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Servi-Expreso/Carro');
-DECLARE @GroupTypeServicioCamiones INT = (SELECT Id
-FROM GroupType
-WHERE Name = 'Servicio en Camiones');
+-- Obtener IDs adicionales de GroupType (por Code)
+DECLARE @GroupTypeNA INT = (SELECT Id FROM GroupType WHERE Code = N'NA');
+DECLARE @GroupTypeConsumeExterno INT = (SELECT Id FROM GroupType WHERE Code = N'DINING_ROOM_EXTERNAL');
+DECLARE @GroupTypeConsumeInterno INT = (SELECT Id FROM GroupType WHERE Code = N'DINING_ROOM_INTERNAL');
+DECLARE @GroupTypeDomicilio INT = (SELECT Id FROM GroupType WHERE Code = N'HOME');
+DECLARE @GroupTypeNonCongregate INT = (SELECT Id FROM GroupType WHERE Code = N'NON_CONGREGATE');
+DECLARE @GroupTypeServiExpreso INT = (SELECT Id FROM GroupType WHERE Code = N'EXPRESS_TRAIN_CAR');
+DECLARE @GroupTypeServicioCamiones INT = (SELECT Id FROM GroupType WHERE Code = N'TRUCK_SERVICE');
 
 -- Insertar relaciones para los otros tipos de grupo
 -- N/A -> N/A y (CGA) Compañía de Gestión de Alimentos

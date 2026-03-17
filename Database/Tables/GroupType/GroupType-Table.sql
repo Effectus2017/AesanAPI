@@ -17,4 +17,8 @@ END
 IF COL_LENGTH('GroupType', 'DisplayOrder') IS NULL
 BEGIN
     ALTER TABLE GroupType ADD DisplayOrder INT NOT NULL DEFAULT 0;
-END 
+END
+IF COL_LENGTH('GroupType', 'Code') IS NULL
+BEGIN
+    ALTER TABLE GroupType ADD Code NVARCHAR(50) NULL;
+END

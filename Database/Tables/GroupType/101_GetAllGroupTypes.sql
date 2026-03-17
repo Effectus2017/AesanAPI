@@ -1,9 +1,9 @@
--- 100_GetAllGroupTypes.sql
--- Obtiene todos los tipos de grupo
--- Cumple convención: los SPs van en la raíz de la carpeta de la tabla
--- No usar subcarpeta SP
--- Última actualización: 2024-06-10
-CREATE OR ALTER PROCEDURE [100_GetAllGroupTypes]
+-- =============================================
+-- Stored Procedure: 101_GetAllGroupTypes
+-- Versión 2: igual que 100_ pero incluye columna Code en el resultado.
+-- =============================================
+
+CREATE OR ALTER PROCEDURE [dbo].[101_GetAllGroupTypes]
     @take INT,
     @skip INT,
     @name NVARCHAR(255),
@@ -15,6 +15,7 @@ BEGIN
     SELECT id = Id,
         name = Name,
         nameen = NameEN,
+        code = Code,
         isactive = IsActive,
         displayorder = DisplayOrder,
         createdat = CreatedAt,
@@ -29,4 +30,4 @@ BEGIN
     FROM GroupType
     WHERE (@alls = 1)
         OR (@name IS NULL OR Name LIKE '%' + @name + '%');
-END; 
+END;

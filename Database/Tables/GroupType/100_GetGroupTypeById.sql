@@ -9,13 +9,13 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT Id,
-        Name,
-        NameEN,
-        IsActive,
-        CreatedAt,
-        UpdatedAt,
-        DisplayOrder
+    SELECT id = Id,
+        name = Name,
+        nameen = NameEN,
+        isactive = IsActive,
+        displayorder = DisplayOrder,
+        createdat = CreatedAt,
+        updatedat = UpdatedAt
     FROM GroupType
     WHERE Id = @id;
 END; 

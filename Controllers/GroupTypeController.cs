@@ -179,7 +179,7 @@ public class GroupTypeController(IGroupTypeRepository groupTypeRepository) : Con
             return BadRequest("El ID del programa es requerido");
         }
 
-        var result = await _groupTypeRepository.GetGroupTypesByProgram(queryParameters.ProgramId.Value);
+        var result = await _groupTypeRepository.GetGroupTypesByProgram(queryParameters.ProgramId.Value, queryParameters.SchoolId);
 
         return Ok(result);
     }

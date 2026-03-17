@@ -12,5 +12,5 @@ BEGIN
 
     SELECT id = Id
     FROM GroupType
-    WHERE Name = N'Comedor' OR NameEN = N'Dining Room';
+    WHERE Code = N'DINING_ROOM';
 END;

@@ -30,7 +30,7 @@ public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOpt
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
-            var result = await db.QueryMultipleAsync("100_GetGroupTypeById", parameters, commandType: CommandType.StoredProcedure);
+            var result = await db.QueryMultipleAsync("101_GetGroupTypeById", parameters, commandType: CommandType.StoredProcedure);
             var data = await result.ReadSingleAsync<DTOGroupType>();
             return data;
         }
@@ -68,7 +68,7 @@ public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOpt
                     cacheKey,
                     async () =>
                     {
-                        var result = await db.QueryMultipleAsync("100_GetAllGroupTypes", parameters, commandType: CommandType.StoredProcedure);
+                        var result = await db.QueryMultipleAsync("101_GetAllGroupTypes", parameters, commandType: CommandType.StoredProcedure);
 
                         if (result == null)
                         {
@@ -84,7 +84,7 @@ public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOpt
             }
             else
             {
-                var result = await db.QueryMultipleAsync("100_GetAllGroupTypes", parameters, commandType: CommandType.StoredProcedure);
+                var result = await db.QueryMultipleAsync("101_GetAllGroupTypes", parameters, commandType: CommandType.StoredProcedure);
 
                 if (result == null)
                 {
@@ -117,9 +117,10 @@ public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOpt
             parameters.Add("@nameEN", groupType.NameEN, DbType.String);
             parameters.Add("@isActive", groupType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", groupType.DisplayOrder, DbType.Int32);
+            parameters.Add("@code", groupType.Code ?? "", DbType.String);
             parameters.Add("@id", groupType.Id, DbType.Int32, direction: ParameterDirection.Output);
 
-            await db.ExecuteAsync("100_InsertGroupType", parameters, commandType: CommandType.StoredProcedure);
+            await db.ExecuteAsync("101_InsertGroupType", parameters, commandType: CommandType.StoredProcedure);
             var id = parameters.Get<int>("@id");
 
             if (id > 0)
@@ -151,7 +152,8 @@ public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOpt
             parameters.Add("@nameEN", groupType.NameEN, DbType.String);
             parameters.Add("@isActive", groupType.IsActive, DbType.Boolean);
             parameters.Add("@displayOrder", groupType.DisplayOrder, DbType.Int32);
-            var rowsAffected = await db.ExecuteAsync("100_UpdateGroupType", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("@code", groupType.Code ?? "", DbType.String);
+            var rowsAffected = await db.ExecuteAsync("101_UpdateGroupType", parameters, commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
             {
@@ -268,19 +270,22 @@ public class GroupTypeRepository(DapperContext context, IMemoryCache cache, IOpt
     }
 
     /// <summary>
-    /// Obtiene los tipos de grupo válidos para un programa específico
+    /// Obtiene los tipos de grupo válidos para un programa específico.
+    /// Si schoolId tiene valor y la escuela ya tiene un sitio Comedor, no se incluye Comedor en el resultado.
     /// </summary>
     /// <param name="programId">El ID del programa</param>
+    /// <param name="schoolId">ID de la escuela (opcional)</param>
     /// <returns>Los tipos de grupo válidos para el programa</returns>
-    public async Task<dynamic> GetGroupTypesByProgram(int programId)
+    public async Task<dynamic> GetGroupTypesByProgram(int programId, int? schoolId = null)
     {
         try
         {
             using IDbConnection db = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@programId", programId, DbType.Int32);
 
-            var result = await db.QueryAsync<DTOGroupType>("100_GetGroupTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("@programid", programId, DbType.Int32);
+            parameters.Add("@schoolid", schoolId, DbType.Int32);
+            var result = await db.QueryAsync<DTOGroupType>("101_GetGroupTypesByProgram", parameters, commandType: CommandType.StoredProcedure);
             return result.ToList();
         }
         catch (Exception ex)

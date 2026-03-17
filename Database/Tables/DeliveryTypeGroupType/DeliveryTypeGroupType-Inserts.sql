@@ -14,11 +14,11 @@ DECLARE @DeliveryTypeRecogido INT = (SELECT Id FROM DeliveryType WHERE Name = 'R
 DECLARE @DeliveryTypeServiCarro INT = (SELECT Id FROM DeliveryType WHERE Name = 'Servi-Carro');
 DECLARE @DeliveryTypeServiExpreso INT = (SELECT Id FROM DeliveryType WHERE Name = 'Servi-Expreso');
 
--- Obtener IDs de GroupType
-DECLARE @GroupTypeSatelite INT = (SELECT Id FROM GroupType WHERE Name = 'Satélite');
-DECLARE @GroupTypeComedor INT = (SELECT Id FROM GroupType WHERE Name = 'Comedor');
-DECLARE @GroupTypeSalonClases INT = (SELECT Id FROM GroupType WHERE Name = 'Salón de Clases');
-DECLARE @GroupTypeSalones INT = (SELECT Id FROM GroupType WHERE Name = 'Salones');
+-- Obtener IDs de GroupType (por Code)
+DECLARE @GroupTypeSatelite INT = (SELECT Id FROM GroupType WHERE Code = N'SATELLITE');
+DECLARE @GroupTypeComedor INT = (SELECT Id FROM GroupType WHERE Code = N'DINING_ROOM');
+DECLARE @GroupTypeSalonClases INT = (SELECT Id FROM GroupType WHERE Code = N'CLASSROOM');
+DECLARE @GroupTypeSalones INT = (SELECT Id FROM GroupType WHERE Code = N'LOUNGES');
 
 -- ============================================
 -- SATÉLITE

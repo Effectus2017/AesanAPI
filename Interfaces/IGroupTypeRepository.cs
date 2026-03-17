@@ -56,11 +56,13 @@ public interface IGroupTypeRepository
     Task<dynamic> GetSiteLocationByGroupType(int groupTypeId);
 
     /// <summary>
-    /// Obtiene los tipos de grupo válidos para un programa específico
+    /// Obtiene los tipos de grupo válidos para un programa específico.
+    /// Si se indica schoolId y la escuela ya tiene un sitio Comedor, no se incluye Comedor en el resultado.
     /// </summary>
     /// <param name="programId">ID del programa</param>
+    /// <param name="schoolId">ID de la escuela (opcional). Si tiene valor y la escuela ya tiene Comedor, se excluye Comedor del resultado.</param>
     /// <returns>Lista de tipos de grupo válidos para el programa</returns>
-    Task<dynamic> GetGroupTypesByProgram(int programId);
+    Task<dynamic> GetGroupTypesByProgram(int programId, int? schoolId = null);
 
     /// <summary>
     /// Obtiene el ID del tipo de grupo Comedor (Dining Room).
