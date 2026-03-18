@@ -3,7 +3,7 @@
 -- Descripción: Obtiene la lista de usuarios AESAN asignados a una agencia (evaluadores, etc.).
 --              Solo incluye usuarios cuyo rol tiene AssignmentCategory = NUTRE (RoleAssignmentCategory).
 --              Una fila por usuario; si tiene varios roles NUTRE, se muestra uno (ordenado por r.Name).
---              Verifica acceso del usuario con la misma lógica que 113_GetAgencyByIdAndUserId.
+--              Verifica acceso del usuario con la misma lógica que 114_GetAgencyByIdAndUserId.
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [100_GetAgencyAssignedUsers]

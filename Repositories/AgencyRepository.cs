@@ -117,7 +117,7 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             parameters.Add("@userId", userId);
             
             // Usar nuevo SP con nueva lógica de acceso
-            var result = await dbConnection.QueryMultipleAsync("113_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
+            var result = await dbConnection.QueryMultipleAsync("114_GetAgencyByIdAndUserId", parameters, commandType: CommandType.StoredProcedure);
 
             if (result == null)
             {
@@ -143,10 +143,6 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             // Leer el tercer result set: Usuarios que hicieron appointments (puede estar vacío)
             var appointmentUsers = await result.ReadAsync<dynamic>();
 
-            // Leer el quinto result set: Usuarios asignados a la agencia (AgencyUsers + Staff)
-            var assignedUsers = await result.ReadAsync<DTOStaff>();
-            agency.AssignedUsers = assignedUsers?.ToList() ?? [];
-
             // Leer el cuarto result set: Funciones de autoridad de la Junta de Directores (BoardExecutiveAuthority)
             var boardExecutiveAuthority = await result.ReadAsync<dynamic>();
 
@@ -154,6 +150,10 @@ public class AgencyRepository(IEmailService emailService, IPasswordService passw
             {
                 agency.Inscription.BoardExecutiveAuthority = _mappingService.MapOptionSelections(boardExecutiveAuthority);
             }
+
+            // Leer el quinto result set: Usuarios asignados a la agencia (AgencyUsers + Staff)
+            var assignedUsers = await result.ReadAsync<DTOStaff>();
+            agency.AssignedUsers = assignedUsers?.ToList() ?? [];
 
             _logger.LogInformation($"Datos obtenidos de la base de datos para agencia {agencyId} y usuario {userId}");
             return agency!;

@@ -34,6 +34,7 @@ BEGIN
         s.Address,
         CityName = c.Name,
         RegionName = r.Name,
+        SchoolName = sch.Name,
         generalenrollment = ISNULL(s.GeneralEnrollment, (SELECT ISNULL(SUM(scg.NumberOfChildren), 0) FROM SiteChildGroup scg WHERE scg.SiteId = s.Id)),
         s.IsActive,
         SiteCode = CASE
