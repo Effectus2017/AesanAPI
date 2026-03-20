@@ -10,7 +10,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT
+    SELECT DISTINCT
         p.Id,
         p.Name,
         p.NameEN,
