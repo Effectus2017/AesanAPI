@@ -20,7 +20,7 @@ public class StaffRepository(
     IOptions<ApplicationSettings> appSettings,
     MappingService mappingService,
     IAuditLogger auditLogger,
-    ISiteStaffRepository siteStaffRepository,
+    ISchoolStaffRepository schoolStaffRepository,
     IAgencyRepository agencyRepository,
     MessageTemplateService messageTemplateService
 ) : IStaffRepository
@@ -30,7 +30,7 @@ public class StaffRepository(
     private readonly ApplicationSettings _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
     private readonly MappingService _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
     private readonly IAuditLogger _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
-    private readonly ISiteStaffRepository _siteStaffRepository = siteStaffRepository ?? throw new ArgumentNullException(nameof(siteStaffRepository));
+    private readonly ISchoolStaffRepository _schoolStaffRepository = schoolStaffRepository ?? throw new ArgumentNullException(nameof(schoolStaffRepository));
     private readonly IAgencyRepository _agencyRepository = agencyRepository ?? throw new ArgumentNullException(nameof(agencyRepository));
     private readonly MessageTemplateService _messageTemplateService = messageTemplateService ?? throw new ArgumentNullException(nameof(messageTemplateService));
 
@@ -47,7 +47,7 @@ public class StaffRepository(
             var param = new DynamicParameters();
             param.Add("@id", id, DbType.Int32);
 
-            using var result = await dbConnection.QueryMultipleAsync("101_GetStaffById", param, commandType: CommandType.StoredProcedure);
+            using var result = await dbConnection.QueryMultipleAsync("102_GetStaffById", param, commandType: CommandType.StoredProcedure);
 
             var data = await result.ReadFirstOrDefaultAsync<dynamic>();
 
@@ -216,11 +216,11 @@ public class StaffRepository(
 
             {
                 // Si se proporcionó una sitio, crear la asociación
-                if (staffRequest.SiteId.HasValue && staffRequest.SiteId.Value > 0)
+                if (staffRequest.SchoolId.HasValue && staffRequest.SchoolId.Value > 0)
                 {
-                    var siteStaffRequest = new SiteStaffRequest
+                    var schoolStaffRequest = new SchoolStaffRequest
                     {
-                        SiteId = staffRequest.SiteId.Value,
+                        SchoolId = staffRequest.SchoolId.Value,
                         StaffId = staffId,
                         IsPrimary = staffRequest.IsPrimary,
                         Comments = $"Asignación creada automáticamente al crear el staff",
@@ -228,7 +228,7 @@ public class StaffRepository(
 
                     try
                     {
-                        await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
+                        await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
                     }
                     catch (Exception)
                     {
@@ -333,7 +333,7 @@ public class StaffRepository(
 
                 InvalidateCache(staffRequest.Id.Value);
                 // Manejar la asignación de sitio
-                await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SiteId, staffRequest.IsPrimary);
+                await HandleSchoolAssignmentUpdate(staffRequest.Id.Value, staffRequest.SchoolId, staffRequest.IsPrimary);
                 return true;
             }
 
@@ -912,74 +912,65 @@ public class StaffRepository(
     /// Maneja la actualización de la asignación de sitio para un staff
     /// </summary>
     /// <param name="staffId">ID del staff</param>
-    /// <param name="newSiteId">Nuevo ID de sitio (null si no hay sitio)</param>
+    /// <param name="newSchoolId">Nuevo ID de escuela (null si no hay escuela)</param>
     /// <param name="isPrimary">Si es asignación principal</param>
-    private async Task HandleSchoolAssignmentUpdate(int staffId, int? newSiteId, bool isPrimary)
+    private async Task HandleSchoolAssignmentUpdate(int staffId, int? newSchoolId, bool isPrimary)
     {
         try
         {
-            // Obtener asignaciones actuales del staff
-            var currentAssignments = await _siteStaffRepository.GetSitesByStaff(staffId);
+            var currentAssignments = await _schoolStaffRepository.GetSchoolsByStaff(staffId);
             var currentAssignment = currentAssignments.FirstOrDefault(a => a.IsActive);
 
-            // Caso 1: No hay asignación actual y no se proporcionó nueva sitio → No hacer nada
-            if (currentAssignment == null && (!newSiteId.HasValue || newSiteId.Value <= 0))
+            if (currentAssignment == null && (!newSchoolId.HasValue || newSchoolId.Value <= 0))
             {
                 return;
             }
 
-            // Caso 2: No hay asignación actual pero se proporcionó una sitio → Crear nueva
-            if (currentAssignment == null && newSiteId.HasValue && newSiteId.Value > 0)
+            if (currentAssignment == null && newSchoolId.HasValue && newSchoolId.Value > 0)
             {
-                var siteStaffRequest = new SiteStaffRequest
+                var schoolStaffRequest = new SchoolStaffRequest
                 {
-                    SiteId = newSiteId.Value,
+                    SchoolId = newSchoolId.Value,
                     StaffId = staffId,
                     IsPrimary = isPrimary,
                     Comments = $"Asignación actualizada automáticamente",
                 };
 
-                await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
+                await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
                 return;
             }
 
-            // Caso 3: Hay asignación actual pero no se proporcionó sitio → Desasignar
-            if (currentAssignment != null && (!newSiteId.HasValue || newSiteId.Value <= 0))
+            if (currentAssignment != null && (!newSchoolId.HasValue || newSchoolId.Value <= 0))
             {
-                await _siteStaffRepository.UnassignStaffFromSite(currentAssignment.SiteId, staffId);
+                await _schoolStaffRepository.UnassignStaffFromSchool(currentAssignment.SchoolId, staffId);
                 return;
             }
 
-            // Caso 4: Hay asignación actual y cambió la sitio → Desasignar anterior y crear nueva
-            if (currentAssignment != null && newSiteId.HasValue && newSiteId.Value > 0 && currentAssignment.SiteId != newSiteId.Value)
+            if (currentAssignment != null && newSchoolId.HasValue && newSchoolId.Value > 0 && currentAssignment.SchoolId != newSchoolId.Value)
             {
-                // Desasignar de la sitio anterior
-                await _siteStaffRepository.UnassignStaffFromSite(currentAssignment.SiteId, staffId);
+                await _schoolStaffRepository.UnassignStaffFromSchool(currentAssignment.SchoolId, staffId);
 
-                // Asignar a la nueva sitio
-                var siteStaffRequest = new SiteStaffRequest
+                var schoolStaffRequest = new SchoolStaffRequest
                 {
-                    SiteId = newSiteId.Value,
+                    SchoolId = newSchoolId.Value,
                     StaffId = staffId,
                     IsPrimary = isPrimary,
                     Comments = $"Asignación actualizada automáticamente",
                 };
 
-                await _siteStaffRepository.AssignStaffToSite(siteStaffRequest);
+                await _schoolStaffRepository.AssignStaffToSchool(schoolStaffRequest);
                 return;
             }
 
-            // Caso 5: Misma sitio pero cambió isPrimary → Actualizar asignación existente
-            if (currentAssignment != null && newSiteId.HasValue && newSiteId.Value > 0 && currentAssignment.SiteId == newSiteId.Value)
+            if (currentAssignment != null && newSchoolId.HasValue && newSchoolId.Value > 0 && currentAssignment.SchoolId == newSchoolId.Value)
             {
-                // Verificar si cambió algo
                 bool isPrimaryChanged = currentAssignment.IsPrimary != isPrimary;
 
                 if (isPrimaryChanged)
                 {
-                    var updateRequest = new UpdateSiteStaffRequest { IsPrimary = isPrimary, Comments = $"Asignación actualizada automáticamente" };
+                    var updateRequest = new UpdateSchoolStaffRequest { IsPrimary = isPrimary, Comments = $"Asignación actualizada automáticamente" };
 
-                    await _siteStaffRepository.UpdateSiteStaff(currentAssignment.Id, updateRequest);
+                    await _schoolStaffRepository.UpdateSchoolStaff(currentAssignment.Id, updateRequest);
                 }
             }
         }

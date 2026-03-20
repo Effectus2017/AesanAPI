@@ -26,7 +26,7 @@ public class QueryParameters
     public string? InactiveJustification { get; set; } // Justificación para inactivación
     public DateTime? InactiveDate { get; set; } // Fecha de inactivación
     public bool? ProvidedRationsService { get; set; } // ¿Brindó servicio de raciones durante su periodo de funcionamiento?
-    public int? SchoolId { get; set; } // ID de la escuela (deprecated)
+    public int? SchoolId { get; set; } // ID de la escuela (p. ej. school-staff)
     public int? SiteId { get; set; } // ID del sitio
     public int StaffId { get; set; } // ID del miembro del staff
     public int? StaffTypeId { get; set; } // ID del tipo de staff

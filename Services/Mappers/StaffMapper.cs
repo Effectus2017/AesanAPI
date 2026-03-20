@@ -210,11 +210,18 @@ public static class StaffMapper
                 ReceivesProgramSalaryNameEN = item.ReceivesProgramSalaryNameEN,
                 // SalaryOriginIds y SalaryOrigins se rellenan en el repositorio desde el segundo result set (StaffSalaryOrigin)
 
-                // Datos de la relación SiteStaff
-                SiteId = item.SiteId,
+                // Datos de la relación SchoolStaff
+                SchoolId = item.SchoolId,
                 IsPrimary = item.IsPrimary,
 
-                Site = item.SiteId != null ? mappingService.MapSiteListItem(new { Id = item.SiteId, Name = item.SiteName, AgencyId = item.SiteAgencyId ?? 0 }) : null,
+                School = item.SchoolId != null
+                    ? new SchoolDropdownItemResponse
+                    {
+                        Id = (int)item.SchoolId,
+                        Name = item.SchoolName ?? string.Empty,
+                        AgencyId = item.SchoolAgencyId ?? 0
+                    }
+                    : null,
 
                 City = mappingService.MapCity(new { Id = item.CityId ?? 0, Name = item.CityName ?? string.Empty }),
                 Region = mappingService.MapRegion(new { Id = item.RegionId ?? 0, Name = item.RegionName ?? string.Empty }),

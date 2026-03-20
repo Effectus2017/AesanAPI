@@ -20,7 +20,7 @@ public interface IUnitOfWork
     IStaffTypeRepository StaffTypeRepository { get; }
     IStaffClassificationRepository StaffClassificationRepository { get; }
     IMessageRepository MessageRepository { get; }
-    ISiteStaffRepository SiteStaffRepository { get; }
+    ISchoolStaffRepository SchoolStaffRepository { get; }
     ISiteCalendarRepository SiteCalendarRepository { get; }
     ISiteExcursionRepository SiteExcursionRepository { get; }
     IAgencyCalendarRepository AgencyCalendarRepository { get; }

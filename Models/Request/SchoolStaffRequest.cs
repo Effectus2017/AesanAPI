@@ -1,11 +1,11 @@
 namespace Api.Models.Request;
 
 /// <summary>
-/// Modelo de request para las operaciones de asignación de staff a sitios
+/// Request para asignar staff a una escuela.
 /// </summary>
-public class SiteStaffRequest
+public class SchoolStaffRequest
 {
-    public int SiteId { get; set; }
+    public int SchoolId { get; set; }
     public int StaffId { get; set; }
     public bool IsPrimary { get; set; }
     public DateTime? StartDate { get; set; }
@@ -14,9 +14,9 @@ public class SiteStaffRequest
 }
 
 /// <summary>
-/// Modelo de request para actualizar una asignación existente
+/// Request para actualizar una asignación SchoolStaff existente.
 /// </summary>
-public class UpdateSiteStaffRequest
+public class UpdateSchoolStaffRequest
 {
     public bool IsPrimary { get; set; }
     public DateTime? StartDate { get; set; }

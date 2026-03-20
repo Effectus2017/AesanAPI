@@ -58,8 +58,8 @@ public class DTOStaff
     /// <summary>Origen del Salario como objetos completos (segundo result set del SP, tabla StaffSalaryOrigin). No devolver IDs por separado.</summary>
     public List<DTOOptionSelection>? SalaryOrigins { get; set; }
 
-    // Datos de la relación SiteStaff
-    public int? SiteId { get; set; }
+    // Datos de la relación SchoolStaff
+    public int? SchoolId { get; set; }
     public bool? IsPrimary { get; set; }
 
     // Relaciones anidadas (para GetById)
@@ -71,7 +71,7 @@ public class DTOStaff
     public DTOStaffClassification? StaffClassification { get; set; }
     public DTOOptionSelection? TenureDurationUnit { get; set; }
     public DTOOptionSelection? ReceivesProgramSalary { get; set; }
-    public SiteListItemResponse? Site { get; set; }
+    public SchoolDropdownItemResponse? School { get; set; }
 
     /// <summary>
     /// Contratos por clasificación (Administrativo/Operacional), poblado en GetById.

@@ -44,8 +44,8 @@ public class StaffRequest
     // Origen del Salario (selección múltiple: modelos OptionSelection con optionKey = 'salaryOrigin')
     public List<DTOOptionSelection>? SalaryOrigins { get; set; }
 
-    // Campos de asignación de sitio (Site Assignment)
-    public int? SiteId { get; set; } = null;
+    // Asignación a escuela (SchoolStaff)
+    public int? SchoolId { get; set; } = null;
     public bool IsPrimary { get; set; } = false;
 
     /// <summary>

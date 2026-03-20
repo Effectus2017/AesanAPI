@@ -102,16 +102,16 @@ BEGIN
     END
 
         -- =============================================
-        -- 3. Eliminar SiteStaff (asignaciones de staff a sitios)
+        -- 3. Eliminar SchoolStaff (asignaciones de staff a escuelas)
         -- =============================================
-        IF OBJECT_ID('SiteStaff', 'U') IS NOT NULL
+        IF OBJECT_ID('SchoolStaff', 'U') IS NOT NULL
         BEGIN
-        DELETE FROM SiteStaff 
+        DELETE FROM SchoolStaff 
             WHERE StaffId = @staffId;
         SET @currentRows = @@ROWCOUNT;
         SET @deletedCount = @deletedCount + @currentRows;
         IF @currentRows > 0
-                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteStaff';
+                PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SchoolStaff';
     END
 
         -- =============================================
@@ -181,9 +181,9 @@ BEGIN
             WHERE StaffId = @staffId OR RelatedStaffId = @staffId)
                     SET @fkError = @fkError + 'Hay registros en StaffRelationship. ';
             IF EXISTS (SELECT 1
-            FROM SiteStaff
+            FROM SchoolStaff
             WHERE StaffId = @staffId)
-                    SET @fkError = @fkError + 'Hay registros en SiteStaff. ';
+                    SET @fkError = @fkError + 'Hay registros en SchoolStaff. ';
             IF EXISTS (SELECT 1
             FROM StaffContractByClassification
             WHERE StaffId = @staffId)
@@ -436,4 +436,4 @@ BEGIN
 END;
 GO
 
-EXEC [dbo].[101_BulkDeleteStaff] 1;
+--EXEC [dbo].[101_BulkDeleteStaff] 1;

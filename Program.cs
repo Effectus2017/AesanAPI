@@ -194,7 +194,7 @@ builder.Services.AddScoped<Lazy<MappingService>>(sp => new Lazy<MappingService>(
 // Registrar AgencyUsersRepository después de los servicios Lazy
 builder.Services.AddScoped<IAgencyUsersRepository, AgencyUsersRepository>();
 builder.Services.AddScoped<IAgencyFilesRepository, AgencyFilesRepository>();
-builder.Services.AddScoped<ISiteStaffRepository, SiteStaffRepository>();
+builder.Services.AddScoped<ISchoolStaffRepository, SchoolStaffRepository>();
 builder.Services.AddScoped<ISiteCalendarRepository, SiteCalendarRepository>();
 builder.Services.AddScoped<IAgencyCalendarRepository, AgencyCalendarRepository>();
 builder.Services.AddScoped<ISiteExcursionRepository, SiteExcursionRepository>();

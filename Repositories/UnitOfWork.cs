@@ -19,7 +19,7 @@ public class UnitOfWork(ApplicationDbContext context,
     IStaffTypeRepository staffTypeRepository,
     IStaffClassificationRepository staffClassificationRepository,
     IMessageRepository messageRepository,
-    ISiteStaffRepository siteStaffRepository,
+    ISchoolStaffRepository schoolStaffRepository,
     ISiteCalendarRepository siteCalendarRepository,
     ISiteExcursionRepository siteExcursionRepository,
     IAgencyCalendarRepository agencyCalendarRepository
@@ -43,7 +43,7 @@ public class UnitOfWork(ApplicationDbContext context,
     public IStaffTypeRepository StaffTypeRepository { get; private set; } = staffTypeRepository;
     public IStaffClassificationRepository StaffClassificationRepository { get; private set; } = staffClassificationRepository;
     public IMessageRepository MessageRepository { get; private set; } = messageRepository;
-    public ISiteStaffRepository SiteStaffRepository { get; private set; } = siteStaffRepository;
+    public ISchoolStaffRepository SchoolStaffRepository { get; private set; } = schoolStaffRepository;
     public ISiteCalendarRepository SiteCalendarRepository { get; private set; } = siteCalendarRepository;
     public ISiteExcursionRepository SiteExcursionRepository { get; private set; } = siteExcursionRepository;
     public IAgencyCalendarRepository AgencyCalendarRepository { get; private set; } = agencyCalendarRepository;

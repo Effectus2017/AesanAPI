@@ -100,17 +100,17 @@ BEGIN
     END
         
         -- =============================================
-        -- 4. Eliminar SiteStaff (relación entre Site y Staff)
+        -- 4. Eliminar SchoolStaff (relación entre School y Staff de la agencia)
         -- =============================================
-        IF OBJECT_ID('SiteStaff', 'U') IS NOT NULL
+        IF OBJECT_ID('SchoolStaff', 'U') IS NOT NULL
         BEGIN
         DELETE sst
-            FROM SiteStaff sst
-            INNER JOIN Site s ON sst.SiteId = s.Id
-            WHERE s.AgencyId = @agencyId;
+            FROM SchoolStaff sst
+            INNER JOIN School sch ON sst.SchoolId = sch.Id
+            WHERE sch.AgencyId = @agencyId;
         SET @currentRows = @@ROWCOUNT;
         IF @currentRows > 0
-            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SiteStaff';
+            PRINT '✓ Eliminados ' + CAST(@currentRows AS NVARCHAR(10)) + ' registros de SchoolStaff';
     END
         
         -- =============================================

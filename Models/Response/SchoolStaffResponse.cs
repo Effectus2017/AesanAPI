@@ -1,46 +1,39 @@
-using System;
-
 namespace Api.Models.Response;
 
 /// <summary>
-/// Modelo de respuesta para la relación entre un sitio (Site) y un empleado del staff
+/// Respuesta para la relación Staff–School (SchoolStaff).
 /// </summary>
-public class SiteStaffResponse
+public class SchoolStaffResponse
 {
     public int Id { get; set; }
-
-    // Relaciones principales
-    public int SiteId { get; set; }
+    public int SchoolId { get; set; }
     public int StaffId { get; set; }
-
-    // Información de la asignación
     public DateTime AssignmentDate { get; set; }
+    public int AssignmentTypeId { get; set; }
     public bool IsPrimary { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? Comments { get; set; }
-
-    // Estado y auditoría
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
-    // Información relacionada para consultas (GetStaffBySite)
+    // GetStaffBySchool
     public string? FirstName { get; set; }
     public string? MiddleName { get; set; }
     public string? FatherLastName { get; set; }
     public string? MotherLastName { get; set; }
     public string? Email { get; set; }
+    public string? AssignmentTypeName { get; set; }
+    /// <summary>Nombre en inglés del tipo de asignación (OptionSelection.NameEN). Alias SQL: AssignmentTypeNameEN.</summary>
+    public string? AssignmentTypeNameEN { get; set; }
 
-    // Información relacionada para consultas (GetSitesByStaff)
-    public string? SiteName { get; set; }
-    public string? SiteAddress { get; set; }
-    public int? SiteCityId { get; set; }
-    public int? SiteRegionId { get; set; }
-    public string? SiteZipCode { get; set; }
-    public decimal? Latitude { get; set; }
-    public decimal? Longitude { get; set; }
+    // GetSchoolsByStaff / GetSchoolStaffById
+    public string? SchoolName { get; set; }
+    public string? SchoolCode { get; set; }
+    public int? AgencyId { get; set; }
+    public int? SchoolNumber { get; set; }
+    public bool? SchoolIsActive { get; set; }
     public string? AgencyName { get; set; }
     public bool? AgencyIsActive { get; set; }
 }
-

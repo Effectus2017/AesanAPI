@@ -1,136 +1,127 @@
 using Api.Data;
 using Api.Interfaces;
+using Api.Models.Errors;
 using Api.Models.Request;
 using Api.Models.Response;
 using Api.Services;
 using Dapper;
-using System.Collections.Generic;
 using System.Data;
-using Api.Models.Errors;
 
 namespace Api.Repositories;
 
 /// <summary>
-/// Repositorio para gestionar las asignaciones de empleados a sitios
+/// Repositorio para asignaciones de empleados a escuelas (SchoolStaff).
 /// </summary>
-public class SiteStaffRepository(DapperContext context, ILoggingService loggingService) : ISiteStaffRepository
+public class SchoolStaffRepository(DapperContext context, ILoggingService loggingService) : ISchoolStaffRepository
 {
     private readonly DapperContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILoggingService _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
 
-    /// <summary>
-    /// Obtiene todos los empleados asignados a un sitio específico
-    /// </summary>
-    public async Task<IEnumerable<SiteStaffResponse>> GetStaffBySite(int siteId)
+    /// <inheritdoc />
+    public async Task<IEnumerable<SchoolStaffResponse>> GetStaffBySchool(int schoolId)
     {
         try
         {
-            _logger.LogInformation($"Obteniendo empleados asignados al sitio {siteId}");
+            _logger.LogInformation($"Obteniendo empleados asignados a la escuela {schoolId}");
 
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
 
-            var result = await connection.QueryAsync<SiteStaffResponse>("100_GetStaffBySite", parameters, commandType: CommandType.StoredProcedure);
+            var result = await connection.QueryAsync<SchoolStaffResponse>("100_GetStaffBySchool", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation($"Se encontraron {result.Count()} empleados asignados al sitio {siteId}");
+            _logger.LogInformation($"Se encontraron {result.Count()} empleados asignados a la escuela {schoolId}");
             return result;
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener empleados por sitio", new Dictionary<string, string>
+            await _logger.LogError(ex, "Error al obtener empleados por escuela", new Dictionary<string, string>
             {
-                { "SiteId", siteId.ToString() },
+                { "SchoolId", schoolId.ToString() },
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener empleados por sitio", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener empleados por escuela", ex);
         }
     }
 
-    /// <summary>
-    /// Obtiene todos los sitios asignados a un empleado específico
-    /// </summary>
-    public async Task<IEnumerable<SiteStaffResponse>> GetSitesByStaff(int staffId)
+    /// <inheritdoc />
+    public async Task<IEnumerable<SchoolStaffResponse>> GetSchoolsByStaff(int staffId)
     {
         try
         {
-            _logger.LogInformation($"Obteniendo sitios asignados al empleado {staffId}");
+            _logger.LogInformation($"Obteniendo escuelas asignadas al empleado {staffId}");
 
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@staffId", staffId, DbType.Int32);
 
-            var result = await connection.QueryAsync<SiteStaffResponse>("100_GetSitesByStaff", parameters, commandType: CommandType.StoredProcedure);
+            var result = await connection.QueryAsync<SchoolStaffResponse>("100_GetSchoolsByStaff", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation($"Se encontraron {result.Count()} sitios asignados al empleado {staffId}");
+            _logger.LogInformation($"Se encontraron {result.Count()} escuelas asignadas al empleado {staffId}");
 
             return result;
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al obtener sitios por empleado", new Dictionary<string, string>
+            await _logger.LogError(ex, "Error al obtener escuelas por empleado", new Dictionary<string, string>
             {
                 { "StaffId", staffId.ToString() },
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener sitios por empleado", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, "Error al obtener escuelas por empleado", ex);
         }
     }
 
-    /// <summary>
-    /// Asigna un empleado a un sitio
-    /// </summary>
-    public async Task<int> AssignStaffToSite(SiteStaffRequest request)
+    /// <inheritdoc />
+    public async Task<int> AssignStaffToSchool(SchoolStaffRequest request)
     {
         try
         {
-            _logger.LogInformation($"Asignando empleado {request.StaffId} al sitio {request.SiteId}");
+            _logger.LogInformation($"Asignando empleado {request.StaffId} a la escuela {request.SchoolId}");
 
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@siteId", request.SiteId, DbType.Int32);
+            parameters.Add("@schoolId", request.SchoolId, DbType.Int32);
             parameters.Add("@staffId", request.StaffId, DbType.Int32);
             parameters.Add("@isPrimary", request.IsPrimary, DbType.Boolean);
             parameters.Add("@startDate", request.StartDate, DbType.Date);
             parameters.Add("@endDate", request.EndDate, DbType.Date);
             parameters.Add("@comments", request.Comments, DbType.String);
 
-            var result = await connection.QuerySingleAsync<int>("100_AssignStaffToSite", parameters, commandType: CommandType.StoredProcedure);
+            var result = await connection.QuerySingleAsync<int>("100_AssignStaffToSchool", parameters, commandType: CommandType.StoredProcedure);
 
-            _logger.LogInformation($"Empleado {request.StaffId} asignado exitosamente al sitio {request.SiteId} con ID {result}");
+            _logger.LogInformation($"Empleado {request.StaffId} asignado a la escuela {request.SchoolId} con ID {result}");
             return result;
         }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al asignar empleado a sitio", new Dictionary<string, string>
+            await _logger.LogError(ex, "Error al asignar empleado a escuela", new Dictionary<string, string>
             {
-                { "SiteId", request?.SiteId.ToString() ?? "null" },
+                { "SchoolId", request?.SchoolId.ToString() ?? "null" },
                 { "StaffId", request?.StaffId.ToString() ?? "null" },
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al asignar empleado {request?.StaffId} al sitio {request?.SiteId}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al asignar empleado {request?.StaffId} a la escuela {request?.SchoolId}", ex);
         }
     }
 
-    /// <summary>
-    /// Desasigna un empleado de un sitio
-    /// </summary>
-    public async Task<bool> UnassignStaffFromSite(int siteId, int staffId)
+    /// <inheritdoc />
+    public async Task<bool> UnassignStaffFromSchool(int schoolId, int staffId)
     {
         try
         {
-            _logger.LogInformation($"Desasignando empleado {staffId} del sitio {siteId}");
+            _logger.LogInformation($"Desasignando empleado {staffId} de la escuela {schoolId}");
 
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("@siteId", siteId, DbType.Int32);
+            parameters.Add("@schoolId", schoolId, DbType.Int32);
             parameters.Add("@staffId", staffId, DbType.Int32);
 
             var result = await connection.QuerySingleAsync<int>(
-                "100_UnassignStaffFromSite",
+                "100_UnassignStaffFromSchool",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -138,37 +129,39 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             var success = result == 1;
             if (success)
             {
-                _logger.LogInformation($"Empleado {staffId} desasignado exitosamente del sitio {siteId}");
+                _logger.LogInformation($"Empleado {staffId} desasignado de la escuela {schoolId}");
             }
             else
             {
-                _logger.LogWarning($"No se pudo desasignar el empleado {staffId} del sitio {siteId}");
-                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, $"No se pudo desasignar el empleado {staffId} del sitio {siteId}");
+                _logger.LogWarning($"No se pudo desasignar el empleado {staffId} de la escuela {schoolId}");
+                throw new ApiException(ErrorCode.ENTITY_NOT_FOUND, $"No se pudo desasignar el empleado {staffId} de la escuela {schoolId}");
             }
 
             return success;
         }
+        catch (ApiException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al desasignar empleado de sitio", new Dictionary<string, string>
+            await _logger.LogError(ex, "Error al desasignar empleado de escuela", new Dictionary<string, string>
             {
-                { "SiteId", siteId.ToString() },
+                { "SchoolId", schoolId.ToString() },
                 { "StaffId", staffId.ToString() },
                 { "ErrorType", ex.GetType().Name },
                 { "ErrorMessage", ex.Message }
             });
-            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al desasignar empleado {staffId} del sitio {siteId}", ex);
+            throw new ApiException(ErrorCode.UNEXPECTED_ERROR, $"Error al desasignar empleado {staffId} de la escuela {schoolId}", ex);
         }
     }
 
-    /// <summary>
-    /// Actualiza una asignación existente
-    /// </summary>
-    public async Task<bool> UpdateSiteStaff(int id, UpdateSiteStaffRequest request)
+    /// <inheritdoc />
+    public async Task<bool> UpdateSchoolStaff(int id, UpdateSchoolStaffRequest request)
     {
         try
         {
-            _logger.LogInformation($"Actualizando asignación {id}");
+            _logger.LogInformation($"Actualizando asignación SchoolStaff {id}");
 
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
@@ -179,7 +172,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             parameters.Add("@comments", request.Comments, DbType.String);
 
             var result = await connection.QuerySingleAsync<int>(
-                "100_UpdateSiteStaff",
+                "100_UpdateSchoolStaff",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -187,7 +180,7 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
             var success = result == 1;
             if (success)
             {
-                _logger.LogInformation($"Asignación {id} actualizada exitosamente");
+                _logger.LogInformation($"Asignación {id} actualizada");
             }
             else
             {
@@ -197,9 +190,13 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
 
             return success;
         }
+        catch (ApiException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
-            await _logger.LogError(ex, "Error al actualizar asignación", new Dictionary<string, string>
+            await _logger.LogError(ex, "Error al actualizar asignación SchoolStaff", new Dictionary<string, string>
             {
                 { "Id", id.ToString() },
                 { "ErrorType", ex.GetType().Name },
@@ -209,33 +206,22 @@ public class SiteStaffRepository(DapperContext context, ILoggingService loggingS
         }
     }
 
-    /// <summary>
-    /// Obtiene una asignación específica por su ID
-    /// </summary>
-    public async Task<SiteStaffResponse?> GetSiteStaffById(int id)
+    /// <inheritdoc />
+    public async Task<SchoolStaffResponse?> GetSchoolStaffById(int id)
     {
         try
         {
-            _logger.LogInformation($"Obteniendo asignación {id}");
+            _logger.LogInformation($"Obteniendo asignación SchoolStaff {id}");
 
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@id", id, DbType.Int32);
 
-            var result = await connection.QuerySingleOrDefaultAsync<SiteStaffResponse>(
-                "100_GetSiteStaffById",
+            var result = await connection.QuerySingleOrDefaultAsync<SchoolStaffResponse>(
+                "100_GetSchoolStaffById",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
-
-            if (result != null)
-            {
-                _logger.LogInformation($"Asignación {id} encontrada exitosamente");
-            }
-            else
-            {
-                _logger.LogInformation($"No se encontró la asignación {id}");
-            }
 
             return result;
         }
