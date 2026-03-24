@@ -3,7 +3,7 @@
 -- Descripción: Obtiene todos los sitios con paginación y filtros.
 --              SiteCode mostrado como XXX-XX-X (agencia-escuela-ordinal por escuela).
 -- Fecha: 2026-03-13
--- Versión: 2.0
+-- Versión: 2.1 (columna SchoolId en listado)
 -- =============================================
 
 CREATE OR ALTER PROCEDURE [dbo].[105_GetSites]
@@ -35,6 +35,7 @@ BEGIN
         CityName = c.Name,
         RegionName = r.Name,
         SchoolName = sch.Name,
+        SchoolId = sch.Id,
         generalenrollment = ISNULL(s.GeneralEnrollment, (SELECT ISNULL(SUM(scg.NumberOfChildren), 0) FROM SiteChildGroup scg WHERE scg.SiteId = s.Id)),
         s.IsActive,
         SiteCode = CASE

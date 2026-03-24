@@ -239,6 +239,7 @@ public class SiteMapper(Lazy<MappingService> mappingService)
                 CityName = item.CityName ?? string.Empty,
                 RegionName = item.RegionName ?? string.Empty,
                 SchoolName = item.SchoolName,
+                SchoolId = item.SchoolId,
                 IsActive = item.IsActive ?? true,
                 GeneralEnrollment = item.generalenrollment ?? item.GeneralEnrollment,
                 SiteCode = item.SiteCode

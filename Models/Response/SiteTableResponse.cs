@@ -8,6 +8,7 @@ public class SiteTableResponse
     public string CityName { get; set; }
     public string RegionName { get; set; }
     public string? SchoolName { get; set; }
+    public int? SchoolId { get; set; }
     public bool IsActive { get; set; }
     public int? GeneralEnrollment { get; set; }
     public string? SiteCode { get; set; }
