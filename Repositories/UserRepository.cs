@@ -759,7 +759,7 @@ public class UserRepository(UserManager<User> userManager,
     {
         try
         {
-            var claims = new ClaimsIdentity(new Claim[] { new(ClaimTypes.NameIdentifier, user.Id), new(ClaimTypes.Name, user.UserName ?? "") });
+            var claims = new ClaimsIdentity([new(ClaimTypes.NameIdentifier, user.Id), new(ClaimTypes.Name, user.UserName ?? "")]);
 
             foreach (var role in roles)
             {
@@ -788,6 +788,7 @@ public class UserRepository(UserManager<User> userManager,
             // Obtener name y lastName de Staff si existe
             var name = staff?.FirstName ?? "";
             var lastName = "";
+
             if (staff != null)
             {
                 var lastNameParts = new List<string>();
@@ -802,22 +803,22 @@ public class UserRepository(UserManager<User> userManager,
                 lastName = string.Join(" ", lastNameParts);
             }
 
-            var programsList = userPrograms ?? new List<DTOProgram>();
+            var programsList = userPrograms ?? [];
             var programNames = string.Join(",", programsList.Select(p => p.Name));
             var programIds = string.Join(",", programsList.Select(p => p.Id.ToString()));
 
             // Roles NUTRE "por programa" (coordinator, evaluator) reciben claims de programas
-            if (roles.Any(r => r != null && (r.Contains("coordinator", StringComparison.OrdinalIgnoreCase) || r.Contains("evaluator", StringComparison.OrdinalIgnoreCase))))
-            {
-                claims.AddClaim(new Claim("userId", user.Id));
-                claims.AddClaim(new Claim("name", name));
-                claims.AddClaim(new Claim("lastName", lastName));
-                claims.AddClaim(new Claim("email", user.Email ?? ""));
-                claims.AddClaim(new Claim("programs", programNames));
-                claims.AddClaim(new Claim("programIds", programIds));
+            // if (roles.Any(r => r != null && (r.Contains("coordinator", StringComparison.OrdinalIgnoreCase) || r.Contains("evaluator", StringComparison.OrdinalIgnoreCase))))
+            // {
+            //     claims.AddClaim(new Claim("userId", user.Id));
+            //     claims.AddClaim(new Claim("name", name));
+            //     claims.AddClaim(new Claim("lastName", lastName));
+            //     claims.AddClaim(new Claim("email", user.Email ?? ""));
+            //     claims.AddClaim(new Claim("programs", programNames));
+            //     claims.AddClaim(new Claim("programIds", programIds));
 
-                return claims;
-            }
+            //     return claims;
+            // }
 
             // Los datos personales ahora vienen de Staff, no de User
             claims.AddClaim(new Claim("name", name));
