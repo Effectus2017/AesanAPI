@@ -1,7 +1,7 @@
 namespace Api.Models;
 
 /// <summary>
-/// Item de usuario devuelto por el SP 109_GetAllUsersFromDb. Tipo fuerte para que Dapper mapee correctamente
+/// Item de usuario devuelto por los SP 109_GetAllUsersFromDb y 110_GetAllUsersFromDb. Tipo fuerte para que Dapper mapee correctamente
 /// DisplayName, DisplayNameEN y el resto de columnas (evita problemas con dynamic y mayúsculas).
 /// </summary>
 public class DTOUserListItem

@@ -58,10 +58,7 @@ public class SiteVisitCalendarRepository(DapperContext context) : ISiteVisitCale
             using IDbConnection dbConnection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@alls", alls ? 1 : 0, DbType.Boolean);
-            var rows = await dbConnection.QueryAsync<VisitTypeDropdownItemResponse>(
-                "100_GetVisitTypes",
-                parameters,
-                commandType: CommandType.StoredProcedure);
+            var rows = await dbConnection.QueryAsync<VisitTypeDropdownItemResponse>("100_GetVisitTypes", parameters, commandType: CommandType.StoredProcedure);
             return rows.ToList();
         }
         catch (Exception ex)
