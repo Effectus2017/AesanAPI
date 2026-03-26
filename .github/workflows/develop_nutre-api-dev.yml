@@ -60,6 +60,6 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: "nutre-api-dev"
-          slot-name: "Debug"
+          slot-name: "Production"
           package: .
           clean: true
