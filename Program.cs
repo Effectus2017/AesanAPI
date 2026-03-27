@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using Api.Data;
-using Api.Extensions;
 using Api.Interfaces;
 using Api.Mapper;
 using Api.Models;
@@ -13,14 +12,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Api.Telemetry;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Api.Hubs;
-using System.Security.Claims;
 using Api.Filters;
 using Api.Authentication;
 
